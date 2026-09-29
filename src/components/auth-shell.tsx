@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Wordmark } from "@/components/wordmark";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -33,7 +33,7 @@ export function AuthCard({
   return (
     <Card className="w-full max-w-md bg-card/95">
       <CardHeader>
-        <CardTitle className="font-heading text-3xl">{title}</CardTitle>
+        <h1 className="font-heading text-3xl tracking-tight">{title}</h1>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>{children}</CardContent>

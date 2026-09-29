@@ -15,10 +15,10 @@ export function CaptureForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    const draft = sessionStorage.getItem("klaro-draft");
-    if (!draft) return;
-    sessionStorage.removeItem("klaro-draft");
     const frame = requestAnimationFrame(() => {
+      const draft = sessionStorage.getItem("klaro-draft");
+      if (!draft) return;
+      sessionStorage.removeItem("klaro-draft");
       setText(draft);
     });
     return () => cancelAnimationFrame(frame);

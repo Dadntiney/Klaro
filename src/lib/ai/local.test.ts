@@ -45,6 +45,18 @@ describe("interpretLocally", () => {
     expect(result.items.every((item) => item.kind === "taak")).toBe(true);
   });
 
+  it("does not split the word morgen and still separates a second errand", () => {
+    const result = interpretLocally(
+      "Herinner me morgen om 9 uur om de verzekering te bellen. En koop melk.",
+      TUESDAY_NOON,
+    );
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].kind).toBe("herinnering");
+    expect(result.items[0].title).toBe("De verzekering te bellen");
+    expect(result.items[0].remindAt).toBe("2026-09-30T07:00:00.000Z");
+    expect(result.items[1]).toMatchObject({ kind: "taak", title: "Koop melk" });
+  });
+
   it("places a weekday appointment on the next matching day", () => {
     const result = interpretLocally("Vrijdag tandarts om 14:30", TUESDAY_NOON);
     expect(result.items[0].kind).toBe("herinnering");

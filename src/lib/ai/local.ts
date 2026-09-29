@@ -91,40 +91,35 @@ function splitClauses(raw: string) {
 }
 
 function splitSeparators(line: string) {
-  const pattern = /\s*(?:,|en)\s+/i;
-  const result: string[] = [];
-  let rest = line;
+  const pattern = /(?:\s*,\s+|\s+\ben\b\s+|(?:[.!?])\s+(?=[A-Za-z]))/gi;
+  const parts: string[] = [];
+  let cursor = 0;
 
-  while (rest) {
-    const match = pattern.exec(rest);
-    if (!match) {
-      result.push(rest);
-      break;
+  for (const match of line.matchAll(pattern)) {
+    const index = match.index ?? 0;
+    const left = line.slice(cursor, index).trim();
+    const right = line.slice(index + match[0].length).trim();
+    const leftWords = left.split(/\s+/).filter(Boolean).length;
+    if (leftWords >= 2 && startsWithAction(right)) {
+      parts.push(left);
+      cursor = index + match[0].length;
     }
-
-    const left = rest.slice(0, match.index).trim();
-    const right = rest.slice(match.index + match[0].length).trim();
-    if (left.split(/\s+/).length >= 2 && startsWithAction(right)) {
-      result.push(left);
-      rest = right;
-      continue;
-    }
-
-    result.push(rest);
-    break;
   }
 
-  return result;
+  const tail = line.slice(cursor).trim();
+  if (tail) parts.push(tail);
+  return parts.length > 0 ? parts : [line];
 }
 
 function startsWithAction(text: string) {
-  const first = text
+  const normalized = text.trim().replace(/^(?:en|én)\s+/i, "");
+  const first = normalized
     .toLowerCase()
     .split(/\s+/)[0]
     ?.replace(/[^a-zà-ÿ-]/gi, "");
   if (!first) return false;
   if (IMPERATIVES.has(first)) return true;
-  return /^(herinner|niet)\b/i.test(text);
+  return /^(herinner|niet)\b/i.test(normalized);
 }
 
 function clauseToItem(clause: string, now: Date): InterpretedItem {
@@ -264,8 +259,9 @@ function cleanupTitle(clause: string) {
   title = title.replace(/\bom\s+\d{1,2}[:.]\d{2}(?:\s*uur)?\b/gi, " ");
   title = title.replace(/\bom\s+\d{1,2}(?:\s*uur)?\b/gi, " ");
   title = title.replace(/\b\d{1,2}[:.]\d{2}(?:\s*uur)?\b/gi, " ");
-  title = title.replace(/^(?:om|te|eraan)\s+/i, "");
-  title = title.replace(/\s+/g, " ").trim().replace(/^[\s,.\-–:]+|[\s,.\-–:]+$/g, "");
+  title = title.replace(/\s+/g, " ").trim();
+  title = title.replace(/^(?:(?:om|te|eraan|en|én)\s+)+/i, "");
+  title = title.replace(/^[\s,.\-–:]+|[\s,.\-–:]+$/g, "");
 
   if (!title) title = clause.trim();
   const clipped = title.slice(0, 280);
