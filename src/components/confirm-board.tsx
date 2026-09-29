@@ -38,7 +38,7 @@ export function ConfirmBoard({
       ? items.map((item) => ({
           key: item.id,
           id: item.id,
-          kind: item.kind,
+          kind: item.kind === "herinnering" ? "herinnering" : "taak",
           title: item.title,
           notes: item.notes ?? "",
           when: toDateTimeLocal(item.kind === "herinnering" ? item.remindAt : item.dueAt),

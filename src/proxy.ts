@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { backendMode } from "@/lib/env";
 import { updateSupabaseSession } from "@/lib/supabase/session";
 
-const PROTECTED = [/^\/home$/, /^\/bevestigen(?:\/|$)/];
+const PROTECTED = [
+  /^\/(home|inbox|vandaag|taken|agenda|herinneringen|documenten|lijsten|assistent|instellingen|welkom|bevestigen|zoeken)(?:\/|$)/,
+];
 const AUTH_PAGES = [/^\/login$/, /^\/registreren$/];
 
 export async function proxy(request: NextRequest) {

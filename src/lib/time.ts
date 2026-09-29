@@ -179,6 +179,16 @@ export function formatWhen(iso: string | null, now = new Date()) {
   return `${parts.day} ${MONTHS_NL[parts.month - 1]} ${time}`;
 }
 
+export function formatDay(iso: string | null) {
+  if (!iso) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return null;
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${day} ${MONTHS_NL[month - 1]}`;
+}
+
 export function formatLongDate(now = new Date()) {
   const parts = getZonedParts(now);
   return `${WEEKDAYS_NL[parts.weekday]} ${parts.day} ${MONTHS_NL[parts.month - 1]}`;

@@ -11,8 +11,10 @@ import type {
   ConfirmedItem,
   KlaroItem,
   NewItem,
+  Preferences,
   Profile,
 } from "@/lib/domain";
+import { defaultPreferences } from "@/lib/domain";
 
 const COOKIE = "klaro_demo_session";
 const FILE = path.join(process.cwd(), ".data", "demo-store.json");
@@ -23,6 +25,9 @@ type DemoUser = {
   displayName: string | null;
   passwordHash: string;
   passwordSalt: string;
+  timezone?: string;
+  onboardedAt?: string | null;
+  preferences?: Preferences;
 };
 
 type DemoSession = {
@@ -34,11 +39,79 @@ type DemoSession = {
 type StoredCapture = Capture & { userId: string };
 type StoredItem = KlaroItem & { userId: string };
 
+export type DemoDocument = {
+  id: string;
+  userId: string;
+  captureId: string | null;
+  title: string;
+  category: string;
+  summary: string | null;
+  supplier: string | null;
+  amountCents: number | null;
+  referenceCode: string | null;
+  dueOn: string | null;
+  startsOn: string | null;
+  endsOn: string | null;
+  filePath: string | null;
+  fileName: string | null;
+  mimeType: string | null;
+  textContent: string | null;
+  createdAt: string;
+};
+
+export type DemoList = {
+  id: string;
+  userId: string;
+  title: string;
+  createdAt: string;
+};
+
+export type DemoListItem = {
+  id: string;
+  listId: string;
+  userId: string;
+  title: string;
+  done: boolean;
+  position: number;
+  createdAt: string;
+};
+
+export type DemoConversation = {
+  id: string;
+  userId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DemoMessage = {
+  id: string;
+  conversationId: string;
+  userId: string;
+  role: "user" | "assistant";
+  content: string;
+  context: unknown;
+  createdAt: string;
+};
+
+export type DemoNoticeState = {
+  userId: string;
+  sourceKey: string;
+  status: "read" | "dismissed" | "snoozed";
+  snoozedUntil: string | null;
+};
+
 type State = {
   users: DemoUser[];
   sessions: DemoSession[];
   captures: StoredCapture[];
   items: StoredItem[];
+  documents: DemoDocument[];
+  lists: DemoList[];
+  listItems: DemoListItem[];
+  conversations: DemoConversation[];
+  messages: DemoMessage[];
+  notices: DemoNoticeState[];
 };
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -51,9 +124,26 @@ function readState(): State {
       sessions: parsed.sessions ?? [],
       captures: parsed.captures ?? [],
       items: parsed.items ?? [],
+      documents: parsed.documents ?? [],
+      lists: parsed.lists ?? [],
+      listItems: parsed.listItems ?? [],
+      conversations: parsed.conversations ?? [],
+      messages: parsed.messages ?? [],
+      notices: parsed.notices ?? [],
     };
   } catch {
-    return { users: [], sessions: [], captures: [], items: [] };
+    return {
+      users: [],
+      sessions: [],
+      captures: [],
+      items: [],
+      documents: [],
+      lists: [],
+      listItems: [],
+      conversations: [],
+      messages: [],
+      notices: [],
+    };
   }
 }
 
@@ -109,7 +199,21 @@ async function currentUser(state: State) {
 }
 
 function toProfile(user: DemoUser): Profile {
-  return { id: user.id, email: user.email, displayName: user.displayName };
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    timezone: user.timezone || "Europe/Amsterdam",
+    onboardedAt: user.onboardedAt ?? null,
+    preferences: { ...defaultPreferences, ...user.preferences },
+  };
+}
+
+export type { State as DemoState };
+export { withState as withDemoState };
+
+export async function demoCurrentUser(state: State) {
+  return currentUser(state);
 }
 
 function publicItem(item: StoredItem): KlaroItem {

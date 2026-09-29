@@ -2,7 +2,7 @@
 
 Gooi het erin. Wij regelen de rest.
 
-Klaro is een apart product. Je typt een losse gedachte, Klaro maakt er een taak of herinnering van, jij bevestigt, en het staat op Home.
+Klaro is een apart product. Je gooit een zin, foto of document erin. Klaro maakt er een taak, herinnering, afspraak, lijst of document van. Jij bevestigt, en het staat op Home, in Vandaag en in de inbox.
 
 ## Kernflow
 
@@ -31,7 +31,7 @@ npm run dev
 ## Supabase
 
 1. Maak een project.
-2. Draai `supabase/migrations/0001_init.sql` in de SQL editor.
+2. Draai `supabase/migrations/0001_init.sql` en daarna `0002_life.sql` in de SQL editor.
 3. Zet onder Authentication de site-URL op je app, en voeg `/auth/callback` toe als redirect.
 4. Kopieer de project-URL en de anon key naar `.env.local`.
 

@@ -9,6 +9,7 @@ import type {
   NewItem,
   Profile,
 } from "@/lib/domain";
+import { defaultPreferences } from "@/lib/domain";
 import { createClient } from "@/lib/supabase/server";
 
 type CaptureRow = {
@@ -77,15 +78,22 @@ export async function supabaseGetProfile(): Promise<Profile | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, timezone, onboarded_at, preferences")
     .eq("id", data.user.id)
     .maybeSingle();
 
   const metadataName = data.user.user_metadata?.display_name;
+  const prefs = profile?.preferences;
   return {
     id: data.user.id,
     email: data.user.email ?? "",
     displayName: profile?.display_name ?? (typeof metadataName === "string" ? metadataName : null),
+    timezone: profile?.timezone || "Europe/Amsterdam",
+    onboardedAt: profile?.onboarded_at ?? null,
+    preferences: {
+      ...defaultPreferences,
+      ...(prefs && typeof prefs === "object" ? prefs : {}),
+    },
   };
 }
 
