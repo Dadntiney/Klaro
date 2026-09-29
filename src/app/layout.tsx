@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Fraunces, Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
   description: "Gooi het erin. Wij regelen de rest.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="nl"
