@@ -249,3 +249,6 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 .hostrow .hn { color:var(--fg); overflow:hidden; text-overflow:ellipsis; min-width:0; }
 .hostrow .hc { color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
 .hosthint { margin-top:4px; }
+
+.dview.icon { margin-left:0; padding:2px 7px; }
+h2 .dview + .dview.icon { margin-left:0; }

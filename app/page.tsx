@@ -601,24 +601,65 @@ export default function Home() {
                 !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
               </button>
             )}
-            {days.length > 0 && (
-              <button
-                className={"goto-btn" + (goOpen ? " on" : "")}
-                onClick={() => { setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
-                aria-expanded={goOpen}
-                aria-label="Ga naar dag en tijd"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <rect x="3" y="5" width="18" height="16" rx="3" />
-                  <path d="M3 10h18M8 3v4M16 3v4" />
-                </svg>
-                Ga naar
-              </button>
-            )}
             </div>
           </div>
 
-          {goOpen && days.length > 0 && (
+
+          {(summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
+            <div className="summary">
+              {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
+              {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
+              {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
+            </div>
+          )}
+
+          {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
+          {days.map(({ d, list, rows: trows, crows }, di) => {
+            const isCompact = compactDays.has(d);
+            const rows = isCompact ? crows : trows;
+            const today = dayKeyFmt.format(Date.now());
+            const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
+            const isDayOpen = recent || openDays.has(d);
+            const dm = dayMins(d);
+            return (
+            <section key={d}>
+              <h2
+                className={recent ? "" : "fold"}
+                onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; })}
+                role={recent ? undefined : "button"}
+                aria-expanded={recent ? undefined : isDayOpen}
+              >
+                {dayLabel(d)}{!recent && <span className="muted"> · {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>}
+                {isDayOpen && (
+                  <button
+                    className={"dview" + (isCompact ? " on" : "")}
+                    onClick={(e) => { e.stopPropagation(); setCompactDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; }); }}
+                    aria-pressed={isCompact}
+                    title={isCompact ? "Terug naar de tijdlijn" : "Per site optellen"}
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                      {isCompact ? <path d="M4 6h16M4 12h16M4 18h16" /> : <path d="M4 7h16M7 12h10M10 17h4" />}
+                    </svg>
+                    {isCompact ? "Tijdlijn" : "Compact"}
+                  </button>
+                )}
+                {di === 0 && (
+                  <button
+                    className={"dview icon" + (goOpen ? " on" : "")}
+                    onClick={(e) => { e.stopPropagation(); setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
+                    aria-expanded={goOpen}
+                    aria-label="Ga naar dag en tijd"
+                    title="Ga naar dag en tijd"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="3" y="5" width="18" height="16" rx="3" />
+                      <path d="M3 10h18M8 3v4M16 3v4" />
+                    </svg>
+                  </button>
+                )}
+                {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
+              </h2>
+          {di === 0 && goOpen && (
             <form
               className="goto"
               onSubmit={(e) => {
@@ -657,47 +698,6 @@ export default function Home() {
               <button type="submit">Ga</button>
             </form>
           )}
-
-          {(summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
-            <div className="summary">
-              {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
-              {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
-              {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
-            </div>
-          )}
-
-          {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, rows: trows, crows }) => {
-            const isCompact = compactDays.has(d);
-            const rows = isCompact ? crows : trows;
-            const today = dayKeyFmt.format(Date.now());
-            const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
-            const isDayOpen = recent || openDays.has(d);
-            const dm = dayMins(d);
-            return (
-            <section key={d}>
-              <h2
-                className={recent ? "" : "fold"}
-                onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; })}
-                role={recent ? undefined : "button"}
-                aria-expanded={recent ? undefined : isDayOpen}
-              >
-                {dayLabel(d)}{!recent && <span className="muted"> · {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>}
-                {isDayOpen && (
-                  <button
-                    className={"dview" + (isCompact ? " on" : "")}
-                    onClick={(e) => { e.stopPropagation(); setCompactDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; }); }}
-                    aria-pressed={isCompact}
-                    title={isCompact ? "Terug naar de tijdlijn" : "Per site optellen"}
-                  >
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                      {isCompact ? <path d="M4 6h16M4 12h16M4 18h16" /> : <path d="M4 7h16M7 12h10M10 17h4" />}
-                    </svg>
-                    {isCompact ? "Tijdlijn" : "Compact"}
-                  </button>
-                )}
-                {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
-              </h2>
               {isDayOpen && (
               <div className="list">
                 {(() => {
