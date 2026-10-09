@@ -28,7 +28,7 @@ export interface Group {
   main: boolean;
   flag?: string;
   ts: number[]; // laatste tijdstippen (max 8, nieuwste eerst), voor "rond dit moment"
-  ss: Session[]; // sessies (nieuwste eerst, max 5)
+  ss: Session[]; // sessies (nieuwste eerst, max 20 voor zichtbare sites, anders 5)
   mins: number; // totaal aantal minuten actief (alle sessies van die dag)
   sc: number; // aantal sessies op die dag
   rc: number; // daarvan echte sessies (minstens 2 minuten)
@@ -240,7 +240,7 @@ export async function GET() {
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
     const sessions = allSessions(all);
-    g.ss = sessions.slice(0, 5);
+    g.ss = sessions.slice(0, g.main && !g.bg ? 20 : 5);
     g.sc = sessions.length;
     g.rc = sessions.filter((x) => minutes(x) >= 2).length;
     g.mins = sessions.reduce((n, x) => n + minutes(x), 0);

@@ -468,7 +468,18 @@ export default function Home() {
     }
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-      .map(([d, list]) => ({ d, list: list.sort((a, b) => b.last - a.last) }));
+      .map(([d, list]) => ({
+        d,
+        list,
+        // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
+        rows: list
+          .flatMap((g) => {
+            const ss = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+            const oldest = Math.min(...ss.map((x) => x.s));
+            return ss.map((x) => ({ g, t: x.s, first: x.s === oldest && (g.sc ?? ss.length) <= ss.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
+          })
+          .sort((a, b) => b.t - a.t),
+      }));
   }, [groups, device]);
 
   return (
@@ -547,7 +558,7 @@ export default function Home() {
           )}
 
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list }) => {
+          {days.map(({ d, list, rows }) => {
             const today = dayKeyFmt.format(Date.now());
             const yesterday = dayKeyFmt.format(Date.now() - 86_400_000);
             const recent = d === today || d === yesterday;
@@ -566,20 +577,21 @@ export default function Home() {
               </h2>
               {isDayOpen && (
               <div className="list">
-                {list.map((g) => {
+                {rows.map(({ g, t, first, newest }) => {
                   const key = g.d + g.site + g.dev;
-                  const isOpen = expanded === key;
+                  const rowKey = key + ":" + t;
+                  const isOpen = expanded === rowKey;
                   return (
-                    <div key={key}>
+                    <div key={rowKey}>
                       <div
-                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
-                        onClick={() => setExpanded(isOpen ? null : key)}
+                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
+                        onClick={() => setExpanded(isOpen ? null : rowKey)}
                         role="button"
                         aria-expanded={isOpen}
                       >
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
-                          <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="dev"><DevIcon name={g.dev} />{g.dev}</span>);
@@ -589,7 +601,7 @@ export default function Home() {
                             return <div className="sub">{parts.flatMap((x, i) => (i ? [" · ", x] : [x]))}</div>;
                           })()}
                         </div>
-                        <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
+                        <div className="time">{t ? timeFmt.format(t) : "–"}</div>
                       </div>
                       {isOpen && (() => {
                         const near = around(g);
