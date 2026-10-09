@@ -207,3 +207,5 @@ main { padding-top:14px; }
 .histbar.err .histfill { background:#dc2626; }
 .histtxt { position:absolute; top:6px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:11px; line-height:14px; padding:0 9px; border-radius:99px; background:var(--card); color:var(--muted); border:1px solid var(--line); box-shadow:0 1px 4px rgba(0,0,0,.08); }
 .histbar.err .histtxt { color:#dc2626; }
+.item .dev .di { width:17px; height:17px; }
+.item .dev { font-size:13px; font-weight:600; }
