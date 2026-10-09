@@ -94,25 +94,39 @@ export default function Home() {
 
   useEffect(() => {
     const t0 = Date.now();
+    let fullDone = false;
+    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights }, isFull: boolean) => {
+      fullRef.current = true;
+      setGroups(data.groups);
+      setDevices(data.devices);
+      setTotal(data.total);
+      deviceMap.current = data.deviceMap ?? {};
+      setInsights(data.insights ?? null);
+      lastSeen.current = Math.max(0, ...data.groups.map((g) => g.last));
+      setUpdated(new Date());
+      if (isFull) setFull(true);
+      finishing.current = true;
+      setProgress(1);
+      setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
+    };
+    // Vandaag komt snel binnen en wordt meteen getoond; de volledige geschiedenis volgt en vervangt dit.
+    fetch("/api/nextdns?scope=today")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || fullDone) return;
+        try { localStorage.setItem("csv-today-ms", String(Date.now() - t0)); } catch {}
+        apply(data, false);
+      })
+      .catch(() => {});
     fetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Ophalen mislukt");
-        fullRef.current = true;
-        setGroups(data.groups);
-        setDevices(data.devices);
-        setTotal(data.total);
-        deviceMap.current = data.deviceMap ?? {};
-        setInsights(data.insights ?? null);
-        lastSeen.current = Math.max(0, ...(data.groups as Group[]).map((g) => g.last));
-        setUpdated(new Date());
-        setFull(true);
-        try { localStorage.setItem("csv-load-ms", String(Date.now() - t0)); } catch {}
-        finishing.current = true;
-        setProgress(1);
-        setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
+        fullDone = true;
+        apply(data, true);
       })
       .catch((e: Error) => {
+        if (fullRef.current) return; // vandaag staat al op het scherm
         setError(e.message);
         setState("error");
         setFull(true);
@@ -122,10 +136,10 @@ export default function Home() {
   // Voortgang is een schatting (NextDNS meldt zelf niets): loopt op naar ~90% over de tijd die het de vorige keer duurde.
   useEffect(() => {
     if (state !== "loading") return;
-    let expected = 20_000;
+    let expected = 6_000;
     try {
-      const v = Number(localStorage.getItem("csv-load-ms"));
-      if (v > 3000 && v < 120_000) expected = v;
+      const v = Number(localStorage.getItem("csv-today-ms"));
+      if (v > 500 && v < 120_000) expected = v;
     } catch {}
     const t0 = Date.now();
     const id = setInterval(() => {
@@ -589,8 +603,7 @@ export default function Home() {
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, rows }) => {
             const today = dayKeyFmt.format(Date.now());
-            const yesterday = dayKeyFmt.format(Date.now() - 86_400_000);
-            const recent = d === today || d === yesterday;
+            const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
             const isDayOpen = recent || openDays.has(d);
             const dm = dayMins(d);
             return (

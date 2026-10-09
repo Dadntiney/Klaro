@@ -91,7 +91,40 @@ function nearestIdx(sorted: number[], t: number): number {
   return lo;
 }
 
-export async function GET() {
+const TODAY_HEADER = ["timestamp", "domain", "status", "reasons", "destination_country", "client_ip", "device_id", "device_name", "device_model"];
+
+/** Alleen de logs van vandaag via de gewone log-endpoint (pagina's van 1000). Veel sneller dan de volledige download, maar geeft geen geschiedenis. */
+async function fetchToday(profile: string, key: string): Promise<string[][] | { error: string; status: number }> {
+  const parts = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Europe/Amsterdam" }).formatToParts(Date.now());
+  const g = (x: string) => parseInt(parts.find((p) => p.type === x)!.value, 10) % 24;
+  const from = Date.now() - (g("hour") * 3600 + g("minute") * 60 + g("second")) * 1000;
+  const base = `https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs`;
+  const out: string[][] = [TODAY_HEADER];
+  let cursor = "";
+  const deadline = Date.now() + 40_000;
+  for (let page = 0; page < 40 && Date.now() < deadline; page++) {
+    let res: Response;
+    try {
+      res = await fetch(`${base}?from=${from}&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, { headers: { "X-Api-Key": key.trim() }, cache: "no-store" });
+    } catch {
+      return { error: "NextDNS is niet bereikbaar.", status: 502 };
+    }
+    if (!res.ok) return { error: `NextDNS gaf fout ${res.status}. ${(await res.text().catch(() => "")).slice(0, 200)}`.trim(), status: 502 };
+    const json = (await res.json().catch(() => null)) as { data?: Record<string, unknown>[]; meta?: { pagination?: { cursor?: string | null } } } | null;
+    for (const e of json?.data ?? []) {
+      const dev = (e.device ?? {}) as { id?: string; name?: string; model?: string };
+      const reasons = (Array.isArray(e.reasons) ? e.reasons : []).map((r) => `${(r as { id?: string }).id ?? ""} ${(r as { name?: string }).name ?? ""}`).join(" ");
+      const dest = (Array.isArray(e.destinations) ? e.destinations : []).find((d) => (d as { type?: string }).type === "country") as { code?: string } | undefined;
+      out.push([String(e.timestamp ?? ""), String(e.domain ?? ""), String(e.status ?? ""), reasons, dest?.code ?? "", String(e.clientIp ?? ""), dev.id ?? "", dev.name ?? "", dev.model ?? ""]);
+    }
+    cursor = json?.meta?.pagination?.cursor ?? "";
+    if (!cursor) break;
+  }
+  return out;
+}
+
+export async function GET(req: Request) {
+  const todayOnly = new URL(req.url).searchParams.get("scope") === "today";
   const key = process.env.NEXTDNS_API_KEY;
   const profile = process.env.NEXTDNS_PROFILE_ID;
   if (!key || !profile) {
@@ -102,8 +135,16 @@ export async function GET() {
     return NextResponse.json({ error: "Stel eerst APP_PASSWORD in in Vercel, zodat je logs niet publiek zijn." }, { status: 503 });
   }
 
-  if (cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
+  if (!todayOnly && cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
 
+  let rows: string[][];
+  if (todayOnly) {
+    const t0 = Date.now();
+    const r = await fetchToday(profile, key);
+    if (!Array.isArray(r)) return NextResponse.json({ error: r.error }, { status: r.status });
+    rows = r;
+    console.log(`scope=today: ${r.length - 1} regels in ${Date.now() - t0} ms`);
+  } else {
   // De download-endpoint accepteert geen filters (alleen X-Api-Key): we krijgen alle opgeslagen logs.
   let res: Response;
   try {
@@ -121,7 +162,8 @@ export async function GET() {
     return NextResponse.json({ error: `NextDNS gaf fout ${res.status}.${hint} ${body}`.trim() }, { status: 502 });
   }
 
-  const rows = parseCsv(await res.text());
+  rows = parseCsv(await res.text());
+  }
   if (rows.length < 2) return NextResponse.json({ groups: [], devices: [], total: 0, insights: { payments: [], trackers: [] } });
   const [header, ...body] = rows;
   const col = (name: string) => header.findIndex((h) => h.trim().toLowerCase() === name);
@@ -335,6 +377,6 @@ export async function GET() {
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren
   };
-  cache = { at: Date.now(), body: result };
+  if (!todayOnly) cache = { at: Date.now(), body: result };
   return NextResponse.json(result);
 }
