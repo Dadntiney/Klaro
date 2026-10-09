@@ -590,7 +590,8 @@ export default function Home() {
             <div className="bar-in">
             <div className="chips">
               <button className={"chip" + (device === null ? " on" : "") + (anyActive ? " act" : "")} onClick={() => setDevice(null)}>Alle</button>
-              {devices.map((d) => (
+              {/* Apparaten die in gebruik zijn staan links (naast Alle), de rest rechts; binnen elke groep blijft de volgorde gelijk. */}
+              {[...devices.filter((d) => activeNow(d.name)), ...devices.filter((d) => !activeNow(d.name))].map((d) => (
                 <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : "")} title={activeNow(d.name) ? "In gebruik" : undefined} onClick={() => setDevice(d.name)}>
                   {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
                                   </button>
