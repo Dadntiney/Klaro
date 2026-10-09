@@ -113,6 +113,6 @@ test("nieuwsbrief-adres mail.merk.com is geen bezoek", () => {
 });
 
 test("slimme apparaten en widgets zijn geen bezoek", () => {
-  for (const h of ["api.eufy.com", "eufy.com", "discovery.meethue.com", "dpgmedia.net", "js.stripe.network", "x.omnidesk.io"]) assert.equal(classify(h).bg, true, h);
-  for (const h of ["www.efteling.com", "www.kruidvat.nl", "www.lidl.nl", "www.vinted.com"]) assert.equal(!classify(h).bg && classify(h).main, true, h);
+  for (const h of ["dpgmedia.net", "js.stripe.network", "x.omnidesk.io"]) assert.equal(classify(h).bg, true, h);
+  for (const h of ["eufy.com", "meethue.com", "www.efteling.com", "www.kruidvat.nl", "www.lidl.nl", "www.vinted.com"]) assert.equal(!classify(h).bg && classify(h).main, true, h);
 });

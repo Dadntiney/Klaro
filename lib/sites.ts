@@ -37,8 +37,6 @@ const BACKGROUND = new Set([
   "msftncsi.com", "apple-dns.net", "mzstatic.com", "icloud-content.com", "sentry.io", "appsflyer.com", "adjust.com",
   "branch.io", "scorecardresearch.com", "cloudflare-dns.com", "nextdns.io", "ntp.org", "arpa", "local", "lan",
   "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com",
-  // slimme apparaten (camera, lampen): vragen de hele dag zelf op, niemand bezoekt ze
-  "eufy.com", "eufylife.com", "anker.com", "ankersmartdns.com", "meethue.com",
   // reclame-, betaal-, chat- en mailwidgets die in andermans site zitten
   "dpgmedia.net", "stripe.network", "omnidesk.io", "belco.io", "vidyard.com", "cm.com", "editorify.net", "ccvshopserver.nl", "mailplus.nl", "laposta.nl",
   // inlogdiensten: komen mee bij elke app die inlogt (Outlook, Teams, Office), geen bezoek aan een site
