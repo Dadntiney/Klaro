@@ -117,22 +117,28 @@ function beepDataUri(urgent = false): string {
   return "data:audio/wav;base64," + btoa(bin);
 }
 
-function Favicon({ domain }: { domain: string }) {
+/** Favicon; heeft een site er geen, dan een rustig grijs vakje met de beginletter (zo blijft alles uitgelijnd). */
+function Favicon({ domain, name }: { domain: string; name: string }) {
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
-  if (state === "none") return <span className="fav" aria-hidden />;
+  const initial = (name.replace(/^www\./, "")[0] ?? "?").toUpperCase();
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      className={"fav" + (state === "ok" ? " ok" : "")}
-      alt=""
-      width={28}
-      height={28}
-      loading="lazy"
-      // Heeft een site geen icoon, dan geeft Google een standaard wereldbolletje van 16x16: dat tonen we niet.
-      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
-      onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
-      onError={() => setState("none")}
-    />
+    <>
+      {state !== "ok" && <span className="fav ph" aria-hidden>{initial}</span>}
+      {state !== "none" && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className={state === "ok" ? "fav ok" : "fav-hidden"}
+          alt=""
+          width={28}
+          height={28}
+          loading="lazy"
+          // Heeft een site geen icoon, dan geeft Google een standaard wereldbolletje van 16x16: dat tonen we niet.
+          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
+          onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
+          onError={() => setState("none")}
+        />
+      )}
+    </>
   );
 }
 
@@ -571,7 +577,7 @@ export default function Home() {
                         role="button"
                         aria-expanded={isOpen}
                       >
-                        {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} />}
+                        {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
                           <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
                           <div className="sub"><span className="dd" style={{ background: devColor(g.dev) }} />{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
