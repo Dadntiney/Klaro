@@ -21,6 +21,7 @@ export interface Group {
   adult: boolean;
   main: boolean;
   flag?: string;
+  ts: number[]; // laatste tijdstippen (max 8, nieuwste eerst), voor het uitklapoverzicht
 }
 
 const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
@@ -95,12 +96,20 @@ export async function GET() {
       g.n++;
       g.main ||= info.main;
       if (t > g.last) g.last = t;
+      if (g.ts.length < 8) g.ts.push(t);
+      else {
+        // vervang het oudste tijdstip als dit nieuwer is
+        let min = 0;
+        for (let i = 1; i < 8; i++) if (g.ts[i] < g.ts[min]) min = i;
+        if (t > g.ts[min]) g.ts[min] = t;
+      }
     } else {
-      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag });
+      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, ts: [t] });
     }
     devices.set(dev, (devices.get(dev) ?? 0) + 1);
     total++;
   }
+  for (const g of groups.values()) g.ts.sort((a, b) => b - a);
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
   const result = {
     groups: list,

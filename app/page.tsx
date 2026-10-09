@@ -15,6 +15,7 @@ interface Group {
   adult?: boolean;
   main?: boolean;
   flag?: string;
+  ts?: number[];
   flash?: number;
 }
 interface Event {
@@ -100,6 +101,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const sound = useRef<HTMLAudioElement | null>(null);
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
@@ -128,7 +130,8 @@ export default function Home() {
             g.n++;
             g.last = Math.max(g.last, e.t);
             g.main = g.main || e.main;
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag });
+            g.ts = [...(g.ts ?? []), e.t].sort((a, b) => b - a).slice(0, 8);
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t] });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
@@ -236,8 +239,8 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, flash: Date.now() };
-        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, flash: Date.now() });
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), flash: Date.now() };
+        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], flash: Date.now() });
       }
       return next;
     });
@@ -291,6 +294,21 @@ export default function Home() {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [state, poll]);
+
+  // Uitklapoverzicht: wat vroeg hetzelfde apparaat nog meer op rond de laatste bezoeken aan deze site (±30 s), ook verborgen adressen.
+  const around = useCallback(
+    (g: Group) => {
+      const mine = (g.ts ?? [g.last]).slice(0, 3);
+      const out: { name: string; site: string; t: number; hidden: boolean; flag?: string }[] = [];
+      for (const o of groups) {
+        if (o.dev !== g.dev || o.site === g.site) continue;
+        const t = (o.ts ?? [o.last]).find((x) => mine.some((m) => Math.abs(x - m) <= 30_000));
+        if (t) out.push({ name: o.name, site: o.site, t, hidden: o.bg || !o.main, flag: o.flag });
+      }
+      return out.sort((a, b) => b.t - a.t).slice(0, 15);
+    },
+    [groups]
+  );
 
   // Alle 18+/WhatsApp-bezoeken in de logs (ongeacht apparaat of filter), nieuwste eerst.
   const flagged = useMemo(() => groups.filter((g) => g.flag).sort((a, b) => b.last - a.last), [groups]);
@@ -359,16 +377,44 @@ export default function Home() {
             <section key={d}>
               <h2>{dayLabel(d)} <span className="muted">· {list.length}</span></h2>
               <div className="list">
-                {list.map((g) => (
-                  <div className={"item" + (g.flag ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
-                    {g.adult ? <span className="fav badge">18+</span> : <Favicon domain={g.icon} />}
-                    <div className="main">
-                      <div className="name">{g.name}</div>
-                      <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>
+                {list.map((g) => {
+                  const key = g.d + g.site + g.dev;
+                  const isOpen = expanded === key;
+                  return (
+                    <div key={key}>
+                      <div
+                        className={"item clickable" + (g.flag ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
+                        onClick={() => setExpanded(isOpen ? null : key)}
+                        role="button"
+                        aria-expanded={isOpen}
+                      >
+                        {g.adult ? <span className="fav badge">18+</span> : <Favicon domain={g.icon} />}
+                        <div className="main">
+                          <div className="name">{g.name}</div>
+                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>
+                        </div>
+                        <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
+                        <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
+                      </div>
+                      {isOpen && (
+                        <div className="detail">
+                          <div className="dh">Bezocht om</div>
+                          <div className="times">{(g.ts ?? [g.last]).map((t) => timeSecFmt.format(t)).join(" · ")}</div>
+                          <div className="dh">Op hetzelfde moment (±30 sec.) door {g.dev}</div>
+                          {around(g).length === 0 && <div className="sub">Niets anders opgevraagd.</div>}
+                          {around(g).map((o) => (
+                            <div className="near" key={o.site}>
+                              <span className="nt">{timeSecFmt.format(o.t)}</span>
+                              <span className="nn">{o.name}</span>
+                              {o.flag && <span className="tag">{o.flag}</span>}
+                              {o.hidden && !o.flag && <span className="sub">achtergrond</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ))}
