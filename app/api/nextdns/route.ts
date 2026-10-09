@@ -19,6 +19,7 @@ export interface Group {
   n: number; // aantal DNS-verzoeken
   bg: boolean;
   adult: boolean;
+  main: boolean;
   flag?: string;
 }
 
@@ -92,9 +93,10 @@ export async function GET() {
     const g = groups.get(key);
     if (g) {
       g.n++;
+      g.main ||= info.main;
       if (t > g.last) g.last = t;
     } else {
-      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, flag: info.flag });
+      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag });
     }
     devices.set(dev, (devices.get(dev) ?? 0) + 1);
     total++;

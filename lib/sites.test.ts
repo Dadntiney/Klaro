@@ -31,3 +31,10 @@ test("dating", () => {
   for (const h of ["www.tinder.com", "bumble.com", "nl.badoo.com", "www.datingsite.nl", "lexa.nl", "www.parship.nl"]) assert.equal(classify(h).flag, "Dating", h);
   for (const h of ["www.bumblebee.nl", "www.lego.com", "www.update.nl"]) assert.equal(classify(h).flag, undefined, h);
 });
+
+test("hoofdadressen", () => {
+  for (const h of ["www.nu.nl", "nu.nl", "nl.wikipedia.org", "m.facebook.com", "www.lego.com"]) assert.equal(classify(h).main, true, h);
+  for (const h of ["cdn.nu.nl", "api.lego.com", "static.example.com", "img-1.shop.nl", "tracking.example.org"]) assert.equal(classify(h).main, false, h);
+  assert.equal(classify("rr3---sn.googlevideo.com").main, true); // bekende app
+  assert.equal(classify("cdn.pornhub.com").main, true); // 18+ nooit verbergen
+});

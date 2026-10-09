@@ -72,16 +72,25 @@ export interface SiteInfo {
   icon: string; // domein voor het favicon
   bg: boolean; // achtergrondverkeer
   adult: boolean; // 18+
+  main: boolean; // lijkt een hoofdadres (zoals www.site.nl of site.nl) in plaats van een hulpadres (cdn, api, ...)
   flag?: string; // reden voor de rode balk: "18+" of de naam van een gemarkeerde app
 }
 
 /** Apps die ook de rode balk activeren. */
 const ALERT_APPS = new Set(["WhatsApp"]);
 
+/** Hoofdadres: het domein zelf, www., een taal-/mobiele variant (nl., m.). Hulpadressen als cdn., api., static. tellen niet. */
+export function isMainHost(host: string, base: string): boolean {
+  if (host === base) return true;
+  if (!host.endsWith("." + base)) return false;
+  const rest = host.slice(0, host.length - base.length - 1);
+  return rest === "www" || /^[a-z]{2}$/.test(rest) || ["m", "web", "app", "mobile"].includes(rest);
+}
+
 export function classify(host: string): SiteInfo {
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(base);
-  if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
+  if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   const adult = isAdult(host);
   const dating = !adult && isDating(host);
   const label = host.split(".")[0];
@@ -90,5 +99,6 @@ export function classify(host: string): SiteInfo {
     BACKGROUND_SUFFIX.some((s) => host === s || host.endsWith("." + s)) ||
     (host !== base && BACKGROUND_LABELS.has(label)) ||
     BACKGROUND.has(host.split(".").slice(-1)[0]));
-  return { site: base, name: base, icon: base, bg, adult, flag: adult ? "18+" : dating ? "Dating" : undefined };
+  const flag = adult ? "18+" : dating ? "Dating" : undefined;
+  return { site: base, name: base, icon: base, bg, adult, main: !!flag || isMainHost(host, base), flag };
 }

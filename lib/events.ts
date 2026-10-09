@@ -11,6 +11,7 @@ export interface LiveEvent {
   icon: string;
   bg: boolean;
   adult: boolean;
+  main: boolean;
   flag?: string;
 }
 
@@ -23,5 +24,5 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
   const devId = device.id?.trim() || device.name?.trim() || "onbekend";
   const type = deviceType(device.name ?? "", device.model ?? "");
   const info = classify(host);
-  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, flag: info.flag };
+  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag };
 }

@@ -13,6 +13,7 @@ interface Group {
   n: number;
   bg: boolean;
   adult?: boolean;
+  main?: boolean;
   flag?: string;
   flash?: number;
 }
@@ -25,6 +26,7 @@ interface Event {
   icon: string;
   bg: boolean;
   adult?: boolean;
+  main?: boolean;
   flag?: string;
 }
 interface Device {
@@ -106,7 +108,8 @@ export default function Home() {
           if (g) {
             g.n++;
             g.last = Math.max(g.last, e.t);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flag: e.flag });
+            g.main = g.main || e.main;
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
@@ -198,7 +201,7 @@ export default function Home() {
     setUpdated(new Date());
     setLastEventAt(new Date());
     // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
-    if (events.some((e) => !e.bg && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
+    if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
     // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
     for (const e of events) {
@@ -212,8 +215,8 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
-        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flag: e.flag, flash: Date.now() });
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, flash: Date.now() };
+        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, flash: Date.now() });
       }
       return next;
     });
@@ -290,7 +293,7 @@ export default function Home() {
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     for (const g of groups) {
-      if ((device && g.dev !== device) || g.bg) continue;
+      if ((device && g.dev !== device) || g.bg || !g.main) continue;
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
     return [...byDay.entries()]
