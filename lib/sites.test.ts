@@ -150,3 +150,11 @@ test("tv-apps (Ziggo GO e.d.) zijn een bezoek; conviva telt als beeldverkeer", (
   assert.equal(isMedia("cws-lgi.conviva.com"), true);
   assert.equal(isMedia("graph.facebook.com"), false);
 });
+
+test("Philips Hue (api.meethue.com) is een app", () => {
+  for (const h of ["api.meethue.com", "api.account.meethue.com", "auth.meethue.com"]) {
+    const c = classify(h);
+    assert.equal(c.name, "Philips Hue", h);
+    assert.equal(!c.bg && c.main, true, h);
+  }
+});

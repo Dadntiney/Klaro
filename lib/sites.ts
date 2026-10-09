@@ -46,6 +46,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
   { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },
   { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl"] },
+  { name: "Philips Hue", icon: "meethue.com", domains: ["meethue.com", "philips-hue.com"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
   { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
   { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },

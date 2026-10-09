@@ -62,7 +62,7 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
 }
 
 // Altijd tonen, ook bij weinig verzoeken (zelf gekozen sites).
-const ALWAYS_SHOW = new Set(["gofiev.nl"]);
+const ALWAYS_SHOW = new Set(["gofiev.nl", "meethue.com"]);
 
 interface DetailData {
   matched: { h: string; n: number; b: number }[];
