@@ -80,3 +80,5 @@ h2 .muted { font-weight:400; }
 .newtag { margin-left:8px; background:#2563eb; color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; vertical-align:middle; letter-spacing:.03em; }
 .tag.amber { background:#f59e0b; }
 .hit .sub { white-space:normal; }
+.dd { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:0; flex:none; }
+.chip.on .dd, .item.adult .dd { box-shadow:0 0 0 1.5px #fff; }

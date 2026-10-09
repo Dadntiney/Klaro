@@ -69,6 +69,20 @@ function dur(min: number) {
   return min >= 60 ? `${Math.floor(min / 60)} u${min % 60 ? ` ${min % 60} min` : ""}` : `${min} min`;
 }
 
+/**
+ * Rustige kleur per apparaat (soort bepaalt de tint, een nummer de helderheid). Bewust geen rood, oranje, groen of felblauw:
+ * die kleuren betekenen waarschuwing, live of nieuw.
+ */
+function devColor(name: string): string {
+  const m = name.match(/^(.*?)(?: (\d+))?$/);
+  const type = (m?.[1] ?? name).toLowerCase();
+  const n = Number(m?.[2] ?? 1);
+  const hue = type.includes("iphone") ? 262 : type.includes("ipad") ? 172 : type.includes("mac") ? 292 : type.includes("tv") ? 195 : type.includes("android") ? 330 : type.includes("windows") || type.includes("laptop") ? 225 : 30;
+  const sat = hue === 30 ? 8 : 55;
+  const light = [46, 62, 33, 72][(n - 1) % 4];
+  return `hsl(${hue} ${sat}% ${light}%)`;
+}
+
 function dayLabel(d: string) {
   if (d === "onbekend") return "Datum onbekend";
   const today = Date.now();
@@ -512,7 +526,7 @@ export default function Home() {
               <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
                 <button key={d.name} className={"chip" + (device === d.name ? " on" : "")} onClick={() => setDevice(d.name)}>
-                  {silentNames.has(d.name) && "⚠ "}{d.name}
+                  {silentNames.has(d.name) && "⚠ "}<span className="dd" style={{ background: devColor(d.name) }} />{d.name}
                   {sumMin(d.ss ?? []) > 0 && <span className="chip-min"> · {dur(sumMin(d.ss ?? []))}</span>}
                 </button>
               ))}
@@ -558,7 +572,7 @@ export default function Home() {
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
                           <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
-                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
+                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}<span className="dd" style={{ background: devColor(g.dev) }} />{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
