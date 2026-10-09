@@ -76,6 +76,7 @@ export default function Home() {
   const [histDone, setHistDone] = useState(false);
   const [histErr, setHistErr] = useState(false);
   const loadStart = useRef(Date.now());
+  const [compactDays, setCompactDays] = useState<Set<string>>(new Set()); // dagen in compacte weergave (per site opgeteld)
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
   const [goDay, setGoDay] = useState("");
   const [goTime, setGoTime] = useState("10:00");
@@ -513,9 +514,11 @@ export default function Home() {
           .flatMap((g) => {
             const ss = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
             const oldest = Math.min(...ss.map((x) => x.s));
-            return ss.map((x) => ({ g, t: x.s, first: x.s === oldest && (g.sc ?? ss.length) <= ss.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
+            return ss.map((x) => ({ g, t: x.s, compact: false, first: x.s === oldest && (g.sc ?? ss.length) <= ss.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
           })
           .sort((a, b) => b.t - a.t),
+        // Compact: per site en apparaat één regel, met alle bezoeken opgeteld.
+        crows: [...list].sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, compact: true, first: !!g.isNew, newest: true })),
       }));
   }, [groups, device]);
 
@@ -588,6 +591,7 @@ export default function Home() {
                 if (!best) return;
                 const rk = best.g.d + best.g.site + best.g.dev + ":" + best.t;
                 setOpenDays((prev) => new Set(prev).add(day.d));
+                setCompactDays((prev) => { const n = new Set(prev); n.delete(day.d); return n; }); // springen werkt op de tijdlijn
                 setGotoKey(rk);
                 setTimeout(() => {
                   document.querySelector(`[data-rk="${CSS.escape(rk)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -621,7 +625,9 @@ export default function Home() {
           )}
 
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, rows }) => {
+          {days.map(({ d, list, rows: trows, crows }) => {
+            const isCompact = compactDays.has(d);
+            const rows = isCompact ? crows : trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
             const isDayOpen = recent || openDays.has(d);
@@ -635,11 +641,24 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {dayLabel(d)}{!recent && <span className="muted"> · {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>}
+                {isDayOpen && (
+                  <button
+                    className={"dview" + (isCompact ? " on" : "")}
+                    onClick={(e) => { e.stopPropagation(); setCompactDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; }); }}
+                    aria-pressed={isCompact}
+                    title={isCompact ? "Terug naar de tijdlijn" : "Per site optellen"}
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                      {isCompact ? <path d="M4 6h16M4 12h16M4 18h16" /> : <path d="M4 7h16M7 12h10M10 17h4" />}
+                    </svg>
+                    {isCompact ? "Tijdlijn" : "Compact"}
+                  </button>
+                )}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
               {isDayOpen && (
               <div className="list">
-                {rows.map(({ g, t, first, newest }, ri) => {
+                {rows.map(({ g, t, first, newest, compact }, ri) => {
                   // Het apparaat staat alleen bij de eerste regel van een reeks van dezelfde apparaat; gemarkeerde regels tonen het altijd.
                   const showDev = ri === 0 || rows[ri - 1].g.dev !== g.dev || !!g.flag || !!g.susp;
                   const key = g.d + g.site + g.dev;
@@ -670,7 +689,7 @@ export default function Home() {
                           {(() => {
                             // Duur van dit ene bezoek (sessie), alleen als het minstens een minuut was.
                             const sess = (g.ss ?? []).find((x) => x.s === t);
-                            const m = sess ? minutes(sess) : 0;
+                            const m = compact ? g.mins ?? 0 : sess ? minutes(sess) : 0;
                             return m > 0 ? <><span className="vdur">{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
                           })()}
                           {t ? timeFmt.format(t) : "–"}

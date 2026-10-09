@@ -209,3 +209,12 @@ main { padding-top:14px; }
 .histbar.err .histtxt { color:#dc2626; }
 .item .dev .di { width:17px; height:17px; }
 .item .dev { font-size:13px; font-weight:600; }
+
+/* Dagweergave: tijdlijn of compact */
+h2 { display:flex; align-items:baseline; gap:6px; }
+.dview { margin-left:auto; display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:12px; font-weight:500; text-transform:none; letter-spacing:0; padding:2px 9px; border-radius:99px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; line-height:18px; }
+.dview svg { opacity:.8; }
+.dview.on { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); background:color-mix(in srgb, var(--accent) 7%, transparent); }
+@media (hover:hover) { .dview:hover { color:var(--fg); } }
+h2.fold .dview { margin-left:auto; }
+h2.fold .dview + .fold-chev { margin-left:2px; }
