@@ -35,6 +35,9 @@ interface Device {
   n: number;
 }
 
+/** Zoekmachines en beeldzoekers: bij een 18+-adres kort erna/ervoor markeren we ook deze regel. */
+const isSearch = (site: string) => /^google\.[a-z.]+$/.test(site) || ["bing.com", "duckduckgo.com", "ecosia.org", "yahoo.com", "startpage.com", "qwant.com", "yandex.com", "brave.com", "pinterest.com", "pinterest.nl"].includes(site);
+
 const tz = "Europe/Amsterdam";
 const timeFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: tz });
 const timeSecFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tz });
@@ -306,13 +309,27 @@ export default function Home() {
         const t = (o.ts ?? [o.last]).find((x) => mine.some((m) => Math.abs(x - m) <= 30_000));
         if (t) out.push({ name: o.name, site: o.site, t, hidden: o.bg || !o.main, flag: o.flag });
       }
-      return out.sort((a, b) => b.t - a.t).slice(0, 15);
+      return out.sort((a, b) => (a.flag ? 0 : 1) - (b.flag ? 0 : 1) || b.t - a.t).slice(0, 15);
     },
     [groups]
   );
 
   // Alle 18+/WhatsApp-bezoeken in de logs (ongeacht apparaat of filter), nieuwste eerst.
-  const flagged = useMemo(() => groups.filter((g) => g.flag).sort((a, b) => b.last - a.last), [groups]);
+  // Zoekregels waar rond hetzelfde moment (±30 s, zelfde apparaat) een 18+/dating-adres is opgevraagd.
+  const ctx = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const g of groups) {
+      if (g.flag || !isSearch(g.site)) continue;
+      const hit = around(g).find((o) => o.flag);
+      if (hit) m.set(g.d + g.site + g.dev, `${hit.name} (${hit.flag})`);
+    }
+    return m;
+  }, [groups, around]);
+
+  const flagged = useMemo(
+    () => groups.filter((g) => g.flag || ctx.has(g.d + g.site + g.dev)).sort((a, b) => b.last - a.last),
+    [groups, ctx]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -384,7 +401,7 @@ export default function Home() {
                   return (
                     <div key={key}>
                       <div
-                        className={"item clickable" + (g.flag ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
+                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
                         onClick={() => setExpanded(isOpen ? null : key)}
                         role="button"
                         aria-expanded={isOpen}
@@ -392,7 +409,7 @@ export default function Home() {
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : "♥"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
                           <div className="name">{g.name}</div>
-                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>
+                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}</div>
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
@@ -446,10 +463,10 @@ export default function Home() {
             <p className="muted">Gemarkeerde sites (18+ en dating) in de logs, nieuwste eerst.</p>
             {flagged.map((g) => (
               <div className="hit" key={g.d + g.dev + g.site}>
-                <span className="tag">{g.flag}</span>
+                <span className="tag">{g.flag ?? "In de buurt"}</span>
                 <div className="main">
                   <div className="name">{g.name}</div>
-                  <div className="sub">{g.dev} · laatst {dayLabel(g.d).toLowerCase()} om {timeFmt.format(g.last)}</div>
+                  <div className="sub">{ctx.get(g.d + g.site + g.dev) && <>rond dit bezoek: {ctx.get(g.d + g.site + g.dev)} · </>}{g.dev} · laatst {dayLabel(g.d).toLowerCase()} om {timeFmt.format(g.last)}</div>
                 </div>
               </div>
             ))}
