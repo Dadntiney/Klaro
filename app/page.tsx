@@ -274,18 +274,15 @@ export default function Home() {
 
   useEffect(() => {
     if (state !== "ready") return;
-    let delay = 4000;
     let timer: ReturnType<typeof setTimeout>;
     const tick = async () => {
-      // Werkt de rechtstreekse stroom, dan hoeven we niet te vragen.
-      if (document.visibilityState === "visible" && streamRef.current !== "actief") {
-        await poll();
-        delay = liveFailedRef.current ? 15000 : 4000; // na een fout rustiger aan (rate limit)
-      }
+      if (document.visibilityState === "visible") await poll();
+      // Werkt de rechtstreekse stroom, dan is dit alleen een vangnet (15 s); anders elke 3 s, bij fouten rustiger (rate limit).
+      const delay = liveFailedRef.current ? 15000 : streamRef.current === "actief" ? 15000 : 3000;
       timer = setTimeout(tick, delay);
     };
-    timer = setTimeout(tick, delay);
-    const onVisible = () => document.visibilityState === "visible" && streamRef.current !== "actief" && poll();
+    timer = setTimeout(tick, 3000);
+    const onVisible = () => document.visibilityState === "visible" && poll();
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearTimeout(timer);
@@ -330,7 +327,7 @@ export default function Home() {
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? (stream === "actief" ? "ok" : "warn") : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : stream === "actief" ? "Live (direct)" : "Live (controle elke 4 sec.)"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
+              {live === "fail" ? "Live niet beschikbaar" : stream === "actief" ? "Live (direct)" : "Live (controle elke 3 sec.)"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
