@@ -175,3 +175,12 @@ h2 .muted { text-transform:none; letter-spacing:0; }
 .k-more { display:block; margin:8px 0 0; padding:6px 0; font:inherit; font-size:15px; background:none; border:0; color:var(--accent); cursor:pointer; }
 .insights.kids .strip { margin-top:6px; }
 .insights.kids .bar-row { grid-template-columns:96px 1fr 64px; font-size:15px; padding:5px 0; }
+
+/* Ga naar dag en tijd */
+.tabs .goto-btn { margin-left:auto !important; color:var(--accent, #4f46e5) !important; border-bottom-color:transparent !important; }
+.goto { display:flex; gap:8px; align-items:center; padding:10px 0 4px; }
+.goto select, .goto input { font:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); min-width:0; }
+.goto select { flex:1 1 auto; text-transform:capitalize; }
+.goto button { font:inherit; font-size:14px; padding:6px 16px; border:0; border-radius:8px; background:var(--accent, #4f46e5); color:#fff; cursor:pointer; }
+.item.goto-hit { animation:gotohit 3.5s ease-out; }
+@keyframes gotohit { 0%,60% { background:color-mix(in srgb, var(--accent, #4f46e5) 18%, transparent); } 100% { background:transparent; } }

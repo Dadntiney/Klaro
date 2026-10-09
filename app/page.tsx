@@ -74,6 +74,10 @@ export default function Home() {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
+  const [goDay, setGoDay] = useState("");
+  const [goTime, setGoTime] = useState("10:00");
+  const [gotoKey, setGotoKey] = useState<string | null>(null);
   const [openDays, setOpenDays] = useState<Set<string>>(new Set()); // oudere dagen die de gebruiker heeft opengeklapt
   const sound = useRef<HTMLAudioElement | null>(null);
   const alarm = useRef<HTMLAudioElement | null>(null);
@@ -532,7 +536,41 @@ export default function Home() {
           <div className="tabs" role="tablist">
             <button role="tab" aria-selected={view === "overzicht"} className={view === "overzicht" ? "on" : ""} onClick={() => setView("overzicht")}>Overzicht</button>
             <button role="tab" aria-selected={view === "inzichten"} className={view === "inzichten" ? "on" : ""} onClick={() => setView("inzichten")}>Inzichten</button>
+            {view === "overzicht" && days.length > 0 && (
+              <button className={"goto-btn" + (goOpen ? " on" : "")} onClick={() => { setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }} aria-expanded={goOpen}>Ga naar…</button>
+            )}
           </div>
+          {view === "overzicht" && goOpen && days.length > 0 && (
+            <form
+              className="goto"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const day = days.find((x) => x.d === (goDay || days[0].d));
+                if (!day || !goTime) return;
+                const [h, m] = goTime.split(":").map(Number);
+                const want = h * 60 + m;
+                const minOf = (t: number) => { const [a, b] = timeFmt.format(t).split(":").map(Number); return a * 60 + b; };
+                let best = day.rows[0];
+                for (const r of day.rows) if (Math.abs(minOf(r.t) - want) < Math.abs(minOf(best.t) - want)) best = r;
+                if (!best) return;
+                const rk = best.g.d + best.g.site + best.g.dev + ":" + best.t;
+                setOpenDays((prev) => new Set(prev).add(day.d));
+                setGotoKey(rk);
+                setTimeout(() => {
+                  document.querySelector(`[data-rk="${CSS.escape(rk)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+                }, 60);
+                setTimeout(() => setGotoKey((k) => (k === rk ? null : k)), 3500);
+              }}
+            >
+              <select value={goDay || days[0].d} onChange={(e) => setGoDay(e.target.value)} aria-label="Dag">
+                {days.map((x) => (
+                  <option key={x.d} value={x.d}>{dayLabel(x.d)}</option>
+                ))}
+              </select>
+              <input type="time" value={goTime} onChange={(e) => setGoTime(e.target.value)} aria-label="Tijd" />
+              <button type="submit">Ga</button>
+            </form>
+          )}
 
           {view === "inzichten" ? (
             <InsightsView groups={groups} devices={devices} insights={insights} payments={payments} device={device} tick={tick} />
@@ -581,9 +619,9 @@ export default function Home() {
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
                   return (
-                    <div key={rowKey}>
+                    <div key={rowKey} data-rk={rowKey}>
                       <div
-                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
+                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => setExpanded(isOpen ? null : rowKey)}
                         role="button"
                         aria-expanded={isOpen}
