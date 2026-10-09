@@ -97,3 +97,6 @@ h2 .muted { font-weight:400; }
 .chip { display:inline-flex; align-items:center; gap:5px; }
 .chip .di { opacity:.7; }
 .chip.on .di { opacity:1; }
+/* Heel zachte scheidingslijntjes tussen de regels; beginnen na het icoon zodat de lijst rustig blijft. */
+.list > div { position:relative; }
+.list > div + div::before { content:""; position:absolute; top:0; left:54px; right:14px; height:1px; background:var(--line); opacity:.7; }
