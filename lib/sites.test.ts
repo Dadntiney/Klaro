@@ -74,3 +74,11 @@ test("VPN, proxy en DNS-omzeiling", () => {
 test("Apple-systeemadressen zijn geen VPN", () => {
   for (const h of ["mask.icloud.com", "mask-h2.icloud.com", "www.icloud.com", "gateway.icloud.com", "mask.apple-dns.net", "apple-dns.net"]) assert.notEqual(classify(h).flag, "VPN/proxy", h);
 });
+
+test("landvarianten en apps worden één regel", () => {
+  assert.equal(classify("www.google.nl").site, "google.com");
+  assert.equal(classify("www.google.be").site, "google.com");
+  assert.equal(classify("www.amazon.nl").site, "amazon.com");
+  assert.equal(classify("api.vintedapp.com").name, "Vinted");
+  assert.equal(classify("www.vinted.nl").name, "Vinted");
+});

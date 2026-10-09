@@ -91,3 +91,4 @@ h2 .muted { font-weight:400; }
   .dev { background:hsl(var(--dh) var(--ds) calc(var(--bd) * 1%)); color:hsl(var(--dh) var(--ds) 82%); }
   .chip.tint:not(.on) { background:hsl(var(--dh) var(--ds) calc(var(--bd) * 1%)); color:hsl(var(--dh) var(--ds) 85%); }
 }
+.fav.ph { background:color-mix(in srgb, var(--muted) 16%, var(--card)); }

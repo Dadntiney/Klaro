@@ -18,6 +18,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Epic Games / Fortnite", icon: "epicgames.com", domains: ["epicgames.com", "fortnite.com", "unrealengine.com", "epicgames.dev"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
   { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
+  { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },
   { name: "Nintendo", icon: "nintendo.com", domains: ["nintendo.com", "nintendo.net"] },
   { name: "PlayStation", icon: "playstation.com", domains: ["playstation.com", "playstation.net", "sonyentertainmentnetwork.com"] },
   { name: "Xbox", icon: "xbox.com", domains: ["xbox.com", "xboxlive.com"] },
@@ -179,13 +180,20 @@ export function classify(host: string): SiteInfo {
   return info;
 }
 
+/** Landvarianten van dezelfde dienst samenvoegen (google.nl en google.com zijn één regel). */
+function canonSite(base: string): string {
+  if (/^google\.[a-z.]+$/.test(base)) return "google.com";
+  if (/^amazon\.[a-z.]+$/.test(base)) return "amazon.com";
+  return base;
+}
+
 function classifyUncached(host: string): SiteInfo {
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(base);
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   // Eerst dating: sommige datingsites staan ook op de porno-lijst, maar het label Dating is dan duidelijker.
   // VPN/proxy en DNS-omzeiling eerst: altijd zichtbaar en rood, ook als het eigenlijk hulpverkeer is.
-  if (!NEVER_FLAG.has(base) && isVpn(host)) return { site: base, name: base, icon: base, bg: false, adult: false, main: true, flag: "VPN/proxy" };
+  if (!NEVER_FLAG.has(base) && isVpn(host)) return { site: canonSite(base), name: canonSite(base), icon: canonSite(base), bg: false, adult: false, main: true, flag: "VPN/proxy" };
   const never = NEVER_FLAG.has(base);
   const dating = !never && isDating(host);
   const adult = !never && !dating && isAdult(host);
@@ -197,5 +205,5 @@ function classifyUncached(host: string): SiteInfo {
     BACKGROUND_KEYWORDS.some((k) => host.includes(k)) ||
     BACKGROUND.has(host.split(".").slice(-1)[0]));
   const flag = adult ? "18+" : dating ? "Dating" : undefined;
-  return { site: base, name: base, icon: base, bg, adult, main: !!flag || isMainHost(host, base), flag };
+  return { site: canonSite(base), name: canonSite(base), icon: canonSite(base), bg, adult, main: !!flag || isMainHost(host, base), flag };
 }
