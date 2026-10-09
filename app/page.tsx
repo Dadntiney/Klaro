@@ -660,7 +660,7 @@ export default function Home() {
               <div className="list">
                 {rows.map(({ g, t, first, newest, compact }, ri) => {
                   // Een reeks regels van hetzelfde apparaat krijgt één kopje met het icoontje; daaronder geen lijnen tussen de regels.
-                  const runStart = ri === 0 || rows[ri - 1].g.dev !== g.dev;
+                  const runStart = !device && (ri === 0 || rows[ri - 1].g.dev !== g.dev); // met een apparaat gekozen staat het al in de chip
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
