@@ -177,13 +177,16 @@ h2 .muted { text-transform:none; letter-spacing:0; }
 .insights.kids .bar-row { grid-template-columns:96px 1fr 64px; font-size:15px; padding:5px 0; }
 
 /* Ga naar dag en tijd */
-.tabs .goto-btn { margin-left:auto !important; color:var(--accent, #4f46e5) !important; border-bottom-color:transparent !important; }
-.goto { display:flex; gap:8px; align-items:center; padding:10px 0 4px; }
-.goto select, .goto input { font:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); min-width:0; }
-.goto select { flex:1 1 auto; text-transform:capitalize; }
-.goto button { font:inherit; font-size:14px; padding:6px 16px; border:0; border-radius:8px; background:var(--accent, #4f46e5); color:#fff; cursor:pointer; }
+.bar-in { display:flex; align-items:center; gap:8px; }
+.bar-in .chips { flex:1 1 auto; min-width:0; margin:0 0 0 -16px; }
+.goto-btn { flex:none; display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:14px; padding:4px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; box-shadow:-10px 0 10px -4px var(--bg); }
+.goto-btn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.goto { display:flex; align-items:flex-end; gap:10px; margin:6px 0 4px; padding:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+.goto label { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.goto label:first-child { flex:1 1 auto; }
+.goto label span { font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.goto select, .goto input { font:inherit; font-size:15px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); min-width:0; }
+.goto select { text-transform:capitalize; }
+.goto button { font:inherit; font-size:15px; font-weight:600; padding:8px 18px; border:0; border-radius:8px; background:var(--accent); color:#fff; cursor:pointer; }
 .item.goto-hit { animation:gotohit 3.5s ease-out; }
-@keyframes gotohit { 0%,60% { background:color-mix(in srgb, var(--accent, #4f46e5) 18%, transparent); } 100% { background:transparent; } }
-
-.goto-bar { display:flex; justify-content:flex-end; margin:8px 0 2px; }
-.goto-bar .goto-btn { font:inherit; font-size:14px; padding:4px 2px; border:0; background:none; color:var(--accent); cursor:pointer; }
+@keyframes gotohit { 0%,60% { background:color-mix(in srgb, var(--accent) 18%, transparent); } 100% { background:transparent; } }

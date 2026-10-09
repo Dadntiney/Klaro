@@ -535,6 +535,7 @@ export default function Home() {
       {state === "ready" && (
         <>
           <div className="bar">
+            <div className="bar-in">
             <div className="chips">
               <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
@@ -543,13 +544,23 @@ export default function Home() {
                                   </button>
               ))}
             </div>
+            {days.length > 0 && (
+              <button
+                className={"goto-btn" + (goOpen ? " on" : "")}
+                onClick={() => { setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
+                aria-expanded={goOpen}
+                aria-label="Ga naar dag en tijd"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="5" width="18" height="16" rx="3" />
+                  <path d="M3 10h18M8 3v4M16 3v4" />
+                </svg>
+                Ga naar
+              </button>
+            )}
+            </div>
           </div>
 
-          <div className="goto-bar">
-            {days.length > 0 && (
-              <button className={"goto-btn" + (goOpen ? " on" : "")} onClick={() => { setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }} aria-expanded={goOpen}>Ga naar…</button>
-            )}
-          </div>
           {goOpen && days.length > 0 && (
             <form
               className="goto"
@@ -570,14 +581,21 @@ export default function Home() {
                   document.querySelector(`[data-rk="${CSS.escape(rk)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
                 }, 60);
                 setTimeout(() => setGotoKey((k) => (k === rk ? null : k)), 3500);
+                setGoOpen(false);
               }}
             >
+              <label>
+                <span>Dag</span>
               <select value={goDay || days[0].d} onChange={(e) => setGoDay(e.target.value)} aria-label="Dag">
                 {days.map((x) => (
                   <option key={x.d} value={x.d}>{dayLabel(x.d)}</option>
                 ))}
               </select>
-              <input type="time" value={goTime} onChange={(e) => setGoTime(e.target.value)} aria-label="Tijd" />
+              </label>
+              <label>
+                <span>Tijd</span>
+                <input type="time" value={goTime} onChange={(e) => setGoTime(e.target.value)} aria-label="Tijd" />
+              </label>
               <button type="submit">Ga</button>
             </form>
           )}
