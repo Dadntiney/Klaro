@@ -39,15 +39,17 @@ const BACKGROUND = new Set([
 const BACKGROUND_SUFFIX = ["push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
 
-/** 18+: volwassen inhoud en gokken. Bewust voorzichtig: lange, ondubbelzinnige namen als deel van het domein, korte woorden alleen als los woord. */
+/** 18+: pornografie en erotische webshops. Bewust voorzichtig: lange, ondubbelzinnige namen als deel van het domein, korte woorden alleen als los woord. */
 const ADULT_PARTS = [
   "porn", "xxx", "hentai", "nsfw", "onlyfans", "chaturbate", "xvideos", "xnxx", "xhamster", "redtube", "youporn",
   "stripchat", "bongacams", "livejasmin", "brazzers", "rule34", "camsoda", "fansly", "spankbang", "eporner",
-  "nhentai", "literotica", "sexshop", "sexcam", "sexchat", "sexdate", "sexfilm", "playboy", "erotiek",
-  "casino", "gokken", "gambling", "bet365", "unibet", "betcity", "betway", "bwin", "pokerstars", "kansino", "toto.nl",
+  "nhentai", "literotica", "sexcam", "sexchat", "sexdate", "sexfilm", "playboy",
+  // erotische webshops
+  "sexshop", "sex-shop", "eroshop", "eroticashop", "erotiekshop", "erotiek", "dildo", "vibrator", "bdsm", "fetish",
+  "lovehoney", "amorelie", "beate-uhse", "beateuhse", "adameve", "satisfyer", "womanizer", "christineleduc",
 ];
-const ADULT_WORDS = new Set(["sex", "sexy", "erotic", "erotica", "escort", "camgirl", "camgirls", "nude", "nudes", "milf", "bet", "betting", "poker", "slots", "gok", "jackpot"]);
-const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn", "bet", "casino", "poker"]);
+const ADULT_WORDS = new Set(["sex", "sexy", "erotic", "erotica", "escort", "camgirl", "camgirls", "nude", "nudes", "milf"]);
+const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn"]);
 
 export function isAdult(host: string): boolean {
   const labels = host.split(".");

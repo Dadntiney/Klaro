@@ -17,8 +17,8 @@ test("achtergrondverkeer", () => {
 });
 
 test("18+ herkenning", () => {
-  for (const h of ["www.pornhub.com", "nl.xvideos.com", "example.xxx", "sex-shop.nl", "www.unibet.nl", "casino-online.nl"]) assert.equal(classify(h).adult, true, h);
-  for (const h of ["www.sussex.ac.uk", "www.essex.com", "abc.alphabet.com", "www.lego.com", "www.nu.nl", "betterhelp.com"]) assert.equal(classify(h).adult, false, h);
+  for (const h of ["www.pornhub.com", "nl.xvideos.com", "example.xxx", "sex-shop.nl", "www.lovehoney.nl", "dildo-shop.nl", "eroticashop.nl"]) assert.equal(classify(h).adult, true, h);
+  for (const h of ["www.sussex.ac.uk", "www.essex.com", "abc.alphabet.com", "www.lego.com", "www.nu.nl", "betterhelp.com", "www.unibet.nl", "casino-online.nl", "www.holland-casino.nl", "www.betcity.nl"]) assert.equal(classify(h).adult, false, h);
 });
 
 test("WhatsApp activeert de balk", () => {
