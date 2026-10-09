@@ -149,3 +149,29 @@ h2.fold .muted { text-transform:none; letter-spacing:0; font-weight:400; }
 h2 .muted { text-transform:none; letter-spacing:0; }
 .open-link { display:inline-block; margin:2px 0 4px; font-size:14px; color:var(--accent); text-decoration:none; font-weight:500; }
 .open-link:active { opacity:.6; }
+/* Inzichten in kindertaal: grote vragen, korte antwoorden, duidelijke kleuren. */
+.insights.kids .card { padding:14px 16px; }
+.insights.kids .card h3 { font-size:17px; text-transform:none; letter-spacing:0; color:var(--fg); margin:0 0 10px; }
+.k-note { display:flex; gap:10px; padding:5px 0; font-size:16px; line-height:1.45; }
+.k-note .ni { width:24px; font-size:18px; }
+.k-text, .k-ok { margin:0; font-size:16px; line-height:1.45; }
+.k-ok { color:#15803d; font-weight:500; }
+@media (prefers-color-scheme: dark) { .k-ok { color:#4ade80; } }
+.k-sub { font-size:14px; color:var(--muted); margin:6px 0 0; line-height:1.4; }
+.k-warn { color:#b45309; font-weight:500; }
+.card.status { border-left-width:6px; }
+.card.status.green { border-left-color:#22c55e; }
+.card.status.orange { border-left-color:#f59e0b; }
+.card.status.red { border-left-color:#dc2626; background:color-mix(in srgb, #dc2626 7%, var(--card)); }
+.status-head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.status-icon { font-size:30px; line-height:1; }
+.insights.kids .status-head h3 { margin:0; font-size:21px; }
+.k-dev { margin-bottom:14px; }
+.k-devhead { display:flex; justify-content:space-between; align-items:center; font-size:16px; margin-bottom:5px; }
+.dev.big { font-size:16px; color:var(--fg); }
+.k-bar { height:12px; background:var(--head); border-radius:6px; overflow:hidden; }
+.k-bar > span { display:block; height:100%; background:var(--accent); opacity:.8; border-radius:6px; }
+.k-times { display:grid; grid-template-columns:repeat(4, 1fr); font-size:12px; color:var(--muted); text-align:center; margin-top:2px; }
+.k-more { display:block; margin:8px 0 0; padding:6px 0; font:inherit; font-size:15px; background:none; border:0; color:var(--accent); cursor:pointer; }
+.insights.kids .strip { margin-top:6px; }
+.insights.kids .bar-row { grid-template-columns:96px 1fr 64px; font-size:15px; padding:5px 0; }
