@@ -659,13 +659,19 @@ export default function Home() {
               {isDayOpen && (
               <div className="list">
                 {rows.map(({ g, t, first, newest, compact }, ri) => {
-                  // Het apparaat staat alleen bij de eerste regel van een reeks van dezelfde apparaat; gemarkeerde regels tonen het altijd.
-                  const showDev = ri === 0 || rows[ri - 1].g.dev !== g.dev || !!g.flag || !!g.susp;
+                  // Een reeks regels van hetzelfde apparaat krijgt één kopje met het icoontje; daaronder geen lijnen tussen de regels.
+                  const runStart = ri === 0 || rows[ri - 1].g.dev !== g.dev;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
                   return (
                     <div key={rowKey} data-rk={rowKey}>
+                      {runStart && (
+                        <div className="devhead" title={g.dev} aria-label={g.dev}>
+                          <DevIcon name={g.dev} />
+                          {/\s(\d+)$/.exec(g.dev)?.[1] ?? ""}
+                        </div>
+                      )}
                       <div
                         className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => setExpanded(isOpen ? null : rowKey)}
@@ -677,7 +683,6 @@ export default function Home() {
                           <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
-                            if (showDev) parts.push(<span key="d" className="dev" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} />{/\s(\d+)$/.exec(g.dev)?.[1] ?? ""}</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);

@@ -218,3 +218,11 @@ h2 { display:flex; align-items:baseline; gap:6px; }
 @media (hover:hover) { .dview:hover { color:var(--fg); } }
 h2.fold .dview { margin-left:auto; }
 h2.fold .dview + .fold-chev { margin-left:2px; }
+
+/* Reeksen per apparaat: kopje met icoontje, daaronder rustige regels van gelijke hoogte zonder lijnen */
+.list > div + div::before { display:none; }
+.devhead { display:flex; align-items:center; gap:6px; padding:12px 14px 6px; color:var(--muted); font-size:13px; font-weight:600; position:relative; }
+.devhead .di { width:17px; height:17px; }
+.devhead::after { content:""; position:absolute; left:14px; right:14px; bottom:0; height:1px; background:var(--line); opacity:.7; }
+.list > div:first-child .devhead { padding-top:10px; }
+.item { min-height:52px; box-sizing:border-box; }
