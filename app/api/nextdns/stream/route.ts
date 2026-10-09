@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
 import { toEvent } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const enc = new TextEncoder();
+const sse = (body: string) =>
+  new Response(body, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform" } });
+/** Een fout als SSE-bericht, zodat de pagina kan tonen wat er mis is (EventSource ziet anders alleen "fout"). */
+const problem = (message: string) => sse(`retry: 15000\nevent: problem\ndata: ${JSON.stringify({ message })}\n\n`);
+
 const MAX_MS = 55_000; // daarna sluiten we netjes; de browser verbindt direct opnieuw
 
 /** Rechtstreekse verbinding met de NextDNS-logstroom, doorgegeven als SSE zonder de echte apparaatnaam. */
@@ -12,7 +16,7 @@ export async function GET(req: Request) {
   const key = process.env.NEXTDNS_API_KEY;
   const profile = process.env.NEXTDNS_PROFILE_ID;
   if (!key || !profile || !process.env.APP_PASSWORD) {
-    return NextResponse.json({ error: "Niet ingesteld." }, { status: 503 });
+    return problem("Niet ingesteld (NEXTDNS_API_KEY, NEXTDNS_PROFILE_ID, APP_PASSWORD).");
   }
   const abort = new AbortController();
   req.signal.addEventListener("abort", () => abort.abort());
@@ -24,11 +28,11 @@ export async function GET(req: Request) {
       cache: "no-store",
     });
   } catch {
-    return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
+    return problem("NextDNS is niet bereikbaar.");
   }
   if (!upstream.ok || !upstream.body) {
     const body = (await upstream.text().catch(() => "")).slice(0, 300);
-    return NextResponse.json({ error: `NextDNS gaf fout ${upstream.status}. ${body}`.trim() }, { status: 502 });
+    return problem(`NextDNS gaf fout ${upstream.status}. ${body}`.trim());
   }
 
   const reader = upstream.body.getReader();
@@ -42,7 +46,7 @@ export async function GET(req: Request) {
         abort.abort();
         try { controller.close(); } catch {}
       };
-      controller.enqueue(enc.encode("retry: 500\n\n"));
+      controller.enqueue(enc.encode("retry: 500\n\nevent: hello\ndata: ok\n\n"));
       timers = [setTimeout(close, MAX_MS), setInterval(() => { try { controller.enqueue(enc.encode(": ping\n\n")); } catch {} }, 15_000) as unknown as ReturnType<typeof setTimeout>];
       let buf = "";
       try {

@@ -34,6 +34,7 @@ interface Device {
 
 const tz = "Europe/Amsterdam";
 const timeFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+const timeSecFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tz });
 const dayLabelFmt = new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: tz });
 const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: tz });
 
@@ -80,6 +81,10 @@ export default function Home() {
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
+  const [stream, setStream] = useState<"verbinden" | "actief" | "probleem">("verbinden");
+  const [streamMsg, setStreamMsg] = useState("");
+  const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
+  const [soundBlocked, setSoundBlocked] = useState(false);
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
@@ -153,7 +158,13 @@ export default function Home() {
 
   const beep = useCallback(() => {
     const ctx = audio.current;
-    if (!ctx || ctx.state !== "running") return;
+    if (!ctx || ctx.state !== "running") {
+      // Alleen als er echt een piep had moeten klinken laten we weten dat de browser het blokkeert.
+      setSoundBlocked(true);
+      ctx?.resume().catch(() => {});
+      return;
+    }
+    setSoundBlocked(false);
     [660, 880].forEach((f, i) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
@@ -185,6 +196,7 @@ export default function Home() {
     if (!events.length) return;
     lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
     setUpdated(new Date());
+    setLastEventAt(new Date());
     // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
     if (events.some((e) => !e.bg && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
@@ -235,6 +247,14 @@ export default function Home() {
   useEffect(() => {
     if (state !== "ready") return;
     const es = new EventSource("/api/nextdns/stream");
+    es.addEventListener("hello", () => {
+      setStream("actief");
+      setStreamMsg("");
+    });
+    es.addEventListener("problem", (m) => {
+      setStream("probleem");
+      try { setStreamMsg(JSON.parse((m as MessageEvent).data).message); } catch { setStreamMsg("Onbekende fout"); }
+    });
     es.onmessage = (m) => {
       try {
         applyEvents([JSON.parse(m.data) as Event]);
@@ -248,7 +268,7 @@ export default function Home() {
     if (state !== "ready") return;
     const id = setInterval(() => {
       if (document.visibilityState === "visible") poll();
-    }, 10_000);
+    }, 3_000);
     const onVisible = () => document.visibilityState === "visible" && poll();
     document.addEventListener("visibilitychange", onVisible);
     return () => {
@@ -293,7 +313,8 @@ export default function Home() {
           {state === "loading" && "Logs ophalen van NextDNS…"}
           {state === "ready" && (
             <>
-              <span className={"dot " + live} /> {live === "ok" ? "Live" : "Live niet beschikbaar"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
+              <span className={"dot " + (live === "ok" ? (stream === "actief" ? "ok" : "warn") : "fail")} />{" "}
+              {live === "fail" ? "Live niet beschikbaar" : stream === "actief" ? "Live (direct)" : "Live (controle elke 3 sec.)"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
@@ -302,6 +323,9 @@ export default function Home() {
 
       {state === "error" && <p className="err">{error}</p>}
       {state === "ready" && !full && <p className="muted">Nieuwste activiteit getoond, volledige geschiedenis wordt geladen…</p>}
+      {state === "ready" && stream === "probleem" && <p className="muted hint">Rechtstreekse stroom niet beschikbaar: {streamMsg}</p>}
+      {state === "ready" && soundBlocked && <p className="muted hint">🔇 Je browser blokkeert het geluid. Klik één keer op de pagina; zie ook het slotje bij de adresbalk → Geluid → Toestaan.</p>}
+      {state === "ready" && lastEventAt && <p className="muted hint">Laatste nieuwe verzoek ontvangen om {timeSecFmt.format(lastEventAt)}</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
       {state === "loading" && <div className="loader" aria-label="Laden" />}
 
