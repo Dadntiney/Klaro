@@ -83,8 +83,6 @@ export default function Home() {
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
-  const [stream, setStream] = useState<"verbinden" | "actief" | "probleem">("verbinden");
-  const [streamMsg, setStreamMsg] = useState("");
   const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
   const [soundBlocked, setSoundBlocked] = useState(false);
   const [liveError, setLiveError] = useState("");
@@ -246,45 +244,26 @@ export default function Home() {
     }
   }, [applyEvents]);
 
-  // Rechtstreekse stroom: elk nieuw verzoek komt direct binnen.
-  useEffect(() => {
-    if (state !== "ready") return;
-    const es = new EventSource("/api/nextdns/stream");
-    es.addEventListener("hello", () => {
-      setStream("actief");
-      setStreamMsg("");
-    });
-    es.addEventListener("problem", (m) => {
-      setStream("probleem");
-      try { setStreamMsg(JSON.parse((m as MessageEvent).data).message); } catch { setStreamMsg("Onbekende fout"); }
-    });
-    es.onmessage = (m) => {
-      try {
-        applyEvents([JSON.parse(m.data) as Event]);
-        setLive("ok");
-      } catch {}
-    };
-    return () => es.close();
-  }, [state, applyEvents]);
-
   const liveFailedRef = useRef(false);
   useEffect(() => { liveFailedRef.current = live === "fail"; }, [live]);
-  const streamRef = useRef(stream);
-  useEffect(() => { streamRef.current = stream; }, [stream]);
 
+  // Live: na elk antwoord (±0,5 s) 1 seconde wachten en opnieuw vragen: ruim binnen de limiet van NextDNS.
   useEffect(() => {
     if (state !== "ready") return;
     let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
     const tick = async () => {
-      if (document.visibilityState === "visible") await poll();
-      // Werkt de rechtstreekse stroom, dan is dit alleen een vangnet (15 s); anders elke 3 s, bij fouten rustiger (rate limit).
-      const delay = liveFailedRef.current ? 15000 : streamRef.current === "actief" ? 15000 : 3000;
+      if (stopped) return;
+      const visible = document.visibilityState === "visible";
+      if (visible) await poll();
+      const delay = !visible ? 3000 : liveFailedRef.current ? 15000 : 1000; // verborgen tabblad rustig, bij fouten (bijv. rate limit) afremmen
       timer = setTimeout(tick, delay);
     };
-    timer = setTimeout(tick, 3000);
+    tick();
     const onVisible = () => document.visibilityState === "visible" && poll();
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      stopped = true;
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
@@ -326,8 +305,8 @@ export default function Home() {
           {state === "loading" && "Logs ophalen van NextDNS…"}
           {state === "ready" && (
             <>
-              <span className={"dot " + (live === "ok" ? (stream === "actief" ? "ok" : "warn") : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : stream === "actief" ? "Live (direct)" : "Live (controle elke 3 sec.)"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
+              <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
+              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
@@ -336,7 +315,6 @@ export default function Home() {
 
       {state === "error" && <p className="err">{error}</p>}
       {state === "ready" && !full && <p className="muted">Nieuwste activiteit getoond, volledige geschiedenis wordt geladen…</p>}
-      {state === "ready" && stream === "probleem" && <p className="muted hint">Rechtstreekse stroom niet beschikbaar: {streamMsg}</p>}
       {state === "ready" && soundBlocked && <p className="muted hint">🔇 Je browser blokkeert het geluid. Klik één keer op de pagina; zie ook het slotje bij de adresbalk → Geluid → Toestaan.</p>}
       {state === "ready" && lastEventAt && <p className="muted hint">Laatste nieuwe verzoek ontvangen om {timeSecFmt.format(lastEventAt)}</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
