@@ -326,6 +326,30 @@ export default function Home() {
     return m;
   }, [groups, around]);
 
+  // Alle andere zichtbare regels van hetzelfde apparaat die rond (±30 s) een rood adres zijn opgevraagd: zachte waarschuwing.
+  const soft = useMemo(() => {
+    const times = new Map<string, { t: number; label: string }[]>();
+    for (const g of groups) {
+      if (!g.flag) continue;
+      for (const t of g.ts ?? [g.last]) times.set(g.dev, [...(times.get(g.dev) ?? []), { t, label: `${g.name} (${g.flag})` }]);
+    }
+    const m = new Map<string, string>();
+    if (!times.size) return m;
+    for (const g of groups) {
+      if (g.flag || g.bg || !g.main || isSearch(g.site)) continue;
+      const list = times.get(g.dev);
+      if (!list) continue;
+      for (const t of g.ts ?? [g.last]) {
+        const hit = list.find((x) => Math.abs(x.t - t) <= 30_000);
+        if (hit) {
+          m.set(g.d + g.site + g.dev, hit.label);
+          break;
+        }
+      }
+    }
+    return m;
+  }, [groups]);
+
   const flagged = useMemo(
     () => groups.filter((g) => g.flag || ctx.has(g.d + g.site + g.dev)).sort((a, b) => b.last - a.last),
     [groups, ctx]
@@ -401,7 +425,7 @@ export default function Home() {
                   return (
                     <div key={key}>
                       <div
-                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
+                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")}
                         onClick={() => setExpanded(isOpen ? null : key)}
                         role="button"
                         aria-expanded={isOpen}
@@ -409,7 +433,7 @@ export default function Home() {
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : "♥"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
                           <div className="name">{g.name}</div>
-                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}</div>
+                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
