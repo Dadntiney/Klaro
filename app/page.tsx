@@ -74,7 +74,7 @@ export default function Home() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
-  const [audioReady, setAudioReady] = useState(false);
+  const [open, setOpen] = useState(false);
   const audio = useRef<AudioContext | null>(null);
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
@@ -138,14 +138,16 @@ export default function Home() {
 
   useEffect(() => { deviceRef.current = device; }, [device]);
 
-  // Browsers staan geluid pas toe na een klik/toets: de eerste interactie ontgrendelt het geluid.
+  // Geluid staat altijd aan. Browsers staan het pas toe na een interactie: we proberen het direct
+  // en ontgrendelen het stil bij de eerste klik, toets of aanraking.
   useEffect(() => {
     const unlock = () => {
       audio.current ??= new AudioContext();
-      audio.current.resume().then(() => setAudioReady(audio.current?.state === "running"));
+      audio.current.resume().catch(() => {});
     };
-    const events = ["pointerdown", "keydown", "touchstart"] as const;
-    events.forEach((ev) => window.addEventListener(ev, unlock, { once: true }));
+    unlock();
+    const events = ["pointerdown", "click", "keydown", "touchstart"] as const;
+    events.forEach((ev) => window.addEventListener(ev, unlock));
     return () => events.forEach((ev) => window.removeEventListener(ev, unlock));
   }, []);
 
@@ -166,51 +168,81 @@ export default function Home() {
     });
   }, []);
 
+  const seen = useRef<Set<string>>(new Set());
+
+  /** Verwerk nieuwe verzoeken (uit de rechtstreekse stroom of de periodieke controle). */
+  const applyEvents = useCallback((incoming: Event[]) => {
+    // Dubbelen voorkomen (stroom en controle kunnen hetzelfde verzoek leveren).
+    const events = incoming
+      .filter((e) => {
+        const k = `${e.t}|${e.devId}|${e.site}`;
+        if (seen.current.has(k)) return false;
+        seen.current.add(k);
+        if (seen.current.size > 5000) seen.current = new Set([...seen.current].slice(-2500));
+        return true;
+      })
+      .sort((a, b) => a.t - b.t);
+    if (!events.length) return;
+    lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
+    setUpdated(new Date());
+    // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
+    if (events.some((e) => !e.bg && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
+    setTotal((n) => n + events.length);
+    // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
+    for (const e of events) {
+      if (deviceMap.current[e.devId]) continue;
+      const same = Object.values(deviceMap.current).filter((l) => l === e.type || l.startsWith(e.type + " ")).length;
+      deviceMap.current[e.devId] = same ? `${e.type} ${same + 1}` : e.type;
+    }
+    setGroups((prev) => {
+      const next = [...prev];
+      for (const ev of events) {
+        const e = { ...ev, dev: deviceMap.current[ev.devId] };
+        const d = dayKeyFmt.format(e.t);
+        const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
+        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flag: e.flag, flash: Date.now() });
+      }
+      return next;
+    });
+    setDevices((prev) => {
+      const next = [...prev];
+      for (const e of events) {
+        const dev = deviceMap.current[e.devId];
+        const i = next.findIndex((x) => x.name === dev);
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1 };
+        else next.push({ name: dev, n: 1 });
+      }
+      return next;
+    });
+  }, [beep]);
+
+  // Vangnet: elke 10 seconden controleren, voor het geval de rechtstreekse stroom niet werkt.
   const poll = useCallback(async () => {
     try {
       const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Live mislukt");
-      const events = (data.events as Event[]).sort((a, b) => a.t - b.t);
       setLive("ok");
-      setUpdated(new Date());
-      if (!events.length) return;
-      lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
-      // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
-      if (events.some((e) => !e.bg && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
-      setTotal((n) => n + events.length);
-      // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
-      for (const e of events) {
-        if (deviceMap.current[e.devId]) continue;
-        const same = Object.values(deviceMap.current).filter((l) => l === e.type || l.startsWith(e.type + " ")).length;
-        deviceMap.current[e.devId] = same ? `${e.type} ${same + 1}` : e.type;
-      }
-      setGroups((prev) => {
-        const next = [...prev];
-        for (const ev of events) {
-          const e = { ...ev, dev: deviceMap.current[ev.devId] };
-          const d = dayKeyFmt.format(e.t);
-          const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-          if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
-          else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flag: e.flag, flash: Date.now() });
-        }
-        return next;
-      });
-      setDevices((prev) => {
-        const next = [...prev];
-        for (const e of events) {
-          const dev = deviceMap.current[e.devId];
-          const i = next.findIndex((x) => x.name === dev);
-          if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1 };
-          else next.push({ name: dev, n: 1 });
-        }
-        return next;
-      });
+      applyEvents(data.events as Event[]);
     } catch (e) {
       setLive("fail");
       setLiveError((e as Error).message);
     }
-  }, [beep]);
+  }, [applyEvents]);
+
+  // Rechtstreekse stroom: elk nieuw verzoek komt direct binnen.
+  useEffect(() => {
+    if (state !== "ready") return;
+    const es = new EventSource("/api/nextdns/stream");
+    es.onmessage = (m) => {
+      try {
+        applyEvents([JSON.parse(m.data) as Event]);
+        setLive("ok");
+      } catch {}
+    };
+    return () => es.close();
+  }, [state, applyEvents]);
 
   useEffect(() => {
     if (state !== "ready") return;
@@ -225,14 +257,15 @@ export default function Home() {
     };
   }, [state, poll]);
 
-  // Rode balk: blijft rood zolang er 18+ of WhatsApp-bezoeken in de logs staan (ongeacht apparaat of filter).
-  const alert = useMemo(() => {
-    const hits = groups.filter((g) => g.flag).sort((a, b) => b.last - a.last);
-    if (!hits.length) return null;
-    const flags = [...new Set(hits.map((h) => h.flag!))];
-    const title = flags.map((f) => (f === "18+" ? "18+ content" : f)).join(" en ");
-    return { hit: hits[0], title, sites: new Set(hits.map((h) => h.site)).size, visits: hits.reduce((n, h) => n + h.n, 0) };
-  }, [groups]);
+  // Alle 18+/WhatsApp-bezoeken in de logs (ongeacht apparaat of filter), nieuwste eerst.
+  const flagged = useMemo(() => groups.filter((g) => g.flag).sort((a, b) => b.last - a.last), [groups]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
@@ -248,7 +281,14 @@ export default function Home() {
   return (
     <main>
       <header>
-        <h1>Bezochte websites &amp; apps</h1>
+        <div className="title">
+          <h1>Bezochte websites &amp; apps</h1>
+          {flagged.length > 0 && (
+            <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
+              !<span className="count">{flagged.length}</span>
+            </button>
+          )}
+        </div>
         <p className="muted">
           {state === "loading" && "Logs ophalen van NextDNS…"}
           {state === "ready" && (
@@ -267,13 +307,7 @@ export default function Home() {
 
       {state === "ready" && (
         <>
-          <div className={"bar" + (alert ? " alert" : "")}>
-            {alert && (
-              <div className="alarm">
-                ⚠ {alert.title} bezocht · laatst: <strong>{alert.hit.name}</strong> · {alert.hit.dev} · {dayLabel(alert.hit.d)} {timeFmt.format(alert.hit.last)}
-                <span className="alarm-sub"> · {alert.sites} {alert.sites === 1 ? "site" : "sites"}, {alert.visits}× in de logs</span>
-              </div>
-            )}
+          <div className="bar">
             <div className="chips">
               <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle apparaten</button>
               {devices.map((d) => (
@@ -284,7 +318,6 @@ export default function Home() {
             </div>
           </div>
 
-          {!audioReady && <p className="muted hint">🔇 Klik één keer ergens op de pagina om het geluid bij nieuwe bezoeken te activeren.</p>}
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list }) => (
             <section key={d}>
@@ -307,6 +340,27 @@ export default function Home() {
             </section>
           ))}
         </>
+      )}
+      {open && (
+        <div className="overlay" onClick={() => setOpen(false)}>
+          <div className="panel" role="dialog" aria-label="Waarschuwingen" onClick={(e) => e.stopPropagation()}>
+            <div className="panel-head">
+              <h3>Waarschuwingen</h3>
+              <button className="close" onClick={() => setOpen(false)} aria-label="Sluiten">×</button>
+            </div>
+            <p className="muted">18+ content en WhatsApp in de logs, nieuwste eerst.</p>
+            {flagged.map((g) => (
+              <div className="hit" key={g.d + g.dev + g.site}>
+                <span className="tag">{g.flag}</span>
+                <div className="main">
+                  <div className="name">{g.name}</div>
+                  <div className="sub">{g.dev} · laatst {dayLabel(g.d).toLowerCase()} om {timeFmt.format(g.last)}</div>
+                </div>
+                <div className="sub">{g.n}×</div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </main>
   );

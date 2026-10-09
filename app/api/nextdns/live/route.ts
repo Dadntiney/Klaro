@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { extractHost } from "@/lib/parse";
-import { classify } from "@/lib/sites";
-import { deviceType } from "@/lib/names";
+import { toEvent, type LiveEvent } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
@@ -33,16 +31,6 @@ export async function GET(req: Request) {
   }
 
   const json = (await res.json().catch(() => null)) as { data?: Record<string, unknown>[] } | null;
-  const events = [];
-  for (const e of json?.data ?? []) {
-    const t = Date.parse(String(e.timestamp ?? ""));
-    const host = extractHost(String(e.domain ?? ""));
-    if (!host || !t || t <= since) continue;
-    const device = (e.device ?? {}) as { id?: string; name?: string; model?: string };
-    const devId = device.id?.trim() || device.name?.trim() || "onbekend";
-    const type = deviceType(device.name ?? "", device.model ?? "");
-    const info = classify(host);
-    events.push({ t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, flag: info.flag });
-  }
+  const events = (json?.data ?? []).map(toEvent).filter((e): e is LiveEvent => !!e && e.t > since);
   return NextResponse.json({ events });
 }
