@@ -37,6 +37,8 @@ const BACKGROUND = new Set([
   "msftncsi.com", "apple-dns.net", "mzstatic.com", "icloud-content.com", "sentry.io", "appsflyer.com", "adjust.com",
   "branch.io", "scorecardresearch.com", "cloudflare-dns.com", "nextdns.io", "ntp.org", "arpa", "local", "lan",
   "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com",
+  // inlogdiensten: komen mee bij elke app die inlogt (Outlook, Teams, Office), geen bezoek aan een site
+  "microsoftonline.com", "msauth.net", "msftauth.net", "cloud.microsoft", "microsoftpersonalcontent.com", "okta.com", "oktapreview.com", "auth0.com", "onelogin.com",
 ]);
 /** Trefwoorden in het adres die duiden op statistieken, advertenties, foutrapportage of hulpdiensten van apps. */
 const BACKGROUND_KEYWORDS = [
