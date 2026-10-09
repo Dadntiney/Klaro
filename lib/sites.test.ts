@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify } from "./sites.ts";
+import { classify, payKind, isMedia } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -81,4 +81,18 @@ test("landvarianten en apps worden één regel", () => {
   assert.equal(classify("www.amazon.nl").site, "amazon.com");
   assert.equal(classify("api.vintedapp.com").name, "Vinted");
   assert.equal(classify("www.vinted.nl").name, "Vinted");
+});
+
+test("betaalmomenten en mediaverkeer", () => {
+  assert.equal(payKind("pay.ideal.nl")?.level, "checkout");
+  assert.equal(payKind("checkout.pay.nl")?.kind, "Afrekenpagina");
+  assert.equal(payKind("p73-buy.itunes.apple.com")?.level, "store");
+  assert.equal(payKind("mzstorekit.itunes.apple.com"), null);
+  assert.equal(payKind("js.stripe.com"), null);
+  assert.equal(isMedia("ipv6-c237-ams001-ix.1.oca.nflxvideo.net"), true);
+  assert.equal(isMedia("rr3---sn-5hne6nsd.googlevideo.com"), true);
+  assert.equal(isMedia("vod-akc-eu-west-1.media.dssott.com"), true);
+  assert.equal(isMedia("scontent-ams2-1.cdninstagram.com"), true);
+  assert.equal(isMedia("scontent.xx.fbcdn.net"), true);
+  assert.equal(isMedia("graph.facebook.com"), false);
 });

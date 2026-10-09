@@ -207,3 +207,21 @@ function classifyUncached(host: string): SiteInfo {
   const flag = adult ? "18+" : dating ? "Dating" : undefined;
   return { site: canonSite(base), name: canonSite(base), icon: canonSite(base), bg, adult, main: !!flag || isMainHost(host, base), flag };
 }
+
+/** Betaalmomenten. "checkout" is betrouwbaar (iDEAL, afrekenpagina, PayPal); "store" (App Store) kan ook achtergrondverkeer zijn. */
+export function payKind(host: string): { kind: string; level: "checkout" | "store" } | null {
+  if (host === "pay.ideal.nl" || host.endsWith(".ideal.nl") || host.endsWith("idealapi.nl")) return { kind: "iDEAL", level: "checkout" };
+  if (host === "www.paypal.com" || host === "paypal.com") return { kind: "PayPal", level: "checkout" };
+  if (/^checkout\./.test(host)) return { kind: "Afrekenpagina", level: "checkout" };
+  if (/^(p\d+-)?buy\.itunes\.apple\.com$/.test(host)) return { kind: "App Store", level: "store" };
+  return null;
+}
+
+/** Verkeer van video-, muziek- en beeldservers: dat wijst op echt kijken of luisteren, niet op een app die op de achtergrond staat. */
+const MEDIA = [
+  /(^|\.)googlevideo\.com$/, /(^|\.)nflxvideo\.net$/, /(^|\.)ttvnw\.net$/, /tiktokcdn(-[a-z]+)?\.com$/, /(^|\.)cdninstagram\.com$/,
+  /^(scontent|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/, /(^|\.)dssott\.com$/, /playback\.edge\.bamgrid\.com$/, /(^|\.)audio-[^.]*\.(spotifycdn\.com|scdn\.co|akamaized\.net)$/, /(^|\.)scdn\.co$/,
+];
+export function isMedia(host: string): boolean {
+  return MEDIA.some((re) => re.test(host));
+}

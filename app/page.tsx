@@ -3,97 +3,13 @@
 import { extendAll, extendSessions, minutes, type Session } from "@/lib/sessions";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-interface Group {
-  d: string;
-  dev: string;
-  site: string;
-  name: string;
-  icon: string;
-  last: number;
-  n: number;
-  bg: boolean;
-  adult?: boolean;
-  main?: boolean;
-  flag?: string;
-  ts?: number[];
-  ss?: Session[];
-  mins?: number;
-  cat?: string;
-  bl?: number;
-  isNew?: boolean;
-  flash?: number;
-}
-interface Event {
-  t: number;
-  devId: string;
-  type: string;
-  site: string;
-  name: string;
-  icon: string;
-  bg: boolean;
-  adult?: boolean;
-  main?: boolean;
-  flag?: string;
-  cat?: string;
-  blocked?: boolean;
-}
-interface Device {
-  name: string;
-  n: number;
-  last?: number; // laatste verzoek (alle verkeer)
-  gap?: number; // normale pauze overdag (ms)
-  days?: number; // dagen met activiteit
-  ss?: Session[]; // sessies van vandaag (zichtbaar verkeer)
-  avg?: number; // gemiddeld aantal actieve minuten op eerdere dagen
-  blocked?: number; // geblokkeerde 18+/dating-pogingen vandaag
-}
+import type { Device, Event, Group, Insights, PayMoment } from "./types";
+import InsightsView from "./insights";
+import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
 
 /** Zoekmachines en beeldzoekers: bij een 18+-adres kort erna/ervoor markeren we ook deze regel. */
 const isSearch = (site: string) => /^google\.[a-z.]+$/.test(site) || ["bing.com", "duckduckgo.com", "ecosia.org", "yahoo.com", "startpage.com", "qwant.com", "yandex.com", "brave.com", "pinterest.com", "pinterest.nl"].includes(site);
 
-const tz = "Europe/Amsterdam";
-const timeFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: tz });
-const timeSecFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tz });
-const dayLabelFmt = new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: tz });
-const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: tz });
-
-const sumMin = (ss: Session[]) => ss.reduce((n, x) => n + minutes(x), 0);
-const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: tz });
-const hourOf = (t: number) => parseInt(hourFmt.format(t), 10) % 24;
-const isNight = (t: number) => hourOf(t) >= 23 || hourOf(t) < 6;
-
-/** 45 -> "45 min", 75 -> "1 u 15 min". */
-function dur(min: number) {
-  return min >= 60 ? `${Math.floor(min / 60)} u${min % 60 ? ` ${min % 60} min` : ""}` : `${min} min`;
-}
-
-/** Klein grijs icoon van het soort apparaat: onderscheid aan de vorm, zonder kleur. */
-function DevIcon({ name }: { name: string }) {
-  const t = name.toLowerCase();
-  const kind = /iphone|android|telefoon/.test(t) ? "phone" : /ipad|tablet/.test(t) ? "tablet" : /macbook|laptop|windows|chromebook/.test(t) ? "laptop" : /\btv\b|playstation|xbox|nintendo/.test(t) ? "tv" : "monitor";
-  const shapes: Record<string, React.ReactNode> = {
-    phone: <><rect x="7" y="2.5" width="10" height="19" rx="2.2" /><path d="M10.5 18.5h3" /></>,
-    tablet: <><rect x="4.5" y="3" width="15" height="18" rx="2.2" /><path d="M11 18h2" /></>,
-    laptop: <><rect x="5" y="5" width="14" height="10" rx="1.4" /><path d="M2.5 19h19" /></>,
-    tv: <><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 20.5h8" /></>,
-    monitor: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M12 16v4M8 20h8" /></>,
-  };
-  return (
-    <svg className="di" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      {shapes[kind]}
-    </svg>
-  );
-}
-
-function dayLabel(d: string) {
-  if (d === "onbekend") return "Datum onbekend";
-  const today = Date.now();
-  if (d === dayKeyFmt.format(today)) return "Vandaag";
-  if (d === dayKeyFmt.format(today - 86400_000)) return "Gisteren";
-  const label = dayLabelFmt.format(new Date(d + "T12:00:00Z"));
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
 
 /** Favicon, of niets (een leeg vakje voor de uitlijning) als de site er geen heeft. */
 /** Twee korte tonen (660 en 880 Hz) als WAV, zodat er geen geluidsbestand nodig is. */
@@ -154,6 +70,9 @@ export default function Home() {
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"overzicht" | "inzichten">("overzicht");
+  const [insights, setInsights] = useState<Insights | null>(null);
+  const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [moreKey, setMoreKey] = useState<string | null>(null);
   const sound = useRef<HTMLAudioElement | null>(null);
@@ -182,6 +101,7 @@ export default function Home() {
         setDevices(data.devices);
         setTotal(data.total);
         deviceMap.current = data.deviceMap ?? {};
+        setInsights(data.insights ?? null);
         lastSeen.current = Math.max(0, ...(data.groups as Group[]).map((g) => g.last));
         setUpdated(new Date());
         setFull(true);
@@ -276,7 +196,7 @@ export default function Home() {
     setUpdated(new Date());
     // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
     // Rood (18+, dating, VPN, geblokkeerd) klinkt altijd, ongeacht filter, met een ander, dringender geluid.
-    if (events.some((e) => e.flag)) beep(true);
+    if (events.some((e) => e.flag || e.pay?.level === "checkout")) beep(true);
     else if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
     // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
@@ -285,6 +205,8 @@ export default function Home() {
       const same = Object.values(deviceMap.current).filter((l) => l === e.type || l.startsWith(e.type + " ")).length;
       deviceMap.current[e.devId] = same ? `${e.type} ${same + 1}` : e.type;
     }
+    const pays = events.filter((e) => e.pay);
+    if (pays.length) setLivePay((prev) => [...pays.map((e) => ({ t: e.t, dev: deviceMap.current[e.devId], kind: e.pay!.kind, level: e.pay!.level })), ...prev].slice(0, 60));
     setGroups((prev) => {
       const next = [...prev];
       for (const ev of events) {
@@ -376,6 +298,42 @@ export default function Home() {
     };
   }, [state, poll]);
 
+  // Elke 5 minuten de inzichten verversen (thuis/onderweg, slaaptijd, bedreigingen, ...); de lijst zelf blijft live bijgewerkt.
+  useEffect(() => {
+    if (state !== "ready") return;
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch("/api/nextdns");
+        const data = await res.json();
+        if (!res.ok) return;
+        setInsights(data.insights ?? null);
+        setDevices((prev) =>
+          prev.map((p) => {
+            const f = (data.devices as Device[]).find((x) => x.name === p.name);
+            return f ? { ...p, first: f.first, away: f.away, sleep: f.sleep, threats: f.threats, avg: f.avg, gap: f.gap, days: f.days } : p;
+          })
+        );
+        const fresh = new Map<string, Group>();
+        for (const g of data.groups as Group[]) fresh.set(g.d + "|" + g.dev + "|" + g.site, g);
+        setGroups((prev) =>
+          prev.map((g) => {
+            const f = fresh.get(g.d + "|" + g.dev + "|" + g.site);
+            return f ? { ...g, mm: f.mm, susp: f.susp, cc: f.cc, isNew: f.isNew || g.isNew } : g;
+          })
+        );
+      } catch {}
+    }, 300_000);
+    return () => clearInterval(id);
+  }, [state]);
+
+  // Betaalmomenten: live gevonden en uit de geschiedenis, zonder dubbelen (binnen 3 minuten).
+  const payments = useMemo(() => {
+    const all = [...livePay, ...(insights?.payments ?? [])].sort((a, b) => b.t - a.t);
+    const out: PayMoment[] = [];
+    for (const p of all) if (!out.some((x) => x.dev === p.dev && x.kind === p.kind && Math.abs(x.t - p.t) <= 180_000)) out.push(p);
+    return out;
+  }, [livePay, insights]);
+
   // Uitklapoverzicht: wat vroeg hetzelfde apparaat nog meer op rond de laatste bezoeken aan deze site (±30 s), ook verborgen adressen.
   const around = useCallback(
     (g: Group) => {
@@ -426,6 +384,16 @@ export default function Home() {
     }
     return m;
   }, [groups]);
+
+  // Meer meldingen: aankopen (laatste 24 uur), nieuw apparaat, verdachte nieuwe adressen.
+  const extraAlerts = useMemo(() => {
+    const now = Date.now();
+    const out: { key: string; tag: string; title: string; sub: string }[] = [];
+    for (const p of payments) if (p.level === "checkout" && now - p.t < 86_400_000) out.push({ key: "p" + p.t + p.dev, tag: "Aankoop", title: p.kind, sub: `${p.dev} · ${timeFmt.format(p.t)}: afrekenen` });
+    for (const d of devices) if (d.first && now - d.first < 86_400_000 && insights?.since && now - insights.since > 3 * 86_400_000) out.push({ key: "d" + d.name, tag: "Nieuw", title: d.name, sub: `Nieuw apparaat in NextDNS, voor het eerst gezien om ${timeFmt.format(d.first)}` });
+    for (const g of groups) if (g.susp && g.isNew && g.main && !g.bg) out.push({ key: "s" + g.d + g.dev + g.site, tag: "Verdacht", title: g.site, sub: `${g.dev} · ${g.susp}` });
+    return out;
+  }, [payments, devices, groups, insights, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flagged = useMemo(
     () => groups.filter((g) => g.flag || ctx.has(g.d + g.site + g.dev)).sort((a, b) => b.last - a.last),
@@ -497,9 +465,9 @@ export default function Home() {
       <header>
         <div className="title">
           <h1>Bezochte websites &amp; apps</h1>
-          {flagged.length + silent.length > 0 && (
-            <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length + silent.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
-              !<span className="count">{flagged.length + silent.length}</span>
+          {flagged.length + silent.length + extraAlerts.length > 0 && (
+            <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length + silent.length + extraAlerts.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
+              !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
             </button>
           )}
         </div>
@@ -540,6 +508,15 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="tabs" role="tablist">
+            <button role="tab" aria-selected={view === "overzicht"} className={view === "overzicht" ? "on" : ""} onClick={() => setView("overzicht")}>Overzicht</button>
+            <button role="tab" aria-selected={view === "inzichten"} className={view === "inzichten" ? "on" : ""} onClick={() => setView("inzichten")}>Inzichten</button>
+          </div>
+
+          {view === "inzichten" ? (
+            <InsightsView groups={groups} devices={devices} insights={insights} payments={payments} device={device} tick={tick} />
+          ) : (
+          <>
           <div className="summary">
             <div className="s-row">
               <strong>{summary.mins > 0 ? `Vandaag ${dur(summary.mins)} actief` : "Vandaag nog niets actiefs"}</strong>
@@ -634,6 +611,8 @@ export default function Home() {
               </div>
             </section>
           ))}
+          </>
+          )}
         </>
       )}
       {open && (
@@ -643,6 +622,20 @@ export default function Home() {
               <h3>Waarschuwingen</h3>
               <button className="close" onClick={() => setOpen(false)} aria-label="Sluiten">×</button>
             </div>
+            {extraAlerts.length > 0 && (
+              <>
+                <div className="dh">Aandacht</div>
+                {extraAlerts.map((a) => (
+                  <div className="hit" key={a.key}>
+                    <span className="tag amber">{a.tag}</span>
+                    <div className="main">
+                      <div className="name">{a.title}</div>
+                      <div className="sub">{a.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
             {silent.length > 0 && (
               <>
                 <div className="dh">Apparaat ongewoon stil</div>
@@ -657,7 +650,7 @@ export default function Home() {
                 ))}
               </>
             )}
-            <p className="muted">Gemarkeerde sites (18+, dating, VPN/proxy, geblokkeerd) in de logs, nieuwste eerst.</p>
+            {flagged.length > 0 && <p className="muted">Gemarkeerde sites (18+, dating, VPN/proxy, geblokkeerd) in de logs, nieuwste eerst.</p>}
             {flagged.map((g) => (
               <div className="hit" key={g.d + g.dev + g.site}>
                 <span className="tag">{g.flag ?? "In de buurt"}</span>

@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
-import { classify } from "@/lib/sites";
+import { classify, isMedia, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, clusterSessions, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
+import { suspicion } from "@/lib/suspect";
+import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const MAX_GROUPS = 15000;
+const DAY = 86_400_000;
 
 /** Eén regel in het overzicht: een site/app, op één dag, door één apparaat. */
 export interface Group {
@@ -27,21 +30,41 @@ export interface Group {
   ts: number[]; // laatste tijdstippen (max 8, nieuwste eerst), voor "rond dit moment"
   ss: Session[]; // sessies (nieuwste eerst, max 5)
   mins: number; // totaal aantal minuten actief (alle sessies van die dag)
+  mm: number; // minuten beeld/geluid-verkeer (echt kijken of luisteren)
   cat: string; // categorie (Games, Video, ...)
   bl: number; // aantal door NextDNS geblokkeerde verzoeken
   isNew: boolean; // site voor het eerst gezien in de afgelopen 24 uur
+  cc?: string; // land van de server
+  susp?: string; // reden waarom het adres verdacht lijkt
 }
 
-/** Eén apparaat: totalen, laatste activiteit en de gegevens om "ongewoon stil" te herkennen. */
+export interface SleepDay {
+  d: string;
+  first: number;
+  last: number;
+}
+
+/** Eén apparaat: totalen, laatste activiteit en alles voor de inzichten. */
 export interface Device {
   name: string;
   n: number;
   last: number; // laatste verzoek (alle verkeer)
+  first: number; // eerste verzoek ooit in de logs
   gap: number; // normale pauze overdag (ms, 95e percentiel)
   days: number; // aantal dagen met activiteit
   ss: Session[]; // sessies van vandaag (alleen zichtbaar verkeer)
   avg: number; // gemiddeld aantal actieve minuten op eerdere dagen
   blocked: number; // geblokkeerde 18+/dating-pogingen vandaag
+  away: AwayInfo; // thuis of onderweg
+  sleep: SleepDay[]; // eerste en laatste activiteit per dag (laatste 7 dagen)
+  threats: { today: number; week: number; top: { site: string; n: number }[] }; // geblokkeerde bedreigingen
+}
+
+export interface PayMoment {
+  t: number;
+  dev: string;
+  kind: string;
+  level: "checkout" | "store";
 }
 
 const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
@@ -51,6 +74,19 @@ const hourOf = (t: number) => parseInt(hourFmt.format(t), 10) % 24;
 // Het samenstellen van de download bij NextDNS is traag; hergebruik het resultaat kort (de live-route vult het aan).
 let cache: { at: number; body: unknown } | null = null;
 const CACHE_MS = 120_000;
+
+/** Dichtstbijzijnde index in een gesorteerde lijst tijdstippen. */
+function nearestIdx(sorted: number[], t: number): number {
+  let lo = 0, hi = sorted.length - 1;
+  if (hi < 0) return -1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sorted[mid] < t) lo = mid + 1;
+    else hi = mid;
+  }
+  if (lo > 0 && Math.abs(sorted[lo - 1] - t) <= Math.abs(sorted[lo] - t)) return lo - 1;
+  return lo;
+}
 
 export async function GET() {
   const key = process.env.NEXTDNS_API_KEY;
@@ -83,7 +119,7 @@ export async function GET() {
   }
 
   const rows = parseCsv(await res.text());
-  if (rows.length < 2) return NextResponse.json({ groups: [], devices: [], total: 0 });
+  if (rows.length < 2) return NextResponse.json({ groups: [], devices: [], total: 0, insights: { payments: [], trackers: [] } });
   const [header, ...body] = rows;
   const col = (name: string) => header.findIndex((h) => h.trim().toLowerCase() === name);
   const tCol = col("timestamp");
@@ -94,6 +130,8 @@ export async function GET() {
   const modelCol = col("device_model");
   const statusCol = col("status");
   const reasonsCol = col("reasons");
+  const ccCol = col("destination_country");
+  const ipCol = col("client_ip");
 
   // Eerst alle apparaten bepalen, zodat gelijke soorten consistent worden genummerd.
   const found = new Map<string, string>();
@@ -106,9 +144,15 @@ export async function GET() {
 
   const groups = new Map<string, Group>();
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
+  const mediaTimes = new Map<string, number[]>(); // alleen beeld/geluid-verkeer per groep
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
+  const visSites = new Map<string, { t: number; site: string }[]>(); // zichtbaar verkeer met site, om trackers aan een app te koppelen
+  const blockedRows: { dev: string; t: number }[] = []; // geblokkeerde verzoeken (trackers e.d.)
+  const threatTimes = new Map<string, { t: number; site: string }[]>(); // geblokkeerde bedreigingen per apparaat
+  const payRaw: PayMoment[] = [];
+  const netRows: NetRow[] = [];
   const devBlockedToday = new Map<string, number>();
   const devCount = new Map<string, number>();
   const statuses = new Map<string, number>();
@@ -116,6 +160,7 @@ export async function GET() {
   const today = dayFmt.format(Date.now());
   let total = 0;
   let minT = Infinity;
+  let maxT = 0;
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
@@ -135,21 +180,32 @@ export async function GET() {
       info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
       blockedAdult = true;
     }
+    const visible = (info.main && !info.bg) || !!info.flag;
 
     if (t) {
       minT = Math.min(minT, t);
+      maxT = Math.max(maxT, t);
       const f = siteFirst.get(info.site);
       if (f === undefined || t < f) siteFirst.set(info.site, t);
       (devAll.get(dev) ?? devAll.set(dev, []).get(dev)!).push(t);
-      if ((info.main && !info.bg) || info.flag) {
+      if (visible) {
         const byDay = devVis.get(dev) ?? devVis.set(dev, new Map()).get(dev)!;
         (byDay.get(d) ?? byDay.set(d, []).get(d)!).push(t);
+        (visSites.get(dev) ?? visSites.set(dev, []).get(dev)!).push({ t, site: info.site });
       }
+      if (blocked) {
+        if (/threat|malware|phish/.test(reasons)) (threatTimes.get(dev) ?? threatTimes.set(dev, []).get(dev)!).push({ t, site: info.site });
+        else blockedRows.push({ dev, t });
+      }
+      const pay = payKind(host);
+      if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
+      if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
 
-    const key = `${d}|${dev}|${info.site}`;
-    const g = groups.get(key);
+    const gkey = `${d}|${dev}|${info.site}`;
+    const g = groups.get(gkey);
+    const cc = ccCol >= 0 ? (r[ccCol] ?? "").trim() : "";
     if (g) {
       g.n++;
       g.main ||= info.main;
@@ -160,40 +216,104 @@ export async function GET() {
         g.main = true;
       }
       if (t > g.last) g.last = t;
-      times.get(key)!.push(t);
+      if (cc && !g.cc) g.cc = cc;
+      times.get(gkey)!.push(t);
     } else {
-      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, ts: [], ss: [], mins: 0, cat: categoryOf(info.site), bl: blocked ? 1 : 0, isNew: false });
-      times.set(key, [t]);
+      groups.set(gkey, {
+        d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag,
+        ts: [], ss: [], mins: 0, mm: 0, cat: categoryOf(info.site), bl: blocked ? 1 : 0, isNew: false, cc: cc || undefined,
+      });
+      times.set(gkey, [t]);
     }
+    if (!blocked && isMedia(host)) (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
     devCount.set(dev, (devCount.get(dev) ?? 0) + 1);
     total++;
   }
+
   // "Nieuw": voor het eerst gezien in de laatste 24 uur, alleen zinvol als de logs minstens 3 dagen terugreiken.
-  const newCutoff = Date.now() - 24 * 3_600_000;
-  const meaningful = Number.isFinite(minT) && Date.now() - minT > 3 * 86_400_000;
-  for (const [key, g] of groups) {
-    const all = times.get(key) ?? [];
+  const newCutoff = Date.now() - DAY;
+  const meaningful = Number.isFinite(minT) && Date.now() - minT > 3 * DAY;
+  const siteName = new Map<string, string>();
+  for (const [gkey, g] of groups) {
+    const all = times.get(gkey) ?? [];
     g.ss = clusterSessions(all);
     g.mins = totalMinutes(all);
+    g.mm = totalMinutes(mediaTimes.get(gkey) ?? []);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
-    g.isNew = meaningful && g.main && !g.bg && (siteFirst.get(g.site) ?? 0) >= newCutoff;
+    // Een site waarvan alle verzoeken door NextDNS zijn geblokkeerd, is geen "nieuwe site" die bezocht is.
+    g.isNew = meaningful && g.main && !g.bg && g.bl < g.n && (siteFirst.get(g.site) ?? 0) >= newCutoff;
+    if (g.main && !g.bg) g.susp = suspicion(g.site) ?? undefined;
+    siteName.set(g.site, g.name);
   }
 
-  const devices: Device[] = [...devCount.entries()].map(([name, n]) => {
-    const all = (devAll.get(name) ?? []).sort((a, b) => a - b);
-    const byDay = devVis.get(name) ?? new Map<string, number[]>();
-    const prev = [...byDay.entries()].filter(([d]) => d !== today && d !== "onbekend").sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 7);
-    return {
-      name,
-      n,
-      last: all.length ? all[all.length - 1] : 0,
-      gap: gapP95(all, hourOf),
-      days: new Set(all.map((t) => dayFmt.format(t))).size,
-      ss: allSessions(byDay.get(today) ?? []),
-      avg: prev.length ? Math.round(prev.reduce((m, [, ts]) => m + totalMinutes(ts), 0) / prev.length) : 0,
-      blocked: devBlockedToday.get(name) ?? 0,
-    };
-  }).sort((a, b) => b.n - a.n);
+  // Thuis of onderweg (op basis van de IP-adressen waarmee een apparaat verbindt).
+  const away = analyzeNetwork(netRows);
+
+  // Betaalmomenten: opeenvolgende verzoeken van hetzelfde soort binnen 3 minuten tellen als één moment.
+  payRaw.sort((a, b) => a.t - b.t);
+  const payments: PayMoment[] = [];
+  for (const p of payRaw) {
+    const last = [...payments].reverse().find((x) => x.dev === p.dev && x.kind === p.kind);
+    if (last && p.t - last.t <= 3 * 60_000) continue;
+    payments.push(p);
+  }
+  payments.reverse();
+
+  // Welke apps zijn het spraakzaamst naar trackers? Geblokkeerd verkeer koppelen we aan de dichtstbijzijnde app (±30 s) op hetzelfde apparaat.
+  const sortedVis = new Map<string, { t: number; site: string }[]>();
+  const sortedVisT = new Map<string, number[]>();
+  for (const [dev, list] of visSites) {
+    list.sort((a, b) => a.t - b.t);
+    sortedVis.set(dev, list);
+    sortedVisT.set(dev, list.map((x) => x.t)); // één keer, niet per geblokkeerd verzoek
+  }
+  const trackerBySite = new Map<string, number>();
+  for (const b of blockedRows) {
+    const list = sortedVis.get(b.dev);
+    const ts = sortedVisT.get(b.dev);
+    if (!list || !ts) continue;
+    const i = nearestIdx(ts, b.t);
+    if (i >= 0 && Math.abs(ts[i] - b.t) <= 30_000) trackerBySite.set(list[i].site, (trackerBySite.get(list[i].site) ?? 0) + 1);
+  }
+  const trackers = [...trackerBySite.entries()]
+    .map(([site, n]) => ({ site, name: siteName.get(site) ?? site, n }))
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 8);
+
+  const weekAgo = Date.now() - 7 * DAY;
+  const devices: Device[] = [...devCount.entries()]
+    .map(([name, n]) => {
+      const all = (devAll.get(name) ?? []).sort((a, b) => a - b);
+      const byDay = devVis.get(name) ?? new Map<string, number[]>();
+      const prev = [...byDay.entries()].filter(([d]) => d !== today && d !== "onbekend").sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 7);
+      const sleep: SleepDay[] = [...byDay.entries()]
+        .filter(([d]) => d !== "onbekend")
+        .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+        .slice(0, 7)
+        .map(([d, ts]) => ({ d, first: ts.reduce((a, b) => (b < a ? b : a), Infinity), last: ts.reduce((a, b) => (b > a ? b : a), 0) }));
+      const th = threatTimes.get(name) ?? [];
+      const topSites = new Map<string, number>();
+      for (const x of th) topSites.set(x.site, (topSites.get(x.site) ?? 0) + 1);
+      return {
+        name,
+        n,
+        last: all.length ? all[all.length - 1] : 0,
+        first: all.length ? all[0] : 0,
+        gap: gapP95(all, hourOf),
+        days: new Set(all.map((t) => dayFmt.format(t))).size,
+        ss: allSessions(byDay.get(today) ?? []),
+        avg: prev.length ? Math.round(prev.reduce((m, [, ts]) => m + totalMinutes(ts), 0) / prev.length) : 0,
+        blocked: devBlockedToday.get(name) ?? 0,
+        away: away.get(name) ?? { now: null, since: 0, runs: [] },
+        sleep,
+        threats: {
+          today: th.filter((x) => dayFmt.format(x.t) === today).length,
+          week: th.filter((x) => x.t >= weekAgo).length,
+          top: [...topSites].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([site, c]) => ({ site: siteName.get(site) ?? site, n: c })),
+        },
+      };
+    })
+    .sort((a, b) => b.n - a.n);
 
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
   const result = {
@@ -201,6 +321,7 @@ export async function GET() {
     devices,
     total,
     deviceMap, // id -> label; bevat nooit de echte naam
+    insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren
   };
   cache = { at: Date.now(), body: result };
