@@ -142,6 +142,27 @@ export function isMainHost(host: string, base: string): boolean {
   return LANG.has(rest) || ["m", "web", "app", "mobile"].includes(rest);
 }
 
+/** VPN's, proxy's, Tor en DNS-diensten waarmee het filter van NextDNS kan worden omzeild. */
+const VPN_DOMAINS = new Set([
+  "nordvpn.com", "nordcdn.com", "nordaccount.com", "expressvpn.com", "protonvpn.com", "surfshark.com", "privateinternetaccess.com", "cyberghostvpn.com",
+  "tunnelbear.com", "windscribe.com", "mullvad.net", "hide.me", "hotspotshield.com", "ipvanish.com", "torguard.net", "vyprvpn.com", "atlasvpn.com", "hola.org",
+  "psiphon.ca", "getlantern.org", "lantern.io", "torproject.org", "ultrasurf.us", "vpnunlimited.com", "keepsolid.com", "betternet.co", "turbovpn.com", "vpnbook.com",
+  "proxysite.com", "hidemyass.com", "hma.com", "croxyproxy.com", "kproxy.com", "hidester.com", "vpn.net", "zenmate.com", "purevpn.com", "ivacy.com", "x-vpn.com",
+  "cloudflareclient.com", "warp.plus", "speedify.com", "urban-vpn.com", "ghostery.com", "opera-proxy.net", "browsec.com", "veepn.com", "planetvpn.com", "snapvpn.com",
+  // DNS-over-HTTPS / eigen DNS-diensten: wie die gebruikt, omzeilt NextDNS
+  "dns.google", "dns.quad9.net", "doh.opendns.com", "cloudflare-dns.com", "dns.adguard.com", "dns.adguard-dns.com", "dnsforge.de", "doh.dns.sb", "mullvad-dns.net",
+]);
+const VPN_PARTS = ["vpn", "proxysite", "unblock-"];
+/** iCloud Private Relay verbergt de bezochte sites voor NextDNS. */
+const VPN_SUFFIX = ["mask.icloud.com", "mask-h2.icloud.com", "mask-api.icloud.com", "mask.apple-dns.net", "relay.apple-dns.net"];
+
+function isVpn(host: string): boolean {
+  const base = baseDomain(host);
+  if (VPN_DOMAINS.has(base) || VPN_DOMAINS.has(host)) return true;
+  if (VPN_SUFFIX.some((x) => host === x || host.endsWith("." + x))) return true;
+  return VPN_PARTS.some((p) => base.split(".")[0].includes(p));
+}
+
 /** Nooit rood markeren, ook niet als een lijst ze (ten onrechte) bevat. */
 const NEVER_FLAG = new Set(["list-manage.com", "mailchimp.com", "mcusercontent.com", "sendgrid.net", "mandrillapp.com", "google.com", "youtube.com", "facebook.com", "instagram.com", "microsoft.com", "apple.com", "amazon.com", "wikipedia.org", "reddit.com", "twitter.com", "x.com"]);
 
@@ -163,6 +184,8 @@ function classifyUncached(host: string): SiteInfo {
   const app = APP_BY_DOMAIN.get(base);
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   // Eerst dating: sommige datingsites staan ook op de porno-lijst, maar het label Dating is dan duidelijker.
+  // VPN/proxy en DNS-omzeiling eerst: altijd zichtbaar en rood, ook als het eigenlijk hulpverkeer is.
+  if (!NEVER_FLAG.has(base) && isVpn(host)) return { site: base, name: base, icon: base, bg: false, adult: false, main: true, flag: "VPN/proxy" };
   const never = NEVER_FLAG.has(base);
   const dating = !never && isDating(host);
   const adult = !never && !dating && isAdult(host);

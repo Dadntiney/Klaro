@@ -69,3 +69,14 @@ h2 .muted { font-weight:400; }
 @media (prefers-color-scheme: dark) { .item.near-flag .sub { color:#fbbf24; } }
 .dur { font-weight:600; color:var(--fg); }
 .item.adult .dur { color:#fff; }
+.chip-min { opacity:.75; font-variant-numeric:tabular-nums; }
+.summary { margin:10px 0 0; padding:10px 14px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-size:14px; }
+.s-row { display:flex; flex-wrap:wrap; gap:4px; align-items:baseline; }
+.cats { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.cat { background:var(--head); border-radius:99px; padding:2px 10px; font-size:13px; }
+.cat b { font-weight:600; }
+.s-warn { margin-top:8px; color:#b45309; font-size:13px; }
+@media (prefers-color-scheme: dark) { .s-warn { color:#fbbf24; } }
+.newtag { margin-left:8px; background:#2563eb; color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; vertical-align:middle; letter-spacing:.03em; }
+.tag.amber { background:#f59e0b; }
+.hit .sub { white-space:normal; }

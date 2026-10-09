@@ -8,7 +8,7 @@ export const GAP = 5 * 60_000;
 const MAX = 5;
 
 /** Alle sessies uit losse tijdstippen, nieuwste eerst. */
-function allSessions(times: number[]): Session[] {
+export function allSessions(times: number[]): Session[] {
   const t = times.filter(Boolean).sort((a, b) => a - b);
   const out: Session[] = [];
   for (const x of t) {
@@ -45,4 +45,15 @@ export function extendSessions(ss: Session[], t: number): Session[] {
 export function minutes(x: Session): number {
   const ms = x.e - x.s;
   return ms < 60_000 ? 0 : Math.round(ms / 60_000);
+}
+
+/** Zoals `extendSessions`, maar zonder af te kappen (voor het dagtotaal per apparaat). */
+export function extendAll(ss: Session[], t: number): Session[] {
+  const next = ss.map((x) => ({ ...x }));
+  const i = next.findIndex((x) => t >= x.s - GAP && t <= x.e + GAP);
+  if (i >= 0) {
+    next[i].s = Math.min(next[i].s, t);
+    next[i].e = Math.max(next[i].e, t);
+  } else next.push({ s: t, e: t });
+  return next.sort((a, b) => b.e - a.e);
 }

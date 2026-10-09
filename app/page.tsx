@@ -1,7 +1,8 @@
 "use client";
 
 import { labelDevices } from "@/lib/names";
-import { clusterSessions, extendSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { clusterSessions, extendAll, extendSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Group {
@@ -19,6 +20,9 @@ interface Group {
   ts?: number[];
   ss?: Session[];
   mins?: number;
+  cat?: string;
+  bl?: number;
+  isNew?: boolean;
   flash?: number;
 }
 interface Event {
@@ -32,10 +36,18 @@ interface Event {
   adult?: boolean;
   main?: boolean;
   flag?: string;
+  cat?: string;
+  blocked?: boolean;
 }
 interface Device {
   name: string;
   n: number;
+  last?: number; // laatste verzoek (alle verkeer)
+  gap?: number; // normale pauze overdag (ms)
+  days?: number; // dagen met activiteit
+  ss?: Session[]; // sessies van vandaag (zichtbaar verkeer)
+  avg?: number; // gemiddeld aantal actieve minuten op eerdere dagen
+  blocked?: number; // geblokkeerde 18+/dating-pogingen vandaag
 }
 
 /** Zoekmachines en beeldzoekers: bij een 18+-adres kort erna/ervoor markeren we ook deze regel. */
@@ -48,6 +60,9 @@ const dayLabelFmt = new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "nu
 const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: tz });
 
 const sumMin = (ss: Session[]) => ss.reduce((n, x) => n + minutes(x), 0);
+const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: tz });
+const hourOf = (t: number) => parseInt(hourFmt.format(t), 10) % 24;
+const isNight = (t: number) => hourOf(t) >= 23 || hourOf(t) < 6;
 
 /** 45 -> "45 min", 75 -> "1 u 15 min". */
 function dur(min: number) {
@@ -65,7 +80,7 @@ function dayLabel(d: string) {
 
 /** Favicon, of niets (een leeg vakje voor de uitlijning) als de site er geen heeft. */
 /** Twee korte tonen (660 en 880 Hz) als WAV, zodat er geen geluidsbestand nodig is. */
-function beepDataUri(): string {
+function beepDataUri(urgent = false): string {
   const rate = 22050;
   const tone = (f: number, sec: number) =>
     Array.from({ length: Math.floor(rate * sec) }, (_, i) => {
@@ -73,7 +88,9 @@ function beepDataUri(): string {
       const env = Math.min(1, t / 0.01, (sec - t) / 0.03); // korte in- en uitfade tegen klikjes
       return Math.sin(2 * Math.PI * f * t) * 0.6 * Math.max(0, env);
     });
-  const samples = [...tone(660, 0.14), ...new Array(Math.floor(rate * 0.03)).fill(0), ...tone(880, 0.18)];
+  const gap = () => new Array(Math.floor(rate * 0.04)).fill(0);
+  // Gewoon: twee tonen omhoog. Alarm (rood): drie snelle, hogere tonen.
+  const samples = urgent ? [...tone(988, 0.12), ...gap(), ...tone(988, 0.12), ...gap(), ...tone(1319, 0.22)] : [...tone(660, 0.14), ...gap(), ...tone(880, 0.18)];
   const buf = new ArrayBuffer(44 + samples.length * 2);
   const v = new DataView(buf);
   const str = (o: number, t: string) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
@@ -117,6 +134,8 @@ export default function Home() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [moreKey, setMoreKey] = useState<string | null>(null);
   const sound = useRef<HTMLAudioElement | null>(null);
+  const alarm = useRef<HTMLAudioElement | null>(null);
+  const [tick, setTick] = useState(0); // elke minuut: "ongewoon stil" opnieuw beoordelen
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
@@ -146,13 +165,13 @@ export default function Home() {
             g.ts = [...(g.ts ?? []), e.t].sort((a, b) => b - a).slice(0, 8);
             g.ss = clusterSessions(g.ts);
             g.mins = totalMinutes(g.ts);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0 });
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: false });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
         lastSeen.current = Math.max(...data.events.map((e) => e.t));
         setGroups([...byKey.values()]);
-        setDevices([...counts].map(([name, n]) => ({ name, n })));
+        setDevices([...counts].map(([name, n]) => ({ name, n, last: Math.max(...data.events.filter((e) => map[e.devId] === name).map((e) => e.t)) })));
         setTotal(data.events.length);
         setUpdated(new Date());
         setState((s) => (s === "loading" ? "ready" : s));
@@ -192,20 +211,24 @@ export default function Home() {
       (navigator as unknown as { audioSession?: { type: string } }).audioSession && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = "playback");
     } catch {}
     const el = new Audio(beepDataUri());
-    el.preload = "auto";
+    const al = new Audio(beepDataUri(true));
+    el.preload = al.preload = "auto";
     sound.current = el;
+    alarm.current = al;
     const unlock = () => {
       if (unlocked.current) return;
       // Moet binnen een klik/aanraking: één keer stil afspelen, daarna mag de pagina zelf geluid starten.
-      el.muted = true;
-      el.play()
-        .then(() => {
-          el.pause();
-          el.currentTime = 0;
-          el.muted = false;
-          unlocked.current = true;
-        })
-        .catch(() => { el.muted = false; });
+      for (const a of [el, al]) {
+        a.muted = true;
+        a.play()
+          .then(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.muted = false;
+            unlocked.current = true;
+          })
+          .catch(() => { a.muted = false; });
+      }
     };
     // iOS telt alleen touchend/click/keydown als gebaar (niet touchstart/pointerdown).
     const events = ["click", "touchend", "keydown"] as const;
@@ -213,8 +236,8 @@ export default function Home() {
     return () => events.forEach((ev) => window.removeEventListener(ev, unlock));
   }, []);
 
-  const beep = useCallback(() => {
-    const el = sound.current;
+  const beep = useCallback((urgent = false) => {
+    const el = urgent ? alarm.current : sound.current;
     if (!el) return;
     el.muted = false;
     el.currentTime = 0;
@@ -239,7 +262,9 @@ export default function Home() {
     lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
     setUpdated(new Date());
     // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
-    if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
+    // Rood (18+, dating, VPN, geblokkeerd) klinkt altijd, ongeacht filter, met een ander, dringender geluid.
+    if (events.some((e) => e.flag)) beep(true);
+    else if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
     // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
     for (const e of events) {
@@ -253,18 +278,34 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
-        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0, flash: Date.now() });
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
+        else {
+          // Staat de site nog nergens in de lijst, dan is hij voor het eerst gezien.
+          const known = next.some((g) => g.site === e.site);
+          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
+        }
       }
       return next;
     });
     setDevices((prev) => {
       const next = [...prev];
+      const todayKey = dayKeyFmt.format(Date.now());
       for (const e of events) {
         const dev = deviceMap.current[e.devId];
-        const i = next.findIndex((x) => x.name === dev);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1 };
-        else next.push({ name: dev, n: 1 });
+        let i = next.findIndex((x) => x.name === dev);
+        if (i < 0) {
+          next.push({ name: dev, n: 0, last: 0, gap: 2 * 3_600_000, days: 0, ss: [], avg: 0, blocked: 0 });
+          i = next.length - 1;
+        }
+        const x = next[i];
+        const visible = (!e.bg && e.main) || e.flag;
+        next[i] = {
+          ...x,
+          n: x.n + 1,
+          last: Math.max(x.last ?? 0, e.t),
+          ss: visible && dayKeyFmt.format(e.t) === todayKey ? extendAll(x.ss ?? [], e.t) : x.ss,
+          blocked: (x.blocked ?? 0) + (e.blocked && e.flag === "Geblokkeerd" ? 1 : 0),
+        };
       }
       return next;
     });
@@ -379,6 +420,46 @@ export default function Home() {
   );
 
   useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Apparaten die ongewoon lang niets hebben doorgegeven: uitgezet, offline, of de filtering omzeild (VPN, mobiel internet)?
+  const silent = useMemo(() => {
+    if (!full) return [];
+    const now = Date.now();
+    return devices
+      .map((d) => ({ d, r: isSilent(now, d.last ?? 0, d.gap ?? 2 * 3_600_000, hourOf(now), d.days ?? 0) }))
+      .filter((x) => x.r.silent && x.d.last)
+      .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
+  }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const silentNames = useMemo(() => new Set(silent.map((x) => x.name)), [silent]);
+
+  // Samenvatting van vandaag voor het gekozen apparaat (of alle apparaten).
+  const summary = useMemo(() => {
+    const today = dayKeyFmt.format(Date.now());
+    const devs = devices.filter((d) => !device || d.name === device);
+    const ss = devs.flatMap((d) => d.ss ?? []);
+    const mins = devs.reduce((n, d) => n + sumMin(d.ss ?? []), 0);
+    const avg = devs.reduce((n, d) => n + (d.avg ?? 0), 0);
+    const night = device ? ss.filter((x) => isNight(x.s) || isNight(x.e)) : [];
+    const vis = groups.filter((g) => g.d === today && !g.bg && g.main && (!device || g.dev === device));
+    const cats = new Map<string, number>();
+    for (const g of vis) if ((g.mins ?? 0) > 0 && g.cat && g.cat !== "Overig") cats.set(g.cat, (cats.get(g.cat) ?? 0) + (g.mins ?? 0));
+    const top = [...vis].filter((g) => (g.mins ?? 0) > 0).sort((a, b) => (b.mins ?? 0) - (a.mins ?? 0)).slice(0, 3);
+    return {
+      mins,
+      avg,
+      first: ss.length ? Math.min(...ss.map((x) => x.s)) : 0,
+      last: ss.length ? Math.max(...ss.map((x) => x.e)) : 0,
+      night,
+      cats: [...cats].sort((a, b) => b[1] - a[1]).slice(0, 5),
+      top,
+      blocked: devs.reduce((n, d) => n + (d.blocked ?? 0), 0),
+    };
+  }, [groups, devices, device, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
@@ -401,9 +482,9 @@ export default function Home() {
       <header>
         <div className="title">
           <h1>Bezochte websites &amp; apps</h1>
-          {flagged.length > 0 && (
-            <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
-              !<span className="count">{flagged.length}</span>
+          {flagged.length + silent.length > 0 && (
+            <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length + silent.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
+              !<span className="count">{flagged.length + silent.length}</span>
             </button>
           )}
         </div>
@@ -431,10 +512,31 @@ export default function Home() {
               <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
                 <button key={d.name} className={"chip" + (device === d.name ? " on" : "")} onClick={() => setDevice(d.name)}>
-                  {d.name}
+                  {silentNames.has(d.name) && "⚠ "}{d.name}
+                  {sumMin(d.ss ?? []) > 0 && <span className="chip-min"> · {dur(sumMin(d.ss ?? []))}</span>}
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="summary">
+            <div className="s-row">
+              <strong>{summary.mins > 0 ? `Vandaag ${dur(summary.mins)} actief` : "Vandaag nog niets actiefs"}</strong>
+              <span className="muted">
+                {summary.avg > 0 && ` · gem. ${dur(summary.avg)}`}
+                {device && summary.first > 0 && ` · ${timeFmt.format(summary.first)}–${timeFmt.format(summary.last)}`}
+              </span>
+            </div>
+            {summary.cats.length > 0 && (
+              <div className="cats">
+                {summary.cats.map(([c, m]) => (
+                  <span className="cat" key={c}>{c} <b>{dur(m)}</b></span>
+                ))}
+              </div>
+            )}
+            {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
+            {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
+            {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
           </div>
 
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
@@ -453,10 +555,10 @@ export default function Home() {
                         role="button"
                         aria-expanded={isOpen}
                       >
-                        {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : "♥"}</span> : <Favicon domain={g.icon} />}
+                        {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
-                          <div className="name">{g.name}</div>
-                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
+                          <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
+                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
@@ -484,6 +586,11 @@ export default function Home() {
                                 </>
                               );
                             })()}
+                            {(g.cat && g.cat !== "Overig") || g.isNew ? (
+                              <div className="sub" style={{ marginTop: 6 }}>
+                                {g.cat && g.cat !== "Overig" && <>Categorie: {g.cat}</>}{g.isNew && <>{g.cat && g.cat !== "Overig" ? " · " : ""}Voor het eerst gezien in de afgelopen 24 uur</>}
+                              </div>
+                            ) : null}
                             {near.length > 0 && !showNear && (
                               <button className="more-link" onClick={() => setMoreKey(key)}>Wat gebeurde er nog meer? ›</button>
                             )}
@@ -518,7 +625,21 @@ export default function Home() {
               <h3>Waarschuwingen</h3>
               <button className="close" onClick={() => setOpen(false)} aria-label="Sluiten">×</button>
             </div>
-            <p className="muted">Gemarkeerde sites (18+ en dating) in de logs, nieuwste eerst.</p>
+            {silent.length > 0 && (
+              <>
+                <div className="dh">Apparaat ongewoon stil</div>
+                {silent.map((x) => (
+                  <div className="hit" key={x.name}>
+                    <span className="tag amber">Stil</span>
+                    <div className="main">
+                      <div className="name">{x.name}</div>
+                      <div className="sub">Geen verzoeken sinds {timeFmt.format(x.last)} ({dur(Math.round(x.since / 60000))}); normaal ±{dur(Math.max(1, Math.round(x.gap / 60000)))} overdag. Uitgezet, offline, of VPN / mobiel internet?</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            <p className="muted">Gemarkeerde sites (18+, dating, VPN/proxy, geblokkeerd) in de logs, nieuwste eerst.</p>
             {flagged.map((g) => (
               <div className="hit" key={g.d + g.dev + g.site}>
                 <span className="tag">{g.flag ?? "In de buurt"}</span>

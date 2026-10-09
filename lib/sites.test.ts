@@ -65,3 +65,8 @@ test("systeemadressen van grote partijen zijn geen bezoek", () => {
   for (const h of ["gs.apple.com", "xp.apple.com", "pd.apple.com", "mt.apple.com", "ca.google.com", "ad.amazon.nl"]) assert.equal(classify(h).main, false, h);
   for (const h of ["www.apple.com", "www.google.nl", "nl.wikipedia.org", "de.wikipedia.org", "m.facebook.com"]) assert.equal(classify(h).main, true, h);
 });
+
+test("VPN, proxy en DNS-omzeiling", () => {
+  for (const h of ["www.nordvpn.com", "api.protonvpn.com", "mask.icloud.com", "dns.google", "mozilla.cloudflare-dns.com", "my-vpn-service.com", "www.torproject.org"]) assert.equal(classify(h).flag, "VPN/proxy", h);
+  for (const h of ["www.nu.nl", "www.google.com", "www.icloud.com", "www.lego.com"]) assert.notEqual(classify(h).flag, "VPN/proxy", h);
+});

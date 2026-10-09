@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { classify } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
-import { clusterSessions, totalMinutes, type Session } from "@/lib/sessions";
+import { allSessions, clusterSessions, totalMinutes, type Session } from "@/lib/sessions";
+import { categoryOf } from "@/lib/categories";
+import { gapP95 } from "@/lib/devstats";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -25,9 +27,26 @@ export interface Group {
   ts: number[]; // laatste tijdstippen (max 8, nieuwste eerst), voor "rond dit moment"
   ss: Session[]; // sessies (nieuwste eerst, max 5)
   mins: number; // totaal aantal minuten actief (alle sessies van die dag)
+  cat: string; // categorie (Games, Video, ...)
+  bl: number; // aantal door NextDNS geblokkeerde verzoeken
+  isNew: boolean; // site voor het eerst gezien in de afgelopen 24 uur
+}
+
+/** Eén apparaat: totalen, laatste activiteit en de gegevens om "ongewoon stil" te herkennen. */
+export interface Device {
+  name: string;
+  n: number;
+  last: number; // laatste verzoek (alle verkeer)
+  gap: number; // normale pauze overdag (ms, 95e percentiel)
+  days: number; // aantal dagen met activiteit
+  ss: Session[]; // sessies van vandaag (alleen zichtbaar verkeer)
+  avg: number; // gemiddeld aantal actieve minuten op eerdere dagen
+  blocked: number; // geblokkeerde 18+/dating-pogingen vandaag
 }
 
 const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
+const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Amsterdam" });
+const hourOf = (t: number) => parseInt(hourFmt.format(t), 10) % 24;
 
 // Het samenstellen van de download bij NextDNS is traag; hergebruik het resultaat kort (de live-route vult het aan).
 let cache: { at: number; body: unknown } | null = null;
@@ -73,6 +92,8 @@ export async function GET() {
   const nameCol = col("device_name");
   const idCol = col("device_id");
   const modelCol = col("device_model");
+  const statusCol = col("status");
+  const reasonsCol = col("reasons");
 
   // Eerst alle apparaten bepalen, zodat gelijke soorten consistent worden genummerd.
   const found = new Map<string, string>();
@@ -85,41 +106,102 @@ export async function GET() {
 
   const groups = new Map<string, Group>();
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
-  const devices = new Map<string, number>();
+  const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
+  const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
+  const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
+  const devBlockedToday = new Map<string, number>();
+  const devCount = new Map<string, number>();
+  const statuses = new Map<string, number>();
+  const reasonSamples = new Set<string>();
+  const today = dayFmt.format(Date.now());
   let total = 0;
+  let minT = Infinity;
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
     const t = tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
     const dev = deviceMap[idOf(r)];
-    const info = classify(host);
+    let info = classify(host);
     const d = t ? dayFmt.format(t) : "onbekend";
+
+    // Door NextDNS geblokkeerd? Een geblokkeerde poging naar porno/dating is altijd belangrijk, ook als het adres niet op mijn lijst staat.
+    const status = (statusCol >= 0 ? r[statusCol] ?? "" : "").trim().toLowerCase();
+    const reasons = (reasonsCol >= 0 ? r[reasonsCol] ?? "" : "").toLowerCase();
+    statuses.set(status || "(leeg)", (statuses.get(status || "(leeg)") ?? 0) + 1);
+    if (reasons && reasonSamples.size < 15) reasonSamples.add(reasons.slice(0, 80));
+    const blocked = status === "blocked";
+    let blockedAdult = false;
+    if (blocked && /porn|adult|sex|dating|erotic/.test(reasons) && !info.flag) {
+      info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
+      blockedAdult = true;
+    }
+
+    if (t) {
+      minT = Math.min(minT, t);
+      const f = siteFirst.get(info.site);
+      if (f === undefined || t < f) siteFirst.set(info.site, t);
+      (devAll.get(dev) ?? devAll.set(dev, []).get(dev)!).push(t);
+      if ((info.main && !info.bg) || info.flag) {
+        const byDay = devVis.get(dev) ?? devVis.set(dev, new Map()).get(dev)!;
+        (byDay.get(d) ?? byDay.set(d, []).get(d)!).push(t);
+      }
+    }
+    if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
+
     const key = `${d}|${dev}|${info.site}`;
     const g = groups.get(key);
     if (g) {
       g.n++;
       g.main ||= info.main;
+      if (blocked) g.bl++;
+      if (info.flag && !g.flag) {
+        g.flag = info.flag;
+        g.bg = false;
+        g.main = true;
+      }
       if (t > g.last) g.last = t;
       times.get(key)!.push(t);
     } else {
-      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, ts: [], ss: [], mins: 0 });
+      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, ts: [], ss: [], mins: 0, cat: categoryOf(info.site), bl: blocked ? 1 : 0, isNew: false });
       times.set(key, [t]);
     }
-    devices.set(dev, (devices.get(dev) ?? 0) + 1);
+    devCount.set(dev, (devCount.get(dev) ?? 0) + 1);
     total++;
   }
+  // "Nieuw": voor het eerst gezien in de laatste 24 uur, alleen zinvol als de logs minstens 3 dagen terugreiken.
+  const newCutoff = Date.now() - 24 * 3_600_000;
+  const meaningful = Number.isFinite(minT) && Date.now() - minT > 3 * 86_400_000;
   for (const [key, g] of groups) {
     const all = times.get(key) ?? [];
     g.ss = clusterSessions(all);
     g.mins = totalMinutes(all);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
+    g.isNew = meaningful && g.main && !g.bg && (siteFirst.get(g.site) ?? 0) >= newCutoff;
   }
+
+  const devices: Device[] = [...devCount.entries()].map(([name, n]) => {
+    const all = (devAll.get(name) ?? []).sort((a, b) => a - b);
+    const byDay = devVis.get(name) ?? new Map<string, number[]>();
+    const prev = [...byDay.entries()].filter(([d]) => d !== today && d !== "onbekend").sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 7);
+    return {
+      name,
+      n,
+      last: all.length ? all[all.length - 1] : 0,
+      gap: gapP95(all, hourOf),
+      days: new Set(all.map((t) => dayFmt.format(t))).size,
+      ss: allSessions(byDay.get(today) ?? []),
+      avg: prev.length ? Math.round(prev.reduce((m, [, ts]) => m + totalMinutes(ts), 0) / prev.length) : 0,
+      blocked: devBlockedToday.get(name) ?? 0,
+    };
+  }).sort((a, b) => b.n - a.n);
+
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
   const result = {
     groups: list,
-    devices: [...devices.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n),
+    devices,
     total,
     deviceMap, // id -> label; bevat nooit de echte naam
+    meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren
   };
   cache = { at: Date.now(), body: result };
   return NextResponse.json(result);
