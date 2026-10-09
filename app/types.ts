@@ -21,6 +21,7 @@ export interface Group {
   sc?: number; // aantal sessies
   rc?: number; // daarvan echte sessies (>= 2 min)
   mm?: number; // minuten beeld/geluid-verkeer (echt kijken/luisteren)
+  lm?: number; // laatste keer beeld/geluid-verkeer (unix ms)
   cc?: string; // land van de server
   susp?: string; // reden waarom het adres verdacht lijkt
   flash?: number;
@@ -38,6 +39,7 @@ export interface Event {
   flag?: string;
   cat?: string;
   blocked?: boolean;
+  media?: boolean;
   pay?: { kind: string; level: "checkout" | "store" };
 }
 export interface Device {

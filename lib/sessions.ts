@@ -3,6 +3,7 @@ export interface Session {
   s: number; // start (unix ms)
   e: number; // einde
   n?: number; // aantal verzoeken in de sessie
+  m?: number; // waarvan beeld/geluid-verkeer (video of muziek)
 }
 
 export const GAP = 5 * 60_000;
@@ -33,16 +34,17 @@ export function totalMinutes(times: number[]): number {
 }
 
 /** Voeg één nieuw tijdstip toe aan bestaande sessies (nieuwste eerst). */
-export function extendSessions(ss: Session[], t: number): Session[] {
+export function extendSessions(ss: Session[], t: number, media = false): Session[] {
   const next = ss.map((x) => ({ ...x }));
   const i = next.findIndex((x) => t >= x.s - GAP && t <= x.e + GAP);
   if (i >= 0) {
     next[i].s = Math.min(next[i].s, t);
     next[i].e = Math.max(next[i].e, t);
     if (next[i].n !== undefined) next[i].n = next[i].n! + 1;
+    if (media) next[i].m = (next[i].m ?? 0) + 1;
     return next.sort((a, b) => b.e - a.e);
   }
-  return [{ s: t, e: t, n: 1 }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
+  return [{ s: t, e: t, n: 1, ...(media ? { m: 1 } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }
 
 /** Minuten van een sessie, minimaal 1 als er meer dan een paar seconden tussen zit; 0 = alleen een korte aanraking. */
@@ -70,5 +72,6 @@ export function extendAll(ss: Session[], t: number): Session[] {
  */
 export function isHuman(x: Session): boolean {
   if (x.n === undefined) return true;
+  if ((x.m ?? 0) >= 2) return true; // beeld/geluid (Disney+, YouTube): er wordt gekeken of geluisterd
   return x.n >= 6 || (minutes(x) >= 1 && x.n >= 3);
 }

@@ -37,3 +37,9 @@ test("isHuman: korte achtergrondverzoeken zijn geen gebruik", async () => {
   // zonder telling (oude gegevens) telt mee
   assert.equal(isHuman({ s: 1, e: 2 }), true);
 });
+
+test("isHuman: beeld/geluid (video, muziek) telt als gebruik, ook met weinig verzoeken", async () => {
+  const { isHuman } = await import("./sessions.ts");
+  assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 2 }), true);
+  assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 1 }), false);
+});

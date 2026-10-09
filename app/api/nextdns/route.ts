@@ -33,6 +33,7 @@ export interface Group {
   sc: number; // aantal sessies op die dag
   rc: number; // daarvan echte sessies (minstens 2 minuten)
   mm: number; // minuten beeld/geluid-verkeer (echt kijken of luisteren)
+  lm?: number; // laatste keer beeld/geluid-verkeer
   cat: string; // categorie (Games, Video, ...)
   bl: number; // aantal door NextDNS geblokkeerde verzoeken
   isNew: boolean; // site voor het eerst gezien in de afgelopen 24 uur
@@ -286,7 +287,12 @@ export async function GET(req: Request) {
     g.sc = sessions.length;
     g.rc = sessions.filter((x) => minutes(x) >= 2).length;
     g.mins = sessions.reduce((n, x) => n + minutes(x), 0);
-    g.mm = totalMinutes(mediaTimes.get(gkey) ?? []);
+    const mts = mediaTimes.get(gkey) ?? [];
+    g.mm = totalMinutes(mts);
+    if (mts.length) {
+      g.lm = mts.reduce((a, b) => (b > a ? b : a), 0);
+      for (const x of sessions) x.m = mts.filter((t) => t >= x.s && t <= x.e).length;
+    }
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
     // Een site waarvan alle verzoeken door NextDNS zijn geblokkeerd, is geen "nieuwe site" die bezocht is.
     g.isNew = meaningful && g.main && !g.bg && g.bl < g.n && (siteFirst.get(g.site) ?? 0) >= newCutoff;

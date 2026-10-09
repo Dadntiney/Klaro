@@ -1,5 +1,5 @@
 import { extractHost } from "./parse.ts";
-import { classify, payKind } from "./sites.ts";
+import { classify, isMedia, payKind } from "./sites.ts";
 import { deviceType } from "./names.ts";
 import { categoryOf } from "./categories.ts";
 
@@ -16,6 +16,7 @@ export interface LiveEvent {
   flag?: string;
   cat: string;
   blocked?: boolean; // door NextDNS geblokkeerd
+  media?: boolean; // beeld/geluid-verkeer (video of muziek)
   pay?: { kind: string; level: "checkout" | "store" }; // betaalmoment
 }
 
@@ -35,5 +36,5 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
     .join(" ")
     .toLowerCase();
   if (blocked && /porn|adult|sex|dating|erotic/.test(reasons) && !info.flag) info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
-  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, pay: !blocked ? payKind(host) ?? undefined : undefined };
+  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: !blocked && isMedia(host), pay: !blocked ? payKind(host) ?? undefined : undefined };
 }
