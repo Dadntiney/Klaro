@@ -232,7 +232,7 @@ export default function Home() {
     });
   }, [beep]);
 
-  // Vangnet: elke 10 seconden controleren, voor het geval de rechtstreekse stroom niet werkt.
+  // Vangnet: alleen controleren als de rechtstreekse stroom niet werkt (anders gaan we over de limiet van NextDNS).
   const poll = useCallback(async () => {
     try {
       const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`);
@@ -267,15 +267,28 @@ export default function Home() {
     return () => es.close();
   }, [state, applyEvents]);
 
+  const liveFailedRef = useRef(false);
+  useEffect(() => { liveFailedRef.current = live === "fail"; }, [live]);
+  const streamRef = useRef(stream);
+  useEffect(() => { streamRef.current = stream; }, [stream]);
+
   useEffect(() => {
     if (state !== "ready") return;
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") poll();
-    }, 3_000);
-    const onVisible = () => document.visibilityState === "visible" && poll();
+    let delay = 4000;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      // Werkt de rechtstreekse stroom, dan hoeven we niet te vragen.
+      if (document.visibilityState === "visible" && streamRef.current !== "actief") {
+        await poll();
+        delay = liveFailedRef.current ? 15000 : 4000; // na een fout rustiger aan (rate limit)
+      }
+      timer = setTimeout(tick, delay);
+    };
+    timer = setTimeout(tick, delay);
+    const onVisible = () => document.visibilityState === "visible" && streamRef.current !== "actief" && poll();
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      clearInterval(id);
+      clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [state, poll]);
@@ -317,7 +330,7 @@ export default function Home() {
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? (stream === "actief" ? "ok" : "warn") : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : stream === "actief" ? "Live (direct)" : "Live (controle elke 3 sec.)"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
+              {live === "fail" ? "Live niet beschikbaar" : stream === "actief" ? "Live (direct)" : "Live (controle elke 4 sec.)"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}

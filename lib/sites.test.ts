@@ -38,3 +38,9 @@ test("hoofdadressen", () => {
   assert.equal(classify("rr3---sn.googlevideo.com").main, true); // bekende app
   assert.equal(classify("cdn.pornhub.com").main, true); // 18+ nooit verbergen
 });
+
+test("app-verkeer verborgen, echte sites blijven", () => {
+  for (const h of ["app-analytics-services.com", "bugsnag.com", "media-amazon.com", "ssl-images-amazon.com", "static.adnetwork.io"]) assert.equal(classify(h).bg, true, h);
+  for (const h of ["google.com", "apple.com", "amazon.nl"]) assert.equal(classify(h).main, false, h);
+  for (const h of ["www.google.com", "www.amazon.nl", "www.bol.com", "bol.com", "github.com"]) assert.equal(classify(h).main && !classify(h).bg, true, h);
+});

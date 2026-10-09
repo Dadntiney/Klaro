@@ -7,7 +7,7 @@ const enc = new TextEncoder();
 const sse = (body: string) =>
   new Response(body, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform" } });
 /** Een fout als SSE-bericht, zodat de pagina kan tonen wat er mis is (EventSource ziet anders alleen "fout"). */
-const problem = (message: string) => sse(`retry: 15000\nevent: problem\ndata: ${JSON.stringify({ message })}\n\n`);
+const problem = (message: string, retryMs = 30000) => sse(`retry: ${retryMs}\nevent: problem\ndata: ${JSON.stringify({ message })}\n\n`);
 
 const MAX_MS = 55_000; // daarna sluiten we netjes; de browser verbindt direct opnieuw
 
@@ -32,6 +32,7 @@ export async function GET(req: Request) {
   }
   if (!upstream.ok || !upstream.body) {
     const body = (await upstream.text().catch(() => "")).slice(0, 300);
+    if (upstream.status === 429) return problem("NextDNS laat nu geen extra verbinding toe (te veel verzoeken). We proberen het straks opnieuw.", 60000);
     return problem(`NextDNS gaf fout ${upstream.status}. ${body}`.trim());
   }
 
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
         abort.abort();
         try { controller.close(); } catch {}
       };
-      controller.enqueue(enc.encode("retry: 500\n\nevent: hello\ndata: ok\n\n"));
+      controller.enqueue(enc.encode("retry: 3000\n\nevent: hello\ndata: ok\n\n"));
       timers = [setTimeout(close, MAX_MS), setInterval(() => { try { controller.enqueue(enc.encode(": ping\n\n")); } catch {} }, 15_000) as unknown as ReturnType<typeof setTimeout>];
       let buf = "";
       try {

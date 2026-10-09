@@ -36,6 +36,17 @@ const BACKGROUND = new Set([
   "branch.io", "scorecardresearch.com", "cloudflare-dns.com", "nextdns.io", "ntp.org", "arpa", "local", "lan",
   "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com",
 ]);
+/** Trefwoorden in het adres die duiden op statistieken, advertenties, foutrapportage of hulpdiensten van apps. */
+const BACKGROUND_KEYWORDS = [
+  "analytics", "telemetry", "tracking", "tracker", "metrics", "adservice", "adsystem", "adserver", "adnxs", "pixel", "beacon",
+  "statistic", "crash", "bugsnag", "sentry", "appsflyer", "amplitude", "mixpanel", "braze", "onesignal", "firebase", "newrelic",
+  "datadog", "hotjar", "optimizely", "criteo", "taboola", "outbrain", "rubiconproject", "pubmatic", "openx", "moatads", "2mdn",
+  "quantserve", "demdex", "omtrdc", "adobedtm", "consent", "cookie", "akadns", "cloudfront", "cdn", "static", "assets",
+  "media-amazon", "ssl-images-amazon", "images-amazon", "amazon-adsystem", "amazonaws", "awsstatic", "-services.", "-api.", "-sdk",
+];
+/** Domeinen die als losse apex vrijwel alleen door apps worden opgevraagd; een echte bezoek loopt via www./een taalvariant. */
+const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|whatsapp|bing|yahoo)\.[a-z.]+$/;
+
 const BACKGROUND_SUFFIX = ["push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
 
@@ -81,7 +92,7 @@ const ALERT_APPS = new Set(["WhatsApp"]);
 
 /** Hoofdadres: het domein zelf, www., een taal-/mobiele variant (nl., m.). Hulpadressen als cdn., api., static. tellen niet. */
 export function isMainHost(host: string, base: string): boolean {
-  if (host === base) return true;
+  if (host === base) return !APEX_NOISE.test(base);
   if (!host.endsWith("." + base)) return false;
   const rest = host.slice(0, host.length - base.length - 1);
   return rest === "www" || /^[a-z]{2}$/.test(rest) || ["m", "web", "app", "mobile"].includes(rest);
@@ -98,6 +109,7 @@ export function classify(host: string): SiteInfo {
     !adult && !dating && (BACKGROUND.has(base) ||
     BACKGROUND_SUFFIX.some((s) => host === s || host.endsWith("." + s)) ||
     (host !== base && BACKGROUND_LABELS.has(label)) ||
+    BACKGROUND_KEYWORDS.some((k) => host.includes(k)) ||
     BACKGROUND.has(host.split(".").slice(-1)[0]));
   const flag = adult ? "18+" : dating ? "Dating" : undefined;
   return { site: base, name: base, icon: base, bg, adult, main: !!flag || isMainHost(host, base), flag };
