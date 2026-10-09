@@ -62,8 +62,8 @@ test("gevonden valse alarmen en trackers", () => {
 });
 
 test("systeemadressen van grote partijen zijn geen bezoek", () => {
-  for (const h of ["gs.apple.com", "xp.apple.com", "pd.apple.com", "mt.apple.com", "ca.google.com", "ad.amazon.nl"]) assert.equal(classify(h).main, false, h);
-  for (const h of ["www.apple.com", "www.google.nl", "nl.wikipedia.org", "de.wikipedia.org", "m.facebook.com"]) assert.equal(classify(h).main, true, h);
+  for (const h of ["gs.apple.com", "xp.apple.com", "pd.apple.com", "mt.apple.com", "ca.google.com", "ad.amazon.nl", "www.apple.com"]) assert.equal(classify(h).main, false, h);
+  for (const h of ["www.google.nl", "nl.wikipedia.org", "de.wikipedia.org", "m.facebook.com"]) assert.equal(classify(h).main, true, h);
 });
 
 test("VPN, proxy en DNS-omzeiling", () => {
@@ -115,4 +115,11 @@ test("nieuwsbrief-adres mail.merk.com is geen bezoek", () => {
 test("slimme apparaten en widgets zijn geen bezoek", () => {
   for (const h of ["dpgmedia.net", "js.stripe.network", "x.omnidesk.io"]) assert.equal(classify(h).bg, true, h);
   for (const h of ["eufy.com", "meethue.com", "www.efteling.com", "www.kruidvat.nl", "www.lidl.nl", "www.vinted.com"]) assert.equal(!classify(h).bg && classify(h).main, true, h);
+});
+
+test("www.apple.com is systeemverkeer; Budge Studios is een app", () => {
+  assert.equal(!classify("www.apple.com").bg && classify("www.apple.com").main, false);
+  const b = classify("configs.budgestudios.ca");
+  assert.equal(!b.bg && b.main, true);
+  assert.equal(b.name, "Budge Studios (spel)");
 });

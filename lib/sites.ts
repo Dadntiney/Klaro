@@ -16,6 +16,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Twitch", icon: "twitch.tv", domains: ["twitch.tv", "ttvnw.net", "jtvnw.net", "twitchcdn.net"] },
   { name: "Minecraft", icon: "minecraft.net", domains: ["minecraft.net", "mojang.com", "minecraftservices.com"] },
   { name: "Epic Games / Fortnite", icon: "epicgames.com", domains: ["epicgames.com", "fortnite.com", "unrealengine.com", "epicgames.dev"] },
+  { name: "Budge Studios (spel)", icon: "budgestudios.ca", domains: ["budgestudios.ca", "budgenetwork.com"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
   { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
   { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },
@@ -141,7 +142,7 @@ export function isMainHost(host: string, base: string): boolean {
   if (host === base) return !APEX_NOISE.test(base);
   if (!host.endsWith("." + base)) return false;
   const rest = host.slice(0, host.length - base.length - 1);
-  if (rest === "www") return true;
+  if (rest === "www") return base !== "apple.com"; // www.apple.com wordt elk uur door apparaten zelf opgevraagd
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;
   // Adressen waarachter meestal echt een bezoek zit (mijn.postnl.nl, shop.lego.com, webmail.provider.nl), geen hulpdienst; mail.merk.nl is nieuwsbrief-verkeer, geen bezoek.
