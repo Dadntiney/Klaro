@@ -56,8 +56,8 @@ function Favicon({ domain }: { domain: string }) {
       width={28}
       height={28}
       loading="lazy"
-      // Zonder fallback-optie geeft deze bron een 404 als er geen icoon is (geen standaardplaatje).
-      src={`https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=${encodeURIComponent("http://" + domain)}&size=64`}
+      // Heeft een site geen icoon, dan geeft Google een standaard wereldbolletje van 16x16: dat tonen we niet.
+      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
       onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
       onError={() => setState("none")}
     />
