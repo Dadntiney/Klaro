@@ -50,6 +50,28 @@ function dayLabel(d: string) {
 }
 
 /** Favicon, of niets (een leeg vakje voor de uitlijning) als de site er geen heeft. */
+/** Twee korte tonen (660 en 880 Hz) als WAV, zodat er geen geluidsbestand nodig is. */
+function beepDataUri(): string {
+  const rate = 22050;
+  const tone = (f: number, sec: number) =>
+    Array.from({ length: Math.floor(rate * sec) }, (_, i) => {
+      const t = i / rate;
+      const env = Math.min(1, t / 0.01, (sec - t) / 0.03); // korte in- en uitfade tegen klikjes
+      return Math.sin(2 * Math.PI * f * t) * 0.6 * Math.max(0, env);
+    });
+  const samples = [...tone(660, 0.14), ...new Array(Math.floor(rate * 0.03)).fill(0), ...tone(880, 0.18)];
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buf);
+  const str = (o: number, t: string) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); str(8, "WAVE"); str(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+  v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, samples.length * 2, true);
+  samples.forEach((x, i) => v.setInt16(44 + i * 2, Math.round(x * 32767), true));
+  let bin = "";
+  new Uint8Array(buf).forEach((b) => (bin += String.fromCharCode(b)));
+  return "data:audio/wav;base64," + btoa(bin);
+}
+
 function Favicon({ domain }: { domain: string }) {
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
   if (state === "none") return <span className="fav" aria-hidden />;
@@ -78,7 +100,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
   const [open, setOpen] = useState(false);
-  const audio = useRef<AudioContext | null>(null);
+  const sound = useRef<HTMLAudioElement | null>(null);
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
@@ -143,40 +165,43 @@ export default function Home() {
 
   useEffect(() => { deviceRef.current = device; }, [device]);
 
-  // Geluid staat altijd aan. Browsers staan het pas toe na een interactie: we proberen het direct
-  // en ontgrendelen het stil bij de eerste klik, toets of aanraking.
+  // Geluid staat altijd aan. Een gewoon <audio>-element (met een zelfgemaakte piep) is op iPhone betrouwbaarder dan
+  // Web Audio: het wordt niet gedempt door de stilteschakelaar en blijft na één ontgrendeling bruikbaar.
+  const unlocked = useRef(false);
   useEffect(() => {
+    try {
+      // iOS 16.4+: geluid van de pagina telt als "afspelen" (niet als beltoon), dus ook hoorbaar met stille modus.
+      (navigator as unknown as { audioSession?: { type: string } }).audioSession && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = "playback");
+    } catch {}
+    const el = new Audio(beepDataUri());
+    el.preload = "auto";
+    sound.current = el;
     const unlock = () => {
-      audio.current ??= new AudioContext();
-      audio.current.resume().catch(() => {});
+      if (unlocked.current) return;
+      // Moet binnen een klik/aanraking: één keer stil afspelen, daarna mag de pagina zelf geluid starten.
+      el.muted = true;
+      el.play()
+        .then(() => {
+          el.pause();
+          el.currentTime = 0;
+          el.muted = false;
+          unlocked.current = true;
+          setSoundBlocked(false);
+        })
+        .catch(() => { el.muted = false; });
     };
-    unlock();
-    const events = ["pointerdown", "click", "keydown", "touchstart"] as const;
-    events.forEach((ev) => window.addEventListener(ev, unlock));
+    // iOS telt alleen touchend/click/keydown als gebaar (niet touchstart/pointerdown).
+    const events = ["click", "touchend", "keydown"] as const;
+    events.forEach((ev) => window.addEventListener(ev, unlock, { passive: true }));
     return () => events.forEach((ev) => window.removeEventListener(ev, unlock));
   }, []);
 
   const beep = useCallback(() => {
-    const ctx = audio.current;
-    if (!ctx || ctx.state !== "running") {
-      // Alleen als er echt een piep had moeten klinken laten we weten dat de browser het blokkeert.
-      setSoundBlocked(true);
-      ctx?.resume().catch(() => {});
-      return;
-    }
-    setSoundBlocked(false);
-    [660, 880].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.frequency.value = f;
-      o.connect(g).connect(ctx.destination);
-      const t = ctx.currentTime + i * 0.12;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.15, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-      o.start(t);
-      o.stop(t + 0.12);
-    });
+    const el = sound.current;
+    if (!el) return;
+    el.muted = false;
+    el.currentTime = 0;
+    el.play().then(() => setSoundBlocked(false)).catch(() => setSoundBlocked(true));
   }, []);
 
   const seen = useRef<Set<string>>(new Set());
@@ -304,7 +329,7 @@ export default function Home() {
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}{soundBlocked && <span title="Je browser blokkeert het geluid. Klik één keer op de pagina, of zet Geluid op Toestaan bij het slotje naast de adresbalk."> · 🔇</span>}
+              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}{" · "}<button className="spk" onClick={beep} title={soundBlocked ? "Je browser blokkeert het geluid. Tik hier of ergens op de pagina om het te activeren." : "Tik om de piep te testen"} aria-label="Geluid testen">{soundBlocked ? "🔇" : "🔊"}</button>
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
