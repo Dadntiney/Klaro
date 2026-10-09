@@ -1,20 +1,26 @@
-# CSV (Klaro)
+# Bezochte websites & apps
 
-Upload een CSV met DNS-records (bezochte websites), ontleed die en deel de websites in blokjes in (bijv. speelgoed, games, sociale media).
+Live overzicht van wat apparaten bezoeken, op basis van de NextDNS-logs.
 
-- Leest de CSV in de browser; herkent automatisch de domeinkolom en eventuele aantallen.
-- Groepeert per domein, telt bezoeken.
-- Blokjes met eigen trefwoorden, per domein handmatig aan te passen.
-- "Deel Overig in met Claude" (vereist `ANTHROPIC_API_KEY`).
-- Export als CSV.
+- **Schone lijst**: alleen hoofdadressen en bekende apps; app-verkeer, advertenties en trackers zijn verborgen.
+- **Rood**: 18+ (porno, erotische webshops) en dating, herkend op een grote lijst plus trefwoorden. Een uitroepteken bovenaan toont alles wat rood is.
+- **Uitklappen**: tik op een regel voor de laatste bezoektijden en wat hetzelfde apparaat op dat moment nog meer opvroeg (ook verborgen adressen).
+- **Live**: elke ~1,5 seconde nieuwe verzoeken, met een piep.
+- Apparaten worden alleen als soort getoond (iPhone, iPad, MacBook), nooit met de echte naam.
 
+## Instellen (Vercel → Settings → Environment Variables)
+| Naam | Waarde |
+|---|---|
+| `NEXTDNS_API_KEY` | API-sleutel (my.nextdns.io/account → API) |
+| `NEXTDNS_PROFILE_ID` | 6 tekens, tab Setup → Endpoints |
+| `APP_PASSWORD` | wachtwoord voor de hele site (verplicht; zonder wachtwoord worden geen logs opgehaald) |
+
+## Ontwikkelen
 ```
-npm install && npm run dev
+npm install
+npm run dev
 npm test
 ```
 
-## NextDNS koppelen
-Zet in Vercel (Settings → Environment Variables):
-- `NEXTDNS_API_KEY` – API-sleutel (my.nextdns.io/account → API)
-- `NEXTDNS_PROFILE_ID` – 6 tekens, tab Setup → Endpoints
-- `APP_PASSWORD` – wachtwoord voor de hele site (verplicht voor NextDNS-ophalen)
+## Gegevens
+Zie `data/README.md` voor de bron en licentie van de adreslijsten.

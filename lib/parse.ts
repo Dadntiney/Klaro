@@ -98,31 +98,3 @@ export function detectColumns(header: string[], body: string[][]): Detected | nu
   );
   return { hostCol, countCol: countIdx >= 0 ? countIdx : null };
 }
-
-export interface DomainStat {
-  domain: string;
-  visits: number;
-  hosts: string[];
-}
-
-export function aggregate(body: string[][], det: Detected): { domains: DomainStat[]; skipped: number } {
-  const map = new Map<string, { visits: number; hosts: Set<string> }>();
-  let skipped = 0;
-  for (const r of body) {
-    const host = extractHost(r[det.hostCol] ?? "");
-    if (!host) {
-      skipped++;
-      continue;
-    }
-    const n = det.countCol !== null ? Number(r[det.countCol]) || 1 : 1;
-    const key = baseDomain(host);
-    const e = map.get(key) ?? { visits: 0, hosts: new Set<string>() };
-    e.visits += n;
-    e.hosts.add(host);
-    map.set(key, e);
-  }
-  const domains = [...map.entries()]
-    .map(([domain, e]) => ({ domain, visits: e.visits, hosts: [...e.hosts].sort() }))
-    .sort((a, b) => b.visits - a.visits);
-  return { domains, skipped };
-}

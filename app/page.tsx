@@ -388,7 +388,7 @@ export default function Home() {
                         role="button"
                         aria-expanded={isOpen}
                       >
-                        {g.adult ? <span className="fav badge">18+</span> : <Favicon domain={g.icon} />}
+                        {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : "♥"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
                           <div className="name">{g.name}</div>
                           <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>

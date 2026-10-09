@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCsv, extractHost, baseDomain, detectColumns, aggregate } from "./parse.ts";
+import { parseCsv, extractHost, baseDomain, detectColumns } from "./parse.ts";
 
 test("parseCsv handles quotes and semicolons", () => {
   assert.deepEqual(parseCsv('a;b\n"x;1";"he said ""hi"""\n'), [["a", "b"], ["x;1", 'he said "hi"']]);
@@ -17,11 +17,8 @@ test("baseDomain", () => {
   assert.equal(baseDomain("a.b.example.co.uk"), "example.co.uk");
 });
 
-test("detect + aggregate", () => {
+test("detect kolommen", () => {
   const rows = parseCsv("time,query,count\n1,www.lego.com,3\n2,shop.lego.com,2\n3,roblox.com,1\n");
   const [h, ...body] = rows;
-  const det = detectColumns(h, body)!;
-  assert.deepEqual(det, { hostCol: 1, countCol: 2 });
-  const { domains } = aggregate(body, det);
-  assert.deepEqual(domains.map((d) => [d.domain, d.visits]), [["lego.com", 5], ["roblox.com", 1]]);
+  assert.deepEqual(detectColumns(h, body), { hostCol: 1, countCol: 2 });
 });
