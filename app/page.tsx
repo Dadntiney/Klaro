@@ -664,9 +664,10 @@ export default function Home() {
                               Open {g.site} ↗
                             </a>
                             {(() => {
-                              const ss = g.ss ?? [{ s: g.last, e: g.last }];
-                              const total = g.mins ?? ss.reduce((n, x) => n + minutes(x), 0);
-                              return <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${dur(total)} actief` : dayLabel(g.d)}</div>;
+                              // Alleen de duur van dit ene bezoek (de sessie van deze regel), niet de hele dag.
+                              const sess = (g.ss ?? []).find((x) => x.s === t);
+                              const m = sess ? minutes(sess) : 0;
+                              return <div className="dh">{m > 0 ? `Dit bezoek ± ${dur(m)} actief` : "Dit bezoek: kort"}</div>;
                             })()}
                             {(() => {
                               // Achtergrondverkeer dat bij deze site hoort (zelfde merknaam, zoals media-amazon.com bij Amazon), zodat het bij elkaar blijft.
