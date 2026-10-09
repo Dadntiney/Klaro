@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, payKind, isMedia } from "./sites.ts";
+import { classify, payKind, isMedia, isMainHost } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -98,11 +98,16 @@ test("betaalmomenten en mediaverkeer", () => {
 });
 
 test("portaaladressen tellen als bezoek, hulpadressen niet", () => {
-  for (const h of ["mijn.postnl.nl", "shop.lego.com", "mail.provider.nl", "chat.openai.com"]) assert.equal(classify(h).main, true, h);
+  for (const h of ["mijn.postnl.nl", "shop.lego.com", "webmail.provider.nl", "chat.openai.com"]) assert.equal(classify(h).main, true, h);
   for (const h of ["image.edm.postnl.nl", "click.edm.postnl.nl", "c.media-amazon.com", "tracking.postnl.nl"]) assert.equal(classify(h).main && !classify(h).bg, false, h);
 });
 
 test("inlogdiensten zijn geen bezoek", () => {
   for (const h of ["login.microsoftonline.com", "login.live.com", "shed.outlook.acdc.tm.svc.cloud.microsoft", "x.okta.com"]) assert.equal(classify(h).bg, true, h);
   assert.equal(classify("www.parnassys.net").main && !classify("www.parnassys.net").bg, true);
+});
+
+test("nieuwsbrief-adres mail.merk.com is geen bezoek", () => {
+  assert.equal(isMainHost("mail.efteling.com", "efteling.com"), false);
+  assert.equal(isMainHost("www.efteling.com", "efteling.com"), true);
 });
