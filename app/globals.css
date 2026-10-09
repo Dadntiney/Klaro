@@ -133,3 +133,17 @@ h2 .muted { font-weight:400; }
 .bt { height:8px; background:var(--head); border-radius:4px; overflow:hidden; }
 .bf { display:block; height:100%; background:var(--accent); opacity:.6; border-radius:4px; }
 .bv { text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
+/* Compacter bovenstuk: titel kleiner, tabs als tekst met streepje, samenvatting op één regel. */
+h1 { font-size:23px; }
+header { margin-bottom:10px; }
+header .muted { font-size:13px; margin-top:2px; }
+.tabs { background:none !important; padding:0 !important; gap:20px !important; margin:8px 0 2px !important; border-bottom:1px solid var(--line); width:auto !important; border-radius:0 !important; }
+.tabs button { padding:6px 2px !important; border-radius:0 !important; background:none !important; box-shadow:none !important; border-bottom:2px solid transparent !important; margin-bottom:-1px; }
+.tabs button.on { color:var(--fg) !important; border-bottom-color:var(--accent) !important; font-weight:600; }
+.summary { padding-top:10px !important; }
+.s-row { font-size:14px; line-height:1.45; }
+h2.fold { cursor:pointer; display:flex; align-items:baseline; gap:6px; }
+h2.fold .muted { text-transform:none; letter-spacing:0; font-weight:400; }
+.fold-chev { margin-left:auto; color:var(--muted); font-size:18px; line-height:1; transition:transform .15s; }
+.fold-chev.up { transform:rotate(90deg); }
+h2 .muted { text-transform:none; letter-spacing:0; }

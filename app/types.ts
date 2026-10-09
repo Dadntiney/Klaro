@@ -18,6 +18,8 @@ export interface Group {
   cat?: string;
   bl?: number;
   isNew?: boolean;
+  sc?: number; // aantal sessies
+  rc?: number; // daarvan echte sessies (>= 2 min)
   mm?: number; // minuten beeld/geluid-verkeer (echt kijken/luisteren)
   cc?: string; // land van de server
   susp?: string; // reden waarom het adres verdacht lijkt
@@ -49,7 +51,8 @@ export interface Device {
   blocked?: number; // geblokkeerde 18+/dating-pogingen vandaag
   first?: number; // eerste verzoek ooit in de logs
   away?: { now: boolean | null; since: number; runs: Session[] }; // thuis of onderweg
-  sleep?: { d: string; first: number; last: number }[]; // eerste en laatste activiteit per dag
+  sleep?: { d: string; first: number; last: number }[]; // eerste en laatste echte activiteit per dag
+  dm?: Record<string, number>; // actieve minuten per dag
   threats?: { today: number; week: number; top: { site: string; n: number }[] }; // geblokkeerde bedreigingen
 }
 export interface PayMoment {

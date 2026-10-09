@@ -48,7 +48,7 @@ export default function InsightsView({ groups, devices, insights, payments, devi
       if ((d.threats?.today ?? 0) > 0) lines.push({ icon: "⚠", level: 80, text: `${d.name}: ${d.threats!.today}× een bekende kwaadaardige site geblokkeerd vandaag` });
     }
     for (const d of devs) {
-      const night = (d.ss ?? []).filter((x) => isNight(x.s) || isNight(x.e));
+      const night = (d.ss ?? []).filter((x) => minutes(x) >= 2 && (isNight(x.s) || isNight(x.e)));
       if (night.length) lines.push({ icon: "🌙", level: 70, text: `${d.name}: actief 's nachts (${night.slice(0, 2).map((x) => timeFmt.format(x.s)).join(", ")})` });
     }
     // afwijkend gebruik: veel meer dan normaal, of weer gebruikt na lange tijd
@@ -96,7 +96,7 @@ export default function InsightsView({ groups, devices, insights, payments, devi
 
   // ---- Beveiliging
   const suspicious = groups
-    .filter((g) => g.susp && g.main && !g.bg && inScope(g.dev))
+    .filter((g) => g.susp && g.main && !g.bg && inScope(g.dev) && now - g.last < 7 * DAY)
     .sort((a, b) => b.last - a.last)
     .slice(0, 6);
 
@@ -210,10 +210,10 @@ export default function InsightsView({ groups, devices, insights, payments, devi
               {suspicious.map((g) => (
                 <div className="note" key={g.d + g.site + g.dev}>
                   <span className="ni">⚠</span>
-                  <span><b>{g.site}</b> · {g.dev} · {g.susp}{g.cc ? ` · server in ${country(g.cc)}` : ""}</span>
+                  <span><b>{g.site}</b> · {g.dev} · {g.susp}{g.cc ? ` · server in ${country(g.cc)}` : ""} <span className="muted">· {dayLabel(g.d).toLowerCase()}</span></span>
                 </div>
               ))}
-              {suspicious.length === 0 && <div className="note"><span className="ni">🔍</span><span>Geen verdachte nieuwe adressen ✓</span></div>}
+              {suspicious.length === 0 && <div className="note"><span className="ni">🔍</span><span>Geen verdachte adressen de afgelopen 7 dagen ✓</span></div>}
               <div className="note">
                 <span className="ni">📍</span>
                 <span>

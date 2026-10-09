@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { classify, isMedia, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
-import { allSessions, clusterSessions, totalMinutes, type Session } from "@/lib/sessions";
+import { allSessions, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
@@ -30,6 +30,8 @@ export interface Group {
   ts: number[]; // laatste tijdstippen (max 8, nieuwste eerst), voor "rond dit moment"
   ss: Session[]; // sessies (nieuwste eerst, max 5)
   mins: number; // totaal aantal minuten actief (alle sessies van die dag)
+  sc: number; // aantal sessies op die dag
+  rc: number; // daarvan echte sessies (minstens 2 minuten)
   mm: number; // minuten beeld/geluid-verkeer (echt kijken of luisteren)
   cat: string; // categorie (Games, Video, ...)
   bl: number; // aantal door NextDNS geblokkeerde verzoeken
@@ -56,7 +58,8 @@ export interface Device {
   avg: number; // gemiddeld aantal actieve minuten op eerdere dagen
   blocked: number; // geblokkeerde 18+/dating-pogingen vandaag
   away: AwayInfo; // thuis of onderweg
-  sleep: SleepDay[]; // eerste en laatste activiteit per dag (laatste 7 dagen)
+  sleep: SleepDay[]; // eerste en laatste echte activiteit per dag (laatste 7 dagen)
+  dm: Record<string, number>; // actieve minuten per dag (zichtbaar verkeer, zonder dubbeltelling)
   threats: { today: number; week: number; top: { site: string; n: number }[] }; // geblokkeerde bedreigingen
 }
 
@@ -221,7 +224,7 @@ export async function GET() {
     } else {
       groups.set(gkey, {
         d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag,
-        ts: [], ss: [], mins: 0, mm: 0, cat: categoryOf(info.site), bl: blocked ? 1 : 0, isNew: false, cc: cc || undefined,
+        ts: [], ss: [], sc: 0, rc: 0, mins: 0, mm: 0, cat: categoryOf(info.site), bl: blocked ? 1 : 0, isNew: false, cc: cc || undefined,
       });
       times.set(gkey, [t]);
     }
@@ -236,8 +239,11 @@ export async function GET() {
   const siteName = new Map<string, string>();
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
-    g.ss = clusterSessions(all);
-    g.mins = totalMinutes(all);
+    const sessions = allSessions(all);
+    g.ss = sessions.slice(0, 5);
+    g.sc = sessions.length;
+    g.rc = sessions.filter((x) => minutes(x) >= 2).length;
+    g.mins = sessions.reduce((n, x) => n + minutes(x), 0);
     g.mm = totalMinutes(mediaTimes.get(gkey) ?? []);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
     // Een site waarvan alle verzoeken door NextDNS zijn geblokkeerd, is geen "nieuwe site" die bezocht is.
@@ -286,11 +292,15 @@ export async function GET() {
       const all = (devAll.get(name) ?? []).sort((a, b) => a - b);
       const byDay = devVis.get(name) ?? new Map<string, number[]>();
       const prev = [...byDay.entries()].filter(([d]) => d !== today && d !== "onbekend").sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 7);
-      const sleep: SleepDay[] = [...byDay.entries()]
-        .filter(([d]) => d !== "onbekend")
-        .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-        .slice(0, 7)
-        .map(([d, ts]) => ({ d, first: ts.reduce((a, b) => (b < a ? b : a), Infinity), last: ts.reduce((a, b) => (b > a ? b : a), 0) }));
+      // Eerste en laatste echte activiteit: alleen sessies van minstens 2 minuten, zodat een los achtergrondverzoek 's nachts niet meetelt.
+      const dm: Record<string, number> = {};
+      const sleep: SleepDay[] = [];
+      for (const [d, ts] of [...byDay.entries()].filter(([d]) => d !== "onbekend").sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 14)) {
+        const ses = allSessions(ts);
+        dm[d] = ses.reduce((n, x) => n + minutes(x), 0);
+        const real = ses.filter((x) => minutes(x) >= 2);
+        if (sleep.length < 7 && real.length) sleep.push({ d, first: Math.min(...real.map((x) => x.s)), last: Math.max(...real.map((x) => x.e)) });
+      }
       const th = threatTimes.get(name) ?? [];
       const topSites = new Map<string, number>();
       for (const x of th) topSites.set(x.site, (topSites.get(x.site) ?? 0) + 1);
@@ -306,6 +316,7 @@ export async function GET() {
         blocked: devBlockedToday.get(name) ?? 0,
         away: away.get(name) ?? { now: null, since: 0, runs: [] },
         sleep,
+        dm,
         threats: {
           today: th.filter((x) => dayFmt.format(x.t) === today).length,
           week: th.filter((x) => x.t >= weekAgo).length,

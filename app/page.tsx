@@ -74,6 +74,7 @@ export default function Home() {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [openDays, setOpenDays] = useState<Set<string>>(new Set()); // oudere dagen die de gebruiker heeft opengeklapt
   const [moreKey, setMoreKey] = useState<string | null>(null);
   const sound = useRef<HTMLAudioElement | null>(null);
   const alarm = useRef<HTMLAudioElement | null>(null);
@@ -213,11 +214,11 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), sc: (next[i].sc ?? 0) + ((next[i].ss ?? []).some((x) => e.t >= x.s - 300_000 && e.t <= x.e + 300_000) ? 0 : 1), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
         else {
           // Staat de site nog nergens in de lijst, dan is hij voor het eerst gezien.
           const known = next.some((g) => g.site === e.site);
-          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
+          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], sc: 1, rc: 0, mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
         }
       }
       return next;
@@ -310,7 +311,7 @@ export default function Home() {
         setDevices((prev) =>
           prev.map((p) => {
             const f = (data.devices as Device[]).find((x) => x.name === p.name);
-            return f ? { ...p, first: f.first, away: f.away, sleep: f.sleep, threats: f.threats, avg: f.avg, gap: f.gap, days: f.days } : p;
+            return f ? { ...p, first: f.first, away: f.away, sleep: f.sleep, dm: f.dm, threats: f.threats, avg: f.avg, gap: f.gap, days: f.days } : p;
           })
         );
         const fresh = new Map<string, Group>();
@@ -425,7 +426,7 @@ export default function Home() {
     const ss = devs.flatMap((d) => d.ss ?? []);
     const mins = devs.reduce((n, d) => n + sumMin(d.ss ?? []), 0);
     const avg = devs.reduce((n, d) => n + (d.avg ?? 0), 0);
-    const night = device ? ss.filter((x) => isNight(x.s) || isNight(x.e)) : [];
+    const night = device ? ss.filter((x) => minutes(x) >= 2 && (isNight(x.s) || isNight(x.e))) : [];
     const vis = groups.filter((g) => g.d === today && !g.bg && g.main && (!device || g.dev === device));
     const cats = new Map<string, number>();
     for (const g of vis) if ((g.mins ?? 0) > 0 && g.cat && g.cat !== "Overig") cats.set(g.cat, (cats.get(g.cat) ?? 0) + (g.mins ?? 0));
@@ -449,10 +450,20 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Actieve minuten per dag voor het gekozen apparaat (of alle): vandaag live, eerdere dagen van de server.
+  const dayMins = useCallback(
+    (d: string) => {
+      const today = dayKeyFmt.format(Date.now());
+      return devices.filter((x) => !device || x.name === device).reduce((n, x) => n + (d === today ? sumMin(x.ss ?? []) : x.dm?.[d] ?? 0), 0);
+    },
+    [devices, device]
+  );
+
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     for (const g of groups) {
       if ((device && g.dev !== device) || g.bg || !g.main) continue;
+      if ((g.bl ?? 0) >= g.n && !g.flag) continue; // alles geblokkeerd door NextDNS: niet bezocht
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
     return [...byDay.entries()]
@@ -517,21 +528,43 @@ export default function Home() {
             <InsightsView groups={groups} devices={devices} insights={insights} payments={payments} device={device} tick={tick} />
           ) : (
           <>
-          <div className="summary">
-            <div className="s-row">
-              <strong>{summary.mins > 0 ? `Vandaag ${dur(summary.mins)} actief` : "Vandaag nog niets actiefs"}</strong>
-              {device && summary.first > 0 && <span className="muted"> · {timeFmt.format(summary.first)}–{timeFmt.format(summary.last)}</span>}
+          {(summary.cats.length > 0 || (device && summary.first > 0) || summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
+            <div className="summary">
+              {(summary.cats.length > 0 || (device && summary.first > 0)) && (
+                <div className="s-row">
+                  <span className="muted">
+                    {[
+                      device && summary.first > 0 ? `Actief ${timeFmt.format(summary.first)}–${timeFmt.format(summary.last)}` : "",
+                      ...summary.cats.slice(0, 3).map(([c, m]) => `${c} ${dur(m)}`),
+                    ].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
+              )}
+              {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
+              {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
+              {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
             </div>
-            {summary.cats.length > 0 && <div className="s-cats">{summary.cats.slice(0, 3).map(([c, m]) => `${c} ${dur(m)}`).join(" · ")}</div>}
-            {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
-            {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
-            {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
-          </div>
+          )}
 
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list }) => (
+          {days.map(({ d, list }) => {
+            const today = dayKeyFmt.format(Date.now());
+            const yesterday = dayKeyFmt.format(Date.now() - 86_400_000);
+            const recent = d === today || d === yesterday;
+            const isDayOpen = recent || openDays.has(d);
+            const dm = dayMins(d);
+            return (
             <section key={d}>
-              <h2>{dayLabel(d)} <span className="muted">· {list.length}</span></h2>
+              <h2
+                className={recent ? "" : "fold"}
+                onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; })}
+                role={recent ? undefined : "button"}
+                aria-expanded={recent ? undefined : isDayOpen}
+              >
+                {dayLabel(d)} <span className="muted">· {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>
+                {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
+              </h2>
+              {isDayOpen && (
               <div className="list">
                 {list.map((g) => {
                   const key = g.d + g.site + g.dev;
@@ -567,16 +600,20 @@ export default function Home() {
                             {(() => {
                               const ss = g.ss ?? [{ s: g.last, e: g.last }];
                               const total = g.mins ?? ss.reduce((n, x) => n + minutes(x), 0);
-                              const fmt = (x: Session) =>
-                                minutes(x) === 0 ? `${timeFmt.format(x.e)} · kort` : `${timeFmt.format(x.s)} – ${timeFmt.format(x.e)} · ${minutes(x)} min`;
+                              const real = ss.filter((x) => minutes(x) >= 2);
+                              const realCount = g.rc ?? real.length;
+                              const shortCount = Math.max(0, (g.sc ?? ss.length) - realCount);
+                              const fmt = (x: Session) => `${timeFmt.format(x.s)} – ${timeFmt.format(x.e)} · ${minutes(x)} min`;
                               return (
                                 <>
                                   <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${dur(total)} actief` : dayLabel(g.d)}</div>
                                   <div className="timelist">
-                                    {ss.slice(0, 3).map((x) => (
+                                    {real.slice(0, 3).map((x) => (
                                       <div key={x.s}>{fmt(x)}</div>
                                     ))}
-                                    {ss.length > 3 && <div className="sub">+ {ss.length - 3} eerdere</div>}
+                                    {realCount > 3 && <div className="sub">+ {realCount - 3} eerdere sessies</div>}
+                                    {shortCount > 0 && <div className={real.length ? "sub" : ""}>{shortCount} {shortCount === 1 ? "kort moment" : "korte momenten"} · laatst {timeFmt.format(g.last)}</div>}
+                                    {real.length === 0 && shortCount === 0 && <div>{timeFmt.format(g.last)}</div>}
                                   </div>
                                 </>
                               );
@@ -630,8 +667,10 @@ export default function Home() {
                   );
                 })}
               </div>
+              )}
             </section>
-          ))}
+            );
+          })}
           </>
           )}
         </>
