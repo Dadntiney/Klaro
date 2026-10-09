@@ -699,7 +699,7 @@ export default function Home() {
               <div className="list">
                 {(() => {
                   return rows.map(({ g, t, first, newest, compact }, ri) => {
-                  // Elke regel toont rechts een klein apparaat-icoon (niet als een apparaat is gekozen); een dun lijntje staat waar het apparaat wisselt.
+                  // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
@@ -732,7 +732,7 @@ export default function Home() {
                             return m > 0 ? <><span className="vdur">{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
                           })()}
                           {t ? timeFmt.format(t) : "–"}
-                          {!device && <span className="devmark" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>}
+                          <span className="devmark" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>
                         </div>
                       </div>
                       {isOpen && (() => {
