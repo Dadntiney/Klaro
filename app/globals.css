@@ -231,3 +231,7 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 .item { min-height:64px; padding-top:13px; padding-bottom:13px; }
 .list.lined > div + div::before { display:block; }
 .devhead span { letter-spacing:.01em; }
+
+/* Nu in gebruik: klein, rustig groen stipje */
+.live-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#22c55e; margin-left:2px; box-shadow:0 0 0 2px color-mix(in srgb, #22c55e 25%, transparent); flex:none; }
+.chip.on .live-dot { background:#86efac; box-shadow:0 0 0 2px rgba(255,255,255,.35); }

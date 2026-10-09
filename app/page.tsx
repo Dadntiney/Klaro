@@ -84,6 +84,7 @@ export default function Home() {
   const [openDays, setOpenDays] = useState<Set<string>>(new Set()); // oudere dagen die de gebruiker heeft opengeklapt
   const sound = useRef<HTMLAudioElement | null>(null);
   const alarm = useRef<HTMLAudioElement | null>(null);
+  const [clock, setClock] = useState(() => Date.now()); // elke 20 sec: "nu actief" opnieuw beoordelen
   const [tick, setTick] = useState(0); // elke minuut: "ongewoon stil" opnieuw beoordelen
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
@@ -441,7 +442,8 @@ export default function Home() {
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
-    return () => clearInterval(id);
+    const id2 = setInterval(() => setClock(Date.now()), 20_000);
+    return () => { clearInterval(id); clearInterval(id2); };
   }, []);
 
   // Apparaten die ongewoon lang niets hebben doorgegeven: uitgezet, offline, of de filtering omzeild (VPN, mobiel internet)?
@@ -455,6 +457,17 @@ export default function Home() {
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Nu in gebruik: in de laatste 3 minuten echt verkeer (sites/apps, geen achtergrond) van dit apparaat.
+  const lastUse = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const g of groups) {
+      if (g.bg || !g.main || ((g.bl ?? 0) >= g.n && !g.flag)) continue;
+      if (g.last > (m.get(g.dev) ?? 0)) m.set(g.dev, g.last);
+    }
+    return m;
+  }, [groups]);
+  const activeNow = (name: string) => clock - (lastUse.get(name) ?? 0) < 180_000;
+  const anyActive = devices.some((x) => activeNow(x.name));
   const silentNames = useMemo(() => new Set(silent.map((x) => x.name)), [silent]);
 
   // Samenvatting van vandaag voor het gekozen apparaat (of alle apparaten).
@@ -547,10 +560,10 @@ export default function Home() {
           <div className="bar">
             <div className="bar-in">
             <div className="chips">
-              <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
+              <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle{anyActive && <span className="live-dot" aria-hidden />}</button>
               {devices.map((d) => (
                 <button key={d.name} className={"chip" + (device === d.name ? " on" : "")} onClick={() => setDevice(d.name)}>
-                  {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
+                  {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}{activeNow(d.name) && <span className="live-dot" title="Nu in gebruik" aria-label="Nu in gebruik" />}
                                   </button>
               ))}
             </div>
