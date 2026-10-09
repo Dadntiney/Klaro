@@ -1,7 +1,6 @@
 "use client";
 
-import { labelDevices } from "@/lib/names";
-import { clusterSessions, extendAll, extendSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { extendAll, extendSessions, minutes, type Session } from "@/lib/sessions";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -168,40 +167,12 @@ export default function Home() {
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
 
-  useEffect(() => {
-    // 1) Snel: de nieuwste verzoeken direct tonen. 2) Volledige geschiedenis op de achtergrond.
-    fetch("/api/nextdns/live?since=0")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { events: Event[] } | null) => {
-        if (!data || fullRef.current || !data.events.length) return;
-        const map = labelDevices(data.events.map((e) => ({ id: e.devId, type: e.type })));
-        const byKey = new Map<string, Group>();
-        const counts = new Map<string, number>();
-        for (const e of data.events) {
-          const dev = map[e.devId];
-          const d = dayKeyFmt.format(e.t);
-          const key = `${d}|${dev}|${e.site}`;
-          const g = byKey.get(key);
-          if (g) {
-            g.n++;
-            g.last = Math.max(g.last, e.t);
-            g.main = g.main || e.main;
-            g.ts = [...(g.ts ?? []), e.t].sort((a, b) => b - a).slice(0, 8);
-            g.ss = clusterSessions(g.ts);
-            g.mins = totalMinutes(g.ts);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: false });
-          counts.set(dev, (counts.get(dev) ?? 0) + 1);
-        }
-        deviceMap.current = map;
-        lastSeen.current = Math.max(...data.events.map((e) => e.t));
-        setGroups([...byKey.values()]);
-        setDevices([...counts].map(([name, n]) => ({ name, n, last: Math.max(...data.events.filter((e) => map[e.devId] === name).map((e) => e.t)) })));
-        setTotal(data.events.length);
-        setUpdated(new Date());
-        setState((s) => (s === "loading" ? "ready" : s));
-      })
-      .catch(() => {});
+  // Eerst alles laden en pas tonen als het klaar is (geen half scherm dat daarna verspringt).
+  const [progress, setProgress] = useState(0);
+  const finishing = useRef(false);
 
+  useEffect(() => {
+    const t0 = Date.now();
     fetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
@@ -214,15 +185,33 @@ export default function Home() {
         lastSeen.current = Math.max(0, ...(data.groups as Group[]).map((g) => g.last));
         setUpdated(new Date());
         setFull(true);
-        setState("ready");
+        try { localStorage.setItem("csv-load-ms", String(Date.now() - t0)); } catch {}
+        finishing.current = true;
+        setProgress(1);
+        setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
       })
       .catch((e: Error) => {
-        if (fullRef.current) return;
         setError(e.message);
-        setState((s) => (s === "ready" ? s : "error"));
+        setState("error");
         setFull(true);
       });
   }, []);
+
+  // Voortgang is een schatting (NextDNS meldt zelf niets): loopt op naar ~90% over de tijd die het de vorige keer duurde.
+  useEffect(() => {
+    if (state !== "loading") return;
+    let expected = 20_000;
+    try {
+      const v = Number(localStorage.getItem("csv-load-ms"));
+      if (v > 3000 && v < 120_000) expected = v;
+    } catch {}
+    const t0 = Date.now();
+    const id = setInterval(() => {
+      if (finishing.current) return;
+      setProgress(0.95 * (1 - Math.exp((-3 * (Date.now() - t0)) / expected)));
+    }, 100);
+    return () => clearInterval(id);
+  }, [state]);
 
   useEffect(() => { deviceRef.current = device; }, [device]);
 
@@ -515,7 +504,6 @@ export default function Home() {
           )}
         </div>
         <p className="muted">
-          {state === "loading" && "Logs ophalen van NextDNS…"}
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
@@ -527,9 +515,17 @@ export default function Home() {
       </header>
 
       {state === "error" && <p className="err">{error}</p>}
-      {state === "ready" && !full && <p className="muted">Nieuwste activiteit getoond, volledige geschiedenis wordt geladen…</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
-      {state === "loading" && <div className="loader" aria-label="Laden" />}
+      {state === "loading" && (
+        <div className="loading" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <svg viewBox="0 0 100 100" width="132" height="132">
+            <circle cx="50" cy="50" r="44" className="ring-bg" />
+            <circle cx="50" cy="50" r="44" className="ring" style={{ strokeDasharray: 276.46, strokeDashoffset: 276.46 * (1 - progress) }} />
+          </svg>
+          <div className="pct">{Math.round(progress * 100)}%</div>
+          <p className="muted">{progress >= 1 ? "Klaar" : progress > 0.85 ? "Bijna klaar…" : "Logs ophalen van NextDNS…"}</p>
+        </div>
+      )}
 
       {state === "ready" && (
         <>

@@ -100,3 +100,9 @@ h2 .muted { font-weight:400; }
 /* Heel zachte scheidingslijntjes tussen de regels; beginnen na het icoon zodat de lijst rustig blijft. */
 .list > div { position:relative; }
 .list > div + div::before { content:""; position:absolute; top:0; left:54px; right:14px; height:1px; background:var(--line); opacity:.7; }
+.loading { position:relative; display:grid; justify-items:center; padding:56px 0 40px; }
+.loading svg { transform:rotate(-90deg); }
+.ring-bg { fill:none; stroke:var(--line); stroke-width:6; }
+.ring { fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .25s ease-out; }
+.pct { position:absolute; top:56px; height:132px; display:grid; place-items:center; font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.loading .muted { margin-top:16px; }
