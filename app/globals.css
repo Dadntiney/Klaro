@@ -84,15 +84,16 @@ h2 .muted { font-weight:400; }
 .chip.on .dd, .item.adult .dd { box-shadow:0 0 0 1.5px #fff; }
 .fav-hidden { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 .fav.ph { display:grid; place-items:center; opacity:1; background:var(--head); color:var(--muted); font-weight:700; font-size:13px; }
-.dev { display:inline-block; padding:0 8px; margin-left:-2px; border-radius:99px; background:hsl(var(--dh) var(--ds) calc(var(--bl) * 1%)); color:hsl(var(--dh) var(--ds) 30%); font-size:12.5px; line-height:1.55; }
-.item.adult .dev { background:rgba(255,255,255,.22); color:#fff; }
-.chip.tint:not(.on) { background:hsl(var(--dh) var(--ds) calc(var(--bl) * 1%)); border-color:transparent; color:hsl(var(--dh) var(--ds) 28%); }
-@media (prefers-color-scheme: dark) {
-  .dev { background:hsl(var(--dh) var(--ds) calc(var(--bd) * 1%)); color:hsl(var(--dh) var(--ds) 82%); }
-  .chip.tint:not(.on) { background:hsl(var(--dh) var(--ds) calc(var(--bd) * 1%)); color:hsl(var(--dh) var(--ds) 85%); }
-}
+.item.adult @media (prefers-color-scheme: dark) {
+    }
 .fav.ph { background:color-mix(in srgb, var(--muted) 16%, var(--card)); }
 .summary { background:none !important; border:0 !important; padding:6px 2px 0 !important; border-radius:0 !important; }
 .s-cats { color:var(--muted); font-size:13px; margin-top:2px; }
 .fav.ph { background:color-mix(in srgb, var(--muted) 11%, var(--card)); }
 .item { padding-top:8px; padding-bottom:8px; }
+.dev { display:inline-flex; align-items:center; gap:4px; color:var(--muted); }
+.item.adult .dev { color:rgba(255,255,255,.85); }
+.di { flex:none; opacity:.9; }
+.chip { display:inline-flex; align-items:center; gap:5px; }
+.chip .di { opacity:.7; }
+.chip.on .di { opacity:1; }

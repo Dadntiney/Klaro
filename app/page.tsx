@@ -69,17 +69,22 @@ function dur(min: number) {
   return min >= 60 ? `${Math.floor(min / 60)} u${min % 60 ? ` ${min % 60} min` : ""}` : `${min} min`;
 }
 
-/**
- * Rustige tint per apparaat (soort bepaalt de kleur, een nummer de helderheid). Bewust geen rood, oranje, groen of felblauw:
- * die kleuren betekenen waarschuwing, live of nieuw. De tint is een lichte achtergrond achter de naam zelf.
- */
-function devTint(name: string): React.CSSProperties {
-  const m = name.match(/^(.*?)(?: (\d+))?$/);
-  const type = (m?.[1] ?? name).toLowerCase();
-  const n = Number(m?.[2] ?? 1);
-  const hue = type.includes("iphone") ? 262 : type.includes("ipad") ? 172 : type.includes("mac") ? 292 : type.includes("tv") ? 195 : type.includes("android") ? 330 : type.includes("windows") || type.includes("laptop") ? 225 : 30;
-  const i = (n - 1) % 4;
-  return { "--dh": hue, "--ds": hue === 30 ? "8%" : "60%", "--bl": [94, 88, 82, 76][i], "--bd": [24, 31, 38, 45][i] } as React.CSSProperties;
+/** Klein grijs icoon van het soort apparaat: onderscheid aan de vorm, zonder kleur. */
+function DevIcon({ name }: { name: string }) {
+  const t = name.toLowerCase();
+  const kind = /iphone|android|telefoon/.test(t) ? "phone" : /ipad|tablet/.test(t) ? "tablet" : /macbook|laptop|windows|chromebook/.test(t) ? "laptop" : /\btv\b|playstation|xbox|nintendo/.test(t) ? "tv" : "monitor";
+  const shapes: Record<string, React.ReactNode> = {
+    phone: <><rect x="7" y="2.5" width="10" height="19" rx="2.2" /><path d="M10.5 18.5h3" /></>,
+    tablet: <><rect x="4.5" y="3" width="15" height="18" rx="2.2" /><path d="M11 18h2" /></>,
+    laptop: <><rect x="5" y="5" width="14" height="10" rx="1.4" /><path d="M2.5 19h19" /></>,
+    tv: <><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 20.5h8" /></>,
+    monitor: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M12 16v4M8 20h8" /></>,
+  };
+  return (
+    <svg className="di" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {shapes[kind]}
+    </svg>
+  );
 }
 
 function dayLabel(d: string) {
@@ -532,8 +537,8 @@ export default function Home() {
             <div className="chips">
               <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
-                <button key={d.name} className={"chip tint" + (device === d.name ? " on" : "")} style={devTint(d.name)} onClick={() => setDevice(d.name)}>
-                  {silentNames.has(d.name) && "⚠ "}{d.name}
+                <button key={d.name} className={"chip" + (device === d.name ? " on" : "")} onClick={() => setDevice(d.name)}>
+                  {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
                                   </button>
               ))}
             </div>
@@ -571,7 +576,7 @@ export default function Home() {
                           <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
-                            if (!device) parts.push(<span key="d" className="dev" style={devTint(g.dev)}>{g.dev}</span>);
+                            if (!device) parts.push(<span key="d" className="dev"><DevIcon name={g.dev} />{g.dev}</span>);
                             if ((g.mins ?? 0) > 0) parts.push(<span key="m" className="dur">{dur(g.mins!)}</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
