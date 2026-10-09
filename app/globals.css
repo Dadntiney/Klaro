@@ -192,3 +192,5 @@ h2 .muted { text-transform:none; letter-spacing:0; }
 .goto button { font:inherit; font-size:15px; font-weight:600; padding:8px 18px; border:0; border-radius:8px; background:var(--accent); color:#fff; cursor:pointer; }
 .item.goto-hit { animation:gotohit 3.5s ease-out; }
 @keyframes gotohit { 0%,60% { background:color-mix(in srgb, var(--accent) 18%, transparent); } 100% { background:transparent; } }
+.bar-in .bang { margin:0 6px 0 2px; }
+main { padding-top:14px; }

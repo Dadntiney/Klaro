@@ -499,26 +499,6 @@ export default function Home() {
 
   return (
     <main>
-      <header>
-        <div className="title">
-          <h1>Bezochte websites &amp; apps</h1>
-          {flagged.length + silent.length + extraAlerts.length > 0 && (
-            <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length + silent.length + extraAlerts.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
-              !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
-            </button>
-          )}
-        </div>
-        <p className="muted">
-          {state === "ready" && (
-            <>
-              <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : "Live"} · bijgewerkt om {timeFmt.format(updated!)}
-            </>
-          )}
-          {state === "error" && "Ophalen mislukt"}
-        </p>
-      </header>
-
       {state === "error" && <p className="err">{error}</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
       {state === "loading" && (
@@ -544,6 +524,11 @@ export default function Home() {
                                   </button>
               ))}
             </div>
+            {flagged.length + silent.length + extraAlerts.length > 0 && (
+              <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length + silent.length + extraAlerts.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
+                !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
+              </button>
+            )}
             {days.length > 0 && (
               <button
                 className={"goto-btn" + (goOpen ? " on" : "")}
