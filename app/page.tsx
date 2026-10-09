@@ -468,16 +468,13 @@ export default function Home() {
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Nu in gebruik: in de laatste 3 minuten echt verkeer (sites/apps, geen achtergrond) van dit apparaat.
+  // Online: in de laatste 5 minuten verkeer van dit apparaat gezien (ook achtergrondverkeer; een uitgeschakeld of buiten bereik apparaat valt vanzelf weg).
   const lastUse = useMemo(() => {
     const m = new Map<string, number>();
-    for (const g of groups) {
-      if (g.bg || !g.main || ((g.bl ?? 0) >= g.n && !g.flag)) continue;
-      if (g.last > (m.get(g.dev) ?? 0)) m.set(g.dev, g.last);
-    }
+    for (const g of groups) if (g.last > (m.get(g.dev) ?? 0)) m.set(g.dev, g.last);
     return m;
   }, [groups]);
-  const activeNow = (name: string) => clock - (lastUse.get(name) ?? 0) < 180_000;
+  const activeNow = (name: string) => clock - (lastUse.get(name) ?? 0) < 300_000;
   const anyActive = devices.some((x) => activeNow(x.name));
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
   const loadDetail = (g: Group, t: number, compact: boolean, rk: string) => {
@@ -591,7 +588,7 @@ export default function Home() {
             <div className="chips">
               <button className={"chip" + (device === null ? " on" : "") + (anyActive ? " act" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
-                <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : "")} title={activeNow(d.name) ? "Nu in gebruik" : undefined} onClick={() => setDevice(d.name)}>
+                <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : "")} title={activeNow(d.name) ? "Online" : undefined} onClick={() => setDevice(d.name)}>
                   {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
                                   </button>
               ))}
