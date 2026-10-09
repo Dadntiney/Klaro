@@ -75,7 +75,6 @@ export default function Home() {
   const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [openDays, setOpenDays] = useState<Set<string>>(new Set()); // oudere dagen die de gebruiker heeft opengeklapt
-  const [moreKey, setMoreKey] = useState<string | null>(null);
   const sound = useRef<HTMLAudioElement | null>(null);
   const alarm = useRef<HTMLAudioElement | null>(null);
   const [tick, setTick] = useState(0); // elke minuut: "ongewoon stil" opnieuw beoordelen
@@ -606,7 +605,7 @@ export default function Home() {
                       {isOpen && (() => {
                         const near = around(g);
                         const redNear = near.some((o) => o.flag);
-                        const showNear = redNear || moreKey === key;
+                        const showNear = redNear;
                         return (
                           <div className="detail">
                             <a
@@ -654,13 +653,10 @@ export default function Home() {
                                 {g.cat && g.cat !== "Overig" && <>Categorie: {g.cat}</>}{g.isNew && <>{g.cat && g.cat !== "Overig" ? " · " : ""}Voor het eerst gezien in de afgelopen 24 uur</>}
                               </div>
                             ) : null}
-                            {near.length > 0 && !showNear && (
-                              <button className="more-link" onClick={() => setMoreKey(key)}>Wat gebeurde er nog meer? ›</button>
-                            )}
                             {showNear && (
                               <>
-                                <div className="dh">Op hetzelfde moment (±30 sec.)</div>
-                                {near.map((o) => (
+                                <div className="dh">Let op: op hetzelfde moment (±30 sec.) op de lijst</div>
+                                {near.filter((o) => o.flag).map((o) => (
                                   <div className="near" key={o.site}>
                                     <span className="nt">{timeSecFmt.format(o.t)}</span>
                                     <span className="nn">{o.name}</span>
