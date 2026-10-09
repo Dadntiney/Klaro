@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractHost } from "@/lib/parse";
 import { classify } from "@/lib/sites";
-import { cleanDevice } from "@/lib/names";
+import { deviceType } from "@/lib/names";
 
 export const dynamic = "force-dynamic";
 
@@ -33,16 +33,16 @@ export async function GET(req: Request) {
   }
 
   const json = (await res.json().catch(() => null)) as { data?: Record<string, unknown>[] } | null;
-  const hidden = process.env.HIDDEN_NAMES ?? "";
   const events = [];
   for (const e of json?.data ?? []) {
     const t = Date.parse(String(e.timestamp ?? ""));
     const host = extractHost(String(e.domain ?? ""));
     if (!host || !t || t <= since) continue;
-    const device = (e.device ?? {}) as { id?: string; name?: string };
-    const dev = cleanDevice(device.name?.trim() || device.id?.trim() || "Onbekend", hidden);
+    const device = (e.device ?? {}) as { id?: string; name?: string; model?: string };
+    const devId = device.id?.trim() || device.name?.trim() || "onbekend";
+    const type = deviceType(device.name ?? "", device.model ?? "");
     const info = classify(host);
-    events.push({ t, dev, site: info.site, name: info.name, icon: info.icon, bg: info.bg });
+    events.push({ t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg });
   }
   return NextResponse.json({ events });
 }

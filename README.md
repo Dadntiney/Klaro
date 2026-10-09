@@ -18,4 +18,3 @@ Zet in Vercel (Settings → Environment Variables):
 - `NEXTDNS_API_KEY` – API-sleutel (my.nextdns.io/account → API)
 - `NEXTDNS_PROFILE_ID` – 6 tekens, tab Setup → Endpoints
 - `APP_PASSWORD` – wachtwoord voor de hele site (verplicht voor NextDNS-ophalen)
-- `HIDDEN_NAMES` (optioneel) – komma-gescheiden namen die uit apparaatnamen worden gehaald

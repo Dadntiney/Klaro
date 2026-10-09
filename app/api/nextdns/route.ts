@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { classify } from "@/lib/sites";
-import { cleanDevice } from "@/lib/names";
+import { deviceType, labelDevices } from "@/lib/names";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -59,6 +59,16 @@ export async function GET() {
   if (hostCol < 0) return NextResponse.json({ error: "Geen domeinkolom in de NextDNS-logs gevonden." }, { status: 502 });
   const nameCol = col("device_name");
   const idCol = col("device_id");
+  const modelCol = col("device_model");
+
+  // Eerst alle apparaten bepalen, zodat gelijke soorten consistent worden genummerd.
+  const found = new Map<string, string>();
+  const idOf = (r: string[]) => (idCol >= 0 && r[idCol]?.trim()) || (nameCol >= 0 && r[nameCol]?.trim()) || "onbekend";
+  for (const r of body) {
+    const id = idOf(r);
+    if (!found.has(id)) found.set(id, deviceType((nameCol >= 0 && r[nameCol]) || "", (modelCol >= 0 && r[modelCol]) || ""));
+  }
+  const deviceMap = labelDevices([...found].map(([id, type]) => ({ id, type })));
 
   const groups = new Map<string, Group>();
   const devices = new Map<string, number>();
@@ -67,7 +77,7 @@ export async function GET() {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
     const t = tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
-    const dev = cleanDevice((nameCol >= 0 && r[nameCol]?.trim()) || (idCol >= 0 && r[idCol]?.trim()) || "Onbekend", process.env.HIDDEN_NAMES ?? "");
+    const dev = deviceMap[idOf(r)];
     const info = classify(host);
     const d = t ? dayFmt.format(t) : "onbekend";
     const key = `${d}|${dev}|${info.site}`;
@@ -86,5 +96,6 @@ export async function GET() {
     groups: list,
     devices: [...devices.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n),
     total,
+    deviceMap, // id -> label; bevat nooit de echte naam
   });
 }

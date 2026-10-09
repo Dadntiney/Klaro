@@ -15,7 +15,8 @@ interface Group {
 }
 interface Event {
   t: number;
-  dev: string;
+  devId: string;
+  type: string;
   site: string;
   name: string;
   icon: string;
@@ -69,6 +70,7 @@ export default function Home() {
   const [live, setLive] = useState<"ok" | "fail">("ok");
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
+  const deviceMap = useRef<Record<string, string>>({});
 
   useEffect(() => {
     fetch("/api/nextdns")
@@ -78,6 +80,7 @@ export default function Home() {
         setGroups(data.groups);
         setDevices(data.devices);
         setTotal(data.total);
+        deviceMap.current = data.deviceMap ?? {};
         lastSeen.current = Math.max(0, ...(data.groups as Group[]).map((g) => g.last));
         setUpdated(new Date());
         setState("ready");
@@ -99,9 +102,16 @@ export default function Home() {
       if (!events.length) return;
       lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
       setTotal((n) => n + events.length);
+      // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
+      for (const e of events) {
+        if (deviceMap.current[e.devId]) continue;
+        const same = Object.values(deviceMap.current).filter((l) => l === e.type || l.startsWith(e.type + " ")).length;
+        deviceMap.current[e.devId] = same ? `${e.type} ${same + 1}` : e.type;
+      }
       setGroups((prev) => {
         const next = [...prev];
-        for (const e of events) {
+        for (const ev of events) {
+          const e = { ...ev, dev: deviceMap.current[ev.devId] };
           const d = dayKeyFmt.format(e.t);
           const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
           if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
@@ -112,9 +122,10 @@ export default function Home() {
       setDevices((prev) => {
         const next = [...prev];
         for (const e of events) {
-          const i = next.findIndex((x) => x.name === e.dev);
+          const dev = deviceMap.current[e.devId];
+          const i = next.findIndex((x) => x.name === dev);
           if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1 };
-          else next.push({ name: e.dev, n: 1 });
+          else next.push({ name: dev, n: 1 });
         }
         return next;
       });
