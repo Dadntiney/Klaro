@@ -153,8 +153,8 @@ const VPN_DOMAINS = new Set([
   "dns.google", "dns.quad9.net", "doh.opendns.com", "cloudflare-dns.com", "dns.adguard.com", "dns.adguard-dns.com", "dnsforge.de", "doh.dns.sb", "mullvad-dns.net",
 ]);
 const VPN_PARTS = ["vpn", "proxysite", "unblock-"];
-/** iCloud Private Relay verbergt de bezochte sites voor NextDNS. */
-const VPN_SUFFIX = ["mask.icloud.com", "mask-h2.icloud.com", "mask-api.icloud.com", "mask.apple-dns.net", "relay.apple-dns.net"];
+// Bewust niet: mask.icloud.com en apple-dns.net. Apple-apparaten vragen die altijd op (ook met Private Relay uit), dus dat zou continu vals alarm geven.
+const VPN_SUFFIX: string[] = [];
 
 function isVpn(host: string): boolean {
   const base = baseDomain(host);

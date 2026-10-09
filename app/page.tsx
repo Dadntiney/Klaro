@@ -442,7 +442,9 @@ export default function Home() {
   const silent = useMemo(() => {
     if (!full) return [];
     const now = Date.now();
+    // Alleen telefoons en tablets: laptops en tv's staan gewoon vaak uit of dicht.
     return devices
+      .filter((d) => /iphone|ipad|android|tablet/i.test(d.name))
       .map((d) => ({ d, r: isSilent(now, d.last ?? 0, d.gap ?? 2 * 3_600_000, hourOf(now), d.days ?? 0) }))
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
