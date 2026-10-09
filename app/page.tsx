@@ -626,23 +626,7 @@ export default function Home() {
                             {(() => {
                               const ss = g.ss ?? [{ s: g.last, e: g.last }];
                               const total = g.mins ?? ss.reduce((n, x) => n + minutes(x), 0);
-                              const real = ss.filter((x) => minutes(x) >= 2);
-                              const realCount = g.rc ?? real.length;
-                              const shortCount = Math.max(0, (g.sc ?? ss.length) - realCount);
-                              const fmt = (x: Session) => `${timeFmt.format(x.s)} – ${timeFmt.format(x.e)} · ${minutes(x)} min`;
-                              return (
-                                <>
-                                  <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${dur(total)} actief` : dayLabel(g.d)}</div>
-                                  <div className="timelist">
-                                    {real.slice(0, 3).map((x) => (
-                                      <div key={x.s}>{fmt(x)}</div>
-                                    ))}
-                                    {realCount > 3 && <div className="sub">+ {realCount - 3} eerdere sessies</div>}
-                                    {shortCount > 0 && <div className={real.length ? "sub" : ""}>{shortCount} {shortCount === 1 ? "kort moment" : "korte momenten"} · laatst {timeFmt.format(g.last)}</div>}
-                                    {real.length === 0 && shortCount === 0 && <div>{timeFmt.format(g.last)}</div>}
-                                  </div>
-                                </>
-                              );
+                              return <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${dur(total)} actief` : dayLabel(g.d)}</div>;
                             })()}
                             {(() => {
                               // Achtergrondverkeer dat bij deze site hoort (zelfde merknaam, zoals media-amazon.com bij Amazon), zodat het bij elkaar blijft.
