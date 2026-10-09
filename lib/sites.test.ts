@@ -26,3 +26,8 @@ test("WhatsApp activeert de balk", () => {
   assert.equal(classify("pornhub.com").flag, "18+");
   assert.equal(classify("www.lego.com").flag, undefined);
 });
+
+test("dating", () => {
+  for (const h of ["www.tinder.com", "bumble.com", "nl.badoo.com", "www.datingsite.nl", "lexa.nl", "www.parship.nl"]) assert.equal(classify(h).flag, "Dating", h);
+  for (const h of ["www.bumblebee.nl", "www.lego.com", "www.update.nl"]) assert.equal(classify(h).flag, undefined, h);
+});

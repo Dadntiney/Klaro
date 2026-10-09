@@ -51,6 +51,14 @@ const ADULT_PARTS = [
 const ADULT_WORDS = new Set(["sex", "sexy", "erotic", "erotica", "escort", "camgirl", "camgirls", "nude", "nudes", "milf"]);
 const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn"]);
 
+/** Datingsites en -apps. Ambiguë namen alleen als exact basisdomein. */
+const DATING_PARTS = ["dating", "tinder", "badoo", "grindr", "okcupid", "parship", "eharmony", "meetic", "zoosk", "happn", "ashleymadison", "adultfriendfinder", "benaughty", "relatieplanet", "flirt"];
+const DATING_DOMAINS = new Set(["bumble.com", "hinge.co", "match.com", "pof.com", "feeld.co", "raya.app", "lexa.nl", "seeking.com", "coffeemeetsbagel.com", "boo.world", "mingle2.com", "fruitz.io", "inner-circle.com", "theinnercircle.co", "twoo.com", "skout.com", "lovoo.com", "jaumo.com"]);
+
+export function isDating(host: string): boolean {
+  return DATING_DOMAINS.has(baseDomain(host)) || DATING_PARTS.some((p) => host.includes(p));
+}
+
 export function isAdult(host: string): boolean {
   const labels = host.split(".");
   if (ADULT_TLDS.has(labels[labels.length - 1])) return true;
@@ -75,11 +83,12 @@ export function classify(host: string): SiteInfo {
   const app = APP_BY_DOMAIN.get(base);
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   const adult = isAdult(host);
+  const dating = !adult && isDating(host);
   const label = host.split(".")[0];
   const bg =
-    !adult && (BACKGROUND.has(base) ||
+    !adult && !dating && (BACKGROUND.has(base) ||
     BACKGROUND_SUFFIX.some((s) => host === s || host.endsWith("." + s)) ||
     (host !== base && BACKGROUND_LABELS.has(label)) ||
     BACKGROUND.has(host.split(".").slice(-1)[0]));
-  return { site: base, name: base, icon: base, bg, adult, flag: adult ? "18+" : undefined };
+  return { site: base, name: base, icon: base, bg, adult, flag: adult ? "18+" : dating ? "Dating" : undefined };
 }
