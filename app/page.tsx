@@ -275,24 +275,37 @@ export default function Home() {
   const liveFailedRef = useRef(false);
   useEffect(() => { liveFailedRef.current = live === "fail"; }, [live]);
 
-  // Live: na elk antwoord (±0,5 s) 1 seconde wachten en opnieuw vragen: ruim binnen de limiet van NextDNS.
+  // Live: elke ~1,5 seconde nieuwe verzoeken ophalen, ook als het tabblad op de achtergrond staat.
+  // De klok draait in een aparte Web Worker: tabbladen op de achtergrond krijgen anders na een tijdje
+  // maar één klokslag per minuut, een worker niet. Terwijl een antwoord nog loopt, slaan we een slag over.
   useEffect(() => {
     if (state !== "ready") return;
-    let timer: ReturnType<typeof setTimeout>;
-    let stopped = false;
-    const tick = async () => {
-      if (stopped) return;
-      const visible = document.visibilityState === "visible";
-      if (visible) await poll();
-      const delay = !visible ? 3000 : liveFailedRef.current ? 15000 : 1000; // verborgen tabblad rustig, bij fouten (bijv. rate limit) afremmen
-      timer = setTimeout(tick, delay);
+    let busy = false;
+    let pauseUntil = 0;
+    const run = async () => {
+      if (busy || Date.now() < pauseUntil) return;
+      busy = true;
+      await poll();
+      if (liveFailedRef.current) pauseUntil = Date.now() + 15000; // bij een fout (bijv. rate limit) afremmen
+      busy = false;
     };
-    tick();
-    const onVisible = () => document.visibilityState === "visible" && poll();
+
+    let worker: Worker | null = null;
+    let fallback: ReturnType<typeof setInterval> | null = null;
+    try {
+      const url = URL.createObjectURL(new Blob(["setInterval(()=>postMessage(0),1500)"], { type: "text/javascript" }));
+      worker = new Worker(url);
+      worker.onmessage = run;
+      URL.revokeObjectURL(url);
+    } catch {
+      fallback = setInterval(run, 1500); // zonder worker: gewone klok (wordt op de achtergrond vertraagd)
+    }
+    run();
+    const onVisible = () => document.visibilityState === "visible" && run();
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      stopped = true;
-      clearTimeout(timer);
+      worker?.terminate();
+      if (fallback) clearInterval(fallback);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [state, poll]);
