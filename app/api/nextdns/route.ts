@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
+import { classify } from "@/lib/sites";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-const MAX_ROWS = 5000;
+const MAX_GROUPS = 15000;
 
-export interface LogRow {
-  t: number; // unix ms
-  host: string;
-  device: string;
+/** Eén regel in het overzicht: een site/app, op één dag, door één apparaat. */
+export interface Group {
+  d: string; // dag (YYYY-MM-DD, Nederlandse tijd)
+  dev: string;
+  site: string;
+  name: string;
+  icon: string;
+  last: number; // laatste bezoek (unix ms)
+  n: number; // aantal DNS-verzoeken
+  bg: boolean;
 }
+
+const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
 
 export async function GET() {
   const key = process.env.NEXTDNS_API_KEY;
@@ -41,7 +50,7 @@ export async function GET() {
   }
 
   const rows = parseCsv(await res.text());
-  if (rows.length < 2) return NextResponse.json({ rows: [], total: 0 });
+  if (rows.length < 2) return NextResponse.json({ groups: [], devices: [], total: 0 });
   const [header, ...body] = rows;
   const col = (name: string) => header.findIndex((h) => h.trim().toLowerCase() === name);
   const tCol = col("timestamp");
@@ -50,16 +59,31 @@ export async function GET() {
   const nameCol = col("device_name");
   const idCol = col("device_id");
 
-  const out: LogRow[] = [];
+  const groups = new Map<string, Group>();
+  const devices = new Map<string, number>();
+  let total = 0;
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
-    out.push({
-      t: tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0,
-      host,
-      device: (nameCol >= 0 && r[nameCol]?.trim()) || (idCol >= 0 && r[idCol]?.trim()) || "Onbekend",
-    });
+    const t = tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    const dev = (nameCol >= 0 && r[nameCol]?.trim()) || (idCol >= 0 && r[idCol]?.trim()) || "Onbekend";
+    const info = classify(host);
+    const d = t ? dayFmt.format(t) : "onbekend";
+    const key = `${d}|${dev}|${info.site}`;
+    const g = groups.get(key);
+    if (g) {
+      g.n++;
+      if (t > g.last) g.last = t;
+    } else {
+      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg });
+    }
+    devices.set(dev, (devices.get(dev) ?? 0) + 1);
+    total++;
   }
-  out.sort((a, b) => b.t - a.t);
-  return NextResponse.json({ rows: out.slice(0, MAX_ROWS), total: out.length });
+  const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
+  return NextResponse.json({
+    groups: list,
+    devices: [...devices.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n),
+    total,
+  });
 }
