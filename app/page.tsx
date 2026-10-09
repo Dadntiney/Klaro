@@ -1,6 +1,6 @@
 "use client";
 
-import { extendAll, extendSessions, minutes, type Session } from "@/lib/sessions";
+import { extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights, PayMoment } from "./types";
@@ -268,7 +268,7 @@ export default function Home() {
         else {
           // Staat de site nog nergens in de lijst, dan is hij voor het eerst gezien.
           const known = next.some((g) => g.site === e.site);
-          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], sc: 1, rc: 0, mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
+          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t, n: 1 }], sc: 1, rc: 0, mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
         }
       }
       return next;
@@ -473,7 +473,8 @@ export default function Home() {
     const m = new Map<string, number>();
     for (const g of groups) {
       if (g.bg || !g.main || ((g.bl ?? 0) >= g.n && !g.flag)) continue;
-      if (g.last > (m.get(g.dev) ?? 0)) m.set(g.dev, g.last);
+      const e = Math.max(0, ...(g.ss ?? []).filter(isHuman).map((x) => x.e));
+      if (e > (m.get(g.dev) ?? 0)) m.set(g.dev, e);
     }
     return m;
   }, [groups]);
@@ -554,14 +555,18 @@ export default function Home() {
         // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
         rows: list
           .flatMap((g) => {
-            const ss = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
-            const oldest = Math.min(...ss.map((x) => x.s));
-            return ss.map((x) => ({ g, t: x.s, compact: false, first: x.s === oldest && (g.sc ?? ss.length) <= ss.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
+            const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+            // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
+            const ss = all.filter((x) => g.flag || g.susp || isHuman(x));
+            if (!ss.length) return [];
+            const oldest = Math.min(...all.map((x) => x.s));
+            return ss.map((x) => ({ g, t: x.s, compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
           })
           .sort((a, b) => b.t - a.t),
         // Compact: per site en apparaat één regel, met alle bezoeken opgeteld.
-        crows: [...list].sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, compact: true, first: !!g.isNew, newest: true })),
-      }));
+        crows: [...list].filter((g) => g.flag || g.susp || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, compact: true, first: !!g.isNew, newest: true })),
+      }))
+      .filter((d) => d.rows.length > 0);
   }, [groups, device]);
 
   return (
