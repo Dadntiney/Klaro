@@ -600,16 +600,11 @@ export default function Home() {
             </form>
           )}
 
-          {(summary.cats.length > 0 || (device && summary.first > 0) || summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
+          {((device && summary.first > 0) || summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
             <div className="summary">
-              {(summary.cats.length > 0 || (device && summary.first > 0)) && (
+              {device && summary.first > 0 && (
                 <div className="s-row">
-                  <span className="muted">
-                    {[
-                      device && summary.first > 0 ? `Actief ${timeFmt.format(summary.first)}–${timeFmt.format(summary.last)}` : "",
-                      ...summary.cats.slice(0, 3).map(([c, m]) => `${c} ${dur(m)}`),
-                    ].filter(Boolean).join(" · ")}
-                  </span>
+                  <span className="muted">Actief {timeFmt.format(summary.first)}–{timeFmt.format(summary.last)}</span>
                 </div>
               )}
               {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
