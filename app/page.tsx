@@ -41,19 +41,22 @@ function dayLabel(d: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function Favicon({ domain, name }: { domain: string; name: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <span className="fav fallback">{name[0]?.toUpperCase()}</span>;
+/** Favicon, of niets (een leeg vakje voor de uitlijning) als de site er geen heeft. */
+function Favicon({ domain }: { domain: string }) {
+  const [state, setState] = useState<"loading" | "ok" | "none">("loading");
+  if (state === "none") return <span className="fav" aria-hidden />;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      className="fav"
+      className={"fav" + (state === "ok" ? " ok" : "")}
       alt=""
       width={28}
       height={28}
       loading="lazy"
-      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
-      onError={() => setFailed(true)}
+      // Zonder fallback-optie geeft deze bron een 404 als er geen icoon is (geen standaardplaatje).
+      src={`https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=${encodeURIComponent("http://" + domain)}&size=64`}
+      onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
+      onError={() => setState("none")}
     />
   );
 }
@@ -202,7 +205,7 @@ export default function Home() {
               <div className="list">
                 {list.map((g) => (
                   <div className={"item" + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
-                    <Favicon domain={g.icon} name={g.name} />
+                    <Favicon domain={g.icon} />
                     <div className="main">
                       <div className="name">{g.name}</div>
                       <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>

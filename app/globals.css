@@ -19,8 +19,8 @@ h2 .muted { font-weight:400; }
 .item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--line); }
 .item:last-child { border-bottom:0; }
 .item:hover { background:var(--head); }
-.fav { width:28px; height:28px; border-radius:7px; flex:none; background:var(--head); }
-.fav.fallback { display:inline-grid; place-items:center; font-weight:700; color:var(--muted); }
+.fav { display:block; width:28px; height:28px; border-radius:7px; flex:none; opacity:0; }
+.fav.ok { opacity:1; }
 .main { flex:1; min-width:0; }
 .name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sub { color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
