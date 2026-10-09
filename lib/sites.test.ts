@@ -96,3 +96,8 @@ test("betaalmomenten en mediaverkeer", () => {
   assert.equal(isMedia("scontent.xx.fbcdn.net"), true);
   assert.equal(isMedia("graph.facebook.com"), false);
 });
+
+test("portaaladressen tellen als bezoek, hulpadressen niet", () => {
+  for (const h of ["mijn.postnl.nl", "shop.lego.com", "mail.provider.nl", "chat.openai.com"]) assert.equal(classify(h).main, true, h);
+  for (const h of ["image.edm.postnl.nl", "click.edm.postnl.nl", "c.media-amazon.com", "tracking.postnl.nl"]) assert.equal(classify(h).main && !classify(h).bg, false, h);
+});

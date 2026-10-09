@@ -140,7 +140,9 @@ export function isMainHost(host: string, base: string): boolean {
   if (rest === "www") return true;
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;
-  return LANG.has(rest) || ["m", "web", "app", "mobile"].includes(rest);
+  // Adressen waarachter meestal echt een bezoek zit (mijn.postnl.nl, shop.lego.com, mail.provider.nl), geen hulpdienst.
+  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "mail", "webmail", "chat", "play", "music", "news", "nieuws", "online"];
+  return LANG.has(rest) || PORTAL.includes(rest);
 }
 
 /** VPN's, proxy's, Tor en DNS-diensten waarmee het filter van NextDNS kan worden omzeild. */
