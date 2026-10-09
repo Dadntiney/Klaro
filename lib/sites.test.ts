@@ -132,3 +132,12 @@ test("gofiev.vercel.app wordt GoFiev.nl", () => {
   }
   assert.notEqual(classify("andere.vercel.app").name, "GoFiev.nl");
 });
+
+test("bekende spellen worden als app getoond", () => {
+  const cases: [string, string][] = [["api.tocaboca.com", "Toca Boca (spel)"], ["www.squla.nl", "Squla (leren)"], ["gateway.king.com", "Candy Crush (spel)"], ["cdp.cloud.unity3d.com", "Spel (naam onbekend)"], ["config.applovin.com", "Spel (naam onbekend)"]];
+  for (const [h, n] of cases) {
+    const c = classify(h);
+    assert.equal(c.name, n, h);
+    assert.equal(!c.bg && c.main, true, h);
+  }
+});
