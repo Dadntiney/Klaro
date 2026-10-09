@@ -670,10 +670,21 @@ export default function Home() {
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
               {isDayOpen && (
-              <div className={"list" + (device ? " lined" : "")}>
-                {rows.map(({ g, t, first, newest, compact }, ri) => {
-                  // Een reeks regels van hetzelfde apparaat krijgt één kopje met het icoontje; daaronder geen lijnen tussen de regels.
-                  const runStart = !device && (ri === 0 || rows[ri - 1].g.dev !== g.dev); // met een apparaat gekozen staat het al in de chip
+              <div className="list">
+                {(() => {
+                  // Eenheid op alle tabs: een reeks van hetzelfde apparaat krijgt één kopje (icoon + naam) met lijn, daaronder regels van gelijke hoogte zonder lijnen.
+                  // Korte reeksen (minder dan 3) krijgen geen kopje, maar een klein icoontje achter de naam. Met een gekozen apparaat staat één kopje bovenaan.
+                  const runLen: number[] = [];
+                  for (let a = 0; a < rows.length; ) {
+                    let b = a;
+                    while (b + 1 < rows.length && rows[b + 1].g.dev === rows[a].g.dev) b++;
+                    for (let k = a; k <= b; k++) runLen[k] = b - a + 1;
+                    a = b + 1;
+                  }
+                  return rows.map(({ g, t, first, newest, compact }, ri) => {
+                  const startsRun = ri === 0 || rows[ri - 1].g.dev !== g.dev;
+                  const runStart = device ? ri === 0 : startsRun && runLen[ri] >= 3;
+                  const smallRun = !device && runLen[ri] < 3;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
@@ -693,7 +704,7 @@ export default function Home() {
                       >
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
-                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}{smallRun && <span className="inldev" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
@@ -751,7 +762,8 @@ export default function Home() {
                       })()}
                     </div>
                   );
-                })}
+                  });
+                })()}
               </div>
               )}
             </section>

@@ -238,3 +238,8 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 
 /* Nu in gebruik: zachte groene tint op de chip (de gekozen chip houdt zijn blauwe vulling en een klein stipje) */
 .chip.act:not(.on) { background:color-mix(in srgb, #22c55e 13%, var(--card)); border-color:color-mix(in srgb, #22c55e 50%, var(--line)); }
+
+.inldev { display:inline-flex; vertical-align:-3px; margin-left:8px; color:var(--muted); opacity:.75; }
+.inldev .di { width:15px; height:15px; }
+.item { min-height:56px; padding-top:11px; padding-bottom:11px; }
+.devhead { padding-top:14px; }
