@@ -1,6 +1,7 @@
 "use client";
 
 import { labelDevices } from "@/lib/names";
+import { clusterSessions, extendSessions, minutes, type Session } from "@/lib/sessions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Group {
@@ -16,6 +17,7 @@ interface Group {
   main?: boolean;
   flag?: string;
   ts?: number[];
+  ss?: Session[];
   flash?: number;
 }
 interface Event {
@@ -134,7 +136,8 @@ export default function Home() {
             g.last = Math.max(g.last, e.t);
             g.main = g.main || e.main;
             g.ts = [...(g.ts ?? []), e.t].sort((a, b) => b - a).slice(0, 8);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t] });
+            g.ss = clusterSessions(g.ts);
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }] });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
@@ -241,8 +244,8 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), flash: Date.now() };
-        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], flash: Date.now() });
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), flash: Date.now() };
+        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], flash: Date.now() });
       }
       return next;
     });
@@ -455,12 +458,23 @@ export default function Home() {
                         const showNear = redNear || moreKey === key;
                         return (
                           <div className="detail">
-                            <div className="dh">Bezocht om</div>
-                            <div className="timelist">
-                              {(g.ts ?? [g.last]).map((t) => (
-                                <div key={t}>{timeSecFmt.format(t)}</div>
-                              ))}
-                            </div>
+                            {(() => {
+                              const ss = g.ss ?? [{ s: g.last, e: g.last }];
+                              const total = ss.reduce((n, x) => n + minutes(x), 0);
+                              const fmt = (x: Session) =>
+                                minutes(x) === 0 ? `${timeFmt.format(x.e)} · kort` : `${timeFmt.format(x.s)} – ${timeFmt.format(x.e)} · ${minutes(x)} min`;
+                              return (
+                                <>
+                                  <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${total} min actief` : dayLabel(g.d)}</div>
+                                  <div className="timelist">
+                                    {ss.slice(0, 3).map((x) => (
+                                      <div key={x.s}>{fmt(x)}</div>
+                                    ))}
+                                    {ss.length > 3 && <div className="sub">+ {ss.length - 3} eerdere</div>}
+                                  </div>
+                                </>
+                              );
+                            })()}
                             {near.length > 0 && !showNear && (
                               <button className="more-link" onClick={() => setMoreKey(key)}>Wat gebeurde er nog meer? ›</button>
                             )}
