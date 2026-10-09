@@ -612,13 +612,8 @@ export default function Home() {
             </form>
           )}
 
-          {((device && summary.first > 0) || summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
+          {(summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
             <div className="summary">
-              {device && summary.first > 0 && (
-                <div className="s-row">
-                  <span className="muted">Actief {timeFmt.format(summary.first)}–{timeFmt.format(summary.last)}</span>
-                </div>
-              )}
               {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
               {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
               {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
