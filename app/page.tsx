@@ -537,7 +537,6 @@ export default function Home() {
       {state === "ready" && (!full || histDone) && (
         <div className={"histbar" + (histErr ? " err" : "")} role="progressbar" aria-label="Alle logs laden" aria-valuenow={Math.round(hist * 100)} aria-valuemin={0} aria-valuemax={100}>
           <div className="histfill" style={{ width: `${Math.round((histErr ? 1 : hist) * 100)}%` }} />
-          <span className="histtxt">{histErr ? "Geschiedenis laden mislukt" : histDone ? "Alle logs geladen" : `Alle logs laden… ${Math.round(hist * 100)}%`}</span>
         </div>
       )}
       {state === "ready" && (
