@@ -7,8 +7,8 @@ export interface Session {
 export const GAP = 5 * 60_000;
 const MAX = 5;
 
-/** Maak sessies van losse tijdstippen; nieuwste eerst, maximaal `MAX`. */
-export function clusterSessions(times: number[]): Session[] {
+/** Alle sessies uit losse tijdstippen, nieuwste eerst. */
+function allSessions(times: number[]): Session[] {
   const t = times.filter(Boolean).sort((a, b) => a - b);
   const out: Session[] = [];
   for (const x of t) {
@@ -16,7 +16,17 @@ export function clusterSessions(times: number[]): Session[] {
     if (last && x - last.e <= GAP) last.e = x;
     else out.push({ s: x, e: x });
   }
-  return out.reverse().slice(0, MAX);
+  return out.reverse();
+}
+
+/** Maak sessies van losse tijdstippen; nieuwste eerst, maximaal `MAX`. */
+export function clusterSessions(times: number[]): Session[] {
+  return allSessions(times).slice(0, MAX);
+}
+
+/** Totaal aantal minuten over alle sessies. */
+export function totalMinutes(times: number[]): number {
+  return allSessions(times).reduce((n, x) => n + minutes(x), 0);
 }
 
 /** Voeg één nieuw tijdstip toe aan bestaande sessies (nieuwste eerst). */

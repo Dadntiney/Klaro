@@ -67,3 +67,5 @@ h2 .muted { font-weight:400; }
 .item.near-flag { box-shadow:inset 4px 0 0 #f59e0b; }
 .item.near-flag .sub { color:#b45309; }
 @media (prefers-color-scheme: dark) { .item.near-flag .sub { color:#fbbf24; } }
+.dur { font-weight:600; color:var(--fg); }
+.item.adult .dur { color:#fff; }

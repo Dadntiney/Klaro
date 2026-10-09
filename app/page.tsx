@@ -1,7 +1,7 @@
 "use client";
 
 import { labelDevices } from "@/lib/names";
-import { clusterSessions, extendSessions, minutes, type Session } from "@/lib/sessions";
+import { clusterSessions, extendSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Group {
@@ -18,6 +18,7 @@ interface Group {
   flag?: string;
   ts?: number[];
   ss?: Session[];
+  mins?: number;
   flash?: number;
 }
 interface Event {
@@ -45,6 +46,13 @@ const timeFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-d
 const timeSecFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tz });
 const dayLabelFmt = new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: tz });
 const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: tz });
+
+const sumMin = (ss: Session[]) => ss.reduce((n, x) => n + minutes(x), 0);
+
+/** 45 -> "45 min", 75 -> "1 u 15 min". */
+function dur(min: number) {
+  return min >= 60 ? `${Math.floor(min / 60)} u${min % 60 ? ` ${min % 60} min` : ""}` : `${min} min`;
+}
 
 function dayLabel(d: string) {
   if (d === "onbekend") return "Datum onbekend";
@@ -137,7 +145,8 @@ export default function Home() {
             g.main = g.main || e.main;
             g.ts = [...(g.ts ?? []), e.t].sort((a, b) => b - a).slice(0, 8);
             g.ss = clusterSessions(g.ts);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }] });
+            g.mins = totalMinutes(g.ts);
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0 });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
@@ -244,8 +253,8 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), flash: Date.now() };
-        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], flash: Date.now() });
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), ss: extendSessions(next[i].ss ?? [], e.t), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
+        else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t }], mins: 0, flash: Date.now() });
       }
       return next;
     });
@@ -447,7 +456,7 @@ export default function Home() {
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : "♥"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
                           <div className="name">{g.name}</div>
-                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
+                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
@@ -460,12 +469,12 @@ export default function Home() {
                           <div className="detail">
                             {(() => {
                               const ss = g.ss ?? [{ s: g.last, e: g.last }];
-                              const total = ss.reduce((n, x) => n + minutes(x), 0);
+                              const total = g.mins ?? ss.reduce((n, x) => n + minutes(x), 0);
                               const fmt = (x: Session) =>
                                 minutes(x) === 0 ? `${timeFmt.format(x.e)} · kort` : `${timeFmt.format(x.s)} – ${timeFmt.format(x.e)} · ${minutes(x)} min`;
                               return (
                                 <>
-                                  <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${total} min actief` : dayLabel(g.d)}</div>
+                                  <div className="dh">{total > 0 ? `${dayLabel(g.d)} ± ${dur(total)} actief` : dayLabel(g.d)}</div>
                                   <div className="timelist">
                                     {ss.slice(0, 3).map((x) => (
                                       <div key={x.s}>{fmt(x)}</div>

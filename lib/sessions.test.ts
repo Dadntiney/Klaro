@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clusterSessions, extendSessions, minutes } from "./sessions.ts";
+import { clusterSessions, extendSessions, minutes, totalMinutes } from "./sessions.ts";
 
 const m = (x: number) => 1_700_000_000_000 + x * 60_000; // vaste starttijd (0 zou "geen tijd" betekenen)
 
@@ -17,4 +17,10 @@ test("extendSessions verlengt of start een nieuwe sessie", () => {
   ss = extendSessions(ss, m(60));
   assert.equal(ss.length, 2);
   assert.deepEqual(ss[0], { s: m(60), e: m(60) });
+});
+
+test("totalMinutes telt alle sessies, ook meer dan de getoonde vijf", () => {
+  const times = Array.from({ length: 8 }, (_, i) => [m(i * 100), m(i * 100 + 4)]).flat();
+  assert.equal(clusterSessions(times).length, 5);
+  assert.equal(totalMinutes(times), 8 * 4);
 });

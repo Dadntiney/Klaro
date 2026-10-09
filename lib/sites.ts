@@ -130,11 +130,16 @@ export interface SiteInfo {
 const ALERT_APPS = new Set<string>();
 
 /** Hoofdadres: het domein zelf, www., een taal-/mobiele variant (nl., m.). Hulpadressen als cdn., api., static. tellen niet. */
+const LANG = new Set("nl en de fr es it pt be uk us da sv no fi pl ru ja zh ko ar tr cs hu ro el he sk bg hr sl lt lv et nb nn id vi th hi fa ca eu gl is ga mt sq sr uk ms".split(" "));
+
 export function isMainHost(host: string, base: string): boolean {
   if (host === base) return !APEX_NOISE.test(base);
   if (!host.endsWith("." + base)) return false;
   const rest = host.slice(0, host.length - base.length - 1);
-  return rest === "www" || /^[a-z]{2}$/.test(rest) || ["m", "web", "app", "mobile"].includes(rest);
+  if (rest === "www") return true;
+  // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
+  if (APEX_NOISE.test(base)) return false;
+  return LANG.has(rest) || ["m", "web", "app", "mobile"].includes(rest);
 }
 
 /** Nooit rood markeren, ook niet als een lijst ze (ten onrechte) bevat. */

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { classify } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
-import { clusterSessions, type Session } from "@/lib/sessions";
+import { clusterSessions, totalMinutes, type Session } from "@/lib/sessions";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -24,6 +24,7 @@ export interface Group {
   flag?: string;
   ts: number[]; // laatste tijdstippen (max 8, nieuwste eerst), voor "rond dit moment"
   ss: Session[]; // sessies (nieuwste eerst, max 5)
+  mins: number; // totaal aantal minuten actief (alle sessies van die dag)
 }
 
 const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
@@ -101,7 +102,7 @@ export async function GET() {
       if (t > g.last) g.last = t;
       times.get(key)!.push(t);
     } else {
-      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, ts: [], ss: [] });
+      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, ts: [], ss: [], mins: 0 });
       times.set(key, [t]);
     }
     devices.set(dev, (devices.get(dev) ?? 0) + 1);
@@ -110,6 +111,7 @@ export async function GET() {
   for (const [key, g] of groups) {
     const all = times.get(key) ?? [];
     g.ss = clusterSessions(all);
+    g.mins = totalMinutes(all);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
   }
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
