@@ -235,3 +235,6 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 /* Nu in gebruik: klein, rustig groen stipje */
 .live-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#22c55e; margin-left:2px; box-shadow:0 0 0 2px color-mix(in srgb, #22c55e 25%, transparent); flex:none; }
 .chip.on .live-dot { background:#86efac; box-shadow:0 0 0 2px rgba(255,255,255,.35); }
+
+/* Nu in gebruik: zachte groene tint op de chip (de gekozen chip houdt zijn blauwe vulling en een klein stipje) */
+.chip.act:not(.on) { background:color-mix(in srgb, #22c55e 13%, var(--card)); border-color:color-mix(in srgb, #22c55e 50%, var(--line)); }
