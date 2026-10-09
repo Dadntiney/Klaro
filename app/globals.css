@@ -194,3 +194,9 @@ h2 .muted { text-transform:none; letter-spacing:0; }
 @keyframes gotohit { 0%,60% { background:color-mix(in srgb, var(--accent) 18%, transparent); } 100% { background:transparent; } }
 .bar-in .bang { margin:0 6px 0 2px; }
 main { padding-top:14px; }
+
+.time { display:flex; align-items:baseline; gap:6px; white-space:nowrap; }
+.time .vdur { font-size:13px; font-weight:500; color:var(--muted); }
+.time .vsep { color:var(--line); font-weight:400; }
+.item.adult .time .vdur { color:rgba(255,255,255,.85); }
+.item.adult .time .vsep { color:rgba(255,255,255,.4); }

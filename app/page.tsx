@@ -641,7 +641,15 @@ export default function Home() {
                             return <div className="sub">{parts.flatMap((x, i) => (i ? [" · ", x] : [x]))}</div>;
                           })()}
                         </div>
-                        <div className="time">{t ? timeFmt.format(t) : "–"}</div>
+                        <div className="time">
+                          {(() => {
+                            // Duur van dit ene bezoek (sessie), alleen als het minstens een minuut was.
+                            const sess = (g.ss ?? []).find((x) => x.s === t);
+                            const m = sess ? minutes(sess) : 0;
+                            return m > 0 ? <><span className="vdur">{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
+                          })()}
+                          {t ? timeFmt.format(t) : "–"}
+                        </div>
                       </div>
                       {isOpen && (() => {
                         const near = around(g);
@@ -663,12 +671,6 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
-                            {(() => {
-                              // Alleen de duur van dit ene bezoek (de sessie van deze regel), niet de hele dag.
-                              const sess = (g.ss ?? []).find((x) => x.s === t);
-                              const m = sess ? minutes(sess) : 0;
-                              return <div className="dh">{m > 0 ? `Dit bezoek ± ${dur(m)} actief` : "Dit bezoek: kort"}</div>;
-                            })()}
                             {(() => {
                               // Achtergrondverkeer dat bij deze site hoort (zelfde merknaam, zoals media-amazon.com bij Amazon), zodat het bij elkaar blijft.
                               const token = g.site.split(".")[0];
