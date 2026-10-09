@@ -574,7 +574,7 @@ export default function Home() {
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} />}
                         <div className="main">
                           <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
-                          <div className="sub">{g.name !== g.site ? g.site + " · " : ""}<span className="dd" style={{ background: devColor(g.dev) }} />{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
+                          <div className="sub"><span className="dd" style={{ background: devColor(g.dev) }} />{g.dev}{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
