@@ -60,6 +60,15 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
   );
 }
 
+interface DetailData {
+  matched: { h: string; n: number; b: number }[];
+  matchedTotal: number;
+  other: { h: string; n: number; b: number }[];
+  otherTotal: number;
+  total: number;
+  capped: boolean;
+}
+
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -76,6 +85,8 @@ export default function Home() {
   const [histDone, setHistDone] = useState(false);
   const [histErr, setHistErr] = useState(false);
   const loadStart = useRef(Date.now());
+  const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
+  const [showOther, setShowOther] = useState<Set<string>>(new Set());
   const [compactDays, setCompactDays] = useState<Set<string>>(new Set()); // dagen in compacte weergave (per site opgeteld)
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
   const [goDay, setGoDay] = useState("");
@@ -468,6 +479,24 @@ export default function Home() {
   }, [groups]);
   const activeNow = (name: string) => clock - (lastUse.get(name) ?? 0) < 180_000;
   const anyActive = devices.some((x) => activeNow(x.name));
+  // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
+  const loadDetail = (g: Group, t: number, compact: boolean, rk: string) => {
+    if (details[rk]) return;
+    const ss = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+    const sess = ss.find((x) => x.s === t);
+    const from = (compact ? Math.min(...ss.map((x) => x.s)) : t) - 30_000;
+    const to = (compact ? Math.max(...ss.map((x) => x.e)) : sess ? sess.e : t) + 30_000;
+    const devId = Object.entries(deviceMap.current).find(([, label]) => label === g.dev)?.[0] ?? "";
+    setDetails((d) => ({ ...d, [rk]: { state: "loading" } }));
+    fetch(`/api/nextdns/detail?site=${encodeURIComponent(g.site)}&dev=${encodeURIComponent(devId)}&from=${from}&to=${to}`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "mislukt");
+        setDetails((d) => ({ ...d, [rk]: { state: "ok", data } }));
+      })
+      .catch(() => setDetails((d) => ({ ...d, [rk]: { state: "err" } })));
+  };
+
   const silentNames = useMemo(() => new Set(silent.map((x) => x.name)), [silent]);
 
   // Samenvatting van vandaag voor het gekozen apparaat (of alle apparaten).
@@ -698,7 +727,7 @@ export default function Home() {
                       )}
                       <div
                         className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
-                        onClick={() => setExpanded(isOpen ? null : rowKey)}
+                        onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, t, compact, rowKey); }}
                         role="button"
                         aria-expanded={isOpen}
                       >
@@ -744,6 +773,40 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
+                            {(() => {
+                              const det = details[rowKey];
+                              if (!det || det.state === "loading") return <div className="sub hosthint">Laden…</div>;
+                              if (det.state === "err" || !det.data) return <div className="sub hosthint">Details laden lukt nu niet.</div>;
+                              const dd = det.data;
+                              const more = showOther.has(rowKey);
+                              const row = (x: { h: string; n: number; b: number }) => (
+                                <div className="hostrow" key={x.h}>
+                                  <span className="hn">{x.h}</span>
+                                  <span className="hc">{x.b >= x.n ? "geblokkeerd" : `${x.n}×${x.b > 0 ? ` (${x.b} geblokkeerd)` : ""}`}</span>
+                                </div>
+                              );
+                              return (
+                                <>
+                                  {dd.matched.length > 0 && (
+                                    <>
+                                      <div className="dh">Wat er binnen {g.name} gebeurde</div>
+                                      {dd.matched.map(row)}
+                                      {dd.matchedTotal > dd.matched.length && <div className="sub hosthint">+ {dd.matchedTotal - dd.matched.length} andere adressen</div>}
+                                    </>
+                                  )}
+                                  {dd.other.length > 0 && (
+                                    <>
+                                      <button className="more-link" onClick={() => setShowOther((p) => { const n = new Set(p); if (n.has(rowKey)) n.delete(rowKey); else n.add(rowKey); return n; })}>
+                                        Ook op dat moment ({dd.otherTotal}) {more ? "‹" : "›"}
+                                      </button>
+                                      {more && dd.other.map(row)}
+                                      {more && dd.otherTotal > dd.other.length && <div className="sub hosthint">+ {dd.otherTotal - dd.other.length} andere adressen</div>}
+                                    </>
+                                  )}
+                                  {dd.capped && <div className="sub hosthint">Alleen een deel van de verzoeken getoond (lang bezoek).</div>}
+                                </>
+                              );
+                            })()}
                             {showNear && (
                               <>
                                 <div className="dh">Let op: op hetzelfde moment (±30 sec.) op de lijst</div>

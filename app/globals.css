@@ -243,3 +243,9 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 .inldev .di { width:15px; height:15px; }
 .item { min-height:56px; padding-top:11px; padding-bottom:11px; }
 .devhead { padding-top:14px; }
+
+/* Details van een bezoek */
+.hostrow { display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px; }
+.hostrow .hn { color:var(--fg); overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.hostrow .hc { color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.hosthint { margin-top:4px; }
