@@ -701,30 +701,14 @@ export default function Home() {
               {isDayOpen && (
               <div className="list">
                 {(() => {
-                  // Eenheid op alle tabs: een reeks van hetzelfde apparaat krijgt één kopje (icoon + naam) met lijn, daaronder regels van gelijke hoogte zonder lijnen.
-                  // Korte reeksen (minder dan 3) krijgen geen kopje, maar een klein icoontje achter de naam. Met een gekozen apparaat staat één kopje bovenaan.
-                  const runLen: number[] = [];
-                  for (let a = 0; a < rows.length; ) {
-                    let b = a;
-                    while (b + 1 < rows.length && rows[b + 1].g.dev === rows[a].g.dev) b++;
-                    for (let k = a; k <= b; k++) runLen[k] = b - a + 1;
-                    a = b + 1;
-                  }
                   return rows.map(({ g, t, first, newest, compact }, ri) => {
-                  const startsRun = ri === 0 || rows[ri - 1].g.dev !== g.dev;
-                  const runStart = device ? ri === 0 : startsRun && runLen[ri] >= 3;
-                  const smallRun = !device && runLen[ri] < 3;
+                  // Elke regel toont rechts een klein apparaat-icoon (niet als een apparaat is gekozen); een dun lijntje staat waar het apparaat wisselt.
+                  const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
                   return (
-                    <div key={rowKey} data-rk={rowKey}>
-                      {runStart && (
-                        <div className="devhead" title={g.dev} aria-label={g.dev}>
-                          <DevIcon name={g.dev} />
-                          <span>{g.dev}</span>
-                        </div>
-                      )}
+                    <div key={rowKey} data-rk={rowKey} className={devChange ? "devchange" : undefined}>
                       <div
                         className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, t, compact, rowKey); }}
@@ -733,7 +717,7 @@ export default function Home() {
                       >
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
-                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}{smallRun && <span className="inldev" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>}</div>
+                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
@@ -751,6 +735,7 @@ export default function Home() {
                             return m > 0 ? <><span className="vdur">{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
                           })()}
                           {t ? timeFmt.format(t) : "–"}
+                          {!device && <span className="devmark" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>}
                         </div>
                       </div>
                       {isOpen && (() => {

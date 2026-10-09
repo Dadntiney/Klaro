@@ -252,3 +252,9 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 
 .dview.icon { margin-left:0; padding:2px 7px; }
 h2 .dview + .dview.icon { margin-left:0; }
+
+/* Eén duidelijke regel: elk regel een klein apparaat-icoon rechts, een dun lijntje waar het apparaat wisselt */
+.list > div.devchange::before { display:block; opacity:1; }
+.devmark { display:inline-flex; margin-left:10px; color:var(--muted); width:20px; justify-content:center; }
+.devmark .di { width:17px; height:17px; }
+.item.adult .devmark { color:rgba(255,255,255,.85); }
