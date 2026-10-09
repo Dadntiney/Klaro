@@ -589,10 +589,10 @@ export default function Home() {
           <div className="bar">
             <div className="bar-in">
             <div className="chips">
-              <button className={"chip" + (device === null ? " on" : "") + (anyActive ? " act" : "")} onClick={() => setDevice(null)}>Alle{anyActive && device === null && <span className="live-dot" aria-hidden />}</button>
+              <button className={"chip" + (device === null ? " on" : "") + (anyActive ? " act" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
                 <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : "")} title={activeNow(d.name) ? "Nu in gebruik" : undefined} onClick={() => setDevice(d.name)}>
-                  {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}{activeNow(d.name) && device === d.name && <span className="live-dot" aria-label="Nu in gebruik" />}
+                  {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
                                   </button>
               ))}
             </div>
