@@ -597,6 +597,20 @@ export default function Home() {
                         const showNear = redNear || moreKey === key;
                         return (
                           <div className="detail">
+                            <a
+                              className="open-link"
+                              href={`https://${g.site}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              referrerPolicy="no-referrer"
+                              onClick={(e) => {
+                                // Gemarkeerde of verdachte sites niet per ongeluk openen.
+                                const risk = g.flag ? `gemarkeerd als ${g.flag}` : g.susp ? `verdacht (${g.susp})` : "";
+                                if (risk && !window.confirm(`${g.site} is ${risk}. Toch openen?`)) e.preventDefault();
+                              }}
+                            >
+                              Open {g.site} ↗
+                            </a>
                             {(() => {
                               const ss = g.ss ?? [{ s: g.last, e: g.last }];
                               const total = g.mins ?? ss.reduce((n, x) => n + minutes(x), 0);

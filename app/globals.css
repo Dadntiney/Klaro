@@ -147,3 +147,5 @@ h2.fold .muted { text-transform:none; letter-spacing:0; font-weight:400; }
 .fold-chev { margin-left:auto; color:var(--muted); font-size:18px; line-height:1; transition:transform .15s; }
 .fold-chev.up { transform:rotate(90deg); }
 h2 .muted { text-transform:none; letter-spacing:0; }
+.open-link { display:inline-block; margin:2px 0 4px; font-size:14px; color:var(--accent); text-decoration:none; font-weight:500; }
+.open-link:active { opacity:.6; }
