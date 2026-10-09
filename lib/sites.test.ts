@@ -21,8 +21,9 @@ test("18+ herkenning", () => {
   for (const h of ["www.sussex.ac.uk", "www.essex.com", "abc.alphabet.com", "www.lego.com", "www.nu.nl", "betterhelp.com", "www.unibet.nl", "casino-online.nl", "www.holland-casino.nl", "www.betcity.nl"]) assert.equal(classify(h).adult, false, h);
 });
 
-test("WhatsApp activeert de balk", () => {
-  assert.equal(classify("mmg.whatsapp.net").flag, "WhatsApp");
+test("WhatsApp is niet rood", () => {
+  assert.equal(classify("mmg.whatsapp.net").flag, undefined);
+  assert.equal(classify("mmg.whatsapp.net").name, "WhatsApp");
   assert.equal(classify("pornhub.com").flag, "18+");
   assert.equal(classify("www.lego.com").flag, undefined);
 });

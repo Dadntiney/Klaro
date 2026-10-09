@@ -363,7 +363,7 @@ export default function Home() {
               <h3>Waarschuwingen</h3>
               <button className="close" onClick={() => setOpen(false)} aria-label="Sluiten">×</button>
             </div>
-            <p className="muted">Gemarkeerde sites (18+, dating en WhatsApp) in de logs, nieuwste eerst.</p>
+            <p className="muted">Gemarkeerde sites (18+ en dating) in de logs, nieuwste eerst.</p>
             {flagged.map((g) => (
               <div className="hit" key={g.d + g.dev + g.site}>
                 <span className="tag">{g.flag}</span>

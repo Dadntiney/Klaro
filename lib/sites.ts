@@ -87,8 +87,8 @@ export interface SiteInfo {
   flag?: string; // reden voor de rode balk: "18+" of de naam van een gemarkeerde app
 }
 
-/** Apps die ook de rode balk activeren. */
-const ALERT_APPS = new Set(["WhatsApp"]);
+/** Apps die ook de rode markering activeren (nu geen). */
+const ALERT_APPS = new Set<string>();
 
 /** Hoofdadres: het domein zelf, www., een taal-/mobiele variant (nl., m.). Hulpadressen als cdn., api., static. tellen niet. */
 export function isMainHost(host: string, base: string): boolean {
