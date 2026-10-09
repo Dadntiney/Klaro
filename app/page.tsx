@@ -72,6 +72,10 @@ export default function Home() {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [hist, setHist] = useState(0); // voortgang van het laden van alle logs (na het tonen van vandaag)
+  const [histDone, setHistDone] = useState(false);
+  const [histErr, setHistErr] = useState(false);
+  const loadStart = useRef(Date.now());
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
   const [goDay, setGoDay] = useState("");
   const [goTime, setGoTime] = useState("10:00");
@@ -104,7 +108,13 @@ export default function Home() {
       setInsights(data.insights ?? null);
       lastSeen.current = Math.max(0, ...data.groups.map((g) => g.last));
       setUpdated(new Date());
-      if (isFull) setFull(true);
+      if (isFull) {
+        setFull(true);
+        setHist(1);
+        setHistDone(true);
+        setTimeout(() => setHistDone(false), 900);
+        try { localStorage.setItem("csv-load-ms", String(Date.now() - loadStart.current)); } catch {}
+      }
       finishing.current = true;
       setProgress(1);
       setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
@@ -126,12 +136,24 @@ export default function Home() {
         apply(data, true);
       })
       .catch((e: Error) => {
-        if (fullRef.current) return; // vandaag staat al op het scherm
+        if (fullRef.current) { setHistErr(true); return; } // vandaag staat al op het scherm
         setError(e.message);
         setState("error");
         setFull(true);
       });
   }, []);
+
+  // Laadbalk voor de volledige geschiedenis: schatting op basis van de vorige keer.
+  useEffect(() => {
+    if (state !== "ready" || full || histErr) return;
+    let expected = 25_000;
+    try {
+      const v = Number(localStorage.getItem("csv-load-ms"));
+      if (v > 3000 && v < 180_000) expected = v;
+    } catch {}
+    const id = setInterval(() => setHist(0.95 * (1 - Math.exp((-3 * (Date.now() - loadStart.current)) / expected))), 150);
+    return () => clearInterval(id);
+  }, [state, full, histErr]);
 
   // Voortgang is een schatting (NextDNS meldt zelf niets): loopt op naar ~90% over de tijd die het de vorige keer duurde.
   useEffect(() => {
@@ -512,6 +534,12 @@ export default function Home() {
         </div>
       )}
 
+      {state === "ready" && (!full || histDone) && (
+        <div className={"histbar" + (histErr ? " err" : "")} role="progressbar" aria-label="Alle logs laden" aria-valuenow={Math.round(hist * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="histfill" style={{ width: `${Math.round((histErr ? 1 : hist) * 100)}%` }} />
+          <span className="histtxt">{histErr ? "Geschiedenis laden mislukt" : histDone ? "Alle logs geladen" : `Alle logs laden… ${Math.round(hist * 100)}%`}</span>
+        </div>
+      )}
       {state === "ready" && (
         <>
           <div className="bar">
