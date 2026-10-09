@@ -266,3 +266,12 @@ const MEDIA = [
 export function isMedia(host: string): boolean {
   return MEDIA.some((re) => re.test(host));
 }
+
+/**
+ * Adressen die een app alleen gebruikt om de verbinding open te houden (bijvoorbeeld de pushverbinding van de eufy-camera-app).
+ * Die zeggen niets over gebruik en tellen daarom niet als bezoek of sessie.
+ */
+const QUIET = [/(^|\.)app-push-[a-z0-9-]*\.eufy\.com$/, /^megaeufy-[a-z0-9-]*\.[a-z0-9-]+\.elb\.amazonaws\.com$/];
+export function isQuietHost(host: string): boolean {
+  return QUIET.some((re) => re.test(host));
+}

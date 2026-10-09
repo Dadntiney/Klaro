@@ -158,3 +158,11 @@ test("Philips Hue (api.meethue.com) is een app", () => {
     assert.equal(!c.bg && c.main, true, h);
   }
 });
+
+test("verbinding openhouden (eufy push) telt niet als bezoek", async () => {
+  const { isQuietHost } = await import("./sites.ts");
+  assert.equal(isQuietHost("app-push-eu-pr.eufy.com"), true);
+  assert.equal(isQuietHost("megaeufy-fra-pr-871949979.eu-central-1.elb.amazonaws.com"), true);
+  assert.equal(isQuietHost("app-openapi-eu-pr.eufy.com"), false);
+  assert.equal(isQuietHost("app-devicemanage-eu-pr.eufy.com"), false);
+});

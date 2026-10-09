@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
-import { TV_APPS, classify, isMedia, payKind } from "@/lib/sites";
+import { TV_APPS, classify, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -249,6 +249,7 @@ export async function GET(req: Request) {
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
+    if (isQuietHost(host)) continue; // verbinding openhouden: geen bezoek, geen sessie
 
     const gkey = `${d}|${dev}|${info.site}`;
     const g = groups.get(gkey);

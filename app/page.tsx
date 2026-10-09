@@ -62,7 +62,7 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
 }
 
 // Altijd tonen, ook bij weinig verzoeken (zelf gekozen sites).
-const ALWAYS_SHOW = new Set(["gofiev.nl", "meethue.com"]);
+const ALWAYS_SHOW = new Set(["gofiev.nl", "meethue.com", "eufy.com"]);
 
 interface DetailData {
   matched: { h: string; n: number; b: number }[];
@@ -237,6 +237,7 @@ export default function Home() {
   const applyEvents = useCallback((incoming: Event[]) => {
     // Dubbelen voorkomen (stroom en controle kunnen hetzelfde verzoek leveren).
     const events = incoming
+      .filter((e) => !e.quiet)
       .filter((e) => {
         const k = `${e.t}|${e.devId}|${e.site}`;
         if (seen.current.has(k)) return false;
@@ -551,7 +552,7 @@ export default function Home() {
           .flatMap((g) => {
             const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
             // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
-            const ss = all.filter((x) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || isHuman(x));
+            const ss = all.filter((x) => g.flag || g.susp || (ALWAYS_SHOW.has(g.site) && (x.n === undefined || x.n >= 2)) || isHuman(x));
             if (!ss.length) return [];
             const oldest = Math.min(...all.map((x) => x.s));
             return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));

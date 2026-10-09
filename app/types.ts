@@ -40,6 +40,7 @@ export interface Event {
   cat?: string;
   blocked?: boolean;
   media?: boolean;
+  quiet?: boolean;
   pay?: { kind: string; level: "checkout" | "store" };
 }
 export interface Device {
