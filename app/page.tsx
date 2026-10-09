@@ -1,6 +1,7 @@
 "use client";
 
 import { extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
+import { mergeRows } from "@/lib/merge";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights, PayMoment } from "./types";
@@ -487,12 +488,10 @@ export default function Home() {
   const activeNow = (name: string) => clock - (lastUse.use.get(name) ?? 0) < 120_000 || clock - (lastUse.media.get(name) ?? 0) < 300_000;
   const anyActive = devices.some((x) => activeNow(x.name));
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
-  const loadDetail = (g: Group, t: number, compact: boolean, rk: string) => {
+  const loadDetail = (g: Group, rss: Session[], rk: string) => {
     if (details[rk]) return;
-    const ss = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
-    const sess = ss.find((x) => x.s === t);
-    const from = (compact ? Math.min(...ss.map((x) => x.s)) : t) - 30_000;
-    const to = (compact ? Math.max(...ss.map((x) => x.e)) : sess ? sess.e : t) + 30_000;
+    const from = Math.min(...rss.map((x) => x.s)) - 30_000;
+    const to = Math.max(...rss.map((x) => x.e)) + 30_000;
     const devId = Object.entries(deviceMap.current).find(([, label]) => label === g.dev)?.[0] ?? "";
     setDetails((d) => ({ ...d, [rk]: { state: "loading" } }));
     fetch(`/api/nextdns/detail?site=${encodeURIComponent(g.site)}&dev=${encodeURIComponent(devId)}&from=${from}&to=${to}`)
@@ -559,18 +558,20 @@ export default function Home() {
         d,
         list,
         // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
-        rows: list
+        rows: mergeRows(
+          list
           .flatMap((g) => {
             const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
             // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
             const ss = all.filter((x) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || isHuman(x));
             if (!ss.length) return [];
             const oldest = Math.min(...all.map((x) => x.s));
-            return ss.map((x) => ({ g, t: x.s, compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
+            return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
           })
-          .sort((a, b) => b.t - a.t),
+          .sort((a, b) => b.t - a.t)
+        ),
         // Compact: per site en apparaat één regel, met alle bezoeken opgeteld.
-        crows: [...list].filter((g) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, compact: true, first: !!g.isNew, newest: true })),
+        crows: [...list].filter((g) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, ss: g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }], compact: true, first: !!g.isNew, newest: true })),
       }))
       .filter((d) => d.rows.length > 0);
   }, [groups, device]);
@@ -713,7 +714,7 @@ export default function Home() {
               {isDayOpen && (
               <div className="list">
                 {(() => {
-                  return rows.map(({ g, t, first, newest, compact }, ri) => {
+                  return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
                   // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
                   const key = g.d + g.site + g.dev;
@@ -723,13 +724,13 @@ export default function Home() {
                     <div key={rowKey} data-rk={rowKey} className={devChange ? "devchange" : undefined}>
                       <div
                         className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
-                        onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, t, compact, rowKey); }}
+                        onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
                         role="button"
                         aria-expanded={isOpen}
                       >
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
-                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}{!compact && rss.length > 1 && <span className="mcount">×{rss.length}</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
@@ -742,8 +743,7 @@ export default function Home() {
                         <div className="time">
                           {(() => {
                             // Duur van dit ene bezoek (sessie), alleen als het minstens een minuut was.
-                            const sess = (g.ss ?? []).find((x) => x.s === t);
-                            const m = compact ? g.mins ?? 0 : sess ? minutes(sess) : 0;
+                            const m = compact ? g.mins ?? 0 : rss.reduce((n, x) => n + minutes(x), 0);
                             return m > 0 ? <><span className="vdur">{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
                           })()}
                           {t ? timeFmt.format(t) : "–"}
@@ -770,6 +770,17 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
+                            {!compact && rss.length > 1 && (
+                              <>
+                                <div className="dh">Bezoeken</div>
+                                {[...rss].sort((a, b) => b.s - a.s).map((x) => (
+                                  <div className="hostrow" key={x.s}>
+                                    <span className="hn">{timeFmt.format(x.s)}{x.e - x.s >= 60_000 ? `–${timeFmt.format(x.e)}` : ""}</span>
+                                    <span className="hc">{minutes(x) > 0 ? dur(minutes(x)) : "kort"}</span>
+                                  </div>
+                                ))}
+                              </>
+                            )}
                             {(() => {
                               const det = details[rowKey];
                               if (!det || det.state === "loading") return <div className="sub hosthint">Laden…</div>;

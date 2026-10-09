@@ -258,3 +258,5 @@ h2 .dview + .dview.icon { margin-left:0; }
 
 /* Nu in gebruik: alleen de chip kleurt groen (de gekozen chip wordt dan vol groen), geen bolletjes */
 .chip.on.act { background:#16a34a; border-color:#16a34a; color:#fff; }
+
+.mcount { margin-left:8px; font-size:12px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; }
