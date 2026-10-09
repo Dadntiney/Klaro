@@ -102,6 +102,7 @@ export default function Home() {
   const [updated, setUpdated] = useState<Date | null>(null);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [moreKey, setMoreKey] = useState<string | null>(null);
   const sound = useRef<HTMLAudioElement | null>(null);
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
@@ -396,22 +397,37 @@ export default function Home() {
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                         <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
                       </div>
-                      {isOpen && (
-                        <div className="detail">
-                          <div className="dh">Bezocht om</div>
-                          <div className="times">{(g.ts ?? [g.last]).map((t) => timeSecFmt.format(t)).join(" · ")}</div>
-                          <div className="dh">Op hetzelfde moment (±30 sec.) door {g.dev}</div>
-                          {around(g).length === 0 && <div className="sub">Niets anders opgevraagd.</div>}
-                          {around(g).map((o) => (
-                            <div className="near" key={o.site}>
-                              <span className="nt">{timeSecFmt.format(o.t)}</span>
-                              <span className="nn">{o.name}</span>
-                              {o.flag && <span className="tag">{o.flag}</span>}
-                              {o.hidden && !o.flag && <span className="sub">achtergrond</span>}
+                      {isOpen && (() => {
+                        const near = around(g);
+                        const redNear = near.some((o) => o.flag);
+                        const showNear = redNear || moreKey === key;
+                        return (
+                          <div className="detail">
+                            <div className="dh">Bezocht om</div>
+                            <div className="timelist">
+                              {(g.ts ?? [g.last]).map((t) => (
+                                <div key={t}>{timeSecFmt.format(t)}</div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            {near.length > 0 && !showNear && (
+                              <button className="more-link" onClick={() => setMoreKey(key)}>Wat gebeurde er nog meer? ›</button>
+                            )}
+                            {showNear && (
+                              <>
+                                <div className="dh">Op hetzelfde moment (±30 sec.)</div>
+                                {near.map((o) => (
+                                  <div className="near" key={o.site}>
+                                    <span className="nt">{timeSecFmt.format(o.t)}</span>
+                                    <span className="nn">{o.name}</span>
+                                    {o.flag && <span className="tag">{o.flag}</span>}
+                                    {o.hidden && !o.flag && <span className="sub">achtergrond</span>}
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}

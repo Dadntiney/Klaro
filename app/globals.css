@@ -62,3 +62,5 @@ h2 .muted { font-weight:400; }
 .near { display:flex; align-items:center; gap:8px; padding:2px 0; }
 .near .nt { font-variant-numeric:tabular-nums; color:var(--muted); flex:none; }
 .near .nn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.timelist { font-variant-numeric:tabular-nums; line-height:1.7; }
+.more-link { display:block; margin:10px 0 2px; padding:0; font:inherit; font-size:13px; background:none; border:0; color:var(--accent); cursor:pointer; }
