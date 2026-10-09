@@ -60,6 +60,9 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
   );
 }
 
+// Altijd tonen, ook bij weinig verzoeken (zelf gekozen sites).
+const ALWAYS_SHOW = new Set(["gofiev.nl"]);
+
 interface DetailData {
   matched: { h: string; n: number; b: number }[];
   matchedTotal: number;
@@ -560,14 +563,14 @@ export default function Home() {
           .flatMap((g) => {
             const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
             // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
-            const ss = all.filter((x) => g.flag || g.susp || isHuman(x));
+            const ss = all.filter((x) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || isHuman(x));
             if (!ss.length) return [];
             const oldest = Math.min(...all.map((x) => x.s));
             return ss.map((x) => ({ g, t: x.s, compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
           })
           .sort((a, b) => b.t - a.t),
         // Compact: per site en apparaat één regel, met alle bezoeken opgeteld.
-        crows: [...list].filter((g) => g.flag || g.susp || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, compact: true, first: !!g.isNew, newest: true })),
+        crows: [...list].filter((g) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, compact: true, first: !!g.isNew, newest: true })),
       }))
       .filter((d) => d.rows.length > 0);
   }, [groups, device]);

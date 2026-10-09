@@ -54,6 +54,9 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Xbox", icon: "xbox.com", domains: ["xbox.com", "xboxlive.com"] },
 ];
 
+/** tv-apps: bij kijken meldt een apart adres (conviva) de voortgang; dat beeldverkeer hoort bij deze apps op hetzelfde apparaat. */
+export const TV_APPS = new Set(["ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl"]);
+
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 

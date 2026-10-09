@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
-import { classify, isMedia, payKind } from "@/lib/sites";
+import { TV_APPS, classify, isMedia, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -191,6 +191,7 @@ export async function GET(req: Request) {
   const groups = new Map<string, Group>();
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
   const mediaTimes = new Map<string, number[]>(); // alleen beeld/geluid-verkeer per groep
+  const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
@@ -271,7 +272,10 @@ export async function GET(req: Request) {
       });
       times.set(gkey, [t]);
     }
-    if (!blocked && isMedia(host)) (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
+    if (!blocked && isMedia(host)) {
+      (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
+      (devMedia.get(dev) ?? devMedia.set(dev, []).get(dev)!).push(t);
+    }
     devCount.set(dev, (devCount.get(dev) ?? 0) + 1);
     total++;
   }
@@ -292,6 +296,11 @@ export async function GET(req: Request) {
     if (mts.length) {
       g.lm = mts.reduce((a, b) => (b > a ? b : a), 0);
       for (const x of sessions) x.m = mts.filter((t) => t >= x.s && t <= x.e).length;
+    }
+    // Een tv-app (Ziggo GO e.d.): het beeldverkeer van het apparaat rond dit bezoek telt mee als kijken.
+    if (TV_APPS.has(g.site)) {
+      const dm = devMedia.get(g.dev) ?? [];
+      for (const x of sessions) x.m = Math.max(x.m ?? 0, dm.filter((t) => t >= x.s - 120_000 && t <= x.e + 120_000).length);
     }
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
     // Een site waarvan alle verzoeken door NextDNS zijn geblokkeerd, is geen "nieuwe site" die bezocht is.
