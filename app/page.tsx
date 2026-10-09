@@ -4,7 +4,7 @@ import { extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib
 import { mergeRows } from "@/lib/merge";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Device, Event, Group, Insights, PayMoment } from "./types";
+import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
 
 /** Zoekmachines en beeldzoekers: bij een 18+-adres kort erna/ervoor markeren we ook deze regel. */
@@ -83,7 +83,6 @@ export default function Home() {
   const [updated, setUpdated] = useState<Date | null>(null);
   const [open, setOpen] = useState(false);
   const [insights, setInsights] = useState<Insights | null>(null);
-  const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [hist, setHist] = useState(0); // voortgang van het laden van alle logs (na het tonen van vandaag)
   const [histDone, setHistDone] = useState(false);
@@ -251,7 +250,7 @@ export default function Home() {
     setUpdated(new Date());
     // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
     // Rood (18+, dating, VPN, geblokkeerd) klinkt altijd, ongeacht filter, met een ander, dringender geluid.
-    if (events.some((e) => e.flag || e.pay?.level === "checkout")) beep(true);
+    if (events.some((e) => e.flag)) beep(true);
     else if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
     // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
@@ -260,8 +259,6 @@ export default function Home() {
       const same = Object.values(deviceMap.current).filter((l) => l === e.type || l.startsWith(e.type + " ")).length;
       deviceMap.current[e.devId] = same ? `${e.type} ${same + 1}` : e.type;
     }
-    const pays = events.filter((e) => e.pay);
-    if (pays.length) setLivePay((prev) => [...pays.map((e) => ({ t: e.t, dev: deviceMap.current[e.devId], kind: e.pay!.kind, level: e.pay!.level })), ...prev].slice(0, 60));
     setGroups((prev) => {
       const next = [...prev];
       for (const ev of events) {
@@ -381,14 +378,6 @@ export default function Home() {
     return () => clearInterval(id);
   }, [state]);
 
-  // Betaalmomenten: live gevonden en uit de geschiedenis, zonder dubbelen (binnen 3 minuten).
-  const payments = useMemo(() => {
-    const all = [...livePay, ...(insights?.payments ?? [])].sort((a, b) => b.t - a.t);
-    const out: PayMoment[] = [];
-    for (const p of all) if (!out.some((x) => x.dev === p.dev && x.kind === p.kind && Math.abs(x.t - p.t) <= 180_000)) out.push(p);
-    return out;
-  }, [livePay, insights]);
-
   // Uitklapoverzicht: wat vroeg hetzelfde apparaat nog meer op rond de laatste bezoeken aan deze site (±30 s), ook verborgen adressen.
   const around = useCallback(
     (g: Group) => {
@@ -444,11 +433,10 @@ export default function Home() {
   const extraAlerts = useMemo(() => {
     const now = Date.now();
     const out: { key: string; tag: string; title: string; sub: string }[] = [];
-    for (const p of payments) if (p.level === "checkout" && now - p.t < 86_400_000) out.push({ key: "p" + p.t + p.dev, tag: "Aankoop", title: p.kind, sub: `${p.dev} · ${timeFmt.format(p.t)}: afrekenen` });
     for (const d of devices) if (d.first && now - d.first < 86_400_000 && insights?.since && now - insights.since > 3 * 86_400_000) out.push({ key: "d" + d.name, tag: "Nieuw", title: d.name, sub: `Nieuw apparaat in NextDNS, voor het eerst gezien om ${timeFmt.format(d.first)}` });
     for (const g of groups) if (g.susp && g.isNew && g.main && !g.bg) out.push({ key: "s" + g.d + g.dev + g.site, tag: "Verdacht", title: g.site, sub: `${g.dev} · ${g.susp}` });
     return out;
-  }, [payments, devices, groups, insights, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [devices, groups, insights, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flagged = useMemo(
     () => groups.filter((g) => g.flag || ctx.has(g.d + g.site + g.dev)).sort((a, b) => b.last - a.last),
