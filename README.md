@@ -12,3 +12,9 @@ Upload een CSV met DNS-records (bezochte websites), ontleed die en deel de websi
 npm install && npm run dev
 npm test
 ```
+
+## NextDNS koppelen
+Zet in Vercel (Settings → Environment Variables):
+- `NEXTDNS_API_KEY` – API-sleutel (my.nextdns.io/account → API)
+- `NEXTDNS_PROFILE_ID` – 6 tekens, tab Setup → Endpoints
+- `APP_PASSWORD` – wachtwoord voor de hele site (verplicht voor NextDNS-ophalen)

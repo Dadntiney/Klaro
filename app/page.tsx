@@ -17,6 +17,8 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const [period, setPeriod] = useState("7d");
+  const [loading, setLoading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   async function load(file: File) {
@@ -35,6 +37,24 @@ export default function Home() {
         (det.countCol !== null ? `, aantallen: "${header[det.countCol]}"` : "") +
         (skipped ? `. ${skipped} regels overgeslagen.` : ".")
     );
+  }
+
+  async function fetchNextDns() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/nextdns?period=${period}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Ophalen mislukt");
+      setFileName(`NextDNS, laatste ${period.replace("d", " dag(en)")}`);
+      setDomains(data.domains);
+      setOverrides({});
+      setInfo(`${data.rows} regels, ${data.domains.length} unieke domeinen. Domeinkolom: "${data.hostColumn}"` + (data.skipped ? `. ${data.skipped} regels overgeslagen.` : "."));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const labelOf = (d: string) => overrides[d] ?? categorize(d, cats) ?? OTHER;
@@ -85,6 +105,16 @@ export default function Home() {
     <main>
       <h1>CSV</h1>
       <p className="muted">Upload een CSV met DNS-records en deel de bezochte websites in blokjes in.</p>
+
+      <div className="row" style={{ marginBottom: 12 }}>
+        <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+          <option value="1d">Laatste dag</option>
+          <option value="7d">Laatste week</option>
+          <option value="30d">Laatste maand</option>
+        </select>
+        <button className="primary" disabled={loading} onClick={fetchNextDns}>{loading ? "Ophalen…" : "Haal laatste logs op van NextDNS"}</button>
+        <span className="muted">of upload zelf een CSV:</span>
+      </div>
 
       <div
         className={"drop" + (over ? " over" : "")}
