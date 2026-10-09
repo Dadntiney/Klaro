@@ -572,11 +572,10 @@ export default function Home() {
                           <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
-                            if (!device) parts.push(<span key="d" className="dev"><DevIcon name={g.dev} />{g.dev}</span>);
+                            parts.push(<span key="d" className="dev"><DevIcon name={g.dev} />{g.dev}</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
-                            if (!parts.length) return null; // niets te melden: de regel blijft op één lijn
                             return <div className="sub">{parts.flatMap((x, i) => (i ? [" · ", x] : [x]))}</div>;
                           })()}
                         </div>
