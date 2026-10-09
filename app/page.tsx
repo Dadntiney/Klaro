@@ -612,7 +612,7 @@ export default function Home() {
                 role={recent ? undefined : "button"}
                 aria-expanded={recent ? undefined : isDayOpen}
               >
-                {dayLabel(d)} <span className="muted">· {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>
+                {dayLabel(d)}{!recent && <span className="muted"> · {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
               {isDayOpen && (
