@@ -226,3 +226,8 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 .devhead::after { content:""; position:absolute; left:14px; right:14px; bottom:0; height:1px; background:var(--line); opacity:.7; }
 .list > div:first-child .devhead { padding-top:10px; }
 .item { min-height:52px; box-sizing:border-box; }
+
+/* Rustiger: meer lucht boven en onder de sitenaam, overal dezelfde hoogte */
+.item { min-height:64px; padding-top:13px; padding-bottom:13px; }
+.list.lined > div + div::before { display:block; }
+.devhead span { letter-spacing:.01em; }

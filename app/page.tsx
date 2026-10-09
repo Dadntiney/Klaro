@@ -657,7 +657,7 @@ export default function Home() {
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
               {isDayOpen && (
-              <div className="list">
+              <div className={"list" + (device ? " lined" : "")}>
                 {rows.map(({ g, t, first, newest, compact }, ri) => {
                   // Een reeks regels van hetzelfde apparaat krijgt één kopje met het icoontje; daaronder geen lijnen tussen de regels.
                   const runStart = !device && (ri === 0 || rows[ri - 1].g.dev !== g.dev); // met een apparaat gekozen staat het al in de chip
@@ -669,7 +669,7 @@ export default function Home() {
                       {runStart && (
                         <div className="devhead" title={g.dev} aria-label={g.dev}>
                           <DevIcon name={g.dev} />
-                          {/\s(\d+)$/.exec(g.dev)?.[1] ?? ""}
+                          <span>{g.dev}</span>
                         </div>
                       )}
                       <div
