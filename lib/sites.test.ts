@@ -123,3 +123,12 @@ test("www.apple.com is systeemverkeer; Budge Studios is een app", () => {
   assert.equal(!b.bg && b.main, true);
   assert.equal(b.name, "Budge Studios (spel)");
 });
+
+test("gofiev.vercel.app wordt GoFiev.nl", () => {
+  for (const h of ["gofiev.vercel.app", "www.gofiev.nl", "gofiev.nl"]) {
+    const c = classify(h);
+    assert.equal(c.name, "GoFiev.nl", h);
+    assert.equal(!c.bg && c.main, true, h);
+  }
+  assert.notEqual(classify("andere.vercel.app").name, "GoFiev.nl");
+});
