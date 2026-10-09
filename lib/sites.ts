@@ -62,12 +62,16 @@ export interface SiteInfo {
   icon: string; // domein voor het favicon
   bg: boolean; // achtergrondverkeer
   adult: boolean; // 18+
+  flag?: string; // reden voor de rode balk: "18+" of de naam van een gemarkeerde app
 }
+
+/** Apps die ook de rode balk activeren. */
+const ALERT_APPS = new Set(["WhatsApp"]);
 
 export function classify(host: string): SiteInfo {
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(base);
-  if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false };
+  if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   const adult = isAdult(host);
   const label = host.split(".")[0];
   const bg =
@@ -75,5 +79,5 @@ export function classify(host: string): SiteInfo {
     BACKGROUND_SUFFIX.some((s) => host === s || host.endsWith("." + s)) ||
     (host !== base && BACKGROUND_LABELS.has(label)) ||
     BACKGROUND.has(host.split(".").slice(-1)[0]));
-  return { site: base, name: base, icon: base, bg, adult };
+  return { site: base, name: base, icon: base, bg, adult, flag: adult ? "18+" : undefined };
 }

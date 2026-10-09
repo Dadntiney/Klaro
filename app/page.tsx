@@ -13,6 +13,7 @@ interface Group {
   n: number;
   bg: boolean;
   adult?: boolean;
+  flag?: string;
   flash?: number;
 }
 interface Event {
@@ -24,6 +25,7 @@ interface Event {
   icon: string;
   bg: boolean;
   adult?: boolean;
+  flag?: string;
 }
 interface Device {
   name: string;
@@ -69,15 +71,12 @@ export default function Home() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [total, setTotal] = useState(0);
   const [device, setDevice] = useState<string | null>(null);
-  const [showBg, setShowBg] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
-  const [sound, setSound] = useState(false);
-  const soundRef = useRef(false);
+  const [audioReady, setAudioReady] = useState(false);
   const audio = useRef<AudioContext | null>(null);
   const deviceRef = useRef<string | null>(null);
-  const showBgRef = useRef(false);
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
@@ -102,7 +101,7 @@ export default function Home() {
           if (g) {
             g.n++;
             g.last = Math.max(g.last, e.t);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult });
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flag: e.flag });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
@@ -137,11 +136,22 @@ export default function Home() {
       });
   }, []);
 
-  useEffect(() => { deviceRef.current = device; showBgRef.current = showBg; }, [device, showBg]);
+  useEffect(() => { deviceRef.current = device; }, [device]);
+
+  // Browsers staan geluid pas toe na een klik/toets: de eerste interactie ontgrendelt het geluid.
+  useEffect(() => {
+    const unlock = () => {
+      audio.current ??= new AudioContext();
+      audio.current.resume().then(() => setAudioReady(audio.current?.state === "running"));
+    };
+    const events = ["pointerdown", "keydown", "touchstart"] as const;
+    events.forEach((ev) => window.addEventListener(ev, unlock, { once: true }));
+    return () => events.forEach((ev) => window.removeEventListener(ev, unlock));
+  }, []);
 
   const beep = useCallback(() => {
     const ctx = audio.current;
-    if (!ctx) return;
+    if (!ctx || ctx.state !== "running") return;
     [660, 880].forEach((f, i) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
@@ -156,19 +166,6 @@ export default function Home() {
     });
   }, []);
 
-  function toggleSound() {
-    const on = !sound;
-    if (on) {
-      // Moet binnen een klik gebeuren, anders blokkeert de browser geluid.
-      audio.current ??= new AudioContext();
-      audio.current.resume();
-      beep();
-    }
-    soundRef.current = on;
-    setSound(on);
-    try { localStorage.setItem("csv-sound", on ? "1" : "0"); } catch {}
-  }
-
   const poll = useCallback(async () => {
     try {
       const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`);
@@ -180,7 +177,7 @@ export default function Home() {
       if (!events.length) return;
       lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
       // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
-      if (soundRef.current && events.some((e) => (showBgRef.current || !e.bg) && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
+      if (events.some((e) => !e.bg && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
       setTotal((n) => n + events.length);
       // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
       for (const e of events) {
@@ -195,7 +192,7 @@ export default function Home() {
           const d = dayKeyFmt.format(e.t);
           const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
           if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
-          else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flash: Date.now() });
+          else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flag: e.flag, flash: Date.now() });
         }
         return next;
       });
@@ -228,23 +225,25 @@ export default function Home() {
     };
   }, [state, poll]);
 
-  // Rode balk: blijft rood zolang er 18+ bezoeken in de logs staan (ongeacht apparaat of filter).
+  // Rode balk: blijft rood zolang er 18+ of WhatsApp-bezoeken in de logs staan (ongeacht apparaat of filter).
   const alert = useMemo(() => {
-    const hits = groups.filter((g) => g.adult).sort((a, b) => b.last - a.last);
+    const hits = groups.filter((g) => g.flag).sort((a, b) => b.last - a.last);
     if (!hits.length) return null;
-    return { hit: hits[0], sites: new Set(hits.map((h) => h.site)).size, visits: hits.reduce((n, h) => n + h.n, 0) };
+    const flags = [...new Set(hits.map((h) => h.flag!))];
+    const title = flags.map((f) => (f === "18+" ? "18+ content" : f)).join(" en ");
+    return { hit: hits[0], title, sites: new Set(hits.map((h) => h.site)).size, visits: hits.reduce((n, h) => n + h.n, 0) };
   }, [groups]);
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     for (const g of groups) {
-      if ((device && g.dev !== device) || (!showBg && g.bg)) continue;
+      if ((device && g.dev !== device) || g.bg) continue;
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
       .map(([d, list]) => ({ d, list: list.sort((a, b) => b.last - a.last) }));
-  }, [groups, device, showBg]);
+  }, [groups, device]);
 
   return (
     <main>
@@ -271,7 +270,7 @@ export default function Home() {
           <div className={"bar" + (alert ? " alert" : "")}>
             {alert && (
               <div className="alarm">
-                ⚠ 18+ content bezocht · laatst: <strong>{alert.hit.name}</strong> · {alert.hit.dev} · {dayLabel(alert.hit.d)} {timeFmt.format(alert.hit.last)}
+                ⚠ {alert.title} bezocht · laatst: <strong>{alert.hit.name}</strong> · {alert.hit.dev} · {dayLabel(alert.hit.d)} {timeFmt.format(alert.hit.last)}
                 <span className="alarm-sub"> · {alert.sites} {alert.sites === 1 ? "site" : "sites"}, {alert.visits}× in de logs</span>
               </div>
             )}
@@ -283,23 +282,16 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <label className="toggle">
-              <input type="checkbox" checked={sound} onChange={toggleSound} />
-              Geluid bij nieuwe bezoeken
-            </label>
-            <label className="toggle" style={{ marginLeft: 16 }}>
-              <input type="checkbox" checked={showBg} onChange={(e) => setShowBg(e.target.checked)} />
-              Toon ook achtergrondverkeer
-            </label>
           </div>
 
+          {!audioReady && <p className="muted hint">🔇 Klik één keer ergens op de pagina om het geluid bij nieuwe bezoeken te activeren.</p>}
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list }) => (
             <section key={d}>
               <h2>{dayLabel(d)} <span className="muted">· {list.length}</span></h2>
               <div className="list">
                 {list.map((g) => (
-                  <div className={"item" + (g.adult ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
+                  <div className={"item" + (g.flag ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
                     {g.adult ? <span className="fav badge">18+</span> : <Favicon domain={g.icon} />}
                     <div className="main">
                       <div className="name">{g.name}</div>

@@ -19,6 +19,7 @@ export interface Group {
   n: number; // aantal DNS-verzoeken
   bg: boolean;
   adult: boolean;
+  flag?: string;
 }
 
 const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
@@ -93,7 +94,7 @@ export async function GET() {
       g.n++;
       if (t > g.last) g.last = t;
     } else {
-      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult });
+      groups.set(key, { d, dev, site: info.site, name: info.name, icon: info.icon, last: t, n: 1, bg: info.bg, adult: info.adult, flag: info.flag });
     }
     devices.set(dev, (devices.get(dev) ?? 0) + 1);
     total++;

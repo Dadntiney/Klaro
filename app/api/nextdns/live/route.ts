@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     const devId = device.id?.trim() || device.name?.trim() || "onbekend";
     const type = deviceType(device.name ?? "", device.model ?? "");
     const info = classify(host);
-    events.push({ t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult });
+    events.push({ t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, flag: info.flag });
   }
   return NextResponse.json({ events });
 }
