@@ -639,7 +639,9 @@ export default function Home() {
               </h2>
               {isDayOpen && (
               <div className="list">
-                {rows.map(({ g, t, first, newest }) => {
+                {rows.map(({ g, t, first, newest }, ri) => {
+                  // Het apparaat staat alleen bij de eerste regel van een reeks van dezelfde apparaat; gemarkeerde regels tonen het altijd.
+                  const showDev = ri === 0 || rows[ri - 1].g.dev !== g.dev || !!g.flag || !!g.susp;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
@@ -656,10 +658,11 @@ export default function Home() {
                           <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             const parts: React.ReactNode[] = [];
-                            parts.push(<span key="d" className="dev"><DevIcon name={g.dev} />{g.dev}</span>);
+                            if (showDev) parts.push(<span key="d" className="dev"><DevIcon name={g.dev} />{g.dev}</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
+                            if (!parts.length) return null;
                             return <div className="sub">{parts.flatMap((x, i) => (i ? [" · ", x] : [x]))}</div>;
                           })()}
                         </div>
