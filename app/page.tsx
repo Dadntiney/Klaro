@@ -1,5 +1,6 @@
 "use client";
 
+import { labelDevices } from "@/lib/names";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Group {
@@ -70,27 +71,62 @@ export default function Home() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
+  const [full, setFull] = useState(false);
+  const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
 
   useEffect(() => {
+    // 1) Snel: de nieuwste verzoeken direct tonen. 2) Volledige geschiedenis op de achtergrond.
+    fetch("/api/nextdns/live?since=0")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { events: Event[] } | null) => {
+        if (!data || fullRef.current || !data.events.length) return;
+        const map = labelDevices(data.events.map((e) => ({ id: e.devId, type: e.type })));
+        const byKey = new Map<string, Group>();
+        const counts = new Map<string, number>();
+        for (const e of data.events) {
+          const dev = map[e.devId];
+          const d = dayKeyFmt.format(e.t);
+          const key = `${d}|${dev}|${e.site}`;
+          const g = byKey.get(key);
+          if (g) {
+            g.n++;
+            g.last = Math.max(g.last, e.t);
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg });
+          counts.set(dev, (counts.get(dev) ?? 0) + 1);
+        }
+        deviceMap.current = map;
+        lastSeen.current = Math.max(...data.events.map((e) => e.t));
+        setGroups([...byKey.values()]);
+        setDevices([...counts].map(([name, n]) => ({ name, n })));
+        setTotal(data.events.length);
+        setUpdated(new Date());
+        setState((s) => (s === "loading" ? "ready" : s));
+      })
+      .catch(() => {});
+
     fetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Ophalen mislukt");
+        fullRef.current = true;
         setGroups(data.groups);
         setDevices(data.devices);
         setTotal(data.total);
         deviceMap.current = data.deviceMap ?? {};
         lastSeen.current = Math.max(0, ...(data.groups as Group[]).map((g) => g.last));
         setUpdated(new Date());
+        setFull(true);
         setState("ready");
       })
       .catch((e: Error) => {
+        if (fullRef.current) return;
         setError(e.message);
-        setState("error");
+        setState((s) => (s === "ready" ? s : "error"));
+        setFull(true);
       });
   }, []);
 
@@ -178,6 +214,7 @@ export default function Home() {
       </header>
 
       {state === "error" && <p className="err">{error}</p>}
+      {state === "ready" && !full && <p className="muted">Nieuwste activiteit getoond, volledige geschiedenis wordt geladen…</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
       {state === "loading" && <div className="loader" aria-label="Laden" />}
 

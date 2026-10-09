@@ -7,6 +7,12 @@ export function parseCsv(text: string): string[][] {
   const delim = [",", ";", "\t"].sort(
     (a, b) => firstLine.split(b).length - firstLine.split(a).length
   )[0];
+  // Snel pad: zonder aanhalingstekens kan elke regel simpel gesplitst worden.
+  if (!clean.includes('"')) {
+    const out: string[][] = [];
+    for (const line of clean.split(/\r?\n/)) if (line.trim() !== "") out.push(line.split(delim));
+    return out;
+  }
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";

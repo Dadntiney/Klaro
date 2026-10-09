@@ -22,6 +22,10 @@ export interface Group {
 
 const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
 
+// Het samenstellen van de download bij NextDNS is traag; hergebruik het resultaat kort (de live-route vult het aan).
+let cache: { at: number; body: unknown } | null = null;
+const CACHE_MS = 120_000;
+
 export async function GET() {
   const key = process.env.NEXTDNS_API_KEY;
   const profile = process.env.NEXTDNS_PROFILE_ID;
@@ -32,6 +36,8 @@ export async function GET() {
   if (!process.env.APP_PASSWORD) {
     return NextResponse.json({ error: "Stel eerst APP_PASSWORD in in Vercel, zodat je logs niet publiek zijn." }, { status: 503 });
   }
+
+  if (cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
 
   // De download-endpoint accepteert geen filters (alleen X-Api-Key): we krijgen alle opgeslagen logs.
   let res: Response;
@@ -92,10 +98,12 @@ export async function GET() {
     total++;
   }
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
-  return NextResponse.json({
+  const result = {
     groups: list,
     devices: [...devices.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n),
     total,
     deviceMap, // id -> label; bevat nooit de echte naam
-  });
+  };
+  cache = { at: Date.now(), body: result };
+  return NextResponse.json(result);
 }
