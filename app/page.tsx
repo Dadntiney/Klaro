@@ -4,7 +4,6 @@ import { extendAll, extendSessions, minutes, type Session } from "@/lib/sessions
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights, PayMoment } from "./types";
-import InsightsView from "./insights";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
 
 /** Zoekmachines en beeldzoekers: bij een 18+-adres kort erna/ervoor markeren we ook deze regel. */
@@ -70,7 +69,6 @@ export default function Home() {
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"overzicht" | "inzichten">("overzicht");
   const [insights, setInsights] = useState<Insights | null>(null);
   const [livePay, setLivePay] = useState<PayMoment[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -533,14 +531,12 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="tabs" role="tablist">
-            <button role="tab" aria-selected={view === "overzicht"} className={view === "overzicht" ? "on" : ""} onClick={() => setView("overzicht")}>Overzicht</button>
-            <button role="tab" aria-selected={view === "inzichten"} className={view === "inzichten" ? "on" : ""} onClick={() => setView("inzichten")}>Inzichten</button>
-            {view === "overzicht" && days.length > 0 && (
+          <div className="goto-bar">
+            {days.length > 0 && (
               <button className={"goto-btn" + (goOpen ? " on" : "")} onClick={() => { setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }} aria-expanded={goOpen}>Ga naar…</button>
             )}
           </div>
-          {view === "overzicht" && goOpen && days.length > 0 && (
+          {goOpen && days.length > 0 && (
             <form
               className="goto"
               onSubmit={(e) => {
@@ -572,10 +568,6 @@ export default function Home() {
             </form>
           )}
 
-          {view === "inzichten" ? (
-            <InsightsView groups={groups} devices={devices} insights={insights} payments={payments} device={device} tick={tick} />
-          ) : (
-          <>
           {(summary.cats.length > 0 || (device && summary.first > 0) || summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
             <div className="summary">
               {(summary.cats.length > 0 || (device && summary.first > 0)) && (
@@ -715,8 +707,6 @@ export default function Home() {
             </section>
             );
           })}
-          </>
-          )}
         </>
       )}
       {open && (

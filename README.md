@@ -7,7 +7,6 @@ Live overzicht van wat apparaten bezoeken, op basis van de NextDNS-logs.
 - **Uitklappen**: tik op een regel voor de laatste bezoektijden en wat hetzelfde apparaat op dat moment nog meer opvroeg (ook verborgen adressen).
 - **Live**: elke ~1,5 seconde nieuwe verzoeken, met een piep.
 - Apparaten worden alleen als soort getoond (iPhone, iPad, MacBook), nooit met de echte naam.
-- **Inzichten** (tabblad): in gewone taal of alles in orde is, hoe lang apparaten aan waren, wanneer ze uitgingen, of er iets is gekocht, of het veilig is, wat er echt is gekeken en welke apps de meeste trackers veroorzaken.
 
 ## Instellen (Vercel → Settings → Environment Variables)
 | Naam | Waarde |
