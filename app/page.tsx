@@ -514,7 +514,7 @@ export default function Home() {
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
+              {live === "fail" ? "Live niet beschikbaar" : "Live"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
@@ -534,8 +534,7 @@ export default function Home() {
               {devices.map((d) => (
                 <button key={d.name} className={"chip tint" + (device === d.name ? " on" : "")} style={devTint(d.name)} onClick={() => setDevice(d.name)}>
                   {silentNames.has(d.name) && "⚠ "}{d.name}
-                  {sumMin(d.ss ?? []) > 0 && <span className="chip-min"> · {dur(sumMin(d.ss ?? []))}</span>}
-                </button>
+                                  </button>
               ))}
             </div>
           </div>
@@ -543,18 +542,9 @@ export default function Home() {
           <div className="summary">
             <div className="s-row">
               <strong>{summary.mins > 0 ? `Vandaag ${dur(summary.mins)} actief` : "Vandaag nog niets actiefs"}</strong>
-              <span className="muted">
-                {summary.avg > 0 && ` · gem. ${dur(summary.avg)}`}
-                {device && summary.first > 0 && ` · ${timeFmt.format(summary.first)}–${timeFmt.format(summary.last)}`}
-              </span>
+              {device && summary.first > 0 && <span className="muted"> · {timeFmt.format(summary.first)}–{timeFmt.format(summary.last)}</span>}
             </div>
-            {summary.cats.length > 0 && (
-              <div className="cats">
-                {summary.cats.map(([c, m]) => (
-                  <span className="cat" key={c}>{c} <b>{dur(m)}</b></span>
-                ))}
-              </div>
-            )}
+            {summary.cats.length > 0 && <div className="s-cats">{summary.cats.slice(0, 3).map(([c, m]) => `${c} ${dur(m)}`).join(" · ")}</div>}
             {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
             {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
             {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
@@ -579,10 +569,18 @@ export default function Home() {
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
                           <div className="name">{g.name}{g.isNew && <span className="newtag">Nieuw</span>}</div>
-                          <div className="sub"><span className="dev" style={devTint(g.dev)}>{g.dev}</span>{(g.mins ?? 0) > 0 && <> · <span className="dur">{dur(g.mins!)}</span></>}{g.flag && g.flag !== "18+" && g.flag !== "Dating" && <> · {g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</>}{ctx.has(key) && <> · ⚠ rond dit bezoek: {ctx.get(key)}</>}{!ctx.has(key) && soft.has(key) && <> · ⚠ rond 18+: {soft.get(key)}</>}</div>
+                          {(() => {
+                            const parts: React.ReactNode[] = [];
+                            if (!device) parts.push(<span key="d" className="dev" style={devTint(g.dev)}>{g.dev}</span>);
+                            if ((g.mins ?? 0) > 0) parts.push(<span key="m" className="dur">{dur(g.mins!)}</span>);
+                            if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
+                            if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
+                            else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
+                            if (!parts.length) return null; // niets te melden: de regel blijft op één lijn
+                            return <div className="sub">{parts.flatMap((x, i) => (i ? [" · ", x] : [x]))}</div>;
+                          })()}
                         </div>
                         <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
-                        <span className={"chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
                       </div>
                       {isOpen && (() => {
                         const near = around(g);

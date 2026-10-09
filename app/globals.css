@@ -92,3 +92,7 @@ h2 .muted { font-weight:400; }
   .chip.tint:not(.on) { background:hsl(var(--dh) var(--ds) calc(var(--bd) * 1%)); color:hsl(var(--dh) var(--ds) 85%); }
 }
 .fav.ph { background:color-mix(in srgb, var(--muted) 16%, var(--card)); }
+.summary { background:none !important; border:0 !important; padding:6px 2px 0 !important; border-radius:0 !important; }
+.s-cats { color:var(--muted); font-size:13px; margin-top:2px; }
+.fav.ph { background:color-mix(in srgb, var(--muted) 11%, var(--card)); }
+.item { padding-top:8px; padding-bottom:8px; }
