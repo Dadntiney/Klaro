@@ -43,6 +43,13 @@ const BACKGROUND_KEYWORDS = [
   "statistic", "crash", "bugsnag", "sentry", "appsflyer", "amplitude", "mixpanel", "braze", "onesignal", "firebase", "newrelic",
   "datadog", "hotjar", "optimizely", "criteo", "taboola", "outbrain", "rubiconproject", "pubmatic", "openx", "moatads", "2mdn",
   "quantserve", "demdex", "omtrdc", "adobedtm", "consent", "cookie", "akadns", "cloudfront", "cdn", "static", "assets",
+  // gevonden in echte logs: advertentie-, tracking-, e-mail- en hulpdiensten
+  "adsafeprotected", "adsrvr", "applovin", "btloader", "clarity.ms", "clevertap", "content-loader", "dwin1", "error-report", "googleoptimize",
+  "html-load", "id5-sync", "igodigital", "kickbite", "linkdirects", "loox.io", "mandrillapp", "mcusercontent", "list-manage", "mailchimp",
+  "notificationredirection", "plausible", "powr.io", "publize", "px-cloud", "pzapi", "recaptcha", "redirectoffertrack", "salecycle", "sendgrid",
+  "squeezely", "statcounter", "syndicatedsearch", "trackall", "trk42", "trustus", "unpkg", "usercentrics", "vercel.live", "framerusercontent",
+  "lottie.host", "noembed", "gravatar", "gorgias", "smartsuppchat", "hellodialog", "flowmailer", "captcha-delivery", "scene7", "zupimages",
+  "img-cache", "gtm-", "googletag", "adform", "smartadserver", "bidswitch", "casalemedia", "lijit", "sharethrough", "teads", "yieldmo",
   "media-amazon", "ssl-images-amazon", "images-amazon", "amazon-adsystem", "amazonaws", "awsstatic", "-services.", "-api.", "-sdk",
 ];
 /** Domeinen die als losse apex vrijwel alleen door apps worden opgevraagd; een echte bezoek loopt via www./een taalvariant. */
@@ -130,6 +137,9 @@ export function isMainHost(host: string, base: string): boolean {
   return rest === "www" || /^[a-z]{2}$/.test(rest) || ["m", "web", "app", "mobile"].includes(rest);
 }
 
+/** Nooit rood markeren, ook niet als een lijst ze (ten onrechte) bevat. */
+const NEVER_FLAG = new Set(["list-manage.com", "mailchimp.com", "mcusercontent.com", "sendgrid.net", "mandrillapp.com", "google.com", "youtube.com", "facebook.com", "instagram.com", "microsoft.com", "apple.com", "amazon.com", "wikipedia.org", "reddit.com", "twitter.com", "x.com"]);
+
 const memo = new Map<string, SiteInfo>();
 
 /** Beoordeel een adres; het resultaat wordt onthouden, want dezelfde adressen komen duizenden keren voor. */
@@ -148,8 +158,9 @@ function classifyUncached(host: string): SiteInfo {
   const app = APP_BY_DOMAIN.get(base);
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   // Eerst dating: sommige datingsites staan ook op de porno-lijst, maar het label Dating is dan duidelijker.
-  const dating = isDating(host);
-  const adult = !dating && isAdult(host);
+  const never = NEVER_FLAG.has(base);
+  const dating = !never && isDating(host);
+  const adult = !never && !dating && isAdult(host);
   const label = host.split(".")[0];
   const bg =
     !adult && !dating && (BACKGROUND.has(base) ||

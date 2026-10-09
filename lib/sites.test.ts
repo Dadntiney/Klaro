@@ -54,3 +54,9 @@ test("grote porno-lijst", () => {
 test("voorbeelden van de eigenaar", () => {
   for (const h of ["vagina.nl", "pornhub.com", "phncdn.com", "phprcdn.com", "easytoys.nl", "www.badoo.com", "lovehoney.nl", "www.amorelie.nl"]) assert.ok(classify(h).flag, h);
 });
+
+test("gevonden valse alarmen en trackers", () => {
+  assert.equal(classify("list-manage.com").flag, undefined);
+  for (const h of ["adsrvr.org", "clarity.ms", "sendgrid.net", "recaptcha.net", "unpkg.com", "usercentrics.eu", "plausible.io", "statcounter.com"]) assert.equal(classify(h).bg, true, h);
+  for (const h of ["www.bol.com", "www.intertoys.nl", "www.efteling.com", "www.rabobank.nl", "www.nu.nl", "www.kruidvat.nl"]) assert.equal(classify(h).bg || !!classify(h).flag, false, h);
+});

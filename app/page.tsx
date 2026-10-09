@@ -83,7 +83,6 @@ export default function Home() {
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
-  const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
   const [soundBlocked, setSoundBlocked] = useState(false);
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
@@ -197,7 +196,6 @@ export default function Home() {
     if (!events.length) return;
     lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
     setUpdated(new Date());
-    setLastEventAt(new Date());
     // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
     if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
@@ -306,7 +304,7 @@ export default function Home() {
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
+              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}{soundBlocked && <span title="Je browser blokkeert het geluid. Klik één keer op de pagina, of zet Geluid op Toestaan bij het slotje naast de adresbalk."> · 🔇</span>}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
@@ -315,8 +313,6 @@ export default function Home() {
 
       {state === "error" && <p className="err">{error}</p>}
       {state === "ready" && !full && <p className="muted">Nieuwste activiteit getoond, volledige geschiedenis wordt geladen…</p>}
-      {state === "ready" && soundBlocked && <p className="muted hint">🔇 Je browser blokkeert het geluid. Klik één keer op de pagina; zie ook het slotje bij de adresbalk → Geluid → Toestaan.</p>}
-      {state === "ready" && lastEventAt && <p className="muted hint">Laatste nieuwe verzoek ontvangen om {timeSecFmt.format(lastEventAt)}</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
       {state === "loading" && <div className="loader" aria-label="Laden" />}
 
@@ -324,7 +320,7 @@ export default function Home() {
         <>
           <div className="bar">
             <div className="chips">
-              <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle apparaten</button>
+              <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {devices.map((d) => (
                 <button key={d.name} className={"chip" + (device === d.name ? " on" : "")} onClick={() => setDevice(d.name)}>
                   {d.name}
