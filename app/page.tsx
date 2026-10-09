@@ -345,10 +345,7 @@ export default function Home() {
                       <div className="name">{g.name}</div>
                       <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>
                     </div>
-                    <div className="meta">
-                      <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
-                      <div className="sub">{g.n}×</div>
-                    </div>
+                    <div className="time">{g.last ? timeFmt.format(g.last) : "–"}</div>
                   </div>
                 ))}
               </div>
@@ -371,7 +368,6 @@ export default function Home() {
                   <div className="name">{g.name}</div>
                   <div className="sub">{g.dev} · laatst {dayLabel(g.d).toLowerCase()} om {timeFmt.format(g.last)}</div>
                 </div>
-                <div className="sub">{g.n}×</div>
               </div>
             ))}
           </div>

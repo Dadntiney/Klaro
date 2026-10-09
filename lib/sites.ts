@@ -1,4 +1,5 @@
 import { baseDomain } from "./parse.ts";
+import { inAdultList, inDatingList } from "./adultlist.ts";
 
 /** Bekende apps/diensten: meerdere domeinen samengevoegd onder één naam. `icon` is het domein voor het favicon. */
 const APPS: { name: string; icon: string; domains: string[] }[] = [
@@ -58,21 +59,52 @@ const ADULT_PARTS = [
   // erotische webshops
   "sexshop", "sex-shop", "eroshop", "eroticashop", "erotiekshop", "erotiek", "dildo", "vibrator", "bdsm", "fetish",
   "lovehoney", "amorelie", "beate-uhse", "beateuhse", "adameve", "satisfyer", "womanizer", "christineleduc",
+  // overig
+  "pussy", "fuck", "slut", "xvideo", "sexvid", "pornhub", "hotwife", "bukkake", "camwhore", "cumshot", "gangbang", "blowjob",
+  "sextoy", "lovetoy", "adulttoy", "sexspeeltje", "sexspeeltjes", "easytoys", "sexcontact", "sexafspraak", "sexdating", "livecams", "freecams", "erocams", "adultcams", "nudecams", "sexgames", "hotcams",
 ];
-const ADULT_WORDS = new Set(["sex", "sexy", "erotic", "erotica", "escort", "camgirl", "camgirls", "nude", "nudes", "milf"]);
-const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn"]);
+/** Erotische webshops (NL/BE/DE/EN) als exacte basisdomeinen; de grote lijst mist vooral lokale winkels. */
+const SEXSHOP_DOMAINS = new Set([
+  "amorelie.nl", "amorelie.de", "amorelie.be", "amorelie.at", "amorelie.ch", "amorelie.fr", "amorelie.com", "lovehoney.nl", "lovehoney.com",
+  "lovehoney.co.uk", "lovehoney.de", "lovehoney.com.au", "christine-le-duc.nl", "christine-le-duc.com", "christineleduc.com",
+  "christineleduc.nl", "beate-uhse.com", "beate-uhse.de", "orion.de", "orion-versand.de", "fun-factory.com", "fleshlight.com",
+  "tenga.co", "tenga-global.com", "dorcel.com", "dorcelstore.com", "adameve.com", "babeland.com", "goodvibes.com", "lovense.com",
+  "lelo.com", "we-vibe.com", "ohmibod.com", "njoy.com", "svakom.com", "calexotics.com", "doc-johnson.com", "pipedreamproducts.com",
+  "bad-dragon.com", "annsummers.com", "ann-summers.com", "bijoux-indiscrets.com", "satisfyer.com", "womanizer.com", "durexshop.nl",
+  "sinful.nl", "erotiekmarkt.nl", "intimteam.nl", "lingerie-erotiek.nl", "sexshopxl.nl", "kinky-store.nl", "mister-b.com", "misterb.com",
+  "xtoys.app", "sextoys.nl", "sextoys.be", "sextoys.com", "toyjoy.com", "pleasurebox.nl", "peepshow.nl", "naughty-nederland.nl",
+  "eroticashop.nl", "eroticaplanet.nl", "erotiekshop.nl", "bol-erotiek.nl", "joyclub.nl", "joyclub.de", "shop-erotiek.nl",
+]);
+
+const ADULT_WORDS = new Set(["vagina", "penis", "sex", "sexy", "sexo", "sexe", "erotic", "erotica", "erotiek", "escort", "escorts", "camgirl", "camgirls", "nude", "nudes", "milf", "xvids", "tube8", "hentai", "lust", "naughty", "kinky"]);
+const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn", "sexy"]);
 
 /** Datingsites en -apps. Ambiguë namen alleen als exact basisdomein. */
-const DATING_PARTS = ["dating", "tinder", "badoo", "grindr", "okcupid", "parship", "eharmony", "meetic", "zoosk", "happn", "ashleymadison", "adultfriendfinder", "benaughty", "relatieplanet", "flirt"];
-const DATING_DOMAINS = new Set(["bumble.com", "hinge.co", "match.com", "pof.com", "feeld.co", "raya.app", "lexa.nl", "seeking.com", "coffeemeetsbagel.com", "boo.world", "mingle2.com", "fruitz.io", "inner-circle.com", "theinnercircle.co", "twoo.com", "skout.com", "lovoo.com", "jaumo.com"]);
+const DATING_PARTS = [
+  "dating", "tinder", "badoo", "grindr", "okcupid", "parship", "eharmony", "meetic", "zoosk", "happn", "ashleymadison",
+  "adultfriendfinder", "benaughty", "relatieplanet", "flirt", "victoriamilan", "elitesingles", "silversingles", "christianmingle",
+  "jdate", "ourtime", "seniorpeoplemeet", "plentyoffish", "datemyage", "c-date", "lovescout", "elitepartner", "friendscout",
+  "singleboerse", "gaydar", "growlr", "scruff", "jackd", "taimi", "meetme", "mocospace", "datingjungle", "flirtfair",
+  "omegle", "chatroulette", "emeraldchat", "monkey.app", "singles", "hookup", "lovoo", "jaumo", "mamba.ru", "loveawake",
+];
+/** Exacte sites; voor namen die als woord te algemeen zijn. */
+const DATING_DOMAINS = new Set([
+  "bumble.com", "hinge.co", "match.com", "pof.com", "feeld.co", "raya.app", "lexa.nl", "seeking.com", "coffeemeetsbagel.com",
+  "boo.world", "mingle2.com", "fruitz.io", "inner-circle.com", "theinnercircle.co", "twoo.com", "skout.com", "jaumo.com",
+  "hily.com", "tantan.com", "her.app", "wapa.app", "hornet.com", "thursday.app", "chemistry.com", "ome.tv", "azar.live",
+  "yubo.live", "tagged.com", "datingapp.nl", "lovestruck.com", "bumbleapp.com", "gotinder.com", "tinderchallenge.com",
+  "sugardaddy.com", "seekingarrangement.com", "whatsyourprice.com", "luxy.com", "thecoffeemeetsbagel.com", "clover.co",
+  "pairs.lv", "omiai-jp.com", "tapple.me", "paktor.com", "hello.talk", "mamba.ru", "badoo.com", "lovoo.com",
+]);
 
 export function isDating(host: string): boolean {
-  return DATING_DOMAINS.has(baseDomain(host)) || DATING_PARTS.some((p) => host.includes(p));
+  return DATING_DOMAINS.has(baseDomain(host)) || DATING_PARTS.some((p) => host.includes(p)) || inDatingList(host);
 }
 
 export function isAdult(host: string): boolean {
   const labels = host.split(".");
   if (ADULT_TLDS.has(labels[labels.length - 1])) return true;
+  if (inAdultList(host) || SEXSHOP_DOMAINS.has(baseDomain(host))) return true;
   if (ADULT_PARTS.some((p) => host.includes(p))) return true;
   return labels.some((l) => l.split("-").some((w) => ADULT_WORDS.has(w)));
 }
@@ -98,12 +130,26 @@ export function isMainHost(host: string, base: string): boolean {
   return rest === "www" || /^[a-z]{2}$/.test(rest) || ["m", "web", "app", "mobile"].includes(rest);
 }
 
+const memo = new Map<string, SiteInfo>();
+
+/** Beoordeel een adres; het resultaat wordt onthouden, want dezelfde adressen komen duizenden keren voor. */
 export function classify(host: string): SiteInfo {
+  let info = memo.get(host);
+  if (!info) {
+    info = classifyUncached(host);
+    if (memo.size > 200_000) memo.clear();
+    memo.set(host, info);
+  }
+  return info;
+}
+
+function classifyUncached(host: string): SiteInfo {
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(base);
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
-  const adult = isAdult(host);
-  const dating = !adult && isDating(host);
+  // Eerst dating: sommige datingsites staan ook op de porno-lijst, maar het label Dating is dan duidelijker.
+  const dating = isDating(host);
+  const adult = !dating && isAdult(host);
   const label = host.split(".")[0];
   const bg =
     !adult && !dating && (BACKGROUND.has(base) ||

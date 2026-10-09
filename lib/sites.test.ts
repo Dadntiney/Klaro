@@ -45,3 +45,12 @@ test("app-verkeer verborgen, echte sites blijven", () => {
   for (const h of ["google.com", "apple.com", "amazon.nl"]) assert.equal(classify(h).main, false, h);
   for (const h of ["www.google.com", "www.amazon.nl", "www.bol.com", "bol.com", "github.com"]) assert.equal(classify(h).main && !classify(h).bg, true, h);
 });
+
+test("grote porno-lijst", () => {
+  for (const h of ["lesbianaselsalvador.com", "www.0-0-adult-superstore.com", "cdn.0-0-adult-superstore.com"]) assert.equal(classify(h).flag, "18+", h);
+  for (const h of ["www.google.com", "www.youtube.com", "www.reddit.com", "twitter.com", "www.facebook.com", "nl.wikipedia.org", "www.bol.com", "www.nu.nl", "tumblr.com", "www.nakedwines.com"]) assert.equal(classify(h).flag, undefined, h);
+});
+
+test("voorbeelden van de eigenaar", () => {
+  for (const h of ["vagina.nl", "pornhub.com", "phncdn.com", "phprcdn.com", "easytoys.nl", "www.badoo.com", "lovehoney.nl", "www.amorelie.nl"]) assert.ok(classify(h).flag, h);
+});
