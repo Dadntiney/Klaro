@@ -228,12 +228,12 @@ export default function Home() {
     };
   }, [state, poll]);
 
-  // Rode balk: 18+ bezocht in de laatste 30 minuten (ongeacht het gekozen apparaat of filter).
+  // Rode balk: blijft rood zolang er 18+ bezoeken in de logs staan (ongeacht apparaat of filter).
   const alert = useMemo(() => {
-    const cutoff = Date.now() - 30 * 60_000;
-    const hits = groups.filter((g) => g.adult && g.last >= cutoff).sort((a, b) => b.last - a.last);
-    return hits[0] ? { hit: hits[0], count: hits.length } : null;
-  }, [groups, updated]); // eslint-disable-line react-hooks/exhaustive-deps
+    const hits = groups.filter((g) => g.adult).sort((a, b) => b.last - a.last);
+    if (!hits.length) return null;
+    return { hit: hits[0], sites: new Set(hits.map((h) => h.site)).size, visits: hits.reduce((n, h) => n + h.n, 0) };
+  }, [groups]);
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
@@ -271,8 +271,8 @@ export default function Home() {
           <div className={"bar" + (alert ? " alert" : "")}>
             {alert && (
               <div className="alarm">
-                ⚠ 18+ content bezocht: <strong>{alert.hit.name}</strong> · {alert.hit.dev} · {timeFmt.format(alert.hit.last)}
-                {alert.count > 1 && ` (+${alert.count - 1} andere)`}
+                ⚠ 18+ content bezocht · laatst: <strong>{alert.hit.name}</strong> · {alert.hit.dev} · {dayLabel(alert.hit.d)} {timeFmt.format(alert.hit.last)}
+                <span className="alarm-sub"> · {alert.sites} {alert.sites === 1 ? "site" : "sites"}, {alert.visits}× in de logs</span>
               </div>
             )}
             <div className="chips">
