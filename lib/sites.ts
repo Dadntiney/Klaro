@@ -36,6 +36,16 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Mobile Legends (spel)", icon: "mobilelegends.com", domains: ["mobilelegends.com", "moonton.com"] },
   { name: "Sago Mini (spel)", icon: "sagomini.com", domains: ["sagomini.com"] },
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
+  // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
+  { name: "Ziggo GO", icon: "ziggogo.tv", domains: ["ziggogo.tv", "horizon.tv"] },
+  { name: "NPO", icon: "npo.nl", domains: ["npo.nl", "npoplayer.nl", "npostart.nl", "omroep.nl"] },
+  { name: "Kijk", icon: "kijk.nl", domains: ["kijk.nl"] },
+  { name: "Videoland", icon: "videoland.com", domains: ["videoland.com"] },
+  { name: "Prime Video", icon: "primevideo.com", domains: ["primevideo.com", "aiv-cdn.net", "pv-cdn.net"] },
+  { name: "Max", icon: "max.com", domains: ["max.com", "hbomax.com", "hbo.com"] },
+  { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
+  { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },
+  { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
   { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
   { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },
@@ -247,6 +257,7 @@ export function payKind(host: string): { kind: string; level: "checkout" | "stor
 const MEDIA = [
   /(^|\.)googlevideo\.com$/, /(^|\.)nflxvideo\.net$/, /(^|\.)ttvnw\.net$/, /tiktokcdn(-[a-z]+)?\.com$/, /(^|\.)cdninstagram\.com$/,
   /^(scontent|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/, /(^|\.)dssott\.com$/, /playback\.edge\.bamgrid\.com$/, /(^|\.)audio-[^.]*\.(spotifycdn\.com|scdn\.co|akamaized\.net)$/, /(^|\.)scdn\.co$/,
+  /(^|\.)conviva\.com$/, /(^|\.)(aiv-cdn|pv-cdn)\.net$/, // conviva meldt de voortgang van video aan de aanbieder: er wordt gekeken
 ];
 export function isMedia(host: string): boolean {
   return MEDIA.some((re) => re.test(host));

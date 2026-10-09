@@ -141,3 +141,12 @@ test("bekende spellen worden als app getoond", () => {
     assert.equal(!c.bg && c.main, true, h);
   }
 });
+
+test("tv-apps (Ziggo GO e.d.) zijn een bezoek; conviva telt als beeldverkeer", () => {
+  const z = classify("spark-prod-nl.gnp.cloud.ziggogo.tv");
+  assert.equal(z.name, "Ziggo GO");
+  assert.equal(!z.bg && z.main, true);
+  assert.equal(classify("www.npostart.nl").name, "NPO");
+  assert.equal(isMedia("cws-lgi.conviva.com"), true);
+  assert.equal(isMedia("graph.facebook.com"), false);
+});
