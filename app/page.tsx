@@ -671,32 +671,6 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
-                            {(() => {
-                              // Achtergrondverkeer dat bij deze site hoort (zelfde merknaam, zoals media-amazon.com bij Amazon), zodat het bij elkaar blijft.
-                              const token = g.site.split(".")[0];
-                              if (token.length < 4) return null;
-                              const rel = groups
-                                .filter((o) => o.d === g.d && o.dev === g.dev && o.site !== g.site && (o.bg || !o.main) && o.site.includes(token))
-                                .sort((a, b) => b.n - a.n)
-                                .slice(0, 6);
-                              if (!rel.length) return null;
-                              return (
-                                <>
-                                  <div className="dh">Hoort erbij (achtergrond)</div>
-                                  {rel.map((o) => (
-                                    <div className="near" key={o.site}>
-                                      <span className="nn">{o.site}</span>
-                                      <span className="sub">{o.n}×</span>
-                                    </div>
-                                  ))}
-                                </>
-                              );
-                            })()}
-                            {(g.cat && g.cat !== "Overig") || g.isNew ? (
-                              <div className="sub" style={{ marginTop: 6 }}>
-                                {g.cat && g.cat !== "Overig" && <>Categorie: {g.cat}</>}{g.isNew && <>{g.cat && g.cat !== "Overig" ? " · " : ""}Voor het eerst gezien in de afgelopen 24 uur</>}
-                              </div>
-                            ) : null}
                             {showNear && (
                               <>
                                 <div className="dh">Let op: op hetzelfde moment (±30 sec.) op de lijst</div>
