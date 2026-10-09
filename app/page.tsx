@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Group {
   d: string;
@@ -10,6 +10,15 @@ interface Group {
   icon: string;
   last: number;
   n: number;
+  bg: boolean;
+  flash?: number;
+}
+interface Event {
+  t: number;
+  dev: string;
+  site: string;
+  name: string;
+  icon: string;
   bg: boolean;
 }
 interface Device {
@@ -57,6 +66,9 @@ export default function Home() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
+  const [live, setLive] = useState<"ok" | "fail">("ok");
+  const [liveError, setLiveError] = useState("");
+  const lastSeen = useRef(0);
 
   useEffect(() => {
     fetch("/api/nextdns")
@@ -66,6 +78,7 @@ export default function Home() {
         setGroups(data.groups);
         setDevices(data.devices);
         setTotal(data.total);
+        lastSeen.current = Math.max(0, ...(data.groups as Group[]).map((g) => g.last));
         setUpdated(new Date());
         setState("ready");
       })
@@ -74,6 +87,55 @@ export default function Home() {
         setState("error");
       });
   }, []);
+
+  const poll = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Live mislukt");
+      const events = (data.events as Event[]).sort((a, b) => a.t - b.t);
+      setLive("ok");
+      setUpdated(new Date());
+      if (!events.length) return;
+      lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
+      setTotal((n) => n + events.length);
+      setGroups((prev) => {
+        const next = [...prev];
+        for (const e of events) {
+          const d = dayKeyFmt.format(e.t);
+          const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
+          if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
+          else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, flash: Date.now() });
+        }
+        return next;
+      });
+      setDevices((prev) => {
+        const next = [...prev];
+        for (const e of events) {
+          const i = next.findIndex((x) => x.name === e.dev);
+          if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1 };
+          else next.push({ name: e.dev, n: 1 });
+        }
+        return next;
+      });
+    } catch (e) {
+      setLive("fail");
+      setLiveError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (state !== "ready") return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") poll();
+    }, 10_000);
+    const onVisible = () => document.visibilityState === "visible" && poll();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [state, poll]);
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
@@ -92,12 +154,17 @@ export default function Home() {
         <h1>Bezochte websites &amp; apps</h1>
         <p className="muted">
           {state === "loading" && "Logs ophalen van NextDNS…"}
-          {state === "ready" && `${total.toLocaleString("nl-NL")} DNS-verzoeken · ${devices.length} apparaten · bijgewerkt om ${timeFmt.format(updated!)}`}
+          {state === "ready" && (
+            <>
+              <span className={"dot " + live} /> {live === "ok" ? "Live" : "Live niet beschikbaar"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} apparaten · bijgewerkt om {timeFmt.format(updated!)}
+            </>
+          )}
           {state === "error" && "Ophalen mislukt"}
         </p>
       </header>
 
       {state === "error" && <p className="err">{error}</p>}
+      {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
       {state === "loading" && <div className="loader" aria-label="Laden" />}
 
       {state === "ready" && (
@@ -123,7 +190,7 @@ export default function Home() {
               <h2>{dayLabel(d)} <span className="muted">· {list.length}</span></h2>
               <div className="list">
                 {list.map((g) => (
-                  <div className="item" key={g.site + g.dev}>
+                  <div className={"item" + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
                     <Favicon domain={g.icon} name={g.name} />
                     <div className="main">
                       <div className="name">{g.name}</div>

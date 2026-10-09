@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { classify } from "@/lib/sites";
+import { cleanDevice } from "@/lib/names";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -66,7 +67,7 @@ export async function GET() {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
     const t = tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
-    const dev = (nameCol >= 0 && r[nameCol]?.trim()) || (idCol >= 0 && r[idCol]?.trim()) || "Onbekend";
+    const dev = cleanDevice((nameCol >= 0 && r[nameCol]?.trim()) || (idCol >= 0 && r[idCol]?.trim()) || "Onbekend", process.env.HIDDEN_NAMES ?? "");
     const info = classify(host);
     const d = t ? dayFmt.format(t) : "onbekend";
     const key = `${d}|${dev}|${info.site}`;
