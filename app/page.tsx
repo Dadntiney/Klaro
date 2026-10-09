@@ -111,7 +111,6 @@ export default function Home() {
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
-  const [soundBlocked, setSoundBlocked] = useState(false);
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
@@ -193,7 +192,6 @@ export default function Home() {
           el.currentTime = 0;
           el.muted = false;
           unlocked.current = true;
-          setSoundBlocked(false);
         })
         .catch(() => { el.muted = false; });
     };
@@ -208,7 +206,7 @@ export default function Home() {
     if (!el) return;
     el.muted = false;
     el.currentTime = 0;
-    el.play().then(() => setSoundBlocked(false)).catch(() => setSoundBlocked(true));
+    el.play().catch(() => {});
   }, []);
 
   const seen = useRef<Set<string>>(new Set());
@@ -389,7 +387,7 @@ export default function Home() {
           {state === "ready" && (
             <>
               <span className={"dot " + (live === "ok" ? "ok" : "fail")} />{" "}
-              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}{" · "}<button className="spk" onClick={beep} title={soundBlocked ? "Je browser blokkeert het geluid. Tik hier of ergens op de pagina om het te activeren." : "Tik om de piep te testen"} aria-label="Geluid testen">{soundBlocked ? "🔇" : "🔊"}</button>
+              {live === "fail" ? "Live niet beschikbaar" : "Live"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
