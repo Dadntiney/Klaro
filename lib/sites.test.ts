@@ -15,3 +15,8 @@ test("achtergrondverkeer", () => {
   assert.equal(classify("www.nu.nl").bg, false);
   assert.equal(classify("www.lego.com").bg, false);
 });
+
+test("18+ herkenning", () => {
+  for (const h of ["www.pornhub.com", "nl.xvideos.com", "example.xxx", "sex-shop.nl", "www.unibet.nl", "casino-online.nl"]) assert.equal(classify(h).adult, true, h);
+  for (const h of ["www.sussex.ac.uk", "www.essex.com", "abc.alphabet.com", "www.lego.com", "www.nu.nl", "betterhelp.com"]) assert.equal(classify(h).adult, false, h);
+});

@@ -39,22 +39,41 @@ const BACKGROUND = new Set([
 const BACKGROUND_SUFFIX = ["push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
 
+/** 18+: volwassen inhoud en gokken. Bewust voorzichtig: lange, ondubbelzinnige namen als deel van het domein, korte woorden alleen als los woord. */
+const ADULT_PARTS = [
+  "porn", "xxx", "hentai", "nsfw", "onlyfans", "chaturbate", "xvideos", "xnxx", "xhamster", "redtube", "youporn",
+  "stripchat", "bongacams", "livejasmin", "brazzers", "rule34", "camsoda", "fansly", "spankbang", "eporner",
+  "nhentai", "literotica", "sexshop", "sexcam", "sexchat", "sexdate", "sexfilm", "playboy", "erotiek",
+  "casino", "gokken", "gambling", "bet365", "unibet", "betcity", "betway", "bwin", "pokerstars", "kansino", "toto.nl",
+];
+const ADULT_WORDS = new Set(["sex", "sexy", "erotic", "erotica", "escort", "camgirl", "camgirls", "nude", "nudes", "milf", "bet", "betting", "poker", "slots", "gok", "jackpot"]);
+const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn", "bet", "casino", "poker"]);
+
+export function isAdult(host: string): boolean {
+  const labels = host.split(".");
+  if (ADULT_TLDS.has(labels[labels.length - 1])) return true;
+  if (ADULT_PARTS.some((p) => host.includes(p))) return true;
+  return labels.some((l) => l.split("-").some((w) => ADULT_WORDS.has(w)));
+}
+
 export interface SiteInfo {
   site: string; // groeperingssleutel
   name: string; // weergavenaam
   icon: string; // domein voor het favicon
   bg: boolean; // achtergrondverkeer
+  adult: boolean; // 18+
 }
 
 export function classify(host: string): SiteInfo {
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(base);
-  if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false };
+  if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false };
+  const adult = isAdult(host);
   const label = host.split(".")[0];
   const bg =
-    BACKGROUND.has(base) ||
+    !adult && (BACKGROUND.has(base) ||
     BACKGROUND_SUFFIX.some((s) => host === s || host.endsWith("." + s)) ||
     (host !== base && BACKGROUND_LABELS.has(label)) ||
-    BACKGROUND.has(host.split(".").slice(-1)[0]);
-  return { site: base, name: base, icon: base, bg };
+    BACKGROUND.has(host.split(".").slice(-1)[0]));
+  return { site: base, name: base, icon: base, bg, adult };
 }

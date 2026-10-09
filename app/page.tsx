@@ -12,6 +12,7 @@ interface Group {
   last: number;
   n: number;
   bg: boolean;
+  adult?: boolean;
   flash?: number;
 }
 interface Event {
@@ -22,6 +23,7 @@ interface Event {
   name: string;
   icon: string;
   bg: boolean;
+  adult?: boolean;
 }
 interface Device {
   name: string;
@@ -71,6 +73,11 @@ export default function Home() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
+  const [sound, setSound] = useState(false);
+  const soundRef = useRef(false);
+  const audio = useRef<AudioContext | null>(null);
+  const deviceRef = useRef<string | null>(null);
+  const showBgRef = useRef(false);
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const [live, setLive] = useState<"ok" | "fail">("ok");
@@ -95,7 +102,7 @@ export default function Home() {
           if (g) {
             g.n++;
             g.last = Math.max(g.last, e.t);
-          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg });
+          } else byKey.set(key, { d, dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult });
           counts.set(dev, (counts.get(dev) ?? 0) + 1);
         }
         deviceMap.current = map;
@@ -130,6 +137,38 @@ export default function Home() {
       });
   }, []);
 
+  useEffect(() => { deviceRef.current = device; showBgRef.current = showBg; }, [device, showBg]);
+
+  const beep = useCallback(() => {
+    const ctx = audio.current;
+    if (!ctx) return;
+    [660, 880].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = f;
+      o.connect(g).connect(ctx.destination);
+      const t = ctx.currentTime + i * 0.12;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.15, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+      o.start(t);
+      o.stop(t + 0.12);
+    });
+  }, []);
+
+  function toggleSound() {
+    const on = !sound;
+    if (on) {
+      // Moet binnen een klik gebeuren, anders blokkeert de browser geluid.
+      audio.current ??= new AudioContext();
+      audio.current.resume();
+      beep();
+    }
+    soundRef.current = on;
+    setSound(on);
+    try { localStorage.setItem("csv-sound", on ? "1" : "0"); } catch {}
+  }
+
   const poll = useCallback(async () => {
     try {
       const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`);
@@ -140,6 +179,8 @@ export default function Home() {
       setUpdated(new Date());
       if (!events.length) return;
       lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
+      // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
+      if (soundRef.current && events.some((e) => (showBgRef.current || !e.bg) && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
       setTotal((n) => n + events.length);
       // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
       for (const e of events) {
@@ -154,7 +195,7 @@ export default function Home() {
           const d = dayKeyFmt.format(e.t);
           const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
           if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, last: Math.max(next[i].last, e.t), flash: Date.now() };
-          else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, flash: Date.now() });
+          else next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, flash: Date.now() });
         }
         return next;
       });
@@ -172,7 +213,7 @@ export default function Home() {
       setLive("fail");
       setLiveError((e as Error).message);
     }
-  }, []);
+  }, [beep]);
 
   useEffect(() => {
     if (state !== "ready") return;
@@ -186,6 +227,13 @@ export default function Home() {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [state, poll]);
+
+  // Rode balk: 18+ bezocht in de laatste 30 minuten (ongeacht het gekozen apparaat of filter).
+  const alert = useMemo(() => {
+    const cutoff = Date.now() - 30 * 60_000;
+    const hits = groups.filter((g) => g.adult && g.last >= cutoff).sort((a, b) => b.last - a.last);
+    return hits[0] ? { hit: hits[0], count: hits.length } : null;
+  }, [groups, updated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
@@ -206,7 +254,7 @@ export default function Home() {
           {state === "loading" && "Logs ophalen van NextDNS…"}
           {state === "ready" && (
             <>
-              <span className={"dot " + live} /> {live === "ok" ? "Live" : "Live niet beschikbaar"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} apparaten · bijgewerkt om {timeFmt.format(updated!)}
+              <span className={"dot " + live} /> {live === "ok" ? "Live" : "Live niet beschikbaar"} · {total.toLocaleString("nl-NL")} DNS-verzoeken · {devices.length} {devices.length === 1 ? "apparaat" : "apparaten"} · bijgewerkt om {timeFmt.format(updated!)}
             </>
           )}
           {state === "error" && "Ophalen mislukt"}
@@ -220,7 +268,13 @@ export default function Home() {
 
       {state === "ready" && (
         <>
-          <div className="bar">
+          <div className={"bar" + (alert ? " alert" : "")}>
+            {alert && (
+              <div className="alarm">
+                ⚠ 18+ content bezocht: <strong>{alert.hit.name}</strong> · {alert.hit.dev} · {timeFmt.format(alert.hit.last)}
+                {alert.count > 1 && ` (+${alert.count - 1} andere)`}
+              </div>
+            )}
             <div className="chips">
               <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle apparaten</button>
               {devices.map((d) => (
@@ -230,6 +284,10 @@ export default function Home() {
               ))}
             </div>
             <label className="toggle">
+              <input type="checkbox" checked={sound} onChange={toggleSound} />
+              Geluid bij nieuwe bezoeken
+            </label>
+            <label className="toggle" style={{ marginLeft: 16 }}>
               <input type="checkbox" checked={showBg} onChange={(e) => setShowBg(e.target.checked)} />
               Toon ook achtergrondverkeer
             </label>
@@ -241,8 +299,8 @@ export default function Home() {
               <h2>{dayLabel(d)} <span className="muted">· {list.length}</span></h2>
               <div className="list">
                 {list.map((g) => (
-                  <div className={"item" + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
-                    <Favicon domain={g.icon} />
+                  <div className={"item" + (g.adult ? " adult" : "") + (g.flash && Date.now() - g.flash < 4000 ? " fresh" : "")} key={g.site + g.dev}>
+                    {g.adult ? <span className="fav badge">18+</span> : <Favicon domain={g.icon} />}
                     <div className="main">
                       <div className="name">{g.name}</div>
                       <div className="sub">{g.name !== g.site ? g.site + " · " : ""}{g.dev}</div>
