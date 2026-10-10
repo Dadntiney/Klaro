@@ -261,3 +261,13 @@ h2 .dview + .dview.icon { margin-left:0; }
 
 
 .reltime { font-weight:500; white-space:nowrap; }
+
+/* Duidelijker: vaste regelhoogte, klein Nieuw-label, uurmarkering, duur met klokje */
+.item .name { line-height:20px; }
+.newtag { font-size:9px !important; padding:0 6px !important; line-height:14px; margin-left:6px !important; }
+.item .main { overflow:hidden; }
+.hourmark { padding:10px 14px 0 54px; font-size:11px; font-weight:600; letter-spacing:.06em; color:var(--muted); opacity:.75; font-variant-numeric:tabular-nums; }
+.time .vdur { display:inline-flex; align-items:center; gap:4px; }
+.time .vdur svg { opacity:.65; }
+.time:has(.reltime) .vdur svg { display:none; }
+.time { gap:5px; }

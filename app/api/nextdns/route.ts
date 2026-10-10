@@ -283,7 +283,7 @@ export async function GET(req: Request) {
 
   // "Nieuw": voor het eerst gezien in de laatste 24 uur, alleen zinvol als de logs minstens 3 dagen terugreiken.
   const newCutoff = Date.now() - DAY;
-  const meaningful = Number.isFinite(minT) && Date.now() - minT > 3 * DAY;
+  const meaningful = Number.isFinite(minT) && Date.now() - minT > 7 * DAY;
   const siteName = new Map<string, string>();
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];

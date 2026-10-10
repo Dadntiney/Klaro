@@ -227,10 +227,20 @@ export function classify(host: string): SiteInfo {
 }
 
 /** Landvarianten van dezelfde dienst samenvoegen (google.nl en google.com zijn één regel). */
+/** Merken met meer dan een domein: samen één regel (zonder hun hulpadressen zichtbaar te maken). */
+const BRAND_CANON: Record<string, string> = {
+  "paypalobjects.com": "paypal.com", "paypal.me": "paypal.com",
+  "lidl.com": "lidl.nl", "lidl.de": "lidl.nl", "lidl.be": "lidl.nl", "lidlplus.nl": "lidl.nl", "lidlplus.com": "lidl.nl",
+  "marktplaats.com": "marktplaats.nl",
+  "kruidvat.be": "kruidvat.nl",
+  "rabobank.com": "rabobank.nl",
+  "decathlon.net": "decathlon.nl", "decathlon.com": "decathlon.nl",
+  "s-bol.com": "bol.com", "bol.nl": "bol.com",
+};
 function canonSite(base: string): string {
   if (/^google\.[a-z.]+$/.test(base)) return "google.com";
   if (/^amazon\.[a-z.]+$/.test(base)) return "amazon.com";
-  return base;
+  return BRAND_CANON[base] ?? base;
 }
 
 function classifyUncached(host: string): SiteInfo {

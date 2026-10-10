@@ -182,3 +182,11 @@ test("Nederlandse spelling seks wordt herkend; gewone sites niet", () => {
   assert.notEqual(classify("www.sussex.ac.uk").flag, "18+");
   assert.notEqual(classify("www.rutgers.nl").flag, "18+");
 });
+
+test("merken met meer domeinen worden één regel", () => {
+  assert.equal(classify("www.paypalobjects.com").site, "paypal.com");
+  assert.equal(classify("www.paypal.com").site, "paypal.com");
+  assert.equal(classify("www.lidlplus.nl").site, "lidl.nl");
+  assert.equal(classify("www.marktplaats.com").site, "marktplaats.nl");
+  assert.equal(classify("www.kruidvat.be").site, "kruidvat.nl");
+});
