@@ -41,7 +41,7 @@ test("isHuman: korte achtergrondverzoeken zijn geen gebruik", async () => {
 test("isHuman: beeld/geluid (video, muziek) telt als gebruik, ook met weinig verzoeken", async () => {
   const { isHuman } = await import("./sessions.ts");
   assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 2 }), true);
-  assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 1 }), false);
+  assert.equal(isHuman({ s: 1, e: 2, n: 2, m: 1 }), false);
 });
 
 test("apps met achtergrondverkeer: alleen echte inhoud telt, en alleen die bepaalt de duur", () => {

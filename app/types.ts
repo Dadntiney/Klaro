@@ -28,6 +28,7 @@ export interface Group {
 }
 export interface Event {
   t: number;
+  host?: string;
   devId: string;
   type: string;
   site: string;

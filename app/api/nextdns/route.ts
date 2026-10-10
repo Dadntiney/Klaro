@@ -4,7 +4,7 @@ import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
-import { allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { MOMENT, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
@@ -216,11 +216,18 @@ export async function GET(req: Request) {
   let total = 0;
   let minT = Infinity;
   let maxT = 0;
+  const lastHit = new Map<string, number>();
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
     const t = tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
     const dev = deviceMap[idOf(r)];
+    // Hetzelfde adres binnen 1,5 seconde is één opvraging (het logboek bevat A, AAAA en HTTPS apart; de bron voor vandaag niet).
+    // Zo tellen beide bronnen precies gelijk.
+    const dk = dev + "|" + host;
+    const prevHit = lastHit.get(dk);
+    if (t && prevHit !== undefined && Math.abs(t - prevHit) <= MOMENT) continue;
+    if (t) lastHit.set(dk, t);
     let info = classify(host);
     const d = t ? dayFmt.format(t) : "onbekend";
 

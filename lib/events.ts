@@ -6,6 +6,7 @@ import { categoryOf } from "./categories.ts";
 
 export interface LiveEvent {
   t: number;
+  host: string; // het opgevraagde adres (om dubbele opvragingen binnen 1,5 s als één te tellen, net als de server)
   devId: string;
   type: string;
   site: string;
@@ -42,5 +43,5 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
     .join(" ")
     .toLowerCase();
   if (blocked && /porn|adult|sex|dating|erotic/.test(reasons) && !info.flag) info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
-  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: isPlaying(host, blocked), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), res: isResourceHost(host) || undefined, esp: isEspHost(host) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
+  return { t, host, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: isPlaying(host, blocked), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), res: isResourceHost(host) || undefined, esp: isEspHost(host) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
 }

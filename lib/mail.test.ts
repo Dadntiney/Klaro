@@ -35,5 +35,5 @@ test("mail met veel verzoeken maar zonder de site zelf is mail; met de site zelf
   const esp = [t, t + 1_000];
   assert.ok(isMailSession({ s: t, e: t + 2_000, n: 9 }, esp, [], 0)); // alleen plaatjes/tellers (Indeed-mail)
   assert.ok(!isMailSession({ s: t, e: t + 19_000, n: 27 }, esp, [], 3)); // app/site echt geopend
-  assert.ok(isMailSession({ s: t, e: t + 2_000, n: 4 }, esp, [], 1)); // korte nieuwsbrief die www.merk.nl laadt
+  assert.ok(isMailSession({ s: t, e: t + 2_000, n: 3 }, esp, [], 1)); // korte nieuwsbrief die www.merk.nl laadt
 });

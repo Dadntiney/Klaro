@@ -326,3 +326,8 @@ h2 .dview + .dview.icon { margin-left:0; }
 .login-card input { font:inherit; font-size:16px; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
 .login-card button { font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:10px; border:0; background:var(--accent); color:#fff; cursor:pointer; }
 .login-err { margin:0; color:#dc2626; font-size:14px; }
+
+/* Oudere dagen die nog laden */
+.skel-days { margin-top:20px; }
+.skel-day { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
+.skel-err { margin:24px 0; font-size:13px; }

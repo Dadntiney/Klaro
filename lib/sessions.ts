@@ -110,5 +110,7 @@ export function isHuman(x: Session): boolean {
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde
   if (x.n === undefined) return true;
   if ((x.m ?? 0) >= 2) return true; // beeld/geluid (Disney+, YouTube): er wordt gekeken of geluisterd
-  return x.n >= 6 || (minutes(x) >= 1 && x.n >= 3);
+  // Losse opvragingen (dubbele binnen 1,5 s tellen als één): minstens 3, of 2 verspreid over meer dan een minuut.
+  // Een app die even ververst (1–2 opvragingen in een paar seconden) telt niet.
+  return x.n >= 3 || (minutes(x) >= 1 && x.n >= 2);
 }

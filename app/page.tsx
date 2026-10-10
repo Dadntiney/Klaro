@@ -110,8 +110,9 @@ export default function Home() {
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
 
-  // Eerst alles laden en pas tonen als het klaar is (geen half scherm dat daarna verspringt).
+  // Eerst vandaag laden en tonen (skelet met voortgang tot dan), daarna de oudere dagen eronder.
   const [progress, setProgress] = useState(0);
+  const [histErr, setHistErr] = useState(false); // oudere dagen laden lukte niet
   const finishing = useRef(false);
 
   useEffect(() => {
@@ -127,20 +128,37 @@ export default function Home() {
       setUpdated(new Date());
       if (isFull) {
         setFull(true);
+        // Live-gegevens van na het ophalen opnieuw laten binnenkomen bovenop de volledige lijst.
+        seen.current = new Set();
+        lastHost.current = new Map();
         try { localStorage.setItem("csv-load-ms", String(Date.now() - t0)); } catch {}
+      } else {
+        try { localStorage.setItem("csv-today-ms", String(Date.now() - t0)); } catch {}
       }
       finishing.current = true;
       setProgress(1);
       setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
     };
-    // Alles in één keer: pas tonen als de volledige geschiedenis binnen is (tot die tijd het skelet met de voortgang).
+    // Eerst vandaag (snel), daarna de oudere dagen. Beide bronnen tellen precies gelijk, dus vandaag verandert daarna niet meer.
+    let fullDone = false;
+    let todayShown = false;
+    fetch("/api/nextdns?scope=today")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || fullDone) return;
+        todayShown = true;
+        apply(data, false);
+      })
+      .catch(() => {});
     fetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Ophalen mislukt");
+        fullDone = true;
         apply(data, true);
       })
       .catch((e: Error) => {
+        if (todayShown) { setHistErr(true); return; } // vandaag staat er al; alleen de oudere dagen lukken niet
         setError(e.message);
         setState("error");
         setFull(true);
@@ -150,10 +168,10 @@ export default function Home() {
   // Voortgang is een schatting (NextDNS meldt zelf niets): loopt op naar ~90% over de tijd die het de vorige keer duurde.
   useEffect(() => {
     if (state !== "loading") return;
-    let expected = 25_000;
+    let expected = 12_000;
     try {
-      const v = Number(localStorage.getItem("csv-load-ms"));
-      if (v > 1000 && v < 180_000) expected = v;
+      const v = Number(localStorage.getItem("csv-today-ms"));
+      if (v > 500 && v < 120_000) expected = v;
     } catch {}
     const t0 = Date.now();
     const id = setInterval(() => {
@@ -208,6 +226,7 @@ export default function Home() {
   }, []);
 
   const seen = useRef<Set<string>>(new Set());
+  const lastHost = useRef<Map<string, number>>(new Map());
   const [mailT, setMailT] = useState<Map<string, { esp: number[]; mc: number[] }>>(new Map());
 
   /** Verwerk nieuwe verzoeken (uit de rechtstreekse stroom of de periodieke controle). */
@@ -231,6 +250,14 @@ export default function Home() {
         const k = `${e.t}|${e.devId}|${e.site}`;
         if (seen.current.has(k)) return false;
         seen.current.add(k);
+        // Hetzelfde adres binnen 1,5 seconde is één opvraging (zelfde telling als de server).
+        if (e.host) {
+          const hk = `${e.devId}|${e.host}`;
+          const prev = lastHost.current.get(hk);
+          if (prev !== undefined && Math.abs(e.t - prev) <= 1_500 && !e.flag) return false;
+          lastHost.current.set(hk, e.t);
+          if (lastHost.current.size > 5000) lastHost.current = new Map([...lastHost.current].slice(-2500));
+        }
         if (seen.current.size > 5000) seen.current = new Set([...seen.current].slice(-2500));
         return true;
       })
@@ -567,7 +594,7 @@ export default function Home() {
       for (const x of g.ss ?? []) if (g.flag || g.susp || human(g, x)) (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
     }
     const standalone = (g: Group, x: Session) =>
-      (x.n ?? 0) >= 8 && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
+      (x.n ?? 0) >= 3 && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
     for (const g of groups) {
       if ((device && g.dev !== device) || g.bg) continue;
       if (!g.main && (isSystemSite(g.site) || !(g.ss ?? []).some((x) => standalone(g, x)))) continue;
@@ -896,6 +923,13 @@ export default function Home() {
             </section>
             );
           })}
+          {/* Oudere dagen worden nog geladen: rustige grijze dagkopjes met dezelfde glans als het skelet. */}
+          {!full && !histErr && (
+            <div className="skel-days" aria-label="Oudere dagen laden">
+              {[150, 190, 170].map((w, i) => <div key={i} className="skel-day"><span className="sk" style={{ width: w, height: 14 }} /><span className="sk" style={{ width: 14, height: 14 }} /></div>)}
+            </div>
+          )}
+          {histErr && <p className="muted skel-err">Oudere dagen laden lukt nu even niet; vandaag is wel compleet.</p>}
         </>
       )}
       {open && (
