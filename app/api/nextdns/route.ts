@@ -310,6 +310,8 @@ export async function GET(req: Request) {
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
     const sessions = allSessions(all);
+    // Tellen in momenten per site: alles van dezelfde site binnen 1,5 s (www + plaatjes + script) is één moment.
+    for (const x of sessions) x.n = moments(all.filter((t) => t >= x.s && t <= x.e));
     // Apps met veel achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): tel hoe vaak er echt inhoud laadde, en meet de duur
     // alleen van de eerste tot de laatste keer inhoud; verversen op de achtergrond rekt de duur dan niet op.
     if (FG_RULES[g.site]) {

@@ -64,12 +64,14 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
   const i = next.findIndex((x) => t >= x.s - GAP && t <= x.e + GAP);
   if (i >= 0) {
     const x = next[i];
+    const prevE = x.e;
     if (fg === undefined || fg || media) {
       if (fg !== undefined && !(x.f ?? 0) && !(x.m ?? 0)) { x.s = t; x.e = t; } // eerste echte inhoud: daar begint het gebruik
       x.s = Math.min(x.s, t);
       x.e = Math.max(x.e, t);
     }
-    if (x.n !== undefined) x.n = x.n + 1;
+    // Tellen in momenten (zelfde telling als de server): binnen 1,5 s van de vorige opvraging telt niet opnieuw.
+    if (x.n !== undefined && Math.abs(t - prevE) > MOMENT) x.n = x.n + 1;
     // Momenten tellen, geen opvragingen: dezelfde foto die 3x wordt opgevraagd is één moment.
     if (media && !(x.lmt && Math.abs(t - x.lmt) <= MOMENT)) x.m = (x.m ?? 0) + 1;
     if (media) x.lmt = t;
