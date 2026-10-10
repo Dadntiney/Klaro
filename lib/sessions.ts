@@ -4,6 +4,7 @@ export interface Session {
   e: number; // einde
   n?: number; // aantal verzoeken in de sessie
   m?: number; // waarvan beeld/geluid-verkeer (video of muziek)
+  ml?: 1; // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
 }
 
 export const GAP = 5 * 60_000;
@@ -71,6 +72,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
  * Sessies zonder telling (oudere gegevens) tellen mee.
  */
 export function isHuman(x: Session): boolean {
+  if (x.ml && (x.n ?? 1) <= 8 && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
   if (x.n === undefined) return true;
   if ((x.m ?? 0) >= 2) return true; // beeld/geluid (Disney+, YouTube): er wordt gekeken of geluisterd
   return x.n >= 6 || (minutes(x) >= 1 && x.n >= 3);

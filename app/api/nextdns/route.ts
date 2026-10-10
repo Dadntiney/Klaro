@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
+import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { TV_APPS, classify, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
@@ -191,6 +192,8 @@ export async function GET(req: Request) {
   const groups = new Map<string, Group>();
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
   const mediaTimes = new Map<string, number[]>(); // alleen beeld/geluid-verkeer per groep
+  const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
+  const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
@@ -247,6 +250,8 @@ export async function GET(req: Request) {
       const pay = payKind(host);
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
+      if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
+      else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
     if (isQuietHost(host)) continue; // verbinding openhouden: geen bezoek, geen sessie
@@ -302,6 +307,11 @@ export async function GET(req: Request) {
     if (TV_APPS.has(g.site)) {
       const dm = devMedia.get(g.dev) ?? [];
       for (const x of sessions) x.m = Math.max(x.m ?? 0, dm.filter((t) => t >= x.s - 120_000 && t <= x.e + 120_000).length);
+    }
+    // Korte "bezoeken" tegelijk met het openen van een nieuwsbrief zijn plaatjes uit die mail, geen bezoek (rood blijft altijd zichtbaar).
+    if (!g.flag && g.main && !g.bg) {
+      const esp = devEsp.get(g.dev) ?? [];
+      if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [])) x.ml = 1;
     }
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
     // Een site waarvan alle verzoeken door NextDNS zijn geblokkeerd, is geen "nieuwe site" die bezocht is.

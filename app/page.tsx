@@ -3,6 +3,7 @@
 import { extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
 import { isSystemSite } from "@/lib/system";
+import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -235,9 +236,22 @@ export default function Home() {
   }, []);
 
   const seen = useRef<Set<string>>(new Set());
+  const [mailT, setMailT] = useState<Map<string, { esp: number[]; mc: number[] }>>(new Map());
 
   /** Verwerk nieuwe verzoeken (uit de rechtstreekse stroom of de periodieke controle). */
   const applyEvents = useCallback((incoming: Event[]) => {
+    // Mailverkeer onthouden (per apparaat, laatste half uur): korte "bezoeken" tegelijk met een geopende nieuwsbrief zijn geen bezoek.
+    const mailEv = incoming.filter((e) => e.esp || e.mc);
+    if (mailEv.length) setMailT((prev) => {
+      const next = new Map(prev);
+      const cut = Date.now() - 1_800_000;
+      for (const e of mailEv) {
+        const dev = deviceMap.current[e.devId] ?? e.type;
+        const cur = next.get(dev) ?? { esp: [], mc: [] };
+        next.set(dev, { esp: e.esp ? [...cur.esp.filter((t) => t > cut), e.t] : cur.esp, mc: e.mc ? [...cur.mc.filter((t) => t > cut), e.t] : cur.mc });
+      }
+      return next;
+    });
     // Dubbelen voorkomen (stroom en controle kunnen hetzelfde verzoek leveren).
     const events = incoming
       .filter((e) => !e.quiet)
@@ -569,11 +583,13 @@ export default function Home() {
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
+    // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
+    const human = (g: Group, x: Session) => isHuman(x) && !(mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     for (const g of groups) {
       if (g.bg || !g.main) continue;
-      for (const x of g.ss ?? []) if (g.flag || g.susp || isHuman(x)) (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
+      for (const x of g.ss ?? []) if (g.flag || g.susp || human(g, x)) (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
     }
     const standalone = (g: Group, x: Session) =>
       (x.n ?? 0) >= 8 && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
@@ -594,7 +610,7 @@ export default function Home() {
           .flatMap((g) => {
             const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
             // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
-            const ss = all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || isHuman(x) : standalone(g, x)));
+            const ss = all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
             if (!ss.length) return [];
             const oldest = Math.min(...all.map((x) => x.s));
             return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
@@ -605,7 +621,7 @@ export default function Home() {
         crows: [...list].filter((g) => !g.main ? (g.ss ?? []).some((x) => standalone(g, x)) : g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, ss: g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }], compact: true, first: !!g.isNew, newest: true })),
       }))
       .filter((d) => d.rows.length > 0);
-  }, [groups, device]);
+  }, [groups, device, mailT]);
 
   return (
     <main>
