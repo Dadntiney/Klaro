@@ -113,7 +113,7 @@ const ADULT_PARTS = [
   "lovehoney", "amorelie", "beate-uhse", "beateuhse", "adameve", "satisfyer", "womanizer", "christineleduc",
   // overig
   "pussy", "fuck", "slut", "xvideo", "sexvid", "pornhub", "hotwife", "bukkake", "camwhore", "cumshot", "gangbang", "blowjob",
-  "sextoy", "lovetoy", "adulttoy", "sexspeeltje", "sexspeeltjes", "easytoys", "sexcontact", "sexafspraak", "sexdating", "livecams", "freecams", "erocams", "adultcams", "nudecams", "sexgames", "hotcams",
+  "sextoy", "lovetoy", "adulttoy", "sexspeeltje", "sexspeeltjes", "seksshop", "sekscontact", "seksdate", "sekschat", "seksfilm", "seksspeeltje", "seksspeeltjes", "seksafspraak", "sekswinkel", "seksbioscoop", "neuken", "tieten", "easytoys", "sexcontact", "sexafspraak", "sexdating", "livecams", "freecams", "erocams", "adultcams", "nudecams", "sexgames", "hotcams",
 ];
 /** Erotische webshops (NL/BE/DE/EN) als exacte basisdomeinen; de grote lijst mist vooral lokale winkels. */
 const SEXSHOP_DOMAINS = new Set([
@@ -128,7 +128,7 @@ const SEXSHOP_DOMAINS = new Set([
   "eroticashop.nl", "eroticaplanet.nl", "erotiekshop.nl", "bol-erotiek.nl", "joyclub.nl", "joyclub.de", "shop-erotiek.nl",
 ]);
 
-const ADULT_WORDS = new Set(["vagina", "penis", "sex", "sexy", "sexo", "sexe", "erotic", "erotica", "erotiek", "escort", "escorts", "camgirl", "camgirls", "nude", "nudes", "milf", "xvids", "tube8", "hentai", "lust", "naughty", "kinky"]);
+const ADULT_WORDS = new Set(["seks", "geil", "neuk", "vagina", "penis", "sex", "sexy", "sexo", "sexe", "erotic", "erotica", "erotiek", "escort", "escorts", "camgirl", "camgirls", "nude", "nudes", "milf", "xvids", "tube8", "hentai", "lust", "naughty", "kinky"]);
 const ADULT_TLDS = new Set(["xxx", "adult", "sex", "porn", "sexy"]);
 
 /** Datingsites en -apps. Ambiguë namen alleen als exact basisdomein. */

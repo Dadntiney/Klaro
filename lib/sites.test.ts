@@ -175,3 +175,10 @@ test("Buienradar, Waze en ChatGPT (openai.com) zijn apps; swrve is achtergrond",
   }
   assert.equal(classify("api.swrve.com").bg, true);
 });
+
+test("Nederlandse spelling seks wordt herkend; gewone sites niet", () => {
+  for (const h of ["www.seksshop.nl", "gratis-seks.nl", "www.sekscontact.nl", "www.geil.nl", "neuken.com"]) assert.equal(classify(h).flag, "18+", h);
+  for (const h of ["www.sussex.ac.uk", "www.essex.ac.uk", "www.rutgers.nl", "www.nu.nl", "www.seksualiteit-info.nl.invalid"]) assert.notEqual(classify(h).flag, "Dating", h);
+  assert.notEqual(classify("www.sussex.ac.uk").flag, "18+");
+  assert.notEqual(classify("www.rutgers.nl").flag, "18+");
+});
