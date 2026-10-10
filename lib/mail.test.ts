@@ -21,3 +21,11 @@ test("kort bezoek tegelijk met een geopende nieuwsbrief is mail, een echte klik 
   assert.equal(isHuman({ s: t, e: t + 70_000, n: 7, ml: 1 }), false);
   assert.equal(isHuman({ s: t, e: t + 300_000, n: 40, ml: 1 }), true); // later doorgegaan: wel zichtbaar
 });
+
+test("Indeed-mail in Outlook: engage/subscriptions zijn mailadressen, Outlook-app haalt mail op", () => {
+  assert.ok(isEspHost("engage.indeed.com"));
+  assert.ok(isEspHost("subscriptions.indeed.com"));
+  assert.ok(isMailClientHost("atm.outlook.mira.tm.svc.cloud.microsoft"));
+  assert.ok(isMailClientHost("shed.outlook.acdc.tm.svc.cloud.microsoft"));
+  assert.ok(!isEspHost("www.indeed.com"));
+});
