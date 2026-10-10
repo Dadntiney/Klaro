@@ -18,6 +18,7 @@ const ESP_SUFFIX = [
   "convertkit-mail2.com", "ck.page", "emltrk.com", "movableink.com", "movable-ink-7158.com", "niftyimages.com", "kickdynamic.com",
   "email-tracking.infobip.com", "ax4z.com", "aimn.com", "agnitas.de", "emarsys.net", "mailing.dpgmedia.nl", "e-mailing.nl",
   "mktomail.com", "bmetrack.com", "bme1.net", "ccsend.com", "pinterestmail.com", "post.pinterest.com", "copernica.net",
+  "trackcmp.net", "lt.acemlna.com", "r.sender.net", "ml-attr.com", "omnisrc.com",
 ];
 /** Eerste deel van een adres dat typisch bij nieuwsbrieven hoort (email.merk.nl, nieuwsbrief.merk.nl, click.e.merk.nl). */
 const ESP_LABEL = /^(email|e-mail|emails|mail[0-9]*|mailing|mailings|news|newsletter|newsletters|nieuwsbrief|nieuwsbrieven|click|clicks|links|link|ct|ctrk|trk|track|tracking|url[0-9]+|e|em|eml|go|info|t|r|s|view|image|images|img)\.(e|email|em|mail|news|mailing|link|links|click|t)\./;
@@ -26,8 +27,16 @@ const ESP_LABEL2 = /^(email|e-mail|mailing|mailings|newsletter|newsletters|nieuw
 /** Mailprogramma's die nieuwe mail ophalen (Apple Mail, Outlook, Gmail, providers). */
 const CLIENT = /(^|\.)(imap(\.mail)?\.me\.com|p[0-9]+-imap\.mail\.me\.com|imap\.gmail\.com|eas\.outlook\.com|outlook\.office365\.com|imap-mail\.outlook\.com|outlook\.office\.com|imap\.[a-z0-9-]+\.[a-z]+|pop3?\.[a-z0-9-]+\.[a-z]+|mail\.google\.com|inbox\.google\.com)(\.akadns\.net)?$|^[a-z0-9-]+\.outlook\.[a-z0-9.-]*svc\.cloud\.microsoft$/;
 
+/** Mailbedrijven met ook een gewone website (inloggen, account): die homepage blijft een bezoek. */
+const ESP_SITE = /^(www\.)?(mailchimp\.com|sendgrid\.com|spotler\.com|laposta\.nl|mailjet\.com|copernica\.com|postmarkapp\.com|createsend\.com|agnitas\.de|e-mailing\.nl|mailplus\.nl|mailcampaigns\.nl)$/;
+
+/** Adres van een mailbedrijf zelf (geen merkadres): tellers en plaatjes uit mails, nooit een bezoek. */
+export function isEspDomain(host: string): boolean {
+  return !ESP_SITE.test(host) && ESP_SUFFIX.some((s) => host === s || host.endsWith("." + s));
+}
+
 export function isEspHost(host: string): boolean {
-  if (ESP_SUFFIX.some((s) => host === s || host.endsWith("." + s))) return true;
+  if (isEspDomain(host)) return true;
   return ESP_LABEL.test(host) || ESP_LABEL2.test(host);
 }
 

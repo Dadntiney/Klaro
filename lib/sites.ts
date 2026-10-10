@@ -1,6 +1,7 @@
 import { NICE_NAME } from "./system.ts";
 import { baseDomain } from "./parse.ts";
 import { inAdultList, inDatingList } from "./adultlist.ts";
+import { isEspDomain } from "./mail.ts";
 
 /** Bekende apps/diensten: meerdere domeinen samengevoegd onder één naam. `icon` is het domein voor het favicon. */
 const APPS: { name: string; icon: string; domains: string[] }[] = [
@@ -340,7 +341,7 @@ function classifyUncached(host: string): SiteInfo {
   const adult = !never && !dating && isAdult(host);
   const label = host.split(".")[0];
   const bg =
-    !adult && !dating && (BACKGROUND.has(base) ||
+    !adult && !dating && (BACKGROUND.has(base) || isEspDomain(host) ||
     BACKGROUND_SUFFIX.some((s) => host === s || host.endsWith("." + s)) ||
     (host !== base && BACKGROUND_LABELS.has(label)) ||
     BACKGROUND_KEYWORDS.some((k) => host.includes(k)) ||

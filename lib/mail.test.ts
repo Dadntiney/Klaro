@@ -37,3 +37,10 @@ test("mail met veel verzoeken maar zonder de site zelf is mail; met de site zelf
   assert.ok(!isMailSession({ s: t, e: t + 19_000, n: 27 }, esp, [], 3)); // app/site echt geopend
   assert.ok(isMailSession({ s: t, e: t + 2_000, n: 3 }, esp, [], 1)); // korte nieuwsbrief die www.merk.nl laadt
 });
+
+test("adressen van mailbedrijven zijn achtergrond, hun eigen website niet", async () => {
+  const { classify } = await import("./sites.ts");
+  for (const h of ["trackcmp.net", "prism.app-us1.com.trackcmp.net", "u1.ct.sendgrid.net", "lt.acemlna.com", "gallery.mailchimp.com"]) assert.ok(classify(h).bg, h);
+  for (const h of ["spotler.com", "www.spotler.com"]) assert.ok(!classify(h).bg, h);
+  assert.ok(!classify("nieuwsbrief.ah.nl").bg, "merkadres blijft voor mailherkenning");
+});
