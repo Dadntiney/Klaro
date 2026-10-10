@@ -496,36 +496,41 @@ export default function Home() {
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  // In gebruik: iemand is nu echt met het apparaat bezig.
-  // - Bediening: in de laatste 3 minuten minstens 3 verzoeken van zichtbare sites/apps (geen achtergrond, geen systeemdomeinen),
-  //   verspreid over minstens 45 seconden, en de laatste minder dan 2 minuten geleden. Een app die op de achtergrond even ververst
-  //   (WhatsApp bij een bericht, een widget) doet alles binnen een paar seconden en telt dus niet.
-  // - Langdurig gebruik: een sessie van 10+ minuten met regelmatige verzoeken (een spel dat elke paar minuten iets meldt) waarvan de
-  //   laatste minder dan 6 minuten geleden is. Op iPhone/iPad liggen apps op de achtergrond stil, dus regelmatig verkeer = open op het scherm.
-  // - Beeld/geluid (video, muziek) in de laatste 5 minuten: bij streamen zijn er weinig DNS-verzoeken, vandaar het ruimere venster.
   const lastUse = useMemo(() => {
-    const hits = new Map<string, number[]>();
+    const hits = new Map<string, { t: number; site: string; fgApp: boolean }[]>();
     const media = new Map<string, number>();
     const steady = new Map<string, number>();
+    const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
     for (const g of groups) {
-      // Apps met veel achtergrondverkeer tellen alleen mee als de laatste sessie echt gebruik was (inhoud geladen).
-      if ((g.ss ?? []).some((x) => x.f !== undefined) && !(g.ss?.[0] && isHuman(g.ss[0]))) continue;
-      if (g.lm && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
       if (!g.flag && (g.bg || !g.main || isSystemSite(g.site) || (g.bl ?? 0) >= g.n)) continue;
-      if (!MSG.test(g.site)) for (const x of g.ss ?? []) if (isHuman(x) && x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
+      const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
+      // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
+      if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
+      for (const x of g.ss ?? []) {
+        if (!isHuman(x)) continue;
+        if (x.e > (human.get(g.dev) ?? 0)) human.set(g.dev, x.e);
+        if (!MSG.test(g.site) && x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
+      }
       const a = hits.get(g.dev) ?? [];
-      a.push(...(g.ts ?? []));
+      for (const t of g.ts ?? []) a.push({ t, site: g.site, fgApp });
       hits.set(g.dev, a);
     }
-    return { hits, media, steady };
+    return { hits, media, steady, human };
   }, [groups]);
+  // In gebruik (per apparaat, niet per app):
+  // - net een bezoek dat als echt gebruik telt (laatste 3 minuten), of langdurig spelen, of beeld/geluid (laatste 5 minuten);
+  // - of activiteit in de laatste 3 minuten, verspreid over minstens 45 seconden, en de laatste minder dan 2 minuten geleden,
+  //   met minstens 2 verschillende apps/sites (wisselen tussen apps = een mens), of 1 gewone site. Eén app die op de achtergrond
+  //   ververst (Facebook, WhatsApp) doet alles binnen een paar seconden of blijft bij één app, en telt dus niet.
   const activeNow = (name: string) => {
     if (clock - (lastUse.media.get(name) ?? 0) < 300_000) return true;
     if (clock - (lastUse.steady.get(name) ?? 0) < 360_000) return true;
-    const t = (lastUse.hits.get(name) ?? []).filter((x) => clock - x < 180_000);
+    if (clock - (lastUse.human.get(name) ?? 0) < 180_000) return true;
+    const t = (lastUse.hits.get(name) ?? []).filter((x) => clock - x.t < 180_000);
     if (t.length < 3) return false;
-    const hi = Math.max(...t);
-    return clock - hi < 120_000 && hi - Math.min(...t) >= 45_000;
+    const hi = Math.max(...t.map((x) => x.t));
+    if (clock - hi >= 120_000 || hi - Math.min(...t.map((x) => x.t)) < 45_000) return false;
+    return new Set(t.map((x) => x.site)).size >= 2 || t.some((x) => !x.fgApp);
   };
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
   const loadDetail = (g: Group, rss: Session[], rk: string) => {
