@@ -114,7 +114,13 @@ const ADULT_PARTS = [
   // overig
   "pussy", "fuck", "slut", "xvideo", "sexvid", "pornhub", "hotwife", "bukkake", "camwhore", "cumshot", "gangbang", "blowjob",
   "sextoy", "lovetoy", "adulttoy", "sexspeeltje", "sexspeeltjes", "seksshop", "sekscontact", "seksdate", "sekschat", "seksfilm", "seksspeeltje", "seksspeeltjes", "seksafspraak", "sekswinkel", "seksbioscoop", "neuken", "tieten", "easytoys", "sexcontact", "sexafspraak", "sexdating", "livecams", "freecams", "erocams", "adultcams", "nudecams", "sexgames", "hotcams",
+  "sexy", "neukvriend", "neukafspraak", "neukcontact", "neukdate", "seksverha", "sexverha", "seksfoto", "sexfoto", "fapnation", "fapello", "fapopedia",
+  // AI-"uitkleed"-apps en NSFW-chatbots
+  "clothoff", "nudify", "undress", "deepnude", "nudifier", "pornify",
 ];
+/** "sex", "seks" en "neuk" komen ook in gewone woorden voor (Essex, unisex, sekse, Neukölln); met deze uitzonderingen blijft het vangnet strak zonder vals alarm. */
+const SEX_IN_WORD = /(sex|seks|neuk)/;
+const SEX_INNOCENT = /(sussex|essex|wessex|middlesex|unisex|expertsex|sextant|sexton|sextet|sexual|sexis|sekse|seksu|seksis|neukirch|neukoe|neukö|neukolln)/g;
 /** Erotische webshops (NL/BE/DE/EN) als exacte basisdomeinen; de grote lijst mist vooral lokale winkels. */
 const SEXSHOP_DOMAINS = new Set([
   "amorelie.nl", "amorelie.de", "amorelie.be", "amorelie.at", "amorelie.ch", "amorelie.fr", "amorelie.com", "lovehoney.nl", "lovehoney.com",
@@ -126,6 +132,7 @@ const SEXSHOP_DOMAINS = new Set([
   "sinful.nl", "erotiekmarkt.nl", "intimteam.nl", "lingerie-erotiek.nl", "sexshopxl.nl", "kinky-store.nl", "mister-b.com", "misterb.com",
   "xtoys.app", "sextoys.nl", "sextoys.be", "sextoys.com", "toyjoy.com", "pleasurebox.nl", "peepshow.nl", "naughty-nederland.nl",
   "eroticashop.nl", "eroticaplanet.nl", "erotiekshop.nl", "bol-erotiek.nl", "joyclub.nl", "joyclub.de", "shop-erotiek.nl",
+  "oproepjes.nl", "sexjobs.nl", "kinky.nl", "redlights.nl", "hookers.nl",
 ]);
 
 const ADULT_WORDS = new Set(["seks", "geil", "neuk", "vagina", "penis", "sex", "sexy", "sexo", "sexe", "erotic", "erotica", "erotiek", "escort", "escorts", "camgirl", "camgirls", "nude", "nudes", "milf", "xvids", "tube8", "hentai", "lust", "naughty", "kinky"]);
@@ -147,6 +154,9 @@ const DATING_DOMAINS = new Set([
   "yubo.live", "tagged.com", "datingapp.nl", "lovestruck.com", "bumbleapp.com", "gotinder.com", "tinderchallenge.com",
   "sugardaddy.com", "seekingarrangement.com", "whatsyourprice.com", "luxy.com", "thecoffeemeetsbagel.com", "clover.co",
   "pairs.lv", "omiai-jp.com", "tapple.me", "paktor.com", "hello.talk", "mamba.ru", "badoo.com", "lovoo.com",
+  // vrienden-/chat-apps met vreemden (veel gebruikt door tieners, ook voor daten)
+  "wink.app", "getwizz.com", "wizz.chat", "azarlive.com", "holla.world", "inner-circle.co", "hoop.photo", "monkey.cool", "chatrandom.com",
+  "camsurf.com", "shagle.com", "joingy.com", "chatspin.com", "bazoocam.org", "tinychat.com", "emeraldchat.com", "chathub.cam", "uhmegle.com",
 ]);
 
 export function isDating(host: string): boolean {
@@ -158,7 +168,9 @@ export function isAdult(host: string): boolean {
   if (ADULT_TLDS.has(labels[labels.length - 1])) return true;
   if (inAdultList(host) || SEXSHOP_DOMAINS.has(baseDomain(host))) return true;
   if (ADULT_PARTS.some((p) => host.includes(p))) return true;
-  return labels.some((l) => l.split("-").some((w) => ADULT_WORDS.has(w)));
+  if (labels.some((l) => l.split("-").some((w) => ADULT_WORDS.has(w)))) return true;
+  const name = labels.slice(0, -1).join("."); // zonder extensie
+  return SEX_IN_WORD.test(name.replace(SEX_INNOCENT, ""));
 }
 
 export interface SiteInfo {
@@ -197,7 +209,8 @@ const VPN_DOMAINS = new Set([
   "proxysite.com", "hidemyass.com", "hma.com", "croxyproxy.com", "kproxy.com", "hidester.com", "vpn.net", "zenmate.com", "purevpn.com", "ivacy.com", "x-vpn.com",
   "cloudflareclient.com", "warp.plus", "speedify.com", "urban-vpn.com", "ghostery.com", "opera-proxy.net", "browsec.com", "veepn.com", "planetvpn.com", "snapvpn.com",
   // DNS-over-HTTPS / eigen DNS-diensten: wie die gebruikt, omzeilt NextDNS
-  "dns.google", "dns.quad9.net", "doh.opendns.com", "cloudflare-dns.com", "dns.adguard.com", "dns.adguard-dns.com", "dnsforge.de", "doh.dns.sb", "mullvad-dns.net",
+  "vpn-api.proton.me", "psiphon3.com", "tor2web.org", "onion.ws", "onion.ly", "onion.pet",
+  "dns.google", "dns.quad9.net", "controld.com", "dns0.eu", "one.one.one.one", "adguard-dns.io", "libredns.gr", "doh.mullvad.net", "dns.sb", "alidns.com", "doh.pub", "doh.opendns.com", "cloudflare-dns.com", "dns.adguard.com", "dns.adguard-dns.com", "dnsforge.de", "doh.dns.sb", "mullvad-dns.net",
 ]);
 const VPN_PARTS = ["vpn", "proxysite", "unblock-"];
 // Bewust niet: mask.icloud.com en apple-dns.net. Apple-apparaten vragen die altijd op (ook met Private Relay uit), dus dat zou continu vals alarm geven.

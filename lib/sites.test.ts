@@ -190,3 +190,10 @@ test("merken met meer domeinen worden één regel", () => {
   assert.equal(classify("www.marktplaats.com").site, "marktplaats.nl");
   assert.equal(classify("www.kruidvat.be").site, "kruidvat.nl");
 });
+
+test("strakker vangnet: Nederlandse sekssites, AI-uitkleed-apps, chat-met-vreemden en DNS-omzeiling", () => {
+  for (const h of ["sexyladies.nl", "neukvrienden.nl", "seksverhalen.com", "oproepjes.nl", "clothoff.io", "nudify.online"]) assert.equal(classify(h).flag, "18+", h);
+  for (const h of ["getwizz.com", "azarlive.com", "holla.world", "wink.app"]) assert.equal(classify(h).flag, "Dating", h);
+  for (const h of ["vpn-api.proton.me", "dns.controld.com", "dns0.eu", "adguard-dns.io", "psiphon3.com"]) assert.equal(classify(h).flag, "VPN/proxy", h);
+  for (const h of ["unisex-kapper.nl", "sekseneutraal.nl", "www.essex.gov.uk", "neukirchen.de", "www.sussex.ac.uk"]) assert.equal(classify(h).flag, undefined, h);
+});

@@ -74,6 +74,8 @@ interface DetailData {
   capped: boolean;
 }
 
+const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-apps worden ook op de achtergrond regelmatig wakker
+
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -480,20 +482,35 @@ export default function Home() {
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  // In gebruik: echt gebruik in de laatste 2 minuten (sites en apps, geen achtergrond), of beeld/geluid (video, muziek) in de laatste 5 minuten.
-  // Bij streamen zijn er weinig DNS-verzoeken (de adressen worden onthouden), vandaar het ruimere venster; een apparaat in rust doet dit niet.
+  // In gebruik: iemand is nu echt met het apparaat bezig.
+  // - Bediening: in de laatste 3 minuten minstens 3 verzoeken van zichtbare sites/apps (geen achtergrond, geen systeemdomeinen),
+  //   verspreid over minstens 45 seconden, en de laatste minder dan 2 minuten geleden. Een app die op de achtergrond even ververst
+  //   (WhatsApp bij een bericht, een widget) doet alles binnen een paar seconden en telt dus niet.
+  // - Langdurig gebruik: een sessie van 10+ minuten met regelmatige verzoeken (een spel dat elke paar minuten iets meldt) waarvan de
+  //   laatste minder dan 6 minuten geleden is. Op iPhone/iPad liggen apps op de achtergrond stil, dus regelmatig verkeer = open op het scherm.
+  // - Beeld/geluid (video, muziek) in de laatste 5 minuten: bij streamen zijn er weinig DNS-verzoeken, vandaar het ruimere venster.
   const lastUse = useMemo(() => {
-    const m = new Map<string, number>();
+    const hits = new Map<string, number[]>();
     const media = new Map<string, number>();
+    const steady = new Map<string, number>();
     for (const g of groups) {
       if (g.lm && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
-      if (g.bg || !g.main || ((g.bl ?? 0) >= g.n && !g.flag)) continue;
-      const e = Math.max(0, ...(g.ss ?? []).filter(isHuman).map((x) => x.e));
-      if (e > (m.get(g.dev) ?? 0)) m.set(g.dev, e);
+      if (!g.flag && (g.bg || !g.main || isSystemSite(g.site) || (g.bl ?? 0) >= g.n)) continue;
+      if (!MSG.test(g.site)) for (const x of g.ss ?? []) if (x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
+      const a = hits.get(g.dev) ?? [];
+      a.push(...(g.ts ?? []));
+      hits.set(g.dev, a);
     }
-    return { use: m, media };
+    return { hits, media, steady };
   }, [groups]);
-  const activeNow = (name: string) => clock - (lastUse.use.get(name) ?? 0) < 120_000 || clock - (lastUse.media.get(name) ?? 0) < 300_000;
+  const activeNow = (name: string) => {
+    if (clock - (lastUse.media.get(name) ?? 0) < 300_000) return true;
+    if (clock - (lastUse.steady.get(name) ?? 0) < 360_000) return true;
+    const t = (lastUse.hits.get(name) ?? []).filter((x) => clock - x < 180_000);
+    if (t.length < 3) return false;
+    const hi = Math.max(...t);
+    return clock - hi < 120_000 && hi - Math.min(...t) >= 45_000;
+  };
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
   const loadDetail = (g: Group, rss: Session[], rk: string) => {
     if (details[rk]) return;
