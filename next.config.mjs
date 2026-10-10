@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // De grote adreslijst moet mee in de serverfuncties.
   async headers() {
     const secure = [
       { key: "X-Robots-Tag", value: "noindex, nofollow" },
@@ -13,6 +12,7 @@ const nextConfig = {
       { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
     ];
   },
-  experimental: { outputFileTracingIncludes: { "/api/nextdns": ["./data/**"], "/api/nextdns/live": ["./data/**"] } },
+  // De grote adreslijsten (18+, dating) moeten mee in élke serverfunctie die adressen beoordeelt.
+  outputFileTracingIncludes: { "/api/**/*": ["./data/**"] },
 };
 export default nextConfig;

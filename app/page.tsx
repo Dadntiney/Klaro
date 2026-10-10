@@ -5,7 +5,7 @@ import { mergeRows } from "@/lib/merge";
 import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
 
@@ -100,11 +100,25 @@ function LiveDot() {
   return <span key={kind === "ok" ? last.n : kind} className={"livedot " + kind} role="status" aria-label={label} title={label} />;
 }
 
+/** Andere adressen van hetzelfde apparaat rond (±30 s) dit bezoek, rode eerst. */
+function aroundIn(g: Group, list: Group[]) {
+  const mine = (g.ts ?? [g.last]).slice(0, 3);
+  const out: { name: string; site: string; t: number; hidden: boolean; flag?: string }[] = [];
+  for (const o of list) {
+    if (o.dev !== g.dev || o.site === g.site) continue;
+    const t = (o.ts ?? [o.last]).find((x) => mine.some((m) => Math.abs(x - m) <= 30_000));
+    if (t) out.push({ name: o.name, site: o.site, t, hidden: o.bg || !o.main, flag: o.flag });
+  }
+  return out.sort((a, b) => (a.flag ? 0 : 1) - (b.flag ? 0 : 1) || b.t - a.t).slice(0, 15);
+}
+
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [total, setTotal] = useState(0);
-  const [device, setDevice] = useState<string | null>(null);
+  const [deviceNow, setDevice] = useState<string | null>(null);
+  // De chip licht meteen op; de lijst volgt een tel later (zwaarder werk mag de tik niet ophouden).
+  const device = useDeferredValue(deviceNow);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<Date | null>(null);
@@ -452,31 +466,24 @@ export default function Home() {
   }, [state, refreshFull]);
 
   // Uitklapoverzicht: wat vroeg hetzelfde apparaat nog meer op rond de laatste bezoeken aan deze site (±30 s), ook verborgen adressen.
-  const around = useCallback(
-    (g: Group) => {
-      const mine = (g.ts ?? [g.last]).slice(0, 3);
-      const out: { name: string; site: string; t: number; hidden: boolean; flag?: string }[] = [];
-      for (const o of groups) {
-        if (o.dev !== g.dev || o.site === g.site) continue;
-        const t = (o.ts ?? [o.last]).find((x) => mine.some((m) => Math.abs(x - m) <= 30_000));
-        if (t) out.push({ name: o.name, site: o.site, t, hidden: o.bg || !o.main, flag: o.flag });
-      }
-      return out.sort((a, b) => (a.flag ? 0 : 1) - (b.flag ? 0 : 1) || b.t - a.t).slice(0, 15);
-    },
-    [groups]
-  );
+  const around = useCallback((g: Group) => aroundIn(g, groups), [groups]);
 
   // Alle 18+/WhatsApp-bezoeken in de logs (ongeacht apparaat of filter), nieuwste eerst.
   // Zoekregels waar rond hetzelfde moment (±30 s, zelfde apparaat) een 18+/dating-adres is opgevraagd.
+  // Alleen rode regels kunnen hier treffen: per apparaat vooraf verzameld (meestal geen), zodat dit niet bij elke live-update alles langs hoeft.
   const ctx = useMemo(() => {
     const m = new Map<string, string>();
+    const red = new Map<string, Group[]>();
+    for (const g of groups) if (g.flag) red.set(g.dev, [...(red.get(g.dev) ?? []), g]);
+    if (!red.size) return m;
     for (const g of groups) {
-      if (g.flag || !isSearch(g.site)) continue;
-      const hit = around(g).find((o) => o.flag);
+      const cand = red.get(g.dev);
+      if (!cand || g.flag || !isSearch(g.site)) continue;
+      const hit = aroundIn(g, cand).find((o) => o.flag);
       if (hit) m.set(g.d + g.site + g.dev, `${hit.name} (${hit.flag})`);
     }
     return m;
-  }, [groups, around]);
+  }, [groups]);
 
   // Alle andere zichtbare regels van hetzelfde apparaat die rond (±30 s) een rood adres zijn opgevraagd: zachte waarschuwing.
   const soft = useMemo(() => {
@@ -725,10 +732,10 @@ export default function Home() {
           <div className="bar">
             <div className="bar-in">
             <div className="chips">
-              <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
+              <button className={"chip" + (deviceNow === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {/* Apparaten die in gebruik zijn staan links (naast Alle), de rest rechts; binnen elke groep blijft de volgorde gelijk. */}
               {[...devices.filter((d) => activeNow(d.name)), ...devices.filter((d) => !activeNow(d.name))].map((d) => (
-                <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : " idle")} title={activeNow(d.name) ? "Nu in gebruik" : "Niet in gebruik"} onClick={() => setDevice(d.name)}>
+                <button key={d.name} className={"chip" + (deviceNow === d.name ? " on" : "") + (activeNow(d.name) ? " act" : " idle")} title={activeNow(d.name) ? "Nu in gebruik" : "Niet in gebruik"} onClick={() => setDevice(d.name)}>
                   {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
                                   </button>
               ))}

@@ -86,8 +86,6 @@ h2 .muted { font-weight:400; }
 .chip.on .dd, .item.adult .dd { box-shadow:0 0 0 1.5px #fff; }
 .fav-hidden { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 .fav.ph { display:grid; place-items:center; opacity:1; background:var(--head); color:var(--muted); font-weight:700; font-size:13px; }
-.item.adult @media (prefers-color-scheme: dark) {
-    }
 .fav.ph { background:color-mix(in srgb, var(--muted) 16%, var(--card)); }
 .summary { background:none !important; border:0 !important; padding:6px 2px 0 !important; border-radius:0 !important; }
 .s-cats { color:var(--muted); font-size:13px; margin-top:2px; }

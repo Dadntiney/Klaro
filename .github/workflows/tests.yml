@@ -16,3 +16,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npx tsc --noEmit
+      - run: npx next build
+      # Het vangnet werkt alleen als de 18+/dating-lijsten mee gaan naar élke serverfunctie die adressen beoordeelt.
+      - name: Adreslijsten zitten in de serverfuncties
+        run: |
+          for r in nextdns nextdns/live nextdns/detail audit; do
+            grep -q adult-domains ".next/server/app/api/$r/route.js.nft.json" || { echo "Lijst ontbreekt in /api/$r"; exit 1; }
+          done

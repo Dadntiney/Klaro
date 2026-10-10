@@ -5,7 +5,7 @@ import { AUTH_COOKIE, authToken, sameText } from "@/lib/auth";
  * Afscherming van de hele site zodra APP_PASSWORD is ingesteld. Ingelogd via de cookie van het inlogscherm (180 dagen),
  * of via basic-auth (voor scripts en de oude manier). Niet ingelogd: pagina's gaan naar /login, API's krijgen 401.
  */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const password = process.env.APP_PASSWORD;
   if (!password) return NextResponse.next();
   const path = req.nextUrl.pathname;
