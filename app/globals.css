@@ -332,3 +332,11 @@ h2 .dview + .dview.icon { margin-left:0; }
 .skel-more { margin-top:6px; }
 .skel-day { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
 .skel-err { margin:24px 0; font-size:13px; }
+
+/* Live-bolletje: subtiel teken dat het ophalen loopt. */
+.livedot { flex:0 0 auto; width:7px; height:7px; border-radius:50%; margin:0 2px 0 4px; background:#34c759; opacity:.45; }
+.livedot.ok { animation:beat .9s ease-out; }
+.livedot.slow { background:#ff9f0a; opacity:.9; }
+.livedot.fail { background:#ff453a; opacity:1; }
+@keyframes beat { 0% { opacity:1; transform:scale(1.35); } 100% { opacity:.45; transform:scale(1); } }
+@media (prefers-reduced-motion: reduce) { .livedot.ok { animation:none; } }

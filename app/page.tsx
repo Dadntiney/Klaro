@@ -80,6 +80,26 @@ const isTv = (dev: string) => /^(Apple TV|TV)( \d+)?$/.test(dev);
 const tvBlip = (dev: string, x: { s: number; e: number }) => isTv(dev) && x.e - x.s < 60_000;
 const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-apps worden ook op de achtergrond regelmatig wakker
 
+/**
+ * Klein bolletje rechts in de balk: laat zien dat het live ophalen (elke 1,5 sec.) echt loopt.
+ * Groen en knippert zacht bij elk antwoord; oranje als er even geen antwoord kwam; rood als het misgaat.
+ * Eigen component met eigen state: de rest van de pagina hoeft niet elke 1,5 sec. opnieuw te tekenen.
+ */
+function LiveDot() {
+  const [last, setLast] = useState<{ ok: boolean; at: number; n: number }>({ ok: true, at: Date.now(), n: 0 });
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const on = (e: globalThis.Event) => setLast((p) => ({ ok: (e as CustomEvent<boolean>).detail, at: Date.now(), n: p.n + 1 }));
+    window.addEventListener("klaro-beat", on);
+    const id = setInterval(() => setNow(Date.now()), 2000);
+    return () => { window.removeEventListener("klaro-beat", on); clearInterval(id); };
+  }, []);
+  const stale = now - last.at > 10_000;
+  const kind = !last.ok ? "fail" : stale ? "slow" : "ok";
+  const label = kind === "ok" ? "Live: werkt" : kind === "slow" ? "Live: even geen antwoord" : "Live: lukt nu niet";
+  return <span key={kind === "ok" ? last.n : kind} className={"livedot " + kind} role="status" aria-label={label} title={label} />;
+}
+
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -333,14 +353,17 @@ export default function Home() {
   // Vangnet: alleen controleren als de rechtstreekse stroom niet werkt (anders gaan we over de limiet van NextDNS).
   const poll = useCallback(async () => {
     try {
-      const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`);
+      // Na 10 sec. zonder antwoord afbreken: anders blijft het live bijwerken stil hangen op één verzoek.
+      const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`, { signal: AbortSignal.timeout(10_000) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Live mislukt");
       setLive("ok");
       applyEvents(data.events as Event[]);
+      window.dispatchEvent(new CustomEvent("klaro-beat", { detail: true }));
     } catch (e) {
       setLive("fail");
-      setLiveError((e as Error).message);
+      setLiveError((e as Error).name === "TimeoutError" ? "NextDNS reageert even niet." : (e as Error).message);
+      window.dispatchEvent(new CustomEvent("klaro-beat", { detail: false }));
     }
   }, [applyEvents]);
 
@@ -715,6 +738,7 @@ export default function Home() {
                 !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
               </button>
             )}
+            <LiveDot />
             </div>
           </div>
 
