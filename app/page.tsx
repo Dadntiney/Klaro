@@ -502,7 +502,6 @@ export default function Home() {
     const ss = devs.flatMap((d) => d.ss ?? []);
     const mins = devs.reduce((n, d) => n + sumMin(d.ss ?? []), 0);
     const avg = devs.reduce((n, d) => n + (d.avg ?? 0), 0);
-    const night = device ? ss.filter((x) => minutes(x) >= 2 && (isNight(x.s) || isNight(x.e))) : [];
     const vis = groups.filter((g) => g.d === today && !g.bg && g.main && (!device || g.dev === device));
     const cats = new Map<string, number>();
     for (const g of vis) if ((g.mins ?? 0) > 0 && g.cat && g.cat !== "Overig") cats.set(g.cat, (cats.get(g.cat) ?? 0) + (g.mins ?? 0));
@@ -512,7 +511,6 @@ export default function Home() {
       avg,
       first: ss.length ? Math.min(...ss.map((x) => x.s)) : 0,
       last: ss.length ? Math.max(...ss.map((x) => x.e)) : 0,
-      night,
       cats: [...cats].sort((a, b) => b[1] - a[1]).slice(0, 5),
       top,
       blocked: devs.reduce((n, d) => n + (d.blocked ?? 0), 0),
@@ -617,9 +615,8 @@ export default function Home() {
           </div>
 
 
-          {(summary.night.length > 0 || summary.blocked > 0 || (device && silentNames.has(device))) && (
+          {(summary.blocked > 0 || (device && silentNames.has(device))) && (
             <div className="summary">
-              {summary.night.length > 0 && <div className="s-warn">🌙 Actief 's nachts: {summary.night.slice(0, 3).map((x) => timeFmt.format(x.s) + (minutes(x) ? `–${timeFmt.format(x.e)}` : "")).join(", ")}</div>}
               {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
               {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
             </div>
