@@ -287,3 +287,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 .chip.idle:not(.on) .di { opacity:.5; }
 .chip.act:not(.on) { color:#15803d; font-weight:600; }
 @media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:#4ade80; } }
+
+/* Uurblok: duidelijke band over de hele breedte, zoals een sectiekop. */
+.hourmark { display:flex; align-items:center; padding:6px 14px; margin:0; background:var(--head); border-top:1px solid var(--line); border-bottom:1px solid var(--line); opacity:1; font-size:13px; font-weight:600; letter-spacing:0; color:var(--fg); font-variant-numeric:tabular-nums; }
+.hourstart:first-child .hourmark { border-top:0; }
