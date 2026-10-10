@@ -760,7 +760,14 @@ export default function Home() {
                             const m = compact ? g.mins ?? 0 : rss.reduce((n, x) => n + minutes(x), 0);
                             return m > 0 ? <><span className="vdur">{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
                           })()}
-                          {t ? timeFmt.format(t) : "–"}
+                          {(() => {
+                            // Recent (minder dan 30 minuten): "nu" of "N min geleden"; daarna het tijdstip.
+                            if (!t) return "–";
+                            const age = Math.floor((clock - t) / 60_000);
+                            if (age < 1) return <span className="reltime" title={timeFmt.format(t)}>nu</span>;
+                            if (age < 30) return <span className="reltime" title={timeFmt.format(t)}>{age} min geleden</span>;
+                            return timeFmt.format(t);
+                          })()}
                           <span className="devmark" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>
                         </div>
                       </div>
