@@ -731,12 +731,15 @@ export default function Home() {
             const rows = trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
-            const isDayOpen = recent || openDays.has(d);
+            // Nog niets vandaag (net na middernacht): de bovenste dag blijft gewoon open staan; inklappen kan wel.
+            const autoOpen = di === 0 && !recent;
+            const key = autoOpen ? d + "!" : d; // eigen sleutel: dichtklappen nu laat de dag later niet ineens open staan
+            const isDayOpen = recent || (autoOpen ? !openDays.has(key) : openDays.has(key));
             return (
             <section key={d}>
               <h2
                 className={recent ? "" : "fold"}
-                onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; })}
+                onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })}
                 role={recent ? undefined : "button"}
                 aria-expanded={recent ? undefined : isDayOpen}
               >
