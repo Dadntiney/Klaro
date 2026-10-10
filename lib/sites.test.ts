@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, fgHit, payKind, isMedia, isMainHost } from "./sites.ts";
+import { classify, fgHit, isEmbedHost, payKind, isMedia, isMainHost } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -252,4 +252,11 @@ test("F1 TV: het videoadres hoort bij F1 TV en telt als kijken", () => {
   assert.equal(classify("d8penbt6jsl3i.cloudfront.net").name, "F1 TV");
   assert.equal(isMedia("d8penbt6jsl3i.cloudfront.net"), true);
   assert.equal(isMedia("ott-video-cf.formula1.com"), true);
+});
+
+test("ingesloten videospelers herkend", () => {
+  assert.equal(isEmbedHost("player.vimeo.com"), true);
+  assert.equal(isEmbedHost("www.youtube-nocookie.com"), true);
+  assert.equal(isEmbedHost("vimeo.com"), false);
+  assert.equal(isEmbedHost("www.youtube.com"), false);
 });

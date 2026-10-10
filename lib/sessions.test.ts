@@ -58,3 +58,7 @@ test("apps met achtergrondverkeer: alleen echte inhoud telt, en alleen die bepaa
   assert.equal(ss[0].e, t + 180_000);
   assert.equal(minutes(ss[0]), 2);
 });
+
+test("een ingesloten filmpje op een andere site is geen eigen bezoek", () => {
+  assert.equal(isHuman({ s: 0, e: 120_000, n: 12, m: 4, emb: 1 }), false);
+});

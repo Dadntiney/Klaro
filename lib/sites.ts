@@ -88,6 +88,12 @@ export function fgHit(site: string, host: string): boolean | undefined {
   return r ? r.test(host) : undefined;
 }
 
+/** Ingesloten videospelers (een filmpje óp een andere site): Vimeo-speler, YouTube zonder cookies, Wistia, Twitch-speler. */
+const EMBED = /^player\.vimeo\.com$|^(www\.)?youtube-nocookie\.com$|^fast\.wistia\.(com|net)$|^player\.twitch\.tv$/;
+export function isEmbedHost(host: string): boolean {
+  return EMBED.test(host);
+}
+
 export const TV_APPS = new Set(["ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();

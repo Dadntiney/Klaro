@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
-import { FG_RULES, TV_APPS, classify, fgHit, isMedia, isQuietHost, payKind } from "@/lib/sites";
+import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, isHuman, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -193,7 +193,8 @@ export async function GET(req: Request) {
   const groups = new Map<string, Group>();
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
   const mediaTimes = new Map<string, number[]>();
-  const fgTimes = new Map<string, number[]>(); // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
+  const fgTimes = new Map<string, number[]>();
+  const embedTimes = new Map<string, number[]>(); // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
@@ -280,6 +281,7 @@ export async function GET(req: Request) {
       });
       times.set(gkey, [t]);
     }
+    if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && isMedia(host)) {
       (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
@@ -293,6 +295,7 @@ export async function GET(req: Request) {
   const newCutoff = Date.now() - DAY;
   const meaningful = Number.isFinite(minT) && Date.now() - minT > 7 * DAY;
   const siteName = new Map<string, string>();
+  const embedSes: { g: Group; x: Session }[] = [];
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
     const sessions = allSessions(all);
@@ -325,6 +328,8 @@ export async function GET(req: Request) {
       const esp = devEsp.get(g.dev) ?? [];
       if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [])) x.ml = 1;
     }
+    const emb = embedTimes.get(gkey);
+    if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });
     // (Na het bepalen van beeld/geluid, mail en inhoud.) Zichtbare sites: de laatste 20 sessies, plus alle oudere sessies die echt gebruik waren (op drukke dagen meer dan 20).
     g.ss = g.main && !g.bg ? sessions.filter((x, i) => i < 20 || isHuman(x) || !!g.flag).slice(0, 120) : sessions.slice(0, 5);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
@@ -332,6 +337,19 @@ export async function GET(req: Request) {
     g.isNew = meaningful && g.main && !g.bg && g.bl < g.n && (siteFirst.get(g.site) ?? 0) >= newCutoff;
     if (g.main && !g.bg) g.susp = suspicion(g.site) ?? undefined;
     siteName.set(g.site, g.name);
+  }
+
+  // Een ingesloten filmpje (Vimeo/YouTube-speler) terwijl op hetzelfde apparaat een andere site open is, hoort bij die site.
+  if (embedSes.length) {
+    const vis = new Map<string, { site: string; s: number; e: number }[]>();
+    for (const g of groups.values()) {
+      if (!g.main || g.bg || g.flag) continue;
+      for (const x of g.ss) if (isHuman(x)) (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push({ site: g.site, s: x.s, e: x.e });
+    }
+    for (const { g, x } of embedSes) {
+      if (g.flag) continue;
+      if ((vis.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s <= x.e + 60_000 && v.e >= x.s - 60_000)) x.emb = 1;
+    }
   }
 
   // Thuis of onderweg (op basis van de IP-adressen waarmee een apparaat verbindt).
