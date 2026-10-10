@@ -584,7 +584,7 @@ export default function Home() {
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
-    const human = (g: Group, x: Session) => isHuman(x) && !(mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const human = (g: Group, x: Session) => isHuman(x) && !(g.name === g.site && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     for (const g of groups) {
