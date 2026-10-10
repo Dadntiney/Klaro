@@ -5,6 +5,7 @@ export interface Session {
   n?: number; // aantal verzoeken in de sessie
   m?: number; // waarvan beeld/geluid-verkeer (video of muziek)
   f?: number; // bij apps met veel achtergrondverkeer: aantal keer dat er echt inhoud laadde (foto's, video's)
+  mh?: number; // bij gewone websites: hoe vaak de site zelf (www., nl., ...) werd opgevraagd; 0 = alleen losse onderdelen (plaatjes, tellers)
   emb?: 1; // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   ml?: 1; // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
 }

@@ -329,6 +329,7 @@ export async function GET(req: Request) {
     if (!g.flag && g.main && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
       const esp = devEsp.get(g.dev) ?? [];
       const mt = mainTimes.get(gkey) ?? [];
+      for (const x of sessions) x.mh = mt.filter((t) => t >= x.s && t <= x.e).length;
       if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length)) x.ml = 1;
     }
     const emb = embedTimes.get(gkey);
