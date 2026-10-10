@@ -122,6 +122,7 @@ const ADULT_PARTS = [
   "sextoy", "lovetoy", "adulttoy", "sexspeeltje", "sexspeeltjes", "seksshop", "sekscontact", "seksdate", "sekschat", "seksfilm", "seksspeeltje", "seksspeeltjes", "seksafspraak", "sekswinkel", "seksbioscoop", "neuken", "tieten", "easytoys", "sexcontact", "sexafspraak", "sexdating", "livecams", "freecams", "erocams", "adultcams", "nudecams", "sexgames", "hotcams",
   "sexy", "neukvriend", "neukafspraak", "neukcontact", "neukdate", "seksverha", "sexverha", "seksfoto", "sexfoto", "fapnation", "fapello", "fapopedia",
   // AI-"uitkleed"-apps en NSFW-chatbots
+  "camgirl", "camboy", "erotisch", "pleasureshop", "lustshop", "lingerie-erotiek",
   "clothoff", "nudify", "undress", "deepnude", "nudifier", "pornify",
 ];
 /** "sex", "seks" en "neuk" komen ook in gewone woorden voor (Essex, unisex, sekse, Neukölln); met deze uitzonderingen blijft het vangnet strak zonder vals alarm. */
