@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
-import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isMedia, isQuietHost, payKind } from "@/lib/sites";
+import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, isHuman, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -195,6 +195,7 @@ export async function GET(req: Request) {
   const mediaTimes = new Map<string, number[]>();
   const fgTimes = new Map<string, number[]>();
   const embedTimes = new Map<string, number[]>();
+  const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
@@ -282,6 +283,7 @@ export async function GET(req: Request) {
       });
       times.set(gkey, [t]);
     }
+    if (isResourceHost(host)) (resTimes.get(gkey) ?? resTimes.set(gkey, []).get(gkey)!).push(t);
     if (info.main && !info.flag) (mainTimes.get(gkey) ?? mainTimes.set(gkey, []).get(gkey)!).push(t);
     if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
@@ -329,7 +331,14 @@ export async function GET(req: Request) {
     if (!g.flag && g.main && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
       const esp = devEsp.get(g.dev) ?? [];
       const mt = mainTimes.get(gkey) ?? [];
-      for (const x of sessions) x.mh = mt.filter((t) => t >= x.s && t <= x.e).length;
+      const rt = resTimes.get(gkey) ?? [];
+      for (const x of sessions) {
+        x.mh = mt.filter((t) => t >= x.s && t <= x.e).length;
+        // Alleen losse onderdelen (tellers op andere webwinkels, plaatjes uit mails, advertenties): geen bezoek. Niet voor Google
+        // (eigen regel voor zoekopdrachten).
+        const inX = all.filter((t) => t >= x.s && t <= x.e).length;
+        if (!FG_RULES[g.site] && inX > 0 && rt.filter((t) => t >= x.s && t <= x.e).length >= inX) x.res = 1;
+      }
       if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length)) x.ml = 1;
     }
     const emb = embedTimes.get(gkey);

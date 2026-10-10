@@ -21,7 +21,7 @@ const ESP_SUFFIX = [
 ];
 /** Eerste deel van een adres dat typisch bij nieuwsbrieven hoort (email.merk.nl, nieuwsbrief.merk.nl, click.e.merk.nl). */
 const ESP_LABEL = /^(email|e-mail|emails|mail[0-9]*|mailing|mailings|news|newsletter|newsletters|nieuwsbrief|nieuwsbrieven|click|clicks|links|link|ct|ctrk|trk|track|tracking|url[0-9]+|e|em|eml|go|info|t|r|s|view|image|images|img)\.(e|email|em|mail|news|mailing|link|links|click|t)\./;
-const ESP_LABEL2 = /^(email|e-mail|mailing|mailings|newsletter|newsletters|nieuwsbrief|nieuwsbrieven|url[0-9]+|click-[a-z0-9]+|tracking\.news[-a-z0-9]*|engage|subscriptions?|unsubscribe|mailer|campaigns?)\./;
+const ESP_LABEL2 = /^(email|e-mail|mailing|mailings|newsletter|newsletters|nieuwsbrief|nieuwsbrieven|url[0-9]+|click-[a-z0-9]+|tracking\.news[-a-z0-9]*|engage|subscriptions?|unsubscribe|mailer|campaigns?|emailassets|email-assets)\./;
 
 /** Mailprogramma's die nieuwe mail ophalen (Apple Mail, Outlook, Gmail, providers). */
 const CLIENT = /(^|\.)(imap(\.mail)?\.me\.com|p[0-9]+-imap\.mail\.me\.com|imap\.gmail\.com|eas\.outlook\.com|outlook\.office365\.com|imap-mail\.outlook\.com|outlook\.office\.com|imap\.[a-z0-9-]+\.[a-z]+|pop3?\.[a-z0-9-]+\.[a-z]+|mail\.google\.com|inbox\.google\.com)(\.akadns\.net)?$|^[a-z0-9-]+\.outlook\.[a-z0-9.-]*svc\.cloud\.microsoft$/;

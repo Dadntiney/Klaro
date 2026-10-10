@@ -62,3 +62,12 @@ test("apps met achtergrondverkeer: alleen echte inhoud telt, en alleen die bepaa
 test("een ingesloten filmpje op een andere site is geen eigen bezoek", () => {
   assert.equal(isHuman({ s: 0, e: 120_000, n: 12, m: 4, emb: 1 }), false);
 });
+
+test("alleen losse onderdelen (teller op een webwinkel) is geen bezoek; met de site zelf erbij wel", () => {
+  const t = 1_000_000_000;
+  let ss = extendSessions([], t, false, undefined, true);
+  ss = extendSessions(ss, t + 1_000, false, undefined, true);
+  assert.equal(isHuman({ ...ss[0], n: 8 }), false);
+  ss = extendSessions(ss, t + 2_000, false, undefined, false); // www.site.nl erbij
+  assert.equal(ss[0].res, undefined);
+});

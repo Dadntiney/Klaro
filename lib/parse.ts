@@ -58,8 +58,17 @@ export function extractHost(value: string): string | null {
 const SECOND_LEVEL = new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
 
 /** Basisdomein: www.sub.example.co.uk -> example.co.uk (zonder volledige public-suffix-lijst). */
+/** Platforms waar elke subsite een eigen site is (iemands-app.vercel.app is niet "vercel.app"). */
+const HOSTED = /\.(vercel\.app|netlify\.app|github\.io|pages\.dev|web\.app|firebaseapp\.com|herokuapp\.com|onrender\.com|glitch\.me|wixsite\.com|blogspot\.com|wordpress\.com|framer\.website|webflow\.io|carrd\.co)$/;
+
 export function baseDomain(host: string): string {
-  const parts = host.replace(/^www\./, "").split(".");
+  const h = host.replace(/^www\./, "");
+  const hosted = h.match(HOSTED);
+  if (hosted) {
+    const rest = h.slice(0, h.length - hosted[0].length).split(".");
+    return `${rest[rest.length - 1]}${hosted[0]}`;
+  }
+  const parts = h.split(".");
   if (parts.length <= 2) return parts.join(".");
   const tld = parts[parts.length - 1];
   const sld = parts[parts.length - 2];

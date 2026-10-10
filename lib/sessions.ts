@@ -6,7 +6,8 @@ export interface Session {
   m?: number; // waarvan beeld/geluid-verkeer (video of muziek)
   f?: number; // bij apps met veel achtergrondverkeer: aantal keer dat er echt inhoud laadde (foto's, video's)
   mh?: number; // bij gewone websites: hoe vaak de site zelf (www., nl., ...) werd opgevraagd; 0 = alleen losse onderdelen (plaatjes, tellers)
-  emb?: 1; // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
+  emb?: 1;
+  res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   ml?: 1; // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
 }
 
@@ -42,7 +43,7 @@ export function totalMinutes(times: number[]): number {
  * `fg`: alleen bij apps met achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): true = inhoud geladen, false = achtergrond.
  * Achtergrondverkeer telt dan wel als verzoek, maar verlengt de gebruiksduur niet.
  */
-export function extendSessions(ss: Session[], t: number, media = false, fg?: boolean): Session[] {
+export function extendSessions(ss: Session[], t: number, media = false, fg?: boolean, res?: boolean): Session[] {
   const next = ss.map((x) => ({ ...x }));
   const i = next.findIndex((x) => t >= x.s - GAP && t <= x.e + GAP);
   if (i >= 0) {
@@ -55,9 +56,10 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
     if (x.n !== undefined) x.n = x.n + 1;
     if (media) x.m = (x.m ?? 0) + 1;
     if (fg) x.f = (x.f ?? 0) + 1;
+    if (res === false) delete x.res; // iets van de site zelf erbij: wel een bezoek
     return next.sort((a, b) => b.e - a.e);
   }
-  return [{ s: t, e: t, n: 1, ...(media ? { m: 1 } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0 } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
+  return [{ s: t, e: t, n: 1, ...(media ? { m: 1 } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0 } : {}), ...(res ? { res: 1 as const } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }
 
 /** Minuten van een sessie, minimaal 1 als er meer dan een paar seconden tussen zit; 0 = alleen een korte aanraking. */
@@ -84,7 +86,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
  * Sessies zonder telling (oudere gegevens) tellen mee.
  */
 export function isHuman(x: Session): boolean {
-  if (x.emb) return false;
+  if (x.emb || x.res) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde
   if (x.n === undefined) return true;

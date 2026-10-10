@@ -12,6 +12,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Instagram", icon: "instagram.com", domains: ["instagram.com", "cdninstagram.com"] },
   { name: "Facebook", icon: "facebook.com", domains: ["facebook.com", "fbcdn.net", "facebook.net", "fb.com"] },
   { name: "WhatsApp", icon: "whatsapp.com", domains: ["whatsapp.com", "whatsapp.net"] },
+  { name: "Pinterest", icon: "pinterest.com", domains: ["pinterest.com", "pinimg.com", "pinterest.nl"] },
   { name: "Snapchat", icon: "snapchat.com", domains: ["snapchat.com", "sc-cdn.net", "snap-dev.net"] },
   { name: "Discord", icon: "discord.com", domains: ["discord.com", "discordapp.com", "discordapp.net", "discord.gg", "discord.media"] },
   { name: "Twitch", icon: "twitch.tv", domains: ["twitch.tv", "ttvnw.net", "jtvnw.net", "twitchcdn.net"] },
@@ -81,11 +82,23 @@ export const FG_RULES: Record<string, RegExp> = {
   "google.com": /^(www\.)?google\.(nl|be|de|fr|co\.uk)$|^ogads-pa\.clients6\.google\.com$|^encrypted-tbn\d\.gstatic\.com$|^(lens|images|translate|maps)\.google\.[a-z.]+$/,
   "youtube.com": /(^|\.)googlevideo\.com$|(^|\.)ytimg\.com$/,
   "snapchat.com": /(^|\.)sc-cdn\.net$/,
+  // Pinterest: alleen foto's/video's (pinimg) bewijzen dat de app open is; de Pinterest-teller op webwinkels (ct., trk.) niet.
+  "pinterest.com": /(^|\.)pinimg\.com$|^(i|v)[-.]pinimg/,
 };
 /** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */
 export function fgHit(site: string, host: string): boolean | undefined {
   const r = FG_RULES[site];
   return r ? r.test(host) : undefined;
+}
+
+/**
+ * Losse onderdelen van een site die ook buiten de site zelf worden geladen: tellers en advertentiepixels (op andere webwinkels),
+ * plaatjes en CDN (in mails, advertenties, andere apps), mail-onderdelen en lettertypes. Een "bezoek" dat alleen hieruit bestaat,
+ * is geen bezoek. Zodra er iets van de site of app zelf bij zit (www., api., inloggen, app-server), telt het wel.
+ */
+const RESOURCE = /^(ct|trk|tr|t|s|px|pixel|pixels|log|logs|track|tracking|tracker|analytics|stats|metrics|bat|adsdk|ads?|adserver|c|th|assets?|static|statics|prod\.statics|media|images?|img|imgs|pics?|thumbs?|cdn[0-9-]*|emailassets|email|e|em|link|links|click|clicks|engage|subscriptions?|unsubscribe|admarkt-cdn|dualstack|fonts?|js|scripts?|widgets?|tags?|sst|collect|events?|beacon|insights|telemetry|rum|sentry|pagead)\.|\.map\.fastly\.net$|\.(cloudfront|akamaized|akamaihd)\.net$/;
+export function isResourceHost(host: string): boolean {
+  return RESOURCE.test(host);
 }
 
 /** Ingesloten videospelers (een filmpje óp een andere site): Vimeo-speler, YouTube zonder cookies, Wistia, Twitch-speler. */

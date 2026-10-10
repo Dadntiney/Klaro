@@ -42,6 +42,7 @@ export interface Event {
   media?: boolean;
   quiet?: boolean;
   fg?: boolean;
+  res?: boolean;
   esp?: boolean;
   mc?: boolean;
   pay?: { kind: string; level: "checkout" | "store" };
