@@ -96,11 +96,17 @@ function nearestIdx(sorted: number[], t: number): number {
 
 const TODAY_HEADER = ["timestamp", "domain", "status", "reasons", "destination_country", "client_ip", "device_id", "device_name", "device_model"];
 
-/** Alleen de logs van vandaag via de gewone log-endpoint (pagina's van 1000). Veel sneller dan de volledige download, maar geeft geen geschiedenis. */
-async function fetchToday(profile: string, key: string): Promise<string[][] | { error: string; status: number }> {
+/** Begin van vandaag (Nederlandse tijd), of met `hours` alleen het laatste stuk ervan (om meteen iets te kunnen tonen). */
+function windowStart(hours: number): number {
   const parts = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Europe/Amsterdam" }).formatToParts(Date.now());
   const g = (x: string) => parseInt(parts.find((p) => p.type === x)!.value, 10) % 24;
-  const from = Date.now() - (g("hour") * 3600 + g("minute") * 60 + g("second")) * 1000;
+  const dayStart = Date.now() - (g("hour") * 3600 + g("minute") * 60 + g("second")) * 1000;
+  return hours > 0 ? Math.max(dayStart, Date.now() - hours * 3_600_000) : dayStart;
+}
+
+/** Alleen de logs van vandaag via de gewone log-endpoint (pagina's van 1000). Veel sneller dan de volledige download, maar geeft geen geschiedenis. */
+async function fetchToday(profile: string, key: string, hours = 0): Promise<string[][] | { error: string; status: number }> {
+  const from = windowStart(hours);
   const base = `https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs`;
   const out: string[][] = [TODAY_HEADER];
   let cursor = "";
@@ -127,7 +133,9 @@ async function fetchToday(profile: string, key: string): Promise<string[][] | { 
 }
 
 export async function GET(req: Request) {
-  const todayOnly = new URL(req.url).searchParams.get("scope") === "today";
+  const url = new URL(req.url);
+  const todayOnly = url.searchParams.get("scope") === "today";
+  const hours = Math.min(24, Math.max(0, Number(url.searchParams.get("hours")) || 0));
   const key = process.env.NEXTDNS_API_KEY;
   const profile = process.env.NEXTDNS_PROFILE_ID;
   if (!key || !profile) {
@@ -143,7 +151,7 @@ export async function GET(req: Request) {
   let rows: string[][];
   if (todayOnly) {
     const t0 = Date.now();
-    const r = await fetchToday(profile, key);
+    const r = await fetchToday(profile, key, hours);
     if (!Array.isArray(r)) return NextResponse.json({ error: r.error }, { status: r.status });
     rows = r;
     console.log(`scope=today: ${r.length - 1} regels in ${Date.now() - t0} ms`);
@@ -455,6 +463,8 @@ export async function GET(req: Request) {
     total,
     deviceMap, // id -> label; bevat nooit de echte naam
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
+    // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
+    partial: todayOnly && hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren
   };
   if (!todayOnly) cache = { at: Date.now(), body: result };

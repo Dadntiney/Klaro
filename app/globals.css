@@ -329,5 +329,6 @@ h2 .dview + .dview.icon { margin-left:0; }
 
 /* Oudere dagen die nog laden */
 .skel-days { margin-top:20px; }
+.skel-more { margin-top:6px; }
 .skel-day { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
 .skel-err { margin:24px 0; font-size:13px; }

@@ -113,12 +113,16 @@ export default function Home() {
   // Eerst vandaag laden en tonen (skelet met voortgang tot dan), daarna de oudere dagen eronder.
   const [progress, setProgress] = useState(0);
   const [histErr, setHistErr] = useState(false); // oudere dagen laden lukte niet
+  // Eerst alleen het laatste uur getoond: regels die vóór dit moment begonnen komen nog (0 = vandaag is compleet).
+  const [cut, setCut] = useState(0);
   const finishing = useRef(false);
 
   useEffect(() => {
     const t0 = Date.now();
-    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights }, isFull: boolean) => {
+    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number }, isFull: boolean) => {
       fullRef.current = true;
+      // Bij alleen het laatste stuk: de eerste 15 minuten van dat stuk niet tonen (een bezoek dat eerder begon zou daar te laat lijken te beginnen).
+      setCut(data.partial ? data.partial + 15 * 60_000 : 0);
       setGroups(data.groups);
       setDevices(data.devices);
       setTotal(data.total);
@@ -126,7 +130,9 @@ export default function Home() {
       setInsights(data.insights ?? null);
       lastSeen.current = Math.max(0, ...data.groups.map((g) => g.last));
       setUpdated(new Date());
-      if (isFull) {
+      if (data.partial) {
+        // alleen het laatste uur: geen tijdsmeting opslaan
+      } else if (isFull) {
         setFull(true);
         // Live-gegevens van na het ophalen opnieuw laten binnenkomen bovenop de volledige lijst.
         seen.current = new Set();
@@ -135,13 +141,22 @@ export default function Home() {
       } else {
         try { localStorage.setItem("csv-today-ms", String(Date.now() - t0)); } catch {}
       }
+      if (!finishing.current) try { localStorage.setItem("csv-first-ms", String(Date.now() - t0)); } catch {}
       finishing.current = true;
       setProgress(1);
       setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
     };
     // Eerst vandaag (snel), daarna de oudere dagen. Beide bronnen tellen precies gelijk, dus vandaag verandert daarna niet meer.
+    // Nog eerder: alleen het laatste anderhalf uur (één pagina bij NextDNS, ~1 sec.), zodat bovenaan meteen iets staat.
     let fullDone = false;
     let todayShown = false;
+    fetch("/api/nextdns?scope=today&hours=1.5")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || fullDone || todayShown) return;
+        apply(data, false);
+      })
+      .catch(() => {});
     fetch("/api/nextdns?scope=today")
       .then(async (res) => {
         const data = await res.json();
@@ -168,9 +183,9 @@ export default function Home() {
   // Voortgang is een schatting (NextDNS meldt zelf niets): loopt op naar ~90% over de tijd die het de vorige keer duurde.
   useEffect(() => {
     if (state !== "loading") return;
-    let expected = 12_000;
+    let expected = 3_000;
     try {
-      const v = Number(localStorage.getItem("csv-today-ms"));
+      const v = Number(localStorage.getItem("csv-first-ms"));
       if (v > 500 && v < 120_000) expected = v;
     } catch {}
     const t0 = Date.now();
@@ -605,7 +620,7 @@ export default function Home() {
     const shown = (g: Group): Session[] => {
       const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
       // Gemarkeerde en verdachte regels blijven altijd staan.
-      const ss = all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
+      const ss = all.filter((x) => (!cut || x.s >= cut) && (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
       if (!isTv(g.dev) || ss.length < 2) return ss;
       // Op een tv is kijken één geheel: stukjes van dezelfde app met minder dan 15 minuten ertussen samenvoegen
       // (tijdens het kijken vraagt de tv maar af en toe iets op, waardoor er anders losse regels ontstaan).
@@ -650,7 +665,7 @@ export default function Home() {
         };
       })
       .filter((d) => d.rows.length > 0);
-  }, [groups, device, mailT]);
+  }, [groups, device, mailT, cut]);
 
   return (
     <main>
@@ -923,6 +938,18 @@ export default function Home() {
             </section>
             );
           })}
+          {/* Alleen het laatste uur staat er: de rest van vandaag laadt nog (zelfde glans als het skelet). */}
+          {cut > 0 && (
+            <div className="list skel-list skel-more" aria-label="Eerder vandaag laden">
+              {[58, 44, 66, 50].map((w, i) => (
+                <div key={i} className="item skel-item">
+                  <span className="sk sk-icon" />
+                  <div className="main"><span className="sk" style={{ width: `${w}%`, height: 15 }} /><span className="sk" style={{ width: `${w / 2 + 12}%`, height: 12, marginTop: 8 }} /></div>
+                  <span className="sk" style={{ width: 52, height: 15 }} />
+                </div>
+              ))}
+            </div>
+          )}
           {/* Oudere dagen worden nog geladen: rustige grijze dagkopjes met dezelfde glans als het skelet. */}
           {!full && !histErr && (
             <div className="skel-days" aria-label="Oudere dagen laden">
