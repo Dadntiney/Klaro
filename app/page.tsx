@@ -474,12 +474,13 @@ export default function Home() {
     const steady = new Map<string, number>();
     const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
     for (const g of groups) {
-      // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
-      if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
       const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
+      // Afspeelsignalen (ook van achtergrond- of geblokkeerde adressen zoals Conviva) tellen altijd mee voor "er wordt gekeken".
       // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
       // Op een tv telt beeld pas als er langer dan een minuut gekeken wordt (geen voorvertoning op het beginscherm).
       if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && !(g.ss?.[0] && tvBlip(g.dev, g.ss[0])) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
+      // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
+      if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
       for (const x of g.ss ?? []) {
         if (!isHuman(x) || tvBlip(g.dev, x)) continue;
         // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
