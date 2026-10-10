@@ -197,3 +197,12 @@ test("strakker vangnet: Nederlandse sekssites, AI-uitkleed-apps, chat-met-vreemd
   for (const h of ["vpn-api.proton.me", "dns.controld.com", "dns0.eu", "adguard-dns.io", "psiphon3.com"]) assert.equal(classify(h).flag, "VPN/proxy", h);
   for (const h of ["unisex-kapper.nl", "sekseneutraal.nl", "www.essex.gov.uk", "neukirchen.de", "www.sussex.ac.uk"]) assert.equal(classify(h).flag, undefined, h);
 });
+
+test("F1 TV en andere sport-/tv-apps zijn zichtbaar", () => {
+  for (const h of ["f1tv.formula1.com", "api.formula1.com", "img.prod-ott.watchliveformula1.com"]) {
+    const c = classify(h);
+    assert.equal(c.name, "F1 TV", h);
+    assert.equal(c.main, true, h);
+  }
+  assert.equal(classify("isl.dazn.com").name, "DAZN");
+});

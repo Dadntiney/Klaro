@@ -46,6 +46,12 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
   { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },
   { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl"] },
+  { name: "F1 TV", icon: "formula1.com", domains: ["formula1.com", "watchliveformula1.com", "f1tv.com"] },
+  { name: "DAZN", icon: "dazn.com", domains: ["dazn.com", "indazn.com", "daznservices.com"] },
+  { name: "NLZIET", icon: "nlziet.nl", domains: ["nlziet.nl"] },
+  { name: "discovery+", icon: "discoveryplus.com", domains: ["discoveryplus.com", "discoveryplus.nl", "eurosport.com", "eurosport.nl"] },
+  { name: "Ziggo Sport", icon: "ziggosport.nl", domains: ["ziggosport.nl"] },
+  { name: "ESPN", icon: "espn.com", domains: ["espn.com", "espn.nl", "espncdn.com"] },
   { name: "Philips Hue", icon: "meethue.com", domains: ["meethue.com", "philips-hue.com"] },
   { name: "ChatGPT", icon: "chatgpt.com", domains: ["chatgpt.com", "openai.com", "oaiusercontent.com"] },
   { name: "Buienradar", icon: "buienradar.nl", domains: ["buienradar.nl"] },
@@ -60,7 +66,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
 ];
 
 /** tv-apps: bij kijken meldt een apart adres (conviva) de voortgang; dat beeldverkeer hoort bij deze apps op hetzelfde apparaat. */
-export const TV_APPS = new Set(["ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl"]);
+export const TV_APPS = new Set(["ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
