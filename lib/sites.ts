@@ -94,7 +94,7 @@ export function isEmbedHost(host: string): boolean {
   return EMBED.test(host);
 }
 
-export const TV_APPS = new Set(["ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
+export const TV_APPS = new Set(["disneyplus.com", "ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
@@ -354,6 +354,14 @@ const MEDIA = [
 ];
 export function isMedia(host: string): boolean {
   return MEDIA.some((re) => re.test(host));
+}
+
+/**
+ * Telt dit verzoek als "er speelt beeld/geluid"? Normaal alleen als het niet geblokkeerd is. Afspeelsignalen (Conviva: de speler
+ * meldt elke ~minuut dat er nog afgespeeld wordt) tellen ook als NextDNS ze blokkeert: de poging zelf bewijst dat er gekeken wordt.
+ */
+export function isPlaying(host: string, blocked: boolean): boolean {
+  return isMedia(host) && (!blocked || /(^|\.)conviva\.com$/.test(host));
 }
 
 /**

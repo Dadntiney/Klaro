@@ -260,3 +260,10 @@ test("ingesloten videospelers herkend", () => {
   assert.equal(isEmbedHost("vimeo.com"), false);
   assert.equal(isEmbedHost("www.youtube.com"), false);
 });
+
+test("afspeelsignaal telt als kijken, ook als NextDNS het blokkeert", async () => {
+  const { isPlaying } = await import("./sites.ts");
+  assert.equal(isPlaying("7ba3f64df98de730df38846b54ecfbdf7f61f80f.cws.conviva.com", true), true);
+  assert.equal(isPlaying("rr3---sn-u15hn5-5t.googlevideo.com", true), false); // geblokkeerde video speelt niet
+  assert.equal(isPlaying("rr3---sn-u15hn5-5t.googlevideo.com", false), true);
+});

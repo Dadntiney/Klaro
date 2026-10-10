@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
-import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
+import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, isHuman, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -283,7 +283,7 @@ export async function GET(req: Request) {
     }
     if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
-    if (!blocked && isMedia(host)) {
+    if (isPlaying(host, blocked)) {
       (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
       (devMedia.get(dev) ?? devMedia.set(dev, []).get(dev)!).push(t);
     }
