@@ -502,13 +502,16 @@ export default function Home() {
     const steady = new Map<string, number>();
     const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
     for (const g of groups) {
-      if (!g.flag && (g.bg || !g.main || isSystemSite(g.site) || (g.bl ?? 0) >= g.n)) continue;
+      // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
+      if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && g.name === g.site) || (g.bl ?? 0) >= g.n)) continue;
       const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
       // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
       if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
       for (const x of g.ss ?? []) {
         if (!isHuman(x)) continue;
-        if (x.e > (human.get(g.dev) ?? 0)) human.set(g.dev, x.e);
+        // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
+        const until = x.e + (fgApp ? 120_000 : 0);
+        if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
         if (!MSG.test(g.site) && x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
       }
       const a = hits.get(g.dev) ?? [];
