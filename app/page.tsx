@@ -821,11 +821,11 @@ export default function Home() {
                         <div className="time">
                           {(() => {
                             if (!t) return <span className="tcol">–</span>;
-                            // Recent: gerekend vanaf het einde (laatste activiteit). Nog bezig = "nu". Ouder: de begintijd.
+                            // Nog bezig (laatste activiteit < 3 min geleden) = "nu" in groen; anders gerekend vanaf het begin, net als de volgorde.
                             const end = Math.max(t, ...rss.map((x) => x.e));
                             const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
-                            const age = Math.floor((clock - end) / 60_000);
-                            if (age < 3) return <span className="tcol reltime nowtag" title={span}>nu</span>;
+                            if (clock - end < 180_000) return <span className="tcol reltime nowtag" title={span}>nu</span>;
+                            const age = Math.floor((clock - t) / 60_000);
                             if (age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
                             return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;
                           })()}
