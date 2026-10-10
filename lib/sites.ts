@@ -47,6 +47,10 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },
   { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl"] },
   { name: "Philips Hue", icon: "meethue.com", domains: ["meethue.com", "philips-hue.com"] },
+  { name: "ChatGPT", icon: "chatgpt.com", domains: ["chatgpt.com", "openai.com", "oaiusercontent.com"] },
+  { name: "Buienradar", icon: "buienradar.nl", domains: ["buienradar.nl"] },
+  { name: "Waze", icon: "waze.com", domains: ["waze.com"] },
+  { name: "Amazon", icon: "amazon.com", domains: ["a2z.com"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
   { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
   { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },
@@ -73,6 +77,8 @@ const BACKGROUND = new Set([
   "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com",
   // reclame-, betaal-, chat- en mailwidgets die in andermans site zitten
   "dpgmedia.net", "stripe.network", "omnidesk.io", "belco.io", "vidyard.com", "cm.com", "editorify.net", "ccvshopserver.nl", "mailplus.nl", "laposta.nl",
+  // meet- en slimme-dns-diensten die alleen meekomen met een app
+  "swrve.com", "ankersmartdns.com",
   // inlogdiensten: komen mee bij elke app die inlogt (Outlook, Teams, Office), geen bezoek aan een site
   "microsoftonline.com", "msauth.net", "msftauth.net", "cloud.microsoft", "microsoftpersonalcontent.com", "okta.com", "oktapreview.com", "auth0.com", "onelogin.com",
 ]);

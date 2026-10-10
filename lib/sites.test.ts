@@ -166,3 +166,12 @@ test("verbinding openhouden (eufy push) telt niet als bezoek", async () => {
   assert.equal(isQuietHost("app-openapi-eu-pr.eufy.com"), false);
   assert.equal(isQuietHost("app-devicemanage-eu-pr.eufy.com"), false);
 });
+
+test("Buienradar, Waze en ChatGPT (openai.com) zijn apps; swrve is achtergrond", () => {
+  for (const [h, n] of [["api.buienradar.nl", "Buienradar"], ["gadgets.buienradar.nl", "Buienradar"], ["rtr.waze.com", "Waze"], ["api.openai.com", "ChatGPT"]] as const) {
+    const c = classify(h);
+    assert.equal(c.name, n, h);
+    assert.equal(!c.bg && c.main, true, h);
+  }
+  assert.equal(classify("api.swrve.com").bg, true);
+});

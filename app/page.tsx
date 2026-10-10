@@ -2,6 +2,7 @@
 
 import { extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
+import { isSystemSite } from "@/lib/system";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -536,8 +537,17 @@ export default function Home() {
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
+    // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
+    const visSes = new Map<string, Session[]>();
     for (const g of groups) {
-      if ((device && g.dev !== device) || g.bg || !g.main) continue;
+      if (g.bg || !g.main) continue;
+      for (const x of g.ss ?? []) if (g.flag || g.susp || isHuman(x)) (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
+    }
+    const standalone = (g: Group, x: Session) =>
+      (x.n ?? 0) >= 8 && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
+    for (const g of groups) {
+      if ((device && g.dev !== device) || g.bg) continue;
+      if (!g.main && (isSystemSite(g.site) || !(g.ss ?? []).some((x) => standalone(g, x)))) continue;
       if ((g.bl ?? 0) >= g.n && !g.flag) continue; // alles geblokkeerd door NextDNS: niet bezocht
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
@@ -552,7 +562,7 @@ export default function Home() {
           .flatMap((g) => {
             const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
             // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
-            const ss = all.filter((x) => g.flag || g.susp || (ALWAYS_SHOW.has(g.site) && (x.n === undefined || x.n >= 2)) || isHuman(x));
+            const ss = all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || isHuman(x) : standalone(g, x)));
             if (!ss.length) return [];
             const oldest = Math.min(...all.map((x) => x.s));
             return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
@@ -560,7 +570,7 @@ export default function Home() {
           .sort((a, b) => b.t - a.t)
         ),
         // Compact: per site en apparaat één regel, met alle bezoeken opgeteld.
-        crows: [...list].filter((g) => g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, ss: g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }], compact: true, first: !!g.isNew, newest: true })),
+        crows: [...list].filter((g) => !g.main ? (g.ss ?? []).some((x) => standalone(g, x)) : g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, ss: g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }], compact: true, first: !!g.isNew, newest: true })),
       }))
       .filter((d) => d.rows.length > 0);
   }, [groups, device]);
