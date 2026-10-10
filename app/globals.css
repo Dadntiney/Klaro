@@ -317,3 +317,12 @@ h2 .dview + .dview.icon { margin-left:0; }
 .skel-ring { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:5; width:132px; height:132px; display:grid; place-items:center; border-radius:28px; background:color-mix(in srgb, var(--card) 88%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:0 8px 30px rgba(0,0,0,.10); }
 .skel-ring svg { transform:rotate(-90deg); grid-area:1/1; }
 .skel-ring .pct { position:static; top:auto; height:auto; grid-area:1/1; font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--fg); }
+
+/* Inlogscherm */
+.login { min-height:80vh; display:grid; place-items:center; }
+.login-card { width:100%; max-width:340px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px 20px; display:grid; gap:12px; }
+.login-card h1 { margin:0; font-size:20px; }
+.login-card .muted { margin:0; font-size:14px; }
+.login-card input { font:inherit; font-size:16px; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
+.login-card button { font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:10px; border:0; background:var(--accent); color:#fff; cursor:pointer; }
+.login-err { margin:0; color:#dc2626; font-size:14px; }
