@@ -84,7 +84,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
  */
 export function isHuman(x: Session): boolean {
   if (x.emb) return false;
-  if (x.ml && (x.n ?? 1) <= 8 && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
+  if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde
   if (x.n === undefined) return true;
   if ((x.m ?? 0) >= 2) return true; // beeld/geluid (Disney+, YouTube): er wordt gekeken of geluisterd

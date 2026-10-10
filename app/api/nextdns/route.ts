@@ -194,7 +194,8 @@ export async function GET(req: Request) {
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
   const mediaTimes = new Map<string, number[]>();
   const fgTimes = new Map<string, number[]>();
-  const embedTimes = new Map<string, number[]>(); // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
+  const embedTimes = new Map<string, number[]>();
+  const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
@@ -281,6 +282,7 @@ export async function GET(req: Request) {
       });
       times.set(gkey, [t]);
     }
+    if (info.main && !info.flag) (mainTimes.get(gkey) ?? mainTimes.set(gkey, []).get(gkey)!).push(t);
     if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
     if (isPlaying(host, blocked)) {
@@ -326,7 +328,8 @@ export async function GET(req: Request) {
     // Korte "bezoeken" tegelijk met het openen van een nieuwsbrief zijn plaatjes uit die mail, geen bezoek (rood blijft altijd zichtbaar).
     if (!g.flag && g.main && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
       const esp = devEsp.get(g.dev) ?? [];
-      if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [])) x.ml = 1;
+      const mt = mainTimes.get(gkey) ?? [];
+      if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length)) x.ml = 1;
     }
     const emb = embedTimes.get(gkey);
     if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });

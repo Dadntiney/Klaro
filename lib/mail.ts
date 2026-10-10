@@ -39,12 +39,15 @@ export function isMailClientHost(host: string): boolean {
 export const MAIL_WINDOW = 60_000;
 
 /**
- * Hoort een korte sessie bij het openen van een mail? Alleen korte sessies (een paar verzoeken, hooguit anderhalve minuut):
- * wie in een mail op een link klikt en echt op de site gaat kijken, maakt een langere sessie en blijft zichtbaar.
- * `esp` en `client`: tijdstippen van mailbedrijf- en mailprogramma-verkeer van hetzelfde apparaat (oplopend gesorteerd of niet).
+ * Hoort een korte sessie bij het openen van een mail? Alleen korte sessies (hooguit anderhalve minuut) met verkeer van een
+ * mailbedrijf erbij. Wie in een mail op een link klikt en echt op de site of in de app gaat kijken, laadt de site zelf
+ * (www., nl., de app-server) of blijft langer: dat blijft zichtbaar.
+ * `mainHits`: hoeveel verzoeken naar de site zelf (www., nl., ...) in de sessie zaten; onbekend = alleen tot 8 verzoeken.
  */
-export function isMailSession(x: { s: number; e: number; n?: number }, esp: number[], client: number[]): boolean {
-  if ((x.n ?? 1) > 8 || x.e - x.s > 90_000) return false;
+export function isMailSession(x: { s: number; e: number; n?: number }, esp: number[], client: number[], mainHits?: number): boolean {
+  if (x.e - x.s > 90_000) return false;
+  // Veel verzoeken én de site zelf erbij = echt bezoek. Weinig verzoeken, of alleen plaatjes/tellers (geen site zelf) = mail.
+  if ((x.n ?? 1) > 8 && (mainHits === undefined || mainHits > 0)) return false;
   const near = (arr: number[], w: number) => arr.filter((t) => t >= x.s - w && t <= x.e + w).length;
   const e = near(esp, MAIL_WINDOW);
   if (e >= 2) return true;

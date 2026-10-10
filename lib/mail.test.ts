@@ -29,3 +29,11 @@ test("Indeed-mail in Outlook: engage/subscriptions zijn mailadressen, Outlook-ap
   assert.ok(isMailClientHost("shed.outlook.acdc.tm.svc.cloud.microsoft"));
   assert.ok(!isEspHost("www.indeed.com"));
 });
+
+test("mail met veel verzoeken maar zonder de site zelf is mail; met de site zelf erbij een echt bezoek", () => {
+  const t = 1_000_000_000;
+  const esp = [t, t + 1_000];
+  assert.ok(isMailSession({ s: t, e: t + 2_000, n: 9 }, esp, [], 0)); // alleen plaatjes/tellers (Indeed-mail)
+  assert.ok(!isMailSession({ s: t, e: t + 19_000, n: 27 }, esp, [], 3)); // app/site echt geopend
+  assert.ok(isMailSession({ s: t, e: t + 2_000, n: 4 }, esp, [], 1)); // korte nieuwsbrief die www.merk.nl laadt
+});
