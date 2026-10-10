@@ -291,7 +291,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 /* Uurmarkering: rustig, alleen een klein tijdlabel met een dunne lijn ernaast; geen balk. Het bovenste uur krijgt geen label. */
 .hourmark { display:flex; align-items:center; gap:10px; padding:14px 14px 4px; margin:0; background:none; border:0; opacity:1; font-size:12px; font-weight:600; letter-spacing:.02em; color:var(--muted); font-variant-numeric:tabular-nums; }
 .hourmark::after { content:""; flex:1; height:1px; background:var(--line); }
-.hourstart:first-child .hourmark { display:none; }
+/* Het bovenste uur heeft alleen geen label als dat het huidige uur is (zie page.tsx). */
 [data-rk]:has(+ .hourstart) > .item { border-bottom-color:transparent; }
 
 /* Nog bezig: groen, net als de chip van een apparaat dat in gebruik is. */
