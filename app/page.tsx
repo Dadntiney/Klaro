@@ -767,7 +767,7 @@ export default function Home() {
                   const isOpen = expanded === rowKey;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart ? " hourstart" : "")}>
-                      {hourStart && !(ri === 0 && dayKeyFmt.format(t) === dayKeyFmt.format(clock) && hr === hourOf(clock)) && <div className="hourmark"><span>{String(hr).padStart(2, "0")}:00</span></div>}
+                      {hourStart && <div className="hourmark"><span>{String(hr).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
