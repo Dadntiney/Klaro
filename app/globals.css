@@ -312,3 +312,8 @@ h2 .dview + .dview.icon { margin-left:0; }
 @media (prefers-reduced-motion: reduce) { .sk { animation:none; } }
 /* Boven een uurmarkering geen lijntje: de lijn van de uurmarkering is dan de eerste. */
 .list > div.hourstart::before { display:none; }
+
+/* Voortgang bovenop het skelet: een rustige ring met percentage, in het midden van het scherm. */
+.skel-ring { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:5; width:132px; height:132px; display:grid; place-items:center; border-radius:28px; background:color-mix(in srgb, var(--card) 88%, transparent); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:0 8px 30px rgba(0,0,0,.10); }
+.skel-ring svg { transform:rotate(-90deg); grid-area:1/1; }
+.skel-ring .pct { position:static; top:auto; height:auto; grid-area:1/1; font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--fg); }

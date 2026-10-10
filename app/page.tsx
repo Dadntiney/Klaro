@@ -91,10 +91,6 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [insights, setInsights] = useState<Insights | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [hist, setHist] = useState(0); // voortgang van het laden van alle logs (na het tonen van vandaag)
-  const [histDone, setHistDone] = useState(false);
-  const [histErr, setHistErr] = useState(false);
-  const loadStart = useRef(Date.now());
   const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
   const [showOther, setShowOther] = useState<Set<string>>(new Set());
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
@@ -120,7 +116,6 @@ export default function Home() {
 
   useEffect(() => {
     const t0 = Date.now();
-    let fullDone = false;
     const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights }, isFull: boolean) => {
       fullRef.current = true;
       setGroups(data.groups);
@@ -132,58 +127,33 @@ export default function Home() {
       setUpdated(new Date());
       if (isFull) {
         setFull(true);
-        setHist(1);
-        setHistDone(true);
-        setTimeout(() => setHistDone(false), 900);
-        try { localStorage.setItem("csv-load-ms", String(Date.now() - loadStart.current)); } catch {}
+        try { localStorage.setItem("csv-load-ms", String(Date.now() - t0)); } catch {}
       }
       finishing.current = true;
       setProgress(1);
       setTimeout(() => setState("ready"), 450); // de cirkel even op 100% laten zien
     };
-    // Vandaag komt snel binnen en wordt meteen getoond; de volledige geschiedenis volgt en vervangt dit.
-    fetch("/api/nextdns?scope=today")
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok || fullDone) return;
-        try { localStorage.setItem("csv-today-ms", String(Date.now() - t0)); } catch {}
-        apply(data, false);
-      })
-      .catch(() => {});
+    // Alles in één keer: pas tonen als de volledige geschiedenis binnen is (tot die tijd het skelet met de voortgang).
     fetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Ophalen mislukt");
-        fullDone = true;
         apply(data, true);
       })
       .catch((e: Error) => {
-        if (fullRef.current) { setHistErr(true); return; } // vandaag staat al op het scherm
         setError(e.message);
         setState("error");
         setFull(true);
       });
   }, []);
 
-  // Laadbalk voor de volledige geschiedenis: schatting op basis van de vorige keer.
-  useEffect(() => {
-    if (state !== "ready" || full || histErr) return;
-    let expected = 25_000;
-    try {
-      const v = Number(localStorage.getItem("csv-load-ms"));
-      if (v > 3000 && v < 180_000) expected = v;
-    } catch {}
-    const id = setInterval(() => setHist(0.95 * (1 - Math.exp((-3 * (Date.now() - loadStart.current)) / expected))), 150);
-    return () => clearInterval(id);
-  }, [state, full, histErr]);
-
   // Voortgang is een schatting (NextDNS meldt zelf niets): loopt op naar ~90% over de tijd die het de vorige keer duurde.
   useEffect(() => {
     if (state !== "loading") return;
-    let expected = 6_000;
+    let expected = 25_000;
     try {
-      const v = Number(localStorage.getItem("csv-today-ms"));
-      if (v > 500 && v < 120_000) expected = v;
+      const v = Number(localStorage.getItem("csv-load-ms"));
+      if (v > 1000 && v < 180_000) expected = v;
     } catch {}
     const t0 = Date.now();
     const id = setInterval(() => {
@@ -651,6 +621,13 @@ export default function Home() {
       {state === "loading" && (
         // Skeleton (zoals iPhone-apps): de vorm van de pagina met grijze vlakken en een zachte glans, tot de gegevens er zijn.
         <div className="skel" role="progressbar" aria-label="Gegevens laden" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="skel-ring">
+            <svg viewBox="0 0 100 100" width="96" height="96" aria-hidden>
+              <circle cx="50" cy="50" r="44" className="ring-bg" />
+              <circle cx="50" cy="50" r="44" className="ring" style={{ strokeDasharray: 276.46, strokeDashoffset: 276.46 * (1 - progress) }} />
+            </svg>
+            <div className="pct">{Math.round(progress * 100)}%</div>
+          </div>
           <div className="skel-chips">
             {[44, 84, 96, 70, 92].map((w, i) => <span key={i} className="sk sk-chip" style={{ width: w }} />)}
           </div>
@@ -667,11 +644,6 @@ export default function Home() {
         </div>
       )}
 
-      {state === "ready" && (!full || histDone) && (
-        <div className={"histbar" + (histErr ? " err" : "")} role="progressbar" aria-label="Alle logs laden" aria-valuenow={Math.round(hist * 100)} aria-valuemin={0} aria-valuemax={100}>
-          <div className="histfill" style={{ width: `${Math.round((histErr ? 1 : hist) * 100)}%` }} />
-        </div>
-      )}
       {state === "ready" && (
         <>
           <div className="bar">
