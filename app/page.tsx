@@ -654,13 +654,21 @@ export default function Home() {
       {state === "error" && <p className="err">{error}</p>}
       {state === "ready" && live === "fail" && <p className="err">Live bijwerken lukt niet: {liveError}</p>}
       {state === "loading" && (
-        <div className="loading" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-          <svg viewBox="0 0 100 100" width="132" height="132">
-            <circle cx="50" cy="50" r="44" className="ring-bg" />
-            <circle cx="50" cy="50" r="44" className="ring" style={{ strokeDasharray: 276.46, strokeDashoffset: 276.46 * (1 - progress) }} />
-          </svg>
-          <div className="pct">{Math.round(progress * 100)}%</div>
-          <p className="muted">{progress >= 1 ? "Klaar" : progress > 0.85 ? "Bijna klaar…" : "Logs ophalen van NextDNS…"}</p>
+        // Skeleton (zoals iPhone-apps): de vorm van de pagina met grijze vlakken en een zachte glans, tot de gegevens er zijn.
+        <div className="skel" role="progressbar" aria-label="Gegevens laden" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="skel-chips">
+            {[44, 84, 96, 70, 92].map((w, i) => <span key={i} className="sk sk-chip" style={{ width: w }} />)}
+          </div>
+          <div className="skel-head"><span className="sk" style={{ width: 84, height: 14 }} /><span className="sk" style={{ width: 92, height: 26, borderRadius: 99 }} /></div>
+          <div className="list skel-list">
+            {[62, 48, 70, 55, 66, 44, 58, 52].map((w, i) => (
+              <div key={i} className="item skel-item">
+                <span className="sk sk-icon" />
+                <div className="main"><span className="sk" style={{ width: `${w}%`, height: 15 }} /><span className="sk" style={{ width: `${w / 2 + 12}%`, height: 12, marginTop: 8 }} /></div>
+                <span className="sk" style={{ width: 52, height: 15 }} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

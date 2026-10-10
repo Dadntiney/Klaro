@@ -297,3 +297,16 @@ h2 .dview + .dview.icon { margin-left:0; }
 /* Nog bezig: groen, net als de chip van een apparaat dat in gebruik is. */
 .time .nowtag { color:#16a34a; }
 @media (prefers-color-scheme: dark) { .time .nowtag { color:#4ade80; } }
+
+/* Skeleton tijdens het laden: grijze vlakken met een zachte glans die eroverheen schuift. */
+.skel { padding-top:8px; }
+.skel-chips { display:flex; gap:6px; overflow:hidden; padding:2px 0 14px; }
+.skel-head { display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px; }
+.skel-list { pointer-events:none; }
+.skel-item { min-height:62px; border-bottom:0; }
+.skel-item .main { display:flex; flex-direction:column; }
+.sk { display:block; height:14px; border-radius:6px; background:linear-gradient(90deg, var(--line) 0%, color-mix(in srgb, var(--line) 45%, var(--card)) 50%, var(--line) 100%); background-size:200% 100%; animation:sk-shine 1.3s ease-in-out infinite; }
+.sk-chip { height:32px; border-radius:99px; flex:none; }
+.sk-icon { width:32px; height:32px; border-radius:8px; flex:none; }
+@keyframes sk-shine { from { background-position:150% 0; } to { background-position:-50% 0; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation:none; } }
