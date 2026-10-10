@@ -750,29 +750,25 @@ export default function Home() {
                         <div className="main">
                           <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
+                            // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
+                            const m = compact ? g.mins ?? 0 : rss.reduce((n, x) => n + minutes(x), 0);
                             const parts: React.ReactNode[] = [];
+                            parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
+                            if (m > 0) parts.push(<span key="m" className="mdur">{dur(m)}</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
-                            if (!parts.length) return null;
-                            return <div className="sub">{parts.flatMap((x, i) => (i ? [" · ", x] : [x]))}</div>;
+                            return <div className="sub meta">{parts.flatMap((x, i) => (i ? [<span key={"s" + i} className="msep">·</span>, x] : [x]))}</div>;
                           })()}
                         </div>
                         <div className="time">
                           {(() => {
-                            // Duur van dit ene bezoek (sessie), alleen als het minstens een minuut was.
-                            const m = compact ? g.mins ?? 0 : rss.reduce((n, x) => n + minutes(x), 0);
-                            return m > 0 ? <><span className="vdur"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>{dur(m)}</span><span className="vsep" aria-hidden>|</span></> : null;
-                          })()}
-                          {(() => {
-                            // Recent (minder dan 30 minuten): "nu" of "N min geleden"; daarna het tijdstip.
-                            if (!t) return "–";
+                            if (!t) return <span className="tcol">–</span>;
                             const age = Math.floor((clock - t) / 60_000);
-                            if (age < 1) return <span className="reltime" title={timeFmt.format(t)}>nu</span>;
-                            if (age < 30) return <span className="reltime" title={timeFmt.format(t)}>{age} min geleden</span>;
-                            return timeFmt.format(t);
+                            if (age < 1) return <span className="tcol reltime" title={timeFmt.format(t)}>nu</span>;
+                            if (age < 30) return <span className="tcol reltime" title={timeFmt.format(t)}>{age} min geleden</span>;
+                            return <span className="tcol">{timeFmt.format(t)}</span>;
                           })()}
-                          <span className="devmark" title={g.dev} aria-label={g.dev}><DevIcon name={g.dev} /></span>
                         </div>
                       </div>
                       {isOpen && (() => {

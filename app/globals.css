@@ -220,7 +220,6 @@ h2.fold .dview { margin-left:auto; }
 h2.fold .dview + .fold-chev { margin-left:2px; }
 
 /* Reeksen per apparaat: kopje met icoontje, daaronder rustige regels van gelijke hoogte zonder lijnen */
-.list > div + div::before { display:none; }
 .devhead { display:flex; align-items:center; gap:6px; padding:12px 14px 6px; color:var(--muted); font-size:13px; font-weight:600; position:relative; }
 .devhead .di { width:17px; height:17px; }
 .devhead::after { content:""; position:absolute; left:14px; right:14px; bottom:0; height:1px; background:var(--line); opacity:.7; }
@@ -251,7 +250,6 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 h2 .dview + .dview.icon { margin-left:0; }
 
 /* Eén duidelijke regel: elk regel een klein apparaat-icoon rechts, een dun lijntje waar het apparaat wisselt */
-.list > div.devchange::before { display:block; opacity:1; }
 .devmark { display:inline-flex; margin-left:10px; color:var(--muted); width:20px; justify-content:center; }
 .devmark .di { width:17px; height:17px; }
 .item.adult .devmark { color:rgba(255,255,255,.85); }
@@ -271,3 +269,15 @@ h2 .dview + .dview.icon { margin-left:0; }
 .time .vdur svg { opacity:.65; }
 .time:has(.reltime) .vdur svg { display:none; }
 .time { gap:5px; }
+
+/* Twee regels: naam boven, apparaat en duur eronder; rechts alleen de tijd. Overal even hoog, lijntjes tussen alle regels. */
+.time { display:block !important; flex:none; text-align:right; }
+.time .tcol { font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; font-size:15px; }
+.time .reltime { color:var(--accent); font-size:14px; }
+.item { min-height:62px; padding-top:10px; padding-bottom:10px; }
+.item .meta { display:flex; align-items:center; gap:6px; margin-top:2px; font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; }
+.item .meta .mdev { display:inline-flex; align-items:center; gap:4px; }
+.item .meta .mdev .di { width:13px; height:13px; }
+.item .meta .msep { opacity:.6; }
+.item.adult .meta { color:rgba(255,255,255,.85); }
+.list > div + div::before { opacity:.6; }
