@@ -726,7 +726,7 @@ export default function Home() {
             </div>
           )}
 
-          {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
+          {days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, rows: trows }, di) => {
             const rows = trows;
             const today = dayKeyFmt.format(Date.now());
@@ -942,7 +942,7 @@ export default function Home() {
             );
           })}
           {/* Alleen het laatste uur staat er: de rest van vandaag laadt nog (zelfde glans als het skelet). */}
-          {cut > 0 && (
+          {(cut > 0 || (days.length === 0 && !full)) && (
             <div className="list skel-list skel-more" aria-label="Eerder vandaag laden">
               {[58, 44, 66, 50].map((w, i) => (
                 <div key={i} className="item skel-item">
