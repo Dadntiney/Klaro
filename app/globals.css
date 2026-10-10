@@ -288,6 +288,8 @@ h2 .dview + .dview.icon { margin-left:0; }
 .chip.act:not(.on) { color:#15803d; font-weight:600; }
 @media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:#4ade80; } }
 
-/* Uurblok: duidelijke band over de hele breedte, zoals een sectiekop. */
-.hourmark { display:flex; align-items:center; padding:6px 14px; margin:0; background:var(--head); border-top:1px solid var(--line); border-bottom:1px solid var(--line); opacity:1; font-size:13px; font-weight:600; letter-spacing:0; color:var(--fg); font-variant-numeric:tabular-nums; }
-.hourstart:first-child .hourmark { border-top:0; }
+/* Uurmarkering: rustig, alleen een klein tijdlabel met een dunne lijn ernaast; geen balk. Het bovenste uur krijgt geen label. */
+.hourmark { display:flex; align-items:center; gap:10px; padding:14px 14px 4px; margin:0; background:none; border:0; opacity:1; font-size:12px; font-weight:600; letter-spacing:.02em; color:var(--muted); font-variant-numeric:tabular-nums; }
+.hourmark::after { content:""; flex:1; height:1px; background:var(--line); }
+.hourstart:first-child .hourmark { display:none; }
+[data-rk]:has(+ .hourstart) > .item { border-bottom-color:transparent; }
