@@ -115,7 +115,7 @@ const ADULT_PARTS = [
   "stripchat", "bongacams", "livejasmin", "brazzers", "rule34", "camsoda", "fansly", "spankbang", "eporner",
   "nhentai", "literotica", "sexcam", "sexchat", "sexdate", "sexfilm", "playboy",
   // erotische webshops
-  "sexshop", "sex-shop", "eroshop", "eroticashop", "erotiekshop", "erotiek", "dildo", "vibrator", "bdsm", "fetish",
+  "sexshop", "sex-shop", "eroticashop", "erotiekshop", "erotiek", "dildo", "vibrator", "bdsm", "fetish",
   "lovehoney", "amorelie", "beate-uhse", "beateuhse", "adameve", "satisfyer", "womanizer", "christineleduc",
   // overig
   "pussy", "fuck", "slut", "xvideo", "sexvid", "pornhub", "hotwife", "bukkake", "camwhore", "cumshot", "gangbang", "blowjob",
@@ -123,11 +123,22 @@ const ADULT_PARTS = [
   "sexy", "neukvriend", "neukafspraak", "neukcontact", "neukdate", "seksverha", "sexverha", "seksfoto", "sexfoto", "fapnation", "fapello", "fapopedia",
   // AI-"uitkleed"-apps en NSFW-chatbots
   "camgirl", "camboy", "erotisch", "pleasureshop", "lustshop", "lingerie-erotiek",
+  // meer ondubbelzinnige woorden (Engels en Nederlands)
+  "creampie", "deepthroat", "handjob", "titty", "titties", "boobs", "busty", "horny", "nympho", "cuckold", "shemale", "tranny", "ladyboy",
+  "upskirt", "voyeur", "lolicon", "incest", "orgasm", "masturb", "erotik", "pr0n", "p0rn", "milf", "naakt", "tietjes", "sletje", "kutje",
+  "escortservice", "escortgirl", "sugardadd", "sugarbab", "nudist", "nudes", "nudecam", "jerkoff", "camshow", "strippers", "stripclub",
+  "fanvue", "loyalfans", "fancentro", "justforfans", "mym.fans", "admireme", "4based", "pocketstars", "ismygirl", "unfiltrd",
+  // AI-vriendin / NSFW-chatbots
+  "candy.ai", "crushon.ai", "janitorai", "spicychat", "muah.ai", "nastia.com", "girlfriendgpt", "dreamgf", "kupid.ai", "ourdream.ai", "promptchan", "seduced.ai", "soulgen", "pornpen",
   "clothoff", "nudify", "undress", "deepnude", "nudifier", "pornify",
 ];
-/** "sex", "seks" en "neuk" komen ook in gewone woorden voor (Essex, unisex, sekse, Neukölln); met deze uitzonderingen blijft het vangnet strak zonder vals alarm. */
-const SEX_IN_WORD = /(sex|seks|neuk)/;
-const SEX_INNOCENT = /(sussex|essex|wessex|middlesex|unisex|expertsex|sextant|sexton|sextet|sexual|sexis|sekse|seksu|seksis|neukirch|neukoe|neukö|neukolln)/g;
+/**
+ * "sex"/"seks" komt ook midden in gewone woorden voor (Essex, unisex, correosexpress, tennisexplorer). Daarom alleen als het
+ * woord los staat (begin, na een cijfer/streepje/punt) of gevolgd wordt door een duidelijk seksueel vervolg (sexcam, seksfilm, sexy).
+ */
+const SEX_IN_WORD = /(^|[^a-z])(sex|seks)|(sex|seks)(y|o(?![a-z])|e(?![a-z])|x|[0-9]|-|\.|film|cam|chat|club|shop|stor|vid|tub|toy|dat|hub|tape|site|game|kontakt|contact|pic|foto|photo|movie|clip|porn|live|doll|work|party|slav|tour|guide|gids|zone|web|tv|hd|winkel|verhal|speel|afspra|bioscoop|relatie)|(^|[^a-z])neuk|neuk(en|vriend|afspra|contact|dat|film|tok|seks|sex|buddy|maat|meid|wijf)/;
+/** Gewone woorden waar toevallig een verdacht stukje in zit; die worden eerst weggehaald. */
+const SEX_INNOCENT = /(sussex|essex|wessex|middlesex|unisex|expertsex|sextant|sexton|sextet|sexual|sexis|sekse|seksu|seksis|neukirch|neukoe|neukö|neukolln|milford|thorny|anastasia|scunthorpe|middlesbrough|jeuxvideo|xxxlutz|slutsk|strannye|bdsmoto|aktivitet|tietenn|tietend|chorny|deusex|sexpe|emilf|sexto|nude-project)/g;
 /** Erotische webshops (NL/BE/DE/EN) als exacte basisdomeinen; de grote lijst mist vooral lokale winkels. */
 const SEXSHOP_DOMAINS = new Set([
   "amorelie.nl", "amorelie.de", "amorelie.be", "amorelie.at", "amorelie.ch", "amorelie.fr", "amorelie.com", "lovehoney.nl", "lovehoney.com",
@@ -152,6 +163,7 @@ const DATING_PARTS = [
   "jdate", "ourtime", "seniorpeoplemeet", "plentyoffish", "datemyage", "c-date", "lovescout", "elitepartner", "friendscout",
   "singleboerse", "gaydar", "growlr", "scruff", "jackd", "taimi", "meetme", "mocospace", "datingjungle", "flirtfair",
   "omegle", "chatroulette", "emeraldchat", "monkey.app", "singles", "hookup", "lovoo", "jaumo", "mamba.ru", "loveawake",
+  "sugardaddy", "sugarbaby", "sugardating", "affairdating", "overspel", "slippertje", "speeddate", "speeddating", "datingapp", "datingsite", "lovematch", "sexdating",
 ];
 /** Exacte sites; voor namen die als woord te algemeen zijn. */
 const DATING_DOMAINS = new Set([
@@ -174,8 +186,9 @@ export function isAdult(host: string): boolean {
   const labels = host.split(".");
   if (ADULT_TLDS.has(labels[labels.length - 1])) return true;
   if (inAdultList(host) || SEXSHOP_DOMAINS.has(baseDomain(host))) return true;
-  if (ADULT_PARTS.some((p) => host.includes(p))) return true;
-  if (labels.some((l) => l.split("-").some((w) => ADULT_WORDS.has(w)))) return true;
+  const clean = host.replace(SEX_INNOCENT, ""); // gewone woorden waar toevallig een verdacht stukje in zit
+  if (ADULT_PARTS.some((p) => clean.includes(p))) return true;
+  if (clean.split(".").some((l) => l.split("-").some((w) => ADULT_WORDS.has(w)))) return true;
   const name = labels.slice(0, -1).join("."); // zonder extensie
   return SEX_IN_WORD.test(name.replace(SEX_INNOCENT, ""));
 }
@@ -264,6 +277,13 @@ function canonSite(base: string): string {
 }
 
 function classifyUncached(host: string): SiteInfo {
+  // Omweg via Google Translate (www-pornhub-com.translate.goog) of een andere vertaal-/cacheproxy: beoordeel de echte site erachter.
+  const proxied = host.match(/^([a-z0-9-]+)\.translate\.goog$/);
+  if (proxied) {
+    const real = proxied[1].replace(/--/g, "\u0000").replace(/-/g, ".").replace(/\u0000/g, "-");
+    const r = classify(real);
+    if (r.flag) return r;
+  }
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(host.replace(/^www\./, "")) ?? APP_BY_DOMAIN.get(base); // ook een volledig adres (zoals gofiev.vercel.app) kan een app zijn
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };

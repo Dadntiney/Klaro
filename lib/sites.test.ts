@@ -213,3 +213,14 @@ test("bekende sites worden altijd herkend (porno, seksshops, dating; wereldwijd 
   const dating = "tinder.com bumble.com hinge.co badoo.com grindr.com parship.nl elitedating.nl relatieplanet.nl 50plusmatch.nl lexa.nl ashleymadison.com c-date.nl";
   for (const h of dating.split(" ")) assert.ok(classify(h).flag, h);
 });
+
+test("omweg via Google Translate wordt herkend", () => {
+  assert.equal(classify("www-pornhub-com.translate.goog").flag, "18+");
+  assert.equal(classify("tinder-com.translate.goog").flag, "Dating");
+  assert.equal(classify("nos-nl.translate.goog").flag, undefined);
+});
+
+test("geen vals alarm op bekende gewone sites met een verdacht stukje in de naam", () => {
+  for (const h of ["www.jeuxvideo.com", "www.xxxlutz.de", "www.tennisexplorer.com", "www.correosexpress.es", "www.lasexta.com", "www.aiimsexams.ac.in", "www.agriaffaires.com", "deusex.fandom.com", "www.emilfrey.si", "www.tvzoneuk.com", "www.alberoshop.it", "artsexperiments.withgoogle.com"]) assert.equal(classify(h).flag, undefined, h);
+  for (const h of ["neukenx.be", "www.regiosexcontact.be", "www.naaktstrandje.nl", "realsexclub.com", "topsexhub.com"]) assert.equal(classify(h).flag, "18+", h);
+});
