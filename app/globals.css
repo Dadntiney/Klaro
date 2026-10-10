@@ -297,8 +297,3 @@ h2 .dview + .dview.icon { margin-left:0; }
 /* Nog bezig: groen, net als de chip van een apparaat dat in gebruik is. */
 .time .nowtag { color:#16a34a; }
 @media (prefers-color-scheme: dark) { .time .nowtag { color:#4ade80; } }
-
-/* "online" / "laatst gebruikt om ..." onder de chips bij een gekozen apparaat (zoals WhatsApp). */
-.seen { font-size:13px; color:var(--muted); padding:4px 2px 0; }
-.seen.on { color:#16a34a; font-weight:600; }
-@media (prefers-color-scheme: dark) { .seen.on { color:#4ade80; } }

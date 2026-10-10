@@ -503,8 +503,7 @@ export default function Home() {
     const hits = new Map<string, { t: number; site: string; fgApp: boolean }[]>();
     const media = new Map<string, number>();
     const steady = new Map<string, number>();
-    const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt (met speling)
-    const seen = new Map<string, number>(); // laatste echt gebruik, zonder speling ("laatst gebruikt om ...")
+    const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
     for (const g of groups) {
       // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
       if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
@@ -514,7 +513,6 @@ export default function Home() {
       if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && !(g.ss?.[0] && tvBlip(g.dev, g.ss[0])) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
       for (const x of g.ss ?? []) {
         if (!isHuman(x) || tvBlip(g.dev, x)) continue;
-        if (x.e > (seen.get(g.dev) ?? 0)) seen.set(g.dev, x.e);
         // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
         const until = x.e + (fgApp ? 120_000 : 0);
         if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
@@ -524,8 +522,7 @@ export default function Home() {
       for (const t of g.ts ?? []) a.push({ t, site: g.site, fgApp });
       hits.set(g.dev, a);
     }
-    for (const [dev, t] of media) if (t > (seen.get(dev) ?? 0)) seen.set(dev, t);
-    return { hits, media, steady, human, seen };
+    return { hits, media, steady, human };
   }, [groups]);
   // In gebruik (per apparaat, niet per app):
   // - net een bezoek dat als echt gebruik telt (laatste 3 minuten), of langdurig spelen, of beeld/geluid (laatste 5 minuten);
@@ -691,15 +688,6 @@ export default function Home() {
               </button>
             )}
             </div>
-            {device && (() => {
-              // Zoals WhatsApp: "online" of "laatst gebruikt om ..." voor het gekozen apparaat.
-              if (activeNow(device)) return <div className="seen on">online</div>;
-              const t = lastUse.seen.get(device);
-              if (!t) return <div className="seen">niet gebruikt in de bewaarde periode</div>;
-              const day = dayKeyFmt.format(t), today = dayKeyFmt.format(clock), yest = dayKeyFmt.format(clock - 86_400_000);
-              const when = day === today ? "" : day === yest ? "gisteren " : `${new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Amsterdam" }).format(t)} `;
-              return <div className="seen">laatst gebruikt {when}om {timeFmt.format(t)}</div>;
-            })()}
           </div>
 
 
