@@ -494,7 +494,6 @@ export default function Home() {
     return { use: m, media };
   }, [groups]);
   const activeNow = (name: string) => clock - (lastUse.use.get(name) ?? 0) < 120_000 || clock - (lastUse.media.get(name) ?? 0) < 300_000;
-  const anyActive = devices.some((x) => activeNow(x.name));
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
   const loadDetail = (g: Group, rss: Session[], rk: string) => {
     if (details[rk]) return;
@@ -616,10 +615,10 @@ export default function Home() {
           <div className="bar">
             <div className="bar-in">
             <div className="chips">
-              <button className={"chip" + (device === null ? " on" : "") + (anyActive ? " act" : "")} onClick={() => setDevice(null)}>Alle</button>
+              <button className={"chip" + (device === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {/* Apparaten die in gebruik zijn staan links (naast Alle), de rest rechts; binnen elke groep blijft de volgorde gelijk. */}
               {[...devices.filter((d) => activeNow(d.name)), ...devices.filter((d) => !activeNow(d.name))].map((d) => (
-                <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : "")} title={activeNow(d.name) ? "In gebruik" : undefined} onClick={() => setDevice(d.name)}>
+                <button key={d.name} className={"chip" + (device === d.name ? " on" : "") + (activeNow(d.name) ? " act" : " idle")} title={activeNow(d.name) ? "Nu in gebruik" : "Niet in gebruik"} onClick={() => setDevice(d.name)}>
                   {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
                                   </button>
               ))}

@@ -281,3 +281,9 @@ h2 .dview + .dview.icon { margin-left:0; }
 .item .meta .msep { opacity:.6; }
 .item.adult .meta { color:rgba(255,255,255,.85); }
 .list > div + div::before { opacity:.6; }
+
+/* Groen = alleen apparaten die nu in gebruik zijn; "Alle" blijft neutraal. Niet-gebruikte apparaten iets gedempt. */
+.chip.idle:not(.on) { color:var(--muted); }
+.chip.idle:not(.on) .di { opacity:.5; }
+.chip.act:not(.on) { color:#15803d; font-weight:600; }
+@media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:#4ade80; } }
