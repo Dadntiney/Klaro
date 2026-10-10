@@ -310,3 +310,5 @@ h2 .dview + .dview.icon { margin-left:0; }
 .sk-icon { width:32px; height:32px; border-radius:8px; flex:none; }
 @keyframes sk-shine { from { background-position:150% 0; } to { background-position:-50% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk { animation:none; } }
+/* Boven een uurmarkering geen lijntje: de lijn van de uurmarkering is dan de eerste. */
+.list > div.hourstart::before { display:none; }
