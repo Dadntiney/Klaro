@@ -83,7 +83,7 @@ export const FG_RULES: Record<string, RegExp> = {
   "youtube.com": /(^|\.)googlevideo\.com$|(^|\.)ytimg\.com$/,
   "snapchat.com": /(^|\.)sc-cdn\.net$/,
   // Pinterest: alleen foto's/video's (pinimg) bewijzen dat de app open is; de Pinterest-teller op webwinkels (ct., trk.) niet.
-  "pinterest.com": /(^|\.)pinimg\.com$|^(i|v)[-.]pinimg/,
+  "pinterest.com": /^(i|v[0-9]*)\.pinimg\.com$|^(i|v)[-.]pinimg/, // niet s.pinimg.com: dat is het Pinterest-script op webwinkels
 };
 /** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */
 export function fgHit(site: string, host: string): boolean | undefined {

@@ -17,7 +17,7 @@ const ESP_SUFFIX = [
   "trackedlink.net", "emv2.com", "emv3.com", "sendibt2.com", "sendibt3.com", "sendibm1.com", "mlsend.com", "convertkit-mail.com",
   "convertkit-mail2.com", "ck.page", "emltrk.com", "movableink.com", "movable-ink-7158.com", "niftyimages.com", "kickdynamic.com",
   "email-tracking.infobip.com", "ax4z.com", "aimn.com", "agnitas.de", "emarsys.net", "mailing.dpgmedia.nl", "e-mailing.nl",
-  "mktomail.com", "bmetrack.com", "bme1.net", "ccsend.com",
+  "mktomail.com", "bmetrack.com", "bme1.net", "ccsend.com", "pinterestmail.com", "post.pinterest.com", "copernica.net",
 ];
 /** Eerste deel van een adres dat typisch bij nieuwsbrieven hoort (email.merk.nl, nieuwsbrief.merk.nl, click.e.merk.nl). */
 const ESP_LABEL = /^(email|e-mail|emails|mail[0-9]*|mailing|mailings|news|newsletter|newsletters|nieuwsbrief|nieuwsbrieven|click|clicks|links|link|ct|ctrk|trk|track|tracking|url[0-9]+|e|em|eml|go|info|t|r|s|view|image|images|img)\.(e|email|em|mail|news|mailing|link|links|click|t)\./;

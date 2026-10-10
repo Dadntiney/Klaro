@@ -6,12 +6,28 @@ export interface Session {
   m?: number; // waarvan beeld/geluid-verkeer (video of muziek)
   f?: number; // bij apps met veel achtergrondverkeer: aantal keer dat er echt inhoud laadde (foto's, video's)
   mh?: number; // bij gewone websites: hoe vaak de site zelf (www., nl., ...) werd opgevraagd; 0 = alleen losse onderdelen (plaatjes, tellers)
+  lf?: number; // tijdstip van het laatste inhoud-moment (live tellen)
+  lmt?: number; // tijdstip van het laatste beeld/geluid-moment (live tellen)
   emb?: 1;
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   ml?: 1; // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
 }
 
 export const GAP = 5 * 60_000;
+/** Opvragingen binnen dit venster zijn één moment (NextDNS logt een adres tot 3x: A, AAAA, HTTPS). */
+export const MOMENT = 1_500;
+
+/** Aantal losse momenten in een reeks tijdstippen (alles binnen 1,5 seconde van het vorige telt als hetzelfde moment). */
+export function moments(times: number[]): number {
+  const t = [...times].sort((a, b) => a - b);
+  let n = 0;
+  let last = -Infinity;
+  for (const x of t) {
+    if (x - last > MOMENT) n++;
+    last = x;
+  }
+  return n;
+}
 const MAX = 5;
 
 /** Alle sessies uit losse tijdstippen, nieuwste eerst. */
@@ -54,12 +70,15 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
       x.e = Math.max(x.e, t);
     }
     if (x.n !== undefined) x.n = x.n + 1;
-    if (media) x.m = (x.m ?? 0) + 1;
-    if (fg) x.f = (x.f ?? 0) + 1;
+    // Momenten tellen, geen opvragingen: dezelfde foto die 3x wordt opgevraagd is één moment.
+    if (media && !(x.lmt && Math.abs(t - x.lmt) <= MOMENT)) x.m = (x.m ?? 0) + 1;
+    if (media) x.lmt = t;
+    if (fg && !(x.lf && Math.abs(t - x.lf) <= MOMENT)) x.f = (x.f ?? 0) + 1;
+    if (fg) x.lf = t;
     if (res === false) delete x.res; // iets van de site zelf erbij: wel een bezoek
     return next.sort((a, b) => b.e - a.e);
   }
-  return [{ s: t, e: t, n: 1, ...(media ? { m: 1 } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0 } : {}), ...(res ? { res: 1 as const } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
+  return [{ s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t } : {}) } : {}), ...(res ? { res: 1 as const } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }
 
 /** Minuten van een sessie, minimaal 1 als er meer dan een paar seconden tussen zit; 0 = alleen een korte aanraking. */

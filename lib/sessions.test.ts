@@ -71,3 +71,17 @@ test("alleen losse onderdelen (teller op een webwinkel) is geen bezoek; met de s
   ss = extendSessions(ss, t + 2_000, false, undefined, false); // www.site.nl erbij
   assert.equal(ss[0].res, undefined);
 });
+
+test("momenten: dezelfde foto die 3x wordt opgevraagd telt als één moment", async () => {
+  const { moments } = await import("./sessions.ts");
+  assert.equal(moments([1000, 1001, 1003]), 1);
+  assert.equal(moments([1000, 1001, 9000]), 2);
+  const t = 1_000_000_000;
+  let ss = extendSessions([], t, true, true);
+  ss = extendSessions(ss, t + 5, true, true);
+  ss = extendSessions(ss, t + 9, true, true); // A, AAAA, HTTPS van hetzelfde plaatje
+  assert.equal(ss[0].f, 1);
+  assert.equal(isHuman(ss[0]), false);
+  ss = extendSessions(ss, t + 30_000, true, true); // echt verder scrollen
+  assert.equal(isHuman(ss[0]), true);
+});

@@ -4,7 +4,7 @@ import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
-import { allSessions, isHuman, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
@@ -309,7 +309,7 @@ export async function GET(req: Request) {
       const real = [...(fgTimes.get(gkey) ?? []), ...(mediaTimes.get(gkey) ?? [])];
       for (const x of sessions) {
         const inX = real.filter((t) => t >= x.s && t <= x.e);
-        x.f = (fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e).length;
+        x.f = moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e));
         if (inX.length) { x.s = Math.min(...inX); x.e = Math.max(...inX); }
       }
     }
@@ -320,12 +320,12 @@ export async function GET(req: Request) {
     g.mm = totalMinutes(mts);
     if (mts.length) {
       g.lm = mts.reduce((a, b) => (b > a ? b : a), 0);
-      for (const x of sessions) x.m = mts.filter((t) => t >= x.s && t <= x.e).length;
+      for (const x of sessions) x.m = moments(mts.filter((t) => t >= x.s && t <= x.e));
     }
     // Een tv-app (Ziggo GO e.d.): het beeldverkeer van het apparaat rond dit bezoek telt mee als kijken.
     if (TV_APPS.has(g.site)) {
       const dm = devMedia.get(g.dev) ?? [];
-      for (const x of sessions) x.m = Math.max(x.m ?? 0, dm.filter((t) => t >= x.s - 120_000 && t <= x.e + 120_000).length);
+      for (const x of sessions) x.m = Math.max(x.m ?? 0, moments(dm.filter((t) => t >= x.s - 120_000 && t <= x.e + 120_000)));
     }
     // Korte "bezoeken" tegelijk met het openen van een nieuwsbrief zijn plaatjes uit die mail, geen bezoek (rood blijft altijd zichtbaar).
     if (!g.flag && g.main && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
