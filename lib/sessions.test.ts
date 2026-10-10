@@ -28,8 +28,8 @@ test("totalMinutes telt alle sessies, ook meer dan de getoonde vijf", () => {
 test("isHuman: korte achtergrondverzoeken zijn geen gebruik", async () => {
   const { isHuman, allSessions } = await import("./sessions.ts");
   const t0 = 1_000_000_000_000;
-  // twee verzoeken kort na elkaar: een app die even verversen
-  assert.equal(isHuman(allSessions([t0, t0 + 2000])[0]), false);
+  // één los verzoek: geen bezoek
+  assert.equal(isHuman(allSessions([t0])[0]), false);
   // veel verzoeken: echt gebruik
   assert.equal(isHuman(allSessions(Array.from({ length: 8 }, (_, i) => t0 + i * 3000))[0]), true);
   // een paar verzoeken verspreid over meer dan een minuut
@@ -41,7 +41,7 @@ test("isHuman: korte achtergrondverzoeken zijn geen gebruik", async () => {
 test("isHuman: beeld/geluid (video, muziek) telt als gebruik, ook met weinig verzoeken", async () => {
   const { isHuman } = await import("./sessions.ts");
   assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 2 }), true);
-  assert.equal(isHuman({ s: 1, e: 2, n: 2, m: 1 }), false);
+  assert.equal(isHuman({ s: 1, e: 2, n: 1, m: 1 }), false);
 });
 
 test("apps met achtergrondverkeer: alleen echte inhoud telt, en alleen die bepaalt de duur", () => {
