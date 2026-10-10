@@ -352,33 +352,51 @@ export default function Home() {
     };
   }, [state, poll]);
 
-  // Elke 5 minuten de inzichten verversen (thuis/onderweg, slaaptijd, bedreigingen, ...); de lijst zelf blijft live bijgewerkt.
+  // De volledige lijst (alle regels van NextDNS) opnieuw ophalen en bijwerken: elke 5 minuten, en zodra de pagina weer zichtbaar wordt na een tijd op de achtergrond.
+  // Zo komt ook alles binnen wat de live-controle gemist heeft (bijvoorbeeld als de telefoon vergrendeld was), inclusief rode sites.
+  const lastFull = useRef(Date.now());
+  const refreshFull = useCallback(async () => {
+    try {
+      const res = await fetch("/api/nextdns");
+      const data = await res.json();
+      if (!res.ok) return;
+      lastFull.current = Date.now();
+      setInsights(data.insights ?? null);
+      setDevices((prev) =>
+        prev.map((p) => {
+          const f = (data.devices as Device[]).find((x) => x.name === p.name);
+          return f ? { ...p, first: f.first, away: f.away, sleep: f.sleep, dm: f.dm, threats: f.threats, avg: f.avg, gap: f.gap, days: f.days } : p;
+        })
+      );
+      const fresh = new Map<string, Group>();
+      for (const g of data.groups as Group[]) fresh.set(g.d + "|" + g.dev + "|" + g.site, g);
+      setGroups((prev) => {
+        const seenKeys = new Set<string>();
+        const next = prev.map((g) => {
+          const k = g.d + "|" + g.dev + "|" + g.site;
+          seenKeys.add(k);
+          const f = fresh.get(k);
+          if (!f) return g;
+          // Is de volledige lijst even recent of recenter dan wat we live hebben, dan is die leidend (nieuwe bezoeken, sessies, rode markering).
+          return f.last >= g.last ? { ...f, isNew: f.isNew || g.isNew, flash: g.flash } : { ...g, mm: f.mm, susp: f.susp, cc: f.cc, isNew: f.isNew || g.isNew };
+        });
+        // Groepen die live gemist zijn, komen er alsnog bij.
+        for (const [k, f] of fresh) if (!seenKeys.has(k)) next.push(f);
+        return next;
+      });
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (state !== "ready") return;
-    const id = setInterval(async () => {
-      try {
-        const res = await fetch("/api/nextdns");
-        const data = await res.json();
-        if (!res.ok) return;
-        setInsights(data.insights ?? null);
-        setDevices((prev) =>
-          prev.map((p) => {
-            const f = (data.devices as Device[]).find((x) => x.name === p.name);
-            return f ? { ...p, first: f.first, away: f.away, sleep: f.sleep, dm: f.dm, threats: f.threats, avg: f.avg, gap: f.gap, days: f.days } : p;
-          })
-        );
-        const fresh = new Map<string, Group>();
-        for (const g of data.groups as Group[]) fresh.set(g.d + "|" + g.dev + "|" + g.site, g);
-        setGroups((prev) =>
-          prev.map((g) => {
-            const f = fresh.get(g.d + "|" + g.dev + "|" + g.site);
-            return f ? { ...g, mm: f.mm, susp: f.susp, cc: f.cc, isNew: f.isNew || g.isNew } : g;
-          })
-        );
-      } catch {}
-    }, 300_000);
-    return () => clearInterval(id);
-  }, [state]);
+    const id = setInterval(refreshFull, 300_000);
+    const onVisible = () => document.visibilityState === "visible" && Date.now() - lastFull.current > 60_000 && refreshFull();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [state, refreshFull]);
 
   // Uitklapoverzicht: wat vroeg hetzelfde apparaat nog meer op rond de laatste bezoeken aan deze site (±30 s), ook verborgen adressen.
   const around = useCallback(
