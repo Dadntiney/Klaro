@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
-import { TV_APPS, classify, isMedia, isQuietHost, payKind } from "@/lib/sites";
+import { FG_RULES, TV_APPS, classify, fgHit, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
 import { allSessions, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -191,7 +191,8 @@ export async function GET(req: Request) {
 
   const groups = new Map<string, Group>();
   const times = new Map<string, number[]>(); // alle tijdstippen per groep, om sessies te maken
-  const mediaTimes = new Map<string, number[]>(); // alleen beeld/geluid-verkeer per groep
+  const mediaTimes = new Map<string, number[]>();
+  const fgTimes = new Map<string, number[]>(); // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
@@ -278,6 +279,7 @@ export async function GET(req: Request) {
       });
       times.set(gkey, [t]);
     }
+    if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && isMedia(host)) {
       (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
       (devMedia.get(dev) ?? devMedia.set(dev, []).get(dev)!).push(t);
@@ -293,6 +295,16 @@ export async function GET(req: Request) {
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
     const sessions = allSessions(all);
+    // Apps met veel achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): tel hoe vaak er echt inhoud laadde, en meet de duur
+    // alleen van de eerste tot de laatste keer inhoud; verversen op de achtergrond rekt de duur dan niet op.
+    if (FG_RULES[g.site]) {
+      const real = [...(fgTimes.get(gkey) ?? []), ...(mediaTimes.get(gkey) ?? [])];
+      for (const x of sessions) {
+        const inX = real.filter((t) => t >= x.s && t <= x.e);
+        x.f = (fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e).length;
+        if (inX.length) { x.s = Math.min(...inX); x.e = Math.max(...inX); }
+      }
+    }
     g.ss = sessions.slice(0, g.main && !g.bg ? 20 : 5);
     g.sc = sessions.length;
     g.rc = sessions.filter((x) => minutes(x) >= 2).length;

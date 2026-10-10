@@ -66,6 +66,24 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
 ];
 
 /** tv-apps: bij kijken meldt een apart adres (conviva) de voortgang; dat beeldverkeer hoort bij deze apps op hetzelfde apparaat. */
+/**
+ * Apps die op de achtergrond veel verversen (meldingen, verbinding openhouden). Alleen het laden van inhoud (foto's, video's,
+ * profielfoto's, stickers) bewijst dat iemand de app echt open heeft; verbindingsadressen (graph, mqtt, gateway, chat) niet.
+ */
+export const FG_RULES: Record<string, RegExp> = {
+  "facebook.com": /^(scontent|video|static|external|lookaside)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$|^(m|web|touch|mbasic)\.facebook\.com$/,
+  "instagram.com": /(^|\.)cdninstagram\.com$|^(scontent|instagram|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/,
+  "whatsapp.com": /^(pps|static|mmg|media[^.]*|web)\.(cdn\.)?whatsapp\.(net|com)$|^graph\.whatsapp\.com$/,
+  "tiktok.com": /tiktokcdn(-[a-z]+)?\.com$|(^|\.)ibyteimg\.com$/,
+  "youtube.com": /(^|\.)googlevideo\.com$|(^|\.)ytimg\.com$/,
+  "snapchat.com": /(^|\.)sc-cdn\.net$/,
+};
+/** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */
+export function fgHit(site: string, host: string): boolean | undefined {
+  const r = FG_RULES[site];
+  return r ? r.test(host) : undefined;
+}
+
 export const TV_APPS = new Set(["ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();

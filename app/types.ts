@@ -41,6 +41,7 @@ export interface Event {
   blocked?: boolean;
   media?: boolean;
   quiet?: boolean;
+  fg?: boolean;
   esp?: boolean;
   mc?: boolean;
   pay?: { kind: string; level: "checkout" | "store" };

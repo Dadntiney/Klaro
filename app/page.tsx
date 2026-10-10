@@ -283,11 +283,11 @@ export default function Home() {
         const e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
-        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), lm: e.media ? Math.max(next[i].lm ?? 0, e.t) : next[i].lm, ss: extendSessions(next[i].ss ?? [], e.t, !!e.media), sc: (next[i].sc ?? 0) + ((next[i].ss ?? []).some((x) => e.t >= x.s - 300_000 && e.t <= x.e + 300_000) ? 0 : 1), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
+        if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), lm: e.media ? Math.max(next[i].lm ?? 0, e.t) : next[i].lm, ss: extendSessions(next[i].ss ?? [], e.t, !!e.media, e.fg), sc: (next[i].sc ?? 0) + ((next[i].ss ?? []).some((x) => e.t >= x.s - 300_000 && e.t <= x.e + 300_000) ? 0 : 1), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t, !!e.media, e.fg)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
         else {
           // Staat de site nog nergens in de lijst, dan is hij voor het eerst gezien.
           const known = next.some((g) => g.site === e.site);
-          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t, n: 1, ...(e.media ? { m: 1 } : {}) }], lm: e.media ? e.t : undefined, sc: 1, rc: 0, mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
+          next.push({ d, dev: e.dev, site: e.site, name: e.name, icon: e.icon, last: e.t, n: 1, bg: e.bg, adult: e.adult, main: e.main, flag: e.flag, ts: [e.t], ss: [{ s: e.t, e: e.t, n: 1, ...(e.media ? { m: 1 } : {}), ...(e.fg !== undefined ? { f: e.fg ? 1 : 0 } : {}) }], lm: e.media ? e.t : undefined, sc: 1, rc: 0, mins: 0, cat: e.cat, bl: e.blocked ? 1 : 0, isNew: !known && !e.bg && !!e.main, flash: Date.now() });
         }
       }
       return next;
@@ -508,9 +508,11 @@ export default function Home() {
     const media = new Map<string, number>();
     const steady = new Map<string, number>();
     for (const g of groups) {
+      // Apps met veel achtergrondverkeer tellen alleen mee als de laatste sessie echt gebruik was (inhoud geladen).
+      if ((g.ss ?? []).some((x) => x.f !== undefined) && !(g.ss?.[0] && isHuman(g.ss[0]))) continue;
       if (g.lm && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
       if (!g.flag && (g.bg || !g.main || isSystemSite(g.site) || (g.bl ?? 0) >= g.n)) continue;
-      if (!MSG.test(g.site)) for (const x of g.ss ?? []) if (x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
+      if (!MSG.test(g.site)) for (const x of g.ss ?? []) if (isHuman(x) && x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
       const a = hits.get(g.dev) ?? [];
       a.push(...(g.ts ?? []));
       hits.set(g.dev, a);

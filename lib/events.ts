@@ -1,6 +1,6 @@
 import { isEspHost, isMailClientHost } from "./mail.ts";
 import { extractHost } from "./parse.ts";
-import { classify, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { classify, fgHit, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { deviceType } from "./names.ts";
 import { categoryOf } from "./categories.ts";
 
@@ -19,6 +19,7 @@ export interface LiveEvent {
   blocked?: boolean; // door NextDNS geblokkeerd
   media?: boolean; // beeld/geluid-verkeer (video of muziek)
   quiet?: boolean; // verbinding openhouden: geen bezoek
+  fg?: boolean; // bij apps met achtergrondverkeer: true = inhoud geladen, false = alleen achtergrond
   esp?: boolean; // mailbedrijf (nieuwsbrief geopend)
   mc?: boolean; // mailprogramma haalt mail op
   pay?: { kind: string; level: "checkout" | "store" }; // betaalmoment
@@ -40,5 +41,5 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
     .join(" ")
     .toLowerCase();
   if (blocked && /porn|adult|sex|dating|erotic/.test(reasons) && !info.flag) info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
-  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: !blocked && isMedia(host), quiet: isQuietHost(host), esp: isEspHost(host) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
+  return { t, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: !blocked && isMedia(host), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), esp: isEspHost(host) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
 }

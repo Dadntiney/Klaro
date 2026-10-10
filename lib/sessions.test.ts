@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clusterSessions, extendSessions, minutes, totalMinutes } from "./sessions.ts";
+import { clusterSessions, extendSessions, isHuman, minutes, totalMinutes } from "./sessions.ts";
 
 const m = (x: number) => 1_700_000_000_000 + x * 60_000; // vaste starttijd (0 zou "geen tijd" betekenen)
 
@@ -42,4 +42,19 @@ test("isHuman: beeld/geluid (video, muziek) telt als gebruik, ook met weinig ver
   const { isHuman } = await import("./sessions.ts");
   assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 2 }), true);
   assert.equal(isHuman({ s: 1, e: 2, n: 3, m: 1 }), false);
+});
+
+test("apps met achtergrondverkeer: alleen echte inhoud telt, en alleen die bepaalt de duur", () => {
+  const t = 1_000_000_000;
+  let ss: import("./sessions.ts").Session[] = [];
+  ss = extendSessions(ss, t, false, false); // Facebook ververst op de achtergrond
+  ss = extendSessions(ss, t + 1_000, false, false);
+  assert.equal(isHuman(ss[0]), false);
+  ss = extendSessions(ss, t + 60_000, true, true); // foto's laden: app is open
+  ss = extendSessions(ss, t + 180_000, true, true);
+  assert.equal(isHuman(ss[0]), true);
+  assert.equal(ss[0].s, t + 60_000); // gebruik begint bij de eerste inhoud
+  ss = extendSessions(ss, t + 400_000, false, false); // daarna weer achtergrond: rekt de duur niet op
+  assert.equal(ss[0].e, t + 180_000);
+  assert.equal(minutes(ss[0]), 2);
 });
