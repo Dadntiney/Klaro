@@ -38,7 +38,7 @@ export async function GET(req: Request) {
   const deadline = Date.now() + 25_000;
   for (let page = 0; page < 5; page++) {
     if (Date.now() > deadline) { capped = true; break; }
-    const url = `${base}?from=${Math.round(from)}&to=${Math.round(to)}&limit=1000${dev ? `&device=${encodeURIComponent(dev)}` : ""}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+    const url = `${base}?from=${Math.round(from)}&to=${Math.round(to)}&limit=1000${dev && !dev.startsWith("anon-") ? `&device=${encodeURIComponent(dev)}` : ""}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     let res: Response;
     try {
       res = await fetch(url, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", signal: AbortSignal.timeout(Math.max(1000, Math.min(10_000, deadline - Date.now()))) });

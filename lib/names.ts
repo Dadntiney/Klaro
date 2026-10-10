@@ -46,5 +46,5 @@ export function labelDevices(devices: { id: string; type: string }[]): Record<st
 export function anonId(name: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 0x01000193) >>> 0;
-  return "n" + h.toString(36);
+  return "anon-" + h.toString(36);
 }

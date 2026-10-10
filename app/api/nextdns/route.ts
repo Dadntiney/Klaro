@@ -100,7 +100,8 @@ const TODAY_HEADER = ["timestamp", "domain", "status", "reasons", "destination_c
 /** Oud naar nieuw, net als de volledige download: dan voegt het samennemen van dubbele opvragingen precies hetzelfde samen. */
 function oldestFirst(rows: string[][]): string[][] {
   const [header, ...body] = rows;
-  return [header, ...body.map((r) => [Date.parse(r[0]) || 0, r] as const).sort((a, b) => a[0] - b[0]).map((x) => x[1])];
+  // NextDNS geeft nieuwste eerst: omdraaien vóór het sorteren, zodat ook gelijke tijden in download-volgorde staan.
+  return [header, ...body.reverse().map((r) => [Date.parse(r[0]) || 0, r] as const).sort((a, b) => a[0] - b[0]).map((x) => x[1])];
 }
 
 /** Alleen de logs van vandaag via de gewone log-endpoint (pagina's van 1000). Veel sneller dan de volledige download, maar geeft geen geschiedenis. */
@@ -121,6 +122,7 @@ async function fetchToday(profile: string, key: string, hours = 0): Promise<{ ro
     }
     if (!res.ok) return { error: nextdnsError(res.status, await res.text().catch(() => "")), status: 502 };
     const json = (await res.json().catch(() => null)) as { data?: Record<string, unknown>[]; meta?: { pagination?: { cursor?: string | null } } } | null;
+    if (!json) break; // antwoord half binnen of onleesbaar: niet doen alsof vandaag compleet is
     for (const e of json?.data ?? []) {
       const dev = (e.device ?? {}) as { id?: string; name?: string; model?: string };
       const reasons = (Array.isArray(e.reasons) ? e.reasons : []).map((r) => `${(r as { id?: string }).id ?? ""} ${(r as { name?: string }).name ?? ""}`).join(" ");
@@ -140,6 +142,8 @@ async function fetchToday(profile: string, key: string, hours = 0): Promise<{ ro
 let inflight: Promise<Response> | null = null;
 
 export async function GET(req: Request) {
+  // Eerst de instellingen controleren, ook vóór de bewaarde gegevens: zonder wachtwoord nooit logs tonen.
+  if (!process.env.NEXTDNS_API_KEY || !process.env.NEXTDNS_PROFILE_ID || !process.env.APP_PASSWORD) return build(req);
   if (new URL(req.url).searchParams.get("scope") === "today") return build(req);
   if (cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
   if (!inflight) inflight = build(req).finally(() => { inflight = null; });

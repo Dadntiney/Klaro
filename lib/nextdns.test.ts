@@ -34,6 +34,7 @@ test("thuisnetwerk (IPv6): verkort en voluit geschreven adressen geven hetzelfde
   assert.equal(netKey("2a02:a46:0:0:aaaa:bbbb:cccc:dddd"), "2a02:a46:0:0");
   assert.equal(netKey("2a02:a46:12:3400::1"), netKey("2a02:a46:0012:3400:9:8:7:6"));
   assert.equal(netKey("84.1.2.3"), "84.1.2.3");
+  assert.notEqual(netKey("::ffff:1.2.3.4"), netKey("::ffff:5.6.7.8"));
 });
 
 test("wachtwoord vergelijken", () => {
@@ -47,4 +48,5 @@ test("apparaat zonder id: vaste anonieme sleutel, nooit de naam zelf", () => {
   assert.equal(anonId("iPhone van Jan"), anonId("iPhone van Jan"));
   assert.notEqual(anonId("iPhone van Jan"), anonId("iPhone van Piet"));
   assert.doesNotMatch(anonId("iPhone van Jan"), /Jan/);
+  assert.match(anonId("x"), /^anon-/);
 });

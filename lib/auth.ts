@@ -1,7 +1,7 @@
 /**
  * Inloggen met een cookie: één keer het wachtwoord invullen, daarna blijft het apparaat 180 dagen ingelogd.
  * De cookie bevat geen wachtwoord, alleen een handtekening die ervan is afgeleid: wordt APP_PASSWORD in Vercel veranderd,
- * dan zijn alle apparaten meteen uitgelogd. Werkt zowel in de middleware (Edge) als in een route (Node).
+ * dan zijn alle apparaten meteen uitgelogd. Werkt zowel in de proxy (afscherming) als in een route.
  */
 export const AUTH_COOKIE = "klaro_auth";
 export const AUTH_DAYS = 180;

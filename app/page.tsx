@@ -184,10 +184,21 @@ export default function Home() {
     // Nog eerder: alleen het laatste anderhalf uur (één pagina bij NextDNS, ~1 sec.), zodat bovenaan meteen iets staat.
     let fullDone = false;
     let todayShown = false;
+    let shownAny = false; // er staat al iets (laatste uur of heel vandaag)
+    let todayDone = false; // vandaag is binnen of mislukt
+    let fullErr = ""; // laden van alles mislukt (melding pas tonen als vandaag ook klaar is)
+    const settle = () => {
+      if (!fullErr || !todayDone) return;
+      if (shownAny) { setHistErr(true); return; } // vandaag staat er; alleen de oudere dagen lukken niet
+      setError(fullErr);
+      setState("error");
+      setFull(true);
+    };
     fetch("/api/nextdns?scope=today&hours=1.5")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || fullDone || todayShown) return;
+        shownAny = true;
         apply(data, false);
       })
       .catch(() => {});
@@ -195,10 +206,11 @@ export default function Home() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || fullDone) return;
-        todayShown = true;
+        todayShown = shownAny = true;
         apply(data, false);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { todayDone = true; settle(); });
     fetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
@@ -207,10 +219,8 @@ export default function Home() {
         apply(data, true);
       })
       .catch((e: Error) => {
-        if (todayShown) { setHistErr(true); return; } // vandaag staat er al; alleen de oudere dagen lukken niet
-        setError(e.message);
-        setState("error");
-        setFull(true);
+        fullErr = e.message || "Ophalen mislukt";
+        settle();
       });
   }, []);
 
@@ -429,7 +439,8 @@ export default function Home() {
       if (!res.ok) return;
       lastFull.current = Date.now();
       setInsights(data.insights ?? null);
-      if (data.deviceMap) deviceMap.current = data.deviceMap; // nieuwe apparaten van na het laden ook goed benoemen
+      // Nieuwe apparaten van na het laden ook benoemen; bestaande namen blijven gelijk (anders wisselen regels van apparaat).
+      if (data.deviceMap) deviceMap.current = { ...data.deviceMap, ...deviceMap.current };
       setDevices((prev) =>
         prev.map((p) => {
           const f = (data.devices as Device[]).find((x) => x.name === p.name);
@@ -974,7 +985,7 @@ export default function Home() {
             );
           })}
           {/* Alleen het laatste uur staat er: de rest van vandaag laadt nog (zelfde glans als het skelet). */}
-          {(cut > 0 || (days.length === 0 && !full)) && (
+          {((cut > 0 && !histErr) || (days.length === 0 && !full && !histErr)) && (
             <div className="list skel-list skel-more" aria-label="Eerder vandaag laden">
               {[58, 44, 66, 50].map((w, i) => (
                 <div key={i} className="item skel-item">
@@ -991,7 +1002,7 @@ export default function Home() {
               {[150, 190, 170].map((w, i) => <div key={i} className="skel-day"><span className="sk" style={{ width: w, height: 14 }} /><span className="sk" style={{ width: 14, height: 14 }} /></div>)}
             </div>
           )}
-          {histErr && <p className="muted skel-err">Oudere dagen laden lukt nu even niet; vandaag is wel compleet.</p>}
+          {histErr && <p className="muted skel-err">{cut > 0 ? "Eerder vandaag en oudere dagen laden lukt nu even niet." : "Oudere dagen laden lukt nu even niet; vandaag is wel compleet."}</p>}
         </>
       )}
       {open && (

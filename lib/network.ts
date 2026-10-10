@@ -14,7 +14,7 @@ export interface AwayInfo {
 
 /** IPv6: het netwerkdeel (eerste 64 bits, dat wisselt niet mee met de privacy-adressen); IPv4: het hele adres. */
 export function netKey(ip: string): string {
-  if (!ip.includes(":")) return ip;
+  if (!ip.includes(":") || ip.includes(".")) return ip; // IPv4 (ook ::ffff:1.2.3.4): het hele adres
   // Verkorte schrijfwijze (::) eerst uitschrijven, anders valt een stuk van het apparaatdeel in de sleutel.
   const [head, tail] = ip.split("::");
   const h = head ? head.split(":") : [];
