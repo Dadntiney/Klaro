@@ -241,3 +241,9 @@ test("Google: zoekpagina telt, Foto's/Gmail/inloggen op de achtergrond niet", ()
   assert.equal(fgHit("google.com", "encrypted-tbn2.gstatic.com"), true);
   assert.equal(fgHit("google.com", "notifications-pa.googleapis.com"), false);
 });
+
+test("keurmerken in webwinkels zijn geen bezoek; nette namen", () => {
+  assert.equal(classify("dashboard.webwinkelkeur.nl").bg, true);
+  assert.equal(classify("widget.trustpilot.com").bg, true);
+  assert.equal(classify("www.google.nl").name, "Google");
+});

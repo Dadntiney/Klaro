@@ -293,3 +293,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 .hourmark::after { content:""; flex:1; height:1px; background:var(--line); }
 .hourstart:first-child .hourmark { display:none; }
 [data-rk]:has(+ .hourstart) > .item { border-bottom-color:transparent; }
+
+/* Nog bezig: groen, net als de chip van een apparaat dat in gebruik is. */
+.time .nowtag { color:#16a34a; }
+@media (prefers-color-scheme: dark) { .time .nowtag { color:#4ade80; } }

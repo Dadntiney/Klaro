@@ -1,3 +1,4 @@
+import { NICE_NAME } from "./system.ts";
 import { baseDomain } from "./parse.ts";
 import { inAdultList, inDatingList } from "./adultlist.ts";
 
@@ -93,7 +94,7 @@ const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
-const BACKGROUND = new Set(["stripe.com", 
+const BACKGROUND = new Set(["stripe.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
   "googletagservices.com", "doubleclick.net", "googlesyndication.com", "googleadservices.com", "gvt1.com", "gvt2.com",
   "app-measurement.com", "crashlytics.com", "firebaseio.com", "firebaseinstallations.googleapis.com",
@@ -291,6 +292,8 @@ const BRAND_CANON: Record<string, string> = {
   "decathlon.net": "decathlon.nl", "decathlon.com": "decathlon.nl",
   "s-bol.com": "bol.com", "bol.nl": "bol.com",
 };
+const niceName = (site: string) => NICE_NAME[site] ?? site;
+
 function canonSite(base: string): string {
   if (/^google\.[a-z.]+$/.test(base)) return "google.com";
   if (/^amazon\.[a-z.]+$/.test(base)) return "amazon.com";
@@ -306,7 +309,7 @@ function classifyUncached(host: string): SiteInfo {
     if (r.flag) return r;
   }
   // Plaatjes in Google-zoekresultaten horen bij de zoekopdracht (Google), niet bij gstatic (systeem).
-  if (/^encrypted-tbn\d\.gstatic\.com$/.test(host)) return { site: "google.com", name: "google.com", icon: "google.com", bg: false, adult: false, main: false };
+  if (/^encrypted-tbn\d\.gstatic\.com$/.test(host)) return { site: "google.com", name: "Google", icon: "google.com", bg: false, adult: false, main: false };
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(host.replace(/^www\./, "")) ?? APP_BY_DOMAIN.get(base); // ook een volledig adres (zoals gofiev.vercel.app) kan een app zijn
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
@@ -324,7 +327,7 @@ function classifyUncached(host: string): SiteInfo {
     BACKGROUND_KEYWORDS.some((k) => host.includes(k)) ||
     BACKGROUND.has(host.split(".").slice(-1)[0]));
   const flag = adult ? "18+" : dating ? "Dating" : undefined;
-  return { site: canonSite(base), name: canonSite(base), icon: canonSite(base), bg, adult, main: !!flag || isMainHost(host, base), flag };
+  return { site: canonSite(base), name: niceName(canonSite(base)), icon: canonSite(base), bg, adult, main: !!flag || isMainHost(host, base), flag };
 }
 
 /** Betaalmomenten. "checkout" is betrouwbaar (iDEAL, afrekenpagina, PayPal); "store" (App Store) kan ook achtergrondverkeer zijn. */

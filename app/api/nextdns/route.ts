@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
+import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
@@ -320,7 +321,7 @@ export async function GET(req: Request) {
       for (const x of sessions) x.m = Math.max(x.m ?? 0, dm.filter((t) => t >= x.s - 120_000 && t <= x.e + 120_000).length);
     }
     // Korte "bezoeken" tegelijk met het openen van een nieuwsbrief zijn plaatjes uit die mail, geen bezoek (rood blijft altijd zichtbaar).
-    if (!g.flag && g.main && !g.bg && g.name === g.site) { // herkende apps (eigen naam) komen nooit uit een mail
+    if (!g.flag && g.main && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
       const esp = devEsp.get(g.dev) ?? [];
       if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [])) x.ml = 1;
     }

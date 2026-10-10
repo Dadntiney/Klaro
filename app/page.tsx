@@ -2,7 +2,7 @@
 
 import { extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
-import { isSystemSite } from "@/lib/system";
+import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -506,7 +506,7 @@ export default function Home() {
     const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
     for (const g of groups) {
       // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
-      if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && g.name === g.site) || (g.bl ?? 0) >= g.n)) continue;
+      if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
       const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
       // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
       // Op een tv telt beeld pas als er langer dan een minuut gekeken wordt (geen voorvertoning op het beginscherm).
@@ -589,7 +589,7 @@ export default function Home() {
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
-    const human = (g: Group, x: Session) => isHuman(x) && !tvBlip(g.dev, x) && !(g.name === g.site && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const human = (g: Group, x: Session) => isHuman(x) && !tvBlip(g.dev, x) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     for (const g of groups) {
@@ -821,10 +821,13 @@ export default function Home() {
                         <div className="time">
                           {(() => {
                             if (!t) return <span className="tcol">–</span>;
-                            const age = Math.floor((clock - t) / 60_000);
-                            if (age < 1) return <span className="tcol reltime" title={timeFmt.format(t)}>nu</span>;
-                            if (age < 30) return <span className="tcol reltime" title={timeFmt.format(t)}>{age} min geleden</span>;
-                            return <span className="tcol">{timeFmt.format(t)}</span>;
+                            // Recent: gerekend vanaf het einde (laatste activiteit). Nog bezig = "nu". Ouder: de begintijd.
+                            const end = Math.max(t, ...rss.map((x) => x.e));
+                            const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
+                            const age = Math.floor((clock - end) / 60_000);
+                            if (age < 3) return <span className="tcol reltime nowtag" title={span}>nu</span>;
+                            if (age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
+                            return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;
                           })()}
                         </div>
                       </div>

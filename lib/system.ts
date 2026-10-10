@@ -9,3 +9,11 @@ const BIG = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|whatsapp|
 export function isSystemSite(site: string): boolean {
   return SYSTEM_BASES.has(site) || BIG.test(site);
 }
+
+/** Nette weergavenaam voor een paar grote diensten die als site (niet als app) binnenkomen. */
+export const NICE_NAME: Record<string, string> = { "google.com": "Google", "amazon.com": "Amazon" };
+
+/** Gewone site (geen herkende app met een eigen naam, zoals Facebook of Netflix)? */
+export function isPlainSite(g: { site: string; name: string }): boolean {
+  return g.name === g.site || g.name === NICE_NAME[g.site];
+}
