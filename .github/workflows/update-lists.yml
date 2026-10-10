@@ -1,0 +1,32 @@
+name: Lijsten bijwerken
+
+# Elke maandagochtend de 18+- en datinglijsten bijwerken. Alleen als alle tests slagen, gaat de nieuwe versie naar main
+# (en dus live via Vercel).
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: node scripts/update-lists.mjs
+      - run: npm test
+      - run: npx tsc --noEmit
+      - name: Opslaan als er iets veranderd is
+        run: |
+          if git diff --quiet data/; then echo "Geen nieuwe domeinen."; exit 0; fi
+          git config user.name "lijsten-bot"
+          git config user.email "lijsten-bot@users.noreply.github.com"
+          git add data/
+          git commit -m "Lijsten bijgewerkt ($(date -u +%Y-%m-%d))"
+          git push

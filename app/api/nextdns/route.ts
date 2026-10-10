@@ -3,7 +3,7 @@ import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { deviceType, labelDevices } from "@/lib/names";
-import { allSessions, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { allSessions, isHuman, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
@@ -305,7 +305,6 @@ export async function GET(req: Request) {
         if (inX.length) { x.s = Math.min(...inX); x.e = Math.max(...inX); }
       }
     }
-    g.ss = sessions.slice(0, g.main && !g.bg ? 20 : 5);
     g.sc = sessions.length;
     g.rc = sessions.filter((x) => minutes(x) >= 2).length;
     g.mins = sessions.reduce((n, x) => n + minutes(x), 0);
@@ -325,6 +324,8 @@ export async function GET(req: Request) {
       const esp = devEsp.get(g.dev) ?? [];
       if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [])) x.ml = 1;
     }
+    // (Na het bepalen van beeld/geluid, mail en inhoud.) Zichtbare sites: de laatste 20 sessies, plus alle oudere sessies die echt gebruik waren (op drukke dagen meer dan 20).
+    g.ss = g.main && !g.bg ? sessions.filter((x, i) => i < 20 || isHuman(x) || !!g.flag).slice(0, 120) : sessions.slice(0, 5);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
     // Een site waarvan alle verzoeken door NextDNS zijn geblokkeerd, is geen "nieuwe site" die bezocht is.
     g.isNew = meaningful && g.main && !g.bg && g.bl < g.n && (siteFirst.get(g.site) ?? 0) >= newCutoff;
