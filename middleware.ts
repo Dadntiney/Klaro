@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 export function middleware(req: NextRequest) {
   const password = process.env.APP_PASSWORD;
   if (!password) return NextResponse.next();
+  // De maandelijkse controle heeft een eigen sleutel (AUDIT_TOKEN); die controleert de route zelf.
+  if (req.nextUrl.pathname === "/api/audit") return NextResponse.next();
   const header = req.headers.get("authorization") ?? "";
   if (header.startsWith("Basic ")) {
     try {
