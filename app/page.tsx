@@ -761,10 +761,11 @@ export default function Home() {
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
                   // Subtiele uurmarkering waar het uur wisselt.
                   const hr = hourOf(t);
-                  // Tijdgrens: tussen een regel van ná het hele uur (erboven) en een van daarvoor (eronder) staat het uur van de grens,
-                  // bijv. "17:00" tussen 17:05 en 16:41. Bovenaan de dag staat geen streep.
+                  // Tijdgrens tussen twee uren, bijv. "17:00" tussen 17:05 en 16:41. Bovenaan de dag staat geen streep.
                   const hourStart = !compact && ri > 0 && hourOf(rows[ri - 1].t) !== hr && dayKeyFmt.format(rows[ri - 1].t) === dayKeyFmt.format(t);
-                  const boundary = ri > 0 ? hourOf(rows[ri - 1].t) : hr;
+                  // Het label is het einde van het uur van de regels eronder: boven 21:57 en 21:21 staat "22:00" (daaronder 21:00–22:00),
+                  // ook als er in het uur daarna niets gebeurde.
+                  const boundary = (hr + 1) % 24;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
