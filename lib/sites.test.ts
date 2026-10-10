@@ -247,3 +247,9 @@ test("keurmerken in webwinkels zijn geen bezoek; nette namen", () => {
   assert.equal(classify("widget.trustpilot.com").bg, true);
   assert.equal(classify("www.google.nl").name, "Google");
 });
+
+test("F1 TV: het videoadres hoort bij F1 TV en telt als kijken", () => {
+  assert.equal(classify("d8penbt6jsl3i.cloudfront.net").name, "F1 TV");
+  assert.equal(isMedia("d8penbt6jsl3i.cloudfront.net"), true);
+  assert.equal(isMedia("ott-video-cf.formula1.com"), true);
+});

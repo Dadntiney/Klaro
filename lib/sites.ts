@@ -47,7 +47,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
   { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },
   { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl"] },
-  { name: "F1 TV", icon: "formula1.com", domains: ["formula1.com", "watchliveformula1.com", "f1tv.com"] },
+  { name: "F1 TV", icon: "formula1.com", domains: ["formula1.com", "watchliveformula1.com", "f1tv.com", "d8penbt6jsl3i.cloudfront.net"] }, // laatste: videoserver van F1 TV
   { name: "DAZN", icon: "dazn.com", domains: ["dazn.com", "indazn.com", "daznservices.com"] },
   { name: "NLZIET", icon: "nlziet.nl", domains: ["nlziet.nl"] },
   { name: "discovery+", icon: "discoveryplus.com", domains: ["discoveryplus.com", "discoveryplus.nl", "eurosport.com", "eurosport.nl"] },
@@ -343,6 +343,7 @@ export function payKind(host: string): { kind: string; level: "checkout" | "stor
 const MEDIA = [
   /(^|\.)googlevideo\.com$/, /(^|\.)nflxvideo\.net$/, /(^|\.)ttvnw\.net$/, /tiktokcdn(-[a-z]+)?\.com$/, /(^|\.)cdninstagram\.com$/,
   /^(scontent|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/, /(^|\.)dssott\.com$/, /playback\.edge\.bamgrid\.com$/, /(^|\.)audio-[^.]*\.(spotifycdn\.com|scdn\.co|akamaized\.net)$/, /(^|\.)scdn\.co$/,
+  /^ott-video[^.]*\.formula1\.com$/, /^d8penbt6jsl3i\.cloudfront\.net$/, // F1 TV: video van de race
   /(^|\.)conviva\.com$/, /(^|\.)(aiv-cdn|pv-cdn)\.net$/, // conviva meldt de voortgang van video aan de aanbieder: er wordt gekeken
 ];
 export function isMedia(host: string): boolean {
