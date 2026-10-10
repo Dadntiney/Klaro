@@ -97,7 +97,6 @@ export default function Home() {
   const loadStart = useRef(Date.now());
   const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
   const [showOther, setShowOther] = useState<Set<string>>(new Set());
-  const [compactDays, setCompactDays] = useState<Set<string>>(new Set()); // dagen in compacte weergave (per site opgeteld)
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
   const [goDay, setGoDay] = useState("");
   const [goTime, setGoTime] = useState("10:00");
@@ -604,7 +603,7 @@ export default function Home() {
       if ((g.bl ?? 0) >= g.n && !g.flag) continue; // alles geblokkeerd door NextDNS: niet bezocht
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
-    // Welke sessies van een site tellen als echt gebruik: één plek, zodat tijdlijn, compact en dagtotaal precies hetzelfde laten zien.
+    // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
     const shown = (g: Group): Session[] => {
       const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
       // Gemarkeerde en verdachte regels blijven altijd staan.
@@ -640,10 +639,6 @@ export default function Home() {
               })
               .sort((a, b) => b.t - a.t)
           ),
-          // Compact: per site en apparaat één regel, met alleen de echte bezoeken opgeteld.
-          crows: per
-            .map(({ g, ss }) => ({ g, t: Math.max(...ss.map((x) => x.s)), ss, compact: true, first: !!g.isNew, newest: true }))
-            .sort((a, b) => b.t - a.t),
         };
       })
       .filter((d) => d.rows.length > 0);
@@ -659,7 +654,7 @@ export default function Home() {
           <div className="skel-chips">
             {[44, 84, 96, 70, 92].map((w, i) => <span key={i} className="sk sk-chip" style={{ width: w }} />)}
           </div>
-          <div className="skel-head"><span className="sk" style={{ width: 84, height: 14 }} /><span className="sk" style={{ width: 92, height: 26, borderRadius: 99 }} /></div>
+          <div className="skel-head"><span className="sk" style={{ width: 84, height: 14 }} /><span className="sk" style={{ width: 30, height: 24, borderRadius: 99 }} /></div>
           <div className="list skel-list">
             {[62, 48, 70, 55, 66, 44, 58, 52].map((w, i) => (
               <div key={i} className="item skel-item">
@@ -707,9 +702,8 @@ export default function Home() {
           )}
 
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, mins: dm, rows: trows, crows }, di) => {
-            const isCompact = compactDays.has(d);
-            const rows = isCompact ? crows : trows;
+          {days.map(({ d, list, mins: dm, rows: trows }, di) => {
+            const rows = trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
             const isDayOpen = recent || openDays.has(d);
@@ -722,19 +716,6 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {dayLabel(d)}{!recent && <span className="muted"> · {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>}
-                {isDayOpen && (
-                  <button
-                    className={"dview" + (isCompact ? " on" : "")}
-                    onClick={(e) => { e.stopPropagation(); setCompactDays((prev) => { const n = new Set(prev); if (n.has(d)) n.delete(d); else n.add(d); return n; }); }}
-                    aria-pressed={isCompact}
-                    title={isCompact ? "Terug naar de tijdlijn" : "Per site optellen"}
-                  >
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                      {isCompact ? <path d="M4 6h16M4 12h16M4 18h16" /> : <path d="M4 7h16M7 12h10M10 17h4" />}
-                    </svg>
-                    {isCompact ? "Tijdlijn" : "Compact"}
-                  </button>
-                )}
                 {di === 0 && (
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}
@@ -766,7 +747,6 @@ export default function Home() {
                 if (!best) return;
                 const rk = best.g.d + best.g.site + best.g.dev + ":" + best.t;
                 setOpenDays((prev) => new Set(prev).add(day.d));
-                setCompactDays((prev) => { const n = new Set(prev); n.delete(day.d); return n; }); // springen werkt op de tijdlijn
                 setGotoKey(rk);
                 setTimeout(() => {
                   document.querySelector(`[data-rk="${CSS.escape(rk)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -796,7 +776,7 @@ export default function Home() {
                   return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
                   // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
-                  // Subtiele uurmarkering waar het uur wisselt (alleen in de tijdlijn, niet bij Compact).
+                  // Subtiele uurmarkering waar het uur wisselt.
                   const hr = hourOf(t);
                   const hourStart = !compact && (ri === 0 || hourOf(rows[ri - 1].t) !== hr || dayKeyFmt.format(rows[ri - 1].t) !== dayKeyFmt.format(t));
                   const key = g.d + g.site + g.dev;
