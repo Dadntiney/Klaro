@@ -577,7 +577,17 @@ export default function Home() {
     const shown = (g: Group): Session[] => {
       const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
       // Gemarkeerde en verdachte regels blijven altijd staan.
-      return all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
+      const ss = all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
+      if (!isTv(g.dev) || ss.length < 2) return ss;
+      // Op een tv is kijken één geheel: stukjes van dezelfde app met minder dan 15 minuten ertussen samenvoegen
+      // (tijdens het kijken vraagt de tv maar af en toe iets op, waardoor er anders losse regels ontstaan).
+      const out: Session[] = [];
+      for (const x of [...ss].sort((a, b) => a.s - b.s)) {
+        const last = out[out.length - 1];
+        if (last && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0) };
+        else out.push({ ...x });
+      }
+      return out.reverse();
     };
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
