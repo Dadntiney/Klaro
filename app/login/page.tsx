@@ -1,5 +1,6 @@
 /** Inlogscherm: één keer per apparaat, daarna 180 dagen ingelogd. */
-export default function Login({ searchParams }: { searchParams: { fout?: string } }) {
+export default async function Login(props: { searchParams: Promise<{ fout?: string }> }) {
+  const searchParams = await props.searchParams;
   return (
     <main className="login">
       <form className="login-card" method="post" action="/api/login">

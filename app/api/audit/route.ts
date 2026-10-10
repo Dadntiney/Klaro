@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { baseDomain, extractHost, parseCsv } from "@/lib/parse";
 import { classify, fgHit } from "@/lib/sites";
 import { isEspHost, isMailClientHost } from "@/lib/mail";
-import { deviceType, labelDevices } from "@/lib/names";
+import { anonId, deviceType, labelDevices } from "@/lib/names";
 import { isSystemSite } from "@/lib/system";
 import { GET as overview } from "../nextdns/route";
+import { sameText } from "@/lib/auth";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const token = process.env.AUDIT_TOKEN;
-  if (!token || token.length < 24 || req.headers.get("x-audit-token") !== token) {
+  if (!token || token.length < 24 || !sameText(req.headers.get("x-audit-token") ?? "", token)) {
     return NextResponse.json({ error: "Geen toegang." }, { status: 401 });
   }
   const key = process.env.NEXTDNS_API_KEY;
@@ -33,12 +34,16 @@ export async function GET(req: Request) {
     headers: { "X-Api-Key": key.trim() },
     redirect: "follow",
     cache: "no-store",
+    signal: AbortSignal.timeout(50_000),
   }).catch(() => null);
   if (!res || !res.ok) return NextResponse.json({ error: `NextDNS gaf fout ${res?.status ?? 0}.` }, { status: 502 });
-  const [header, ...body] = parseCsv(await res.text());
+  const rows = parseCsv(await res.text().catch(() => ""));
+  if (rows.length < 2) return NextResponse.json({ error: "Geen logs ontvangen van NextDNS." }, { status: 502 });
+  const [header, ...body] = rows;
   const col = (n: string) => header.findIndex((h) => h.trim().toLowerCase() === n);
+  if (col("domain") < 0) return NextResponse.json({ error: "Geen domeinkolom in de NextDNS-logs gevonden." }, { status: 502 });
   const hostCol = col("domain"), tCol = col("timestamp"), idCol = col("device_id"), nameCol = col("device_name"), modelCol = col("device_model"), statusCol = col("status");
-  const idOf = (r: string[]) => (idCol >= 0 && r[idCol]?.trim()) || (nameCol >= 0 && r[nameCol]?.trim()) || "onbekend";
+  const idOf = (r: string[]) => (idCol >= 0 && r[idCol]?.trim()) || (nameCol >= 0 && r[nameCol]?.trim() && anonId(r[nameCol].trim())) || "onbekend";
   const found = new Map<string, string>();
   for (const r of body) if (!found.has(idOf(r))) found.set(idOf(r), deviceType((nameCol >= 0 && r[nameCol]) || "", (modelCol >= 0 && r[modelCol]) || ""));
   const devName = labelDevices([...found].map(([id, type]) => ({ id, type })));

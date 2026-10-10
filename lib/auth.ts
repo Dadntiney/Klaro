@@ -15,8 +15,9 @@ export async function authToken(password: string): Promise<string> {
 
 /** Vergelijk zonder vroegtijdig te stoppen (geen hint via de tijd die het kost). */
 export function sameText(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let d = 0;
-  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // Altijd de hele lengte doorlopen: ook de lengte van het wachtwoord verraadt de tijd niet.
+  const n = Math.max(a.length, b.length);
+  let d = a.length ^ b.length;
+  for (let i = 0; i < n; i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   return d === 0;
 }

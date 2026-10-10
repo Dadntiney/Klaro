@@ -3,12 +3,13 @@ import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
 import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
-import { deviceType, labelDevices } from "@/lib/names";
+import { anonId, deviceType, labelDevices } from "@/lib/names";
 import { MOMENT, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
+import { nextdnsError, windowStart } from "@/lib/nextdns";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -96,43 +97,56 @@ function nearestIdx(sorted: number[], t: number): number {
 
 const TODAY_HEADER = ["timestamp", "domain", "status", "reasons", "destination_country", "client_ip", "device_id", "device_name", "device_model"];
 
-/** Begin van vandaag (Nederlandse tijd), of met `hours` alleen het laatste stuk ervan (om meteen iets te kunnen tonen). */
-function windowStart(hours: number): number {
-  const parts = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Europe/Amsterdam" }).formatToParts(Date.now());
-  const g = (x: string) => parseInt(parts.find((p) => p.type === x)!.value, 10) % 24;
-  const dayStart = Date.now() - (g("hour") * 3600 + g("minute") * 60 + g("second")) * 1000;
-  return hours > 0 ? Math.max(dayStart, Date.now() - hours * 3_600_000) : dayStart;
+/** Oud naar nieuw, net als de volledige download: dan voegt het samennemen van dubbele opvragingen precies hetzelfde samen. */
+function oldestFirst(rows: string[][]): string[][] {
+  const [header, ...body] = rows;
+  return [header, ...body.map((r) => [Date.parse(r[0]) || 0, r] as const).sort((a, b) => a[0] - b[0]).map((x) => x[1])];
 }
 
 /** Alleen de logs van vandaag via de gewone log-endpoint (pagina's van 1000). Veel sneller dan de volledige download, maar geeft geen geschiedenis. */
-async function fetchToday(profile: string, key: string, hours = 0): Promise<string[][] | { error: string; status: number }> {
+async function fetchToday(profile: string, key: string, hours = 0): Promise<{ rows: string[][]; cutAt?: number } | { error: string; status: number }> {
   const from = windowStart(hours);
   const base = `https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs`;
   const out: string[][] = [TODAY_HEADER];
   let cursor = "";
   const deadline = Date.now() + 40_000;
+  let oldest = Infinity;
   for (let page = 0; page < 40 && Date.now() < deadline; page++) {
     let res: Response;
     try {
-      res = await fetch(`${base}?from=${from}&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, { headers: { "X-Api-Key": key.trim() }, cache: "no-store" });
+      // Elke pagina hooguit 15 sec.: één hangend antwoord mag het geheel niet laten vastlopen.
+      res = await fetch(`${base}?from=${from}&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", signal: AbortSignal.timeout(Math.max(1000, Math.min(15_000, deadline - Date.now()))) });
     } catch {
       return { error: "NextDNS is niet bereikbaar.", status: 502 };
     }
-    if (!res.ok) return { error: `NextDNS gaf fout ${res.status}. ${(await res.text().catch(() => "")).slice(0, 200)}`.trim(), status: 502 };
+    if (!res.ok) return { error: nextdnsError(res.status, await res.text().catch(() => "")), status: 502 };
     const json = (await res.json().catch(() => null)) as { data?: Record<string, unknown>[]; meta?: { pagination?: { cursor?: string | null } } } | null;
     for (const e of json?.data ?? []) {
       const dev = (e.device ?? {}) as { id?: string; name?: string; model?: string };
       const reasons = (Array.isArray(e.reasons) ? e.reasons : []).map((r) => `${(r as { id?: string }).id ?? ""} ${(r as { name?: string }).name ?? ""}`).join(" ");
       const dest = (Array.isArray(e.destinations) ? e.destinations : []).find((d) => (d as { type?: string }).type === "country") as { code?: string } | undefined;
+      const t = Date.parse(String(e.timestamp ?? ""));
+      if (t) oldest = Math.min(oldest, t);
       out.push([String(e.timestamp ?? ""), String(e.domain ?? ""), String(e.status ?? ""), reasons, dest?.code ?? "", String(e.clientIp ?? ""), dev.id ?? "", dev.name ?? "", dev.model ?? ""]);
     }
     cursor = json?.meta?.pagination?.cursor ?? "";
-    if (!cursor) break;
+    if (!cursor) return { rows: oldestFirst(out) };
   }
-  return out;
+  // Niet alles binnen (heel drukke dag of NextDNS traag): alleen vanaf het oudste ontvangen moment klopt het.
+  return { rows: oldestFirst(out), cutAt: Number.isFinite(oldest) ? oldest : Date.now() };
 }
 
+// Komen er tegelijk meer verzoeken voor alles binnen (meerdere telefoons, of de maandelijkse controle), dan één keer ophalen.
+let inflight: Promise<Response> | null = null;
+
 export async function GET(req: Request) {
+  if (new URL(req.url).searchParams.get("scope") === "today") return build(req);
+  if (cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
+  if (!inflight) inflight = build(req).finally(() => { inflight = null; });
+  return (await inflight).clone();
+}
+
+async function build(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const todayOnly = url.searchParams.get("scope") === "today";
   const hours = Math.min(24, Math.max(0, Number(url.searchParams.get("hours")) || 0));
@@ -149,12 +163,14 @@ export async function GET(req: Request) {
   if (!todayOnly && cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
 
   let rows: string[][];
+  let cutAt: number | undefined;
   if (todayOnly) {
     const t0 = Date.now();
     const r = await fetchToday(profile, key, hours);
-    if (!Array.isArray(r)) return NextResponse.json({ error: r.error }, { status: r.status });
-    rows = r;
-    console.log(`scope=today: ${r.length - 1} regels in ${Date.now() - t0} ms`);
+    if ("error" in r) return NextResponse.json({ error: r.error }, { status: r.status });
+    rows = r.rows;
+    cutAt = r.cutAt;
+    console.log(`scope=today: ${rows.length - 1} regels in ${Date.now() - t0} ms${cutAt ? " (niet compleet)" : ""}`);
   } else {
   // De download-endpoint accepteert geen filters (alleen X-Api-Key): we krijgen alle opgeslagen logs.
   let res: Response;
@@ -163,17 +179,18 @@ export async function GET(req: Request) {
       headers: { "X-Api-Key": key.trim() },
       redirect: "follow",
       cache: "no-store",
+      signal: AbortSignal.timeout(50_000),
     });
   } catch {
     return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
   }
-  if (!res.ok) {
-    const body = (await res.text().catch(() => "")).slice(0, 300);
-    const hint = res.status === 401 || res.status === 403 ? " Controleer de API-sleutel." : res.status === 404 ? " Controleer het profiel-ID." : "";
-    return NextResponse.json({ error: `NextDNS gaf fout ${res.status}.${hint} ${body}`.trim() }, { status: 502 });
-  }
+  if (!res.ok) return NextResponse.json({ error: nextdnsError(res.status, await res.text().catch(() => "")) }, { status: 502 });
 
-  rows = parseCsv(await res.text());
+  try {
+    rows = parseCsv(await res.text());
+  } catch {
+    return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
+  }
   }
   if (rows.length < 2) return NextResponse.json({ groups: [], devices: [], total: 0, insights: { payments: [], trackers: [] } });
   const [header, ...body] = rows;
@@ -191,7 +208,7 @@ export async function GET(req: Request) {
 
   // Eerst alle apparaten bepalen, zodat gelijke soorten consistent worden genummerd.
   const found = new Map<string, string>();
-  const idOf = (r: string[]) => (idCol >= 0 && r[idCol]?.trim()) || (nameCol >= 0 && r[nameCol]?.trim()) || "onbekend";
+  const idOf = (r: string[]) => (idCol >= 0 && r[idCol]?.trim()) || (nameCol >= 0 && r[nameCol]?.trim() && anonId(r[nameCol].trim())) || "onbekend";
   for (const r of body) {
     const id = idOf(r);
     if (!found.has(id)) found.set(id, deviceType((nameCol >= 0 && r[nameCol]) || "", (modelCol >= 0 && r[modelCol]) || ""));
@@ -327,7 +344,7 @@ export async function GET(req: Request) {
       for (const x of sessions) {
         const inX = real.filter((t) => t >= x.s && t <= x.e);
         x.f = moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e));
-        if (inX.length) { x.s = Math.min(...inX); x.e = Math.max(...inX); }
+        if (inX.length) { x.s = inX.reduce((a, b) => Math.min(a, b)); x.e = inX.reduce((a, b) => Math.max(a, b)); }
       }
     }
     g.sc = sessions.length;
@@ -464,7 +481,7 @@ export async function GET(req: Request) {
     deviceMap, // id -> label; bevat nooit de echte naam
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
-    partial: todayOnly && hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
+    partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren
   };
   if (!todayOnly) cache = { at: Date.now(), body: result };

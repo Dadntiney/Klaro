@@ -14,7 +14,13 @@ export interface AwayInfo {
 
 /** IPv6: het netwerkdeel (eerste 64 bits, dat wisselt niet mee met de privacy-adressen); IPv4: het hele adres. */
 export function netKey(ip: string): string {
-  return ip.includes(":") ? ip.split(":").slice(0, 4).join(":") : ip;
+  if (!ip.includes(":")) return ip;
+  // Verkorte schrijfwijze (::) eerst uitschrijven, anders valt een stuk van het apparaatdeel in de sleutel.
+  const [head, tail] = ip.split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail !== undefined ? (tail ? tail.split(":") : []) : [];
+  const full = tail !== undefined ? [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t] : h;
+  return full.slice(0, 4).map((x) => x.toLowerCase().replace(/^0+(?=.)/, "")).join(":");
 }
 
 function nearest(sorted: number[], t: number): number {

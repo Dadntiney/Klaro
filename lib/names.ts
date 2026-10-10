@@ -41,3 +41,10 @@ export function labelDevices(devices: { id: string; type: string }[]): Record<st
   }
   return out;
 }
+
+/** Vaste, anonieme sleutel voor een apparaat zonder id: de naam zelf (vaak met een persoonsnaam) verlaat de server nooit. */
+export function anonId(name: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 0x01000193) >>> 0;
+  return "n" + h.toString(36);
+}

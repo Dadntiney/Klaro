@@ -429,6 +429,7 @@ export default function Home() {
       if (!res.ok) return;
       lastFull.current = Date.now();
       setInsights(data.insights ?? null);
+      if (data.deviceMap) deviceMap.current = data.deviceMap; // nieuwe apparaten van na het laden ook goed benoemen
       setDevices((prev) =>
         prev.map((p) => {
           const f = (data.devices as Device[]).find((x) => x.name === p.name);

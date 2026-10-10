@@ -1,7 +1,7 @@
 import { isEspHost, isMailClientHost } from "./mail.ts";
 import { extractHost } from "./parse.ts";
 import { classify, fgHit, isPlaying, isResourceHost, isQuietHost, payKind } from "./sites.ts";
-import { deviceType } from "./names.ts";
+import { anonId, deviceType } from "./names.ts";
 import { categoryOf } from "./categories.ts";
 
 export interface LiveEvent {
@@ -33,7 +33,7 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
   const host = extractHost(String(e.domain ?? ""));
   if (!host || !t) return null;
   const device = (e.device ?? {}) as { id?: string; name?: string; model?: string };
-  const devId = device.id?.trim() || device.name?.trim() || "onbekend";
+  const devId = device.id?.trim() || (device.name?.trim() && anonId(device.name.trim())) || "onbekend";
   const type = deviceType(device.name ?? "", device.model ?? "");
   let info = classify(host);
   // Door NextDNS geblokkeerd, met als reden porno/dating: altijd belangrijk, ook als het adres niet op mijn lijst staat.

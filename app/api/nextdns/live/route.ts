@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { toEvent, type LiveEvent } from "@/lib/events";
+import { nextdnsError } from "@/lib/nextdns";
 
 export const dynamic = "force-dynamic";
 
@@ -18,16 +19,16 @@ export async function GET(req: Request) {
   // Eerst met sortering; weigert NextDNS die parameter, dan zonder.
   for (const q of ["?limit=200&sort=desc", "?limit=200"]) {
     try {
-      res = await fetch(base + q, { headers: { "X-Api-Key": key.trim() }, cache: "no-store" });
+      res = await fetch(base + q, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", signal: AbortSignal.timeout(8_000) });
     } catch {
       return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
     }
     if (res.ok) break;
-    body = (await res.text().catch(() => "")).slice(0, 300);
+    body = await res.text().catch(() => "");
     if (res.status !== 400) break;
   }
   if (!res || !res.ok) {
-    return NextResponse.json({ error: `NextDNS gaf fout ${res?.status ?? 0}. ${body}`.trim() }, { status: 502 });
+    return NextResponse.json({ error: nextdnsError(res?.status ?? 0, body) }, { status: 502 });
   }
 
   const json = (await res.json().catch(() => null)) as { data?: Record<string, unknown>[] } | null;

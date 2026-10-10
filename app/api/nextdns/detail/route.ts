@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     const url = `${base}?from=${Math.round(from)}&to=${Math.round(to)}&limit=1000${dev ? `&device=${encodeURIComponent(dev)}` : ""}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     let res: Response;
     try {
-      res = await fetch(url, { headers: { "X-Api-Key": key.trim() }, cache: "no-store" });
+      res = await fetch(url, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", signal: AbortSignal.timeout(Math.max(1000, Math.min(10_000, deadline - Date.now()))) });
     } catch {
       return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
     }
@@ -52,7 +52,8 @@ export async function GET(req: Request) {
       if (!host) continue;
       total++;
       const blocked = String(e.status ?? "").toLowerCase() === "blocked";
-      const mine = classify(host).site === site || host.includes(token);
+      // Korte namen (x.com, t.me) niet op losse letters laten matchen: dan zou bijna alles "van deze site" zijn.
+      const mine = classify(host).site === site || (token.length >= 4 && host.includes(token));
       const map = mine ? matched : other;
       const c = map.get(host) ?? { h: host, n: 0, b: 0 };
       c.n++;
