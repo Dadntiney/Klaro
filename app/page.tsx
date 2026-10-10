@@ -75,6 +75,9 @@ interface DetailData {
   capped: boolean;
 }
 
+/** Tv-apparaten: een "bezoek" korter dan een minuut is een voorvertoning op het beginscherm of de screensaver, geen kijken. */
+const isTv = (dev: string) => /^(Apple TV|TV)( \d+)?$/.test(dev);
+const tvBlip = (dev: string, x: { s: number; e: number }) => isTv(dev) && x.e - x.s < 60_000;
 const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-apps worden ook op de achtergrond regelmatig wakker
 
 export default function Home() {
@@ -506,9 +509,10 @@ export default function Home() {
       if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && g.name === g.site) || (g.bl ?? 0) >= g.n)) continue;
       const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
       // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
-      if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
+      // Op een tv telt beeld pas als er langer dan een minuut gekeken wordt (geen voorvertoning op het beginscherm).
+      if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && !(g.ss?.[0] && tvBlip(g.dev, g.ss[0])) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
       for (const x of g.ss ?? []) {
-        if (!isHuman(x)) continue;
+        if (!isHuman(x) || tvBlip(g.dev, x)) continue;
         // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
         const until = x.e + (fgApp ? 120_000 : 0);
         if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
@@ -582,19 +586,10 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Actieve minuten per dag voor het gekozen apparaat (of alle): vandaag live, eerdere dagen van de server.
-  const dayMins = useCallback(
-    (d: string) => {
-      const today = dayKeyFmt.format(Date.now());
-      return devices.filter((x) => !device || x.name === device).reduce((n, x) => n + (d === today ? sumMin(x.ss ?? []) : x.dm?.[d] ?? 0), 0);
-    },
-    [devices, device]
-  );
-
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
-    const human = (g: Group, x: Session) => isHuman(x) && !(g.name === g.site && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const human = (g: Group, x: Session) => isHuman(x) && !tvBlip(g.dev, x) && !(g.name === g.site && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     for (const g of groups) {
@@ -609,27 +604,48 @@ export default function Home() {
       if ((g.bl ?? 0) >= g.n && !g.flag) continue; // alles geblokkeerd door NextDNS: niet bezocht
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
+    // Welke sessies van een site tellen als echt gebruik: één plek, zodat tijdlijn, compact en dagtotaal precies hetzelfde laten zien.
+    const shown = (g: Group): Session[] => {
+      const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+      // Gemarkeerde en verdachte regels blijven altijd staan.
+      return all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
+    };
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-      .map(([d, list]) => ({
-        d,
-        list,
-        // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
-        rows: mergeRows(
-          list
-          .flatMap((g) => {
-            const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
-            // Alleen sessies die op echt gebruik lijken; gemarkeerde en verdachte regels blijven altijd staan.
-            const ss = all.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
-            if (!ss.length) return [];
-            const oldest = Math.min(...all.map((x) => x.s));
-            return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
-          })
-          .sort((a, b) => b.t - a.t)
-        ),
-        // Compact: per site en apparaat één regel, met alle bezoeken opgeteld.
-        crows: [...list].filter((g) => !g.main ? (g.ss ?? []).some((x) => standalone(g, x)) : g.flag || g.susp || ALWAYS_SHOW.has(g.site) || !g.ss || !g.ss.length || g.ss.some(isHuman)).sort((a, b) => b.last - a.last).map((g) => ({ g, t: g.last, ss: g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }], compact: true, first: !!g.isNew, newest: true })),
-      }))
+      .map(([d, list]) => {
+        const per = list.map((g) => ({ g, ss: shown(g) })).filter((x) => x.ss.length);
+        // Actieve minuten van de dag: per apparaat de echte-gebruik-sessies samengevoegd (overlappende apps niet dubbel).
+        const byDev = new Map<string, Session[]>();
+        for (const { g, ss } of per) byDev.set(g.dev, [...(byDev.get(g.dev) ?? []), ...ss]);
+        let mins = 0;
+        for (const ss of byDev.values()) {
+          const iv = ss.map((x) => [x.s, x.e]).sort((p, q) => p[0] - q[0]);
+          let cs = -1, ce = -1;
+          for (const [s0, e0] of iv) {
+            if (s0 > ce) { if (ce > cs) mins += (ce - cs) / 60_000; cs = s0; ce = e0; } else ce = Math.max(ce, e0);
+          }
+          if (ce > cs) mins += (ce - cs) / 60_000;
+        }
+        return {
+          d,
+          list: per.map((x) => x.g),
+          mins: Math.round(mins),
+          // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
+          rows: mergeRows(
+            per
+              .flatMap(({ g, ss }) => {
+                const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+                const oldest = Math.min(...all.map((x) => x.s));
+                return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
+              })
+              .sort((a, b) => b.t - a.t)
+          ),
+          // Compact: per site en apparaat één regel, met alleen de echte bezoeken opgeteld.
+          crows: per
+            .map(({ g, ss }) => ({ g, t: Math.max(...ss.map((x) => x.s)), ss, compact: true, first: !!g.isNew, newest: true }))
+            .sort((a, b) => b.t - a.t),
+        };
+      })
       .filter((d) => d.rows.length > 0);
   }, [groups, device, mailT]);
 
@@ -683,13 +699,12 @@ export default function Home() {
           )}
 
           {days.length === 0 && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, rows: trows, crows }, di) => {
+          {days.map(({ d, list, mins: dm, rows: trows, crows }, di) => {
             const isCompact = compactDays.has(d);
             const rows = isCompact ? crows : trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
             const isDayOpen = recent || openDays.has(d);
-            const dm = dayMins(d);
             return (
             <section key={d}>
               <h2
@@ -793,7 +808,7 @@ export default function Home() {
                           <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
-                            const m = compact ? g.mins ?? 0 : rss.reduce((n, x) => n + minutes(x), 0);
+                            const m = rss.reduce((n, x) => n + minutes(x), 0);
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             if (m > 0) parts.push(<span key="m" className="mdur">{dur(m)}</span>);

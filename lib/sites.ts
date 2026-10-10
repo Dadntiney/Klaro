@@ -40,7 +40,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Ziggo GO", icon: "ziggogo.tv", domains: ["ziggogo.tv", "horizon.tv"] },
   { name: "NPO", icon: "npo.nl", domains: ["npo.nl", "npoplayer.nl", "npostart.nl", "omroep.nl"] },
   { name: "Kijk", icon: "kijk.nl", domains: ["kijk.nl"] },
-  { name: "Videoland", icon: "videoland.com", domains: ["videoland.com"] },
+  { name: "Videoland", icon: "videoland.com", domains: ["videoland.com", "bedrock.tech"] },
   { name: "Prime Video", icon: "primevideo.com", domains: ["primevideo.com", "aiv-cdn.net", "pv-cdn.net"] },
   { name: "Max", icon: "max.com", domains: ["max.com", "hbomax.com", "hbo.com"] },
   { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
@@ -54,11 +54,12 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "ESPN", icon: "espn.com", domains: ["espn.com", "espn.nl", "espncdn.com"] },
   { name: "Philips Hue", icon: "meethue.com", domains: ["meethue.com", "philips-hue.com"] },
   { name: "ChatGPT", icon: "chatgpt.com", domains: ["chatgpt.com", "openai.com", "oaiusercontent.com"] },
+  { name: "Parro (school)", icon: "parro.com", domains: ["parro.com"] },
   { name: "Buienradar", icon: "buienradar.nl", domains: ["buienradar.nl"] },
   { name: "Waze", icon: "waze.com", domains: ["waze.com"] },
   { name: "Amazon", icon: "amazon.com", domains: ["a2z.com"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
-  { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
+  { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com", "dmdsdp.com"] },
   { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },
   { name: "Nintendo", icon: "nintendo.com", domains: ["nintendo.com", "nintendo.net"] },
   { name: "PlayStation", icon: "playstation.com", domains: ["playstation.com", "playstation.net", "sonyentertainmentnetwork.com"] },
@@ -75,6 +76,8 @@ export const FG_RULES: Record<string, RegExp> = {
   "instagram.com": /(^|\.)cdninstagram\.com$|^(scontent|instagram|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/,
   "whatsapp.com": /^(pps|static|mmg|media[^.]*|web)\.(cdn\.)?whatsapp\.(net|com)$|^graph\.whatsapp\.com$/,
   "tiktok.com": /tiktokcdn(-[a-z]+)?\.com$|(^|\.)ibyteimg\.com$/,
+  // Google: alleen een echte zoekpagina (de Google-balk bovenaan, google.nl, afbeeldingen/lens); Foto's, Gmail en inlog-synchronisatie niet.
+  "google.com": /^(www\.)?google\.(nl|be|de|fr|co\.uk)$|^ogads-pa\.clients6\.google\.com$|^encrypted-tbn\d\.gstatic\.com$|^(lens|images|translate|maps)\.google\.[a-z.]+$/,
   "youtube.com": /(^|\.)googlevideo\.com$|(^|\.)ytimg\.com$/,
   "snapchat.com": /(^|\.)sc-cdn\.net$/,
 };
@@ -90,7 +93,7 @@ const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
-const BACKGROUND = new Set([
+const BACKGROUND = new Set(["stripe.com", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
   "googletagservices.com", "doubleclick.net", "googlesyndication.com", "googleadservices.com", "gvt1.com", "gvt2.com",
   "app-measurement.com", "crashlytics.com", "firebaseio.com", "firebaseinstallations.googleapis.com",
@@ -124,7 +127,7 @@ const BACKGROUND_KEYWORDS = [
 /** Domeinen die als losse apex vrijwel alleen door apps worden opgevraagd; een echte bezoek loopt via www./een taalvariant. */
 const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|whatsapp|bing|yahoo)\.[a-z.]+$/;
 
-const BACKGROUND_SUFFIX = ["push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
+const BACKGROUND_SUFFIX = ["csva.vercel.app", "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
 
 /** 18+: pornografie en erotische webshops. Bewust voorzichtig: lange, ondubbelzinnige namen als deel van het domein, korte woorden alleen als los woord. */
@@ -302,6 +305,8 @@ function classifyUncached(host: string): SiteInfo {
     const r = classify(real);
     if (r.flag) return r;
   }
+  // Plaatjes in Google-zoekresultaten horen bij de zoekopdracht (Google), niet bij gstatic (systeem).
+  if (/^encrypted-tbn\d\.gstatic\.com$/.test(host)) return { site: "google.com", name: "google.com", icon: "google.com", bg: false, adult: false, main: false };
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(host.replace(/^www\./, "")) ?? APP_BY_DOMAIN.get(base); // ook een volledig adres (zoals gofiev.vercel.app) kan een app zijn
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };

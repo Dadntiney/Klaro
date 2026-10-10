@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, payKind, isMedia, isMainHost } from "./sites.ts";
+import { classify, fgHit, payKind, isMedia, isMainHost } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -223,4 +223,21 @@ test("omweg via Google Translate wordt herkend", () => {
 test("geen vals alarm op bekende gewone sites met een verdacht stukje in de naam", () => {
   for (const h of ["www.jeuxvideo.com", "www.xxxlutz.de", "www.tennisexplorer.com", "www.correosexpress.es", "www.lasexta.com", "www.aiimsexams.ac.in", "www.agriaffaires.com", "deusex.fandom.com", "www.emilfrey.si", "www.tvzoneuk.com", "www.alberoshop.it", "artsexperiments.withgoogle.com"]) assert.equal(classify(h).flag, undefined, h);
   for (const h of ["neukenx.be", "www.regiosexcontact.be", "www.naaktstrandje.nl", "realsexclub.com", "topsexhub.com"]) assert.equal(classify(h).flag, "18+", h);
+});
+
+test("controle: eigen app, betaalmodules en technische namen van tv-apps", () => {
+  assert.equal(classify("csva.vercel.app").bg, true); // de app zelf is geen bezoek
+  assert.equal(classify("m.stripe.com").bg, true); // betaalmodule binnen een webwinkel
+  assert.equal(classify("videoland.bedrock.tech").name, "Videoland");
+  assert.equal(classify("x.dmdsdp.com").name, "Disney+");
+  assert.equal(classify("api.parro.com").name, "Parro (school)");
+});
+
+test("Google: zoekpagina telt, Foto's/Gmail/inloggen op de achtergrond niet", () => {
+  assert.equal(fgHit("google.com", "www.google.nl"), true);
+  assert.equal(fgHit("google.com", "ogads-pa.clients6.google.com"), true);
+  assert.equal(fgHit("google.com", "www.google.com"), false);
+  assert.equal(classify("encrypted-tbn2.gstatic.com").site, "google.com");
+  assert.equal(fgHit("google.com", "encrypted-tbn2.gstatic.com"), true);
+  assert.equal(fgHit("google.com", "notifications-pa.googleapis.com"), false);
 });
