@@ -761,13 +761,16 @@ export default function Home() {
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
                   // Subtiele uurmarkering waar het uur wisselt.
                   const hr = hourOf(t);
-                  const hourStart = !compact && (ri === 0 || hourOf(rows[ri - 1].t) !== hr || dayKeyFmt.format(rows[ri - 1].t) !== dayKeyFmt.format(t));
+                  // Tijdgrens: tussen een regel van ná het hele uur (erboven) en een van daarvoor (eronder) staat het uur van de grens,
+                  // bijv. "17:00" tussen 17:05 en 16:41. Bovenaan de dag staat geen streep.
+                  const hourStart = !compact && ri > 0 && hourOf(rows[ri - 1].t) !== hr && dayKeyFmt.format(rows[ri - 1].t) === dayKeyFmt.format(t);
+                  const boundary = ri > 0 ? hourOf(rows[ri - 1].t) : hr;
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart ? " hourstart" : "")}>
-                      {hourStart && <div className="hourmark"><span>{String(hr).padStart(2, "0")}:00</span></div>}
+                      {hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
