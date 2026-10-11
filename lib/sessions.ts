@@ -112,7 +112,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
 export function isHuman(x: Session): boolean {
   if (x.emb || x.res) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
-  if (x.lg || x.pv) return true; // één pagina op de site zelf geopend
+  if (x.lg || x.pv || x.ck) return true; // inlogpagina, losse pagina, of via een klik (mail-link of zoekresultaat) geopend // één pagina op de site zelf geopend
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde
   if (x.n === undefined) return true;
   if ((x.m ?? 0) >= 2) return true; // beeld/geluid (Disney+, YouTube): er wordt gekeken of geluisterd

@@ -295,7 +295,7 @@ test("bank-app openen (bankieren.bank.nl) is de site zelf", () => {
 });
 
 test("inlog-/bankierpagina's herkennen", () => {
-  for (const h of ["bankieren.rabobank.nl", "mijn.ing.nl", "inloggen.belastingdienst.nl"]) assert.ok(isLoginHost(h), h);
+  for (const h of ["bankieren.rabobank.nl", "mijn.ing.nl", "inloggen.belastingdienst.nl", "login.decathlon.net"]) assert.ok(isLoginHost(h), h);
   for (const h of ["log.rabobank.nl", "www.rabobank.nl", "auth.split.io", "login.mso.msidentity.com", "account.apple.com", "auth.meethue.com"]) assert.ok(!isLoginHost(h), h);
 });
 

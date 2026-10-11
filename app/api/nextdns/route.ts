@@ -139,7 +139,7 @@ async function fetchToday(profile: string, key: string, hours = 0): Promise<{ ro
 }
 
 /** Social-apps waarin advertenties en links staan die de app alvast "aanklopt". */
-const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net", "youtube.com"]);
+const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net"]);
 
 // Komen er tegelijk meer verzoeken voor alles binnen (meerdere telefoons, of de maandelijkse controle), dan één keer ophalen.
 let inflight: Promise<Response> | null = null;
@@ -355,7 +355,7 @@ async function build(req: Request): Promise<Response> {
   const fgByDev = new Map<string, number[]>();
   const devFg = (dev: string) => {
     if (!fgByDev.size) {
-    for (const [k, ts] of fgTimes) { const dv = k.split("|")[1]; fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
+    for (const [k, ts] of fgTimes) { const [, dv, site] = k.split("|"); if (SOCIAL.has(site)) fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
     // Apps zonder eigen "inhoud"-regel (X, Reddit, LinkedIn, Threads): hun verkeer telt als scrollen. Facebook e.d. hebben al een
     // inhoud-regel (hun achtergrondverkeer telt dus niet).
     for (const [k, ts] of times) { const [, dv, site] = k.split("|"); if (SOCIAL.has(site) && !FG_RULES[site]) fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
@@ -423,7 +423,8 @@ async function build(req: Request): Promise<Response> {
       const sh = siteHosts.get(gkey) ?? [];
       const hostsIn = (x: Session) => new Set(sh.filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host)).size;
       const fgDev = devFg(g.dev);
-      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 20_000 && t <= x.e + 20_000);
+      // Ruim venster: ook social-apps onthouden adressen, dus tijdens scrollen komen er soms minuten lang geen nieuwe.
+      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 150_000 && t <= x.e + 150_000);
       const cand = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
       const single = cand.filter((x) => hostsIn(x) >= 2 || !inSocial(x));
       if (cand.length <= 4) for (const x of single) x.pv = 1;

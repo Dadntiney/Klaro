@@ -126,7 +126,7 @@ const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
-const BACKGROUND = new Set(["stripe.com",
+const BACKGROUND = new Set(["stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
   "ift.tt", "bit.ly", "tinyurl.com", "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com",
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
@@ -271,7 +271,7 @@ const LANG = new Set("nl en de fr es it pt be uk us da sv no fi pl ru ja zh ko a
 
 /** Inlog- of bankierpagina van een site (bankieren.rabobank.nl, mijn.ing.nl, login.merk.nl): wordt alleen bewust geopend. */
 export function isLoginHost(host: string): boolean {
-  return /^(bankieren|internetbankieren|mijn|inloggen)\./.test(host) && !classify(host).bg;
+  return /^(bankieren|internetbankieren|mijn|inloggen|login)\./.test(host) && !classify(host).bg;
 }
 
 export function isMainHost(host: string, base: string): boolean {
