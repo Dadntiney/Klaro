@@ -4,6 +4,7 @@ import { classify, fgHit } from "@/lib/sites";
 import { isEspHost, isMailClientHost } from "@/lib/mail";
 import { anonId, deviceType, labelDevices } from "@/lib/names";
 import { isSystemSite } from "@/lib/system";
+import { isHuman, type Session } from "@/lib/sessions";
 import { GET as overview } from "../nextdns/route";
 import { sameText } from "@/lib/auth";
 
@@ -18,6 +19,8 @@ export const dynamic = "force-dynamic";
  *  - unknownApps: veelgebruikte basisdomeinen die nergens zichtbaar worden (mogelijk een gemiste app, zoals F1 TV)
  *  - mailLike: adressen die op nieuwsbriefverkeer lijken maar niet als mail herkend worden
  *  - visible: zichtbare sites met hoeveel sessies echt gebruik waren (mogelijk achtergrond die toch zichtbaar is)
+ *  - missed: laatste 2 dagen: activiteit die op gebruik lijkt (meerdere momenten) maar nergens zichtbaar is, met de reden
+ *    waarom niet (mail, losse onderdelen, ververst zichzelf, onbekende app zonder eigen website, ...)
  */
 export async function GET(req: Request) {
   const token = process.env.AUDIT_TOKEN;
@@ -81,7 +84,7 @@ export async function GET(req: Request) {
     [...m].sort((a, b) => b[1].n - a[1].n).slice(0, n).map(([k, s]) => ({ k, n: s.n, devs: [...s.devs], blocked: s.blocked, ...(extra ? extra(k, s) : {}) }));
 
   // Zichtbare sites uit het gewone overzicht: hoeveel sessies tellen als echt gebruik.
-  const ov = (await ovP) as { groups?: { site: string; dev: string; main: boolean; bg: boolean; flag?: string; ss?: { s: number; e: number; n?: number; m?: number; f?: number; ml?: number }[] }[] };
+  const ov = (await ovP) as { auto?: string[]; groups?: { d: string; site: string; dev: string; main: boolean; bg: boolean; flag?: string; ss?: Session[] }[] };
   const vis = new Map<string, { sessions: number; mail: number; fgApp: boolean; devs: Set<string> }>();
   for (const g of ov.groups ?? []) {
     if (g.bg || !g.main || g.flag) continue;
@@ -95,7 +98,19 @@ export async function GET(req: Request) {
     vis.set(g.site, v);
   }
 
+  // Mogelijk gemist: laatste 2 dagen, sites/apps met sessies van 2+ momenten waarvan niets zichtbaar is.
+  const days = [...new Set((ov.groups ?? []).map((g) => g.d))].sort().slice(-2);
+  const auto = new Set(ov.auto ?? []);
+  const why = (g: { dev: string; site: string; main: boolean }, x: Session) =>
+    x.ml ? "mail" : x.res ? "alleen onderdelen" : x.emb ? "ingesloten" : auto.has(g.dev + "|" + g.site) ? "ververst zichzelf" : !g.main ? "onbekende app/geen eigen website" : x.f !== undefined ? "app-achtergrond" : "te kort";
+  const missed = (ov.groups ?? [])
+    .filter((g) => days.includes(g.d) && !g.bg && !g.flag && !isSystemSite(g.site) && !(g.ss ?? []).some((x) => isHuman(x)))
+    .flatMap((g) => (g.ss ?? []).filter((x) => (x.n ?? 0) >= 2).map((x) => ({ day: g.d, dev: g.dev, site: g.site, at: new Date(x.s).toISOString(), sec: Math.round((x.e - x.s) / 1000), moments: x.n, why: why(g, x) })))
+    .sort((a, b) => (b.moments ?? 0) - (a.moments ?? 0))
+    .slice(0, 150);
+
   return NextResponse.json({
+    missed,
     period: { from: Number.isFinite(minT) ? new Date(minT).toISOString() : null, to: maxT ? new Date(maxT).toISOString() : null, rows: body.length },
     risky: out(risky, 150),
     flagged: out(flagged, 150, (_, s) => ({ flag: s.flag })),
