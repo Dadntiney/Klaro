@@ -161,13 +161,17 @@ export default function Home() {
   // Eerst vandaag laden en tonen (skelet met voortgang tot dan), daarna de oudere dagen eronder.
   const [progress, setProgress] = useState(0);
   const [histErr, setHistErr] = useState(false); // oudere dagen laden lukte niet
+  // Sites die zichzelf verversen (widget/app/open tabblad), per "apparaat|site": bepaald uit alle dagen, onthouden voor het snelle laden.
+  const [auto, setAuto] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("klaro-auto") ?? "[]") as string[]); } catch { return new Set(); }
+  });
   // Eerst alleen het laatste uur getoond: regels die vóór dit moment begonnen komen nog (0 = vandaag is compleet).
   const [cut, setCut] = useState(0);
   const finishing = useRef(false);
 
   useEffect(() => {
     const t0 = Date.now();
-    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number }, isFull: boolean) => {
+    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[] }, isFull: boolean) => {
       fullRef.current = true;
       // Bij alleen het laatste stuk: de eerste 15 minuten van dat stuk niet tonen (een bezoek dat eerder begon zou daar te laat lijken te beginnen).
       setCut(data.partial ? data.partial + 15 * 60_000 : 0);
@@ -178,6 +182,10 @@ export default function Home() {
       setInsights(data.insights ?? null);
       lastSeen.current = Math.max(0, ...data.groups.map((g) => g.last));
       setUpdated(new Date());
+      if (data.auto) {
+        setAuto(new Set(data.auto));
+        try { localStorage.setItem("klaro-auto", JSON.stringify(data.auto)); } catch {}
+      }
       if (data.partial) {
         // alleen het laatste uur: geen tijdsmeting opslaan
       } else if (isFull) {
@@ -581,7 +589,7 @@ export default function Home() {
       // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
       if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
       for (const x of g.ss ?? []) {
-        if (!isHuman(x) || blip(g, x)) continue;
+        if (!isHuman(x) || blip(g, x) || (x.pv && auto.has(g.dev + "|" + g.site))) continue;
         // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
         const until = x.e + (fgApp ? 120_000 : 0);
         if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
@@ -592,7 +600,7 @@ export default function Home() {
       hits.set(g.dev, a);
     }
     return { hits, media, steady, human };
-  }, [groups]);
+  }, [groups, auto]);
   // In gebruik (per apparaat, niet per app):
   // - net een bezoek dat als echt gebruik telt (laatste 3 minuten), of langdurig spelen, of beeld/geluid (laatste 5 minuten);
   // - of activiteit in de laatste 3 minuten, verspreid over minstens 45 seconden, en de laatste minder dan 2 minuten geleden,
@@ -659,7 +667,7 @@ export default function Home() {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
     const blip = tvBlipper(groups);
-    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && auto.has(g.dev + "|" + g.site)) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     const visBy = new Map<string, { s: number; site: string }[]>(); // per apparaat: begin van elk zichtbaar bezoek, met de site
@@ -729,7 +737,7 @@ export default function Home() {
         };
       })
       .filter((d) => d.rows.length > 0);
-  }, [groups, device, mailT, cut]);
+  }, [groups, device, mailT, cut, auto]);
 
   return (
     <main>

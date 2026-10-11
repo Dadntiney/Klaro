@@ -9,7 +9,7 @@ import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
-import { nextdnsError, windowStart } from "@/lib/nextdns";
+import { autoRefreshing, nextdnsError, windowStart } from "@/lib/nextdns";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -336,6 +336,7 @@ async function build(req: Request): Promise<Response> {
   const meaningful = Number.isFinite(minT) && Date.now() - minT > 7 * DAY;
   const siteName = new Map<string, string>();
   const embedSes: { g: Group; x: Session }[] = [];
+  const singles = new Map<string, number[]>(); // per apparaat|site: aantal losse één-pagina-opvragingen per dag
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
     const sessions = allSessions(all);
@@ -383,6 +384,7 @@ async function build(req: Request): Promise<Response> {
       // apparaat vaker dan 4 keer zo los opduikt: dan ververst een widget of open tabblad zichzelf.
       const single = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
       if (single.length <= 4) for (const x of single) x.pv = 1;
+      if (single.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), single.length]);
     }
     const emb = embedTimes.get(gkey);
     if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });
@@ -499,6 +501,13 @@ async function build(req: Request): Promise<Response> {
     })
     .sort((a, b) => b.n - a.n);
 
+  // Sites die zichzelf verversen: alleen te zien over meerdere dagen (dus bij de volledige download). De pagina onthoudt de lijst,
+  // zodat ze ook bij het snelle laden van vandaag meteen weg blijven.
+  const auto = todayOnly ? [] : autoRefreshing(singles);
+  if (auto.length) {
+    const set = new Set(auto);
+    for (const g of groups.values()) if (set.has(g.dev + "|" + g.site)) for (const x of g.ss) delete x.pv;
+  }
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
   const result = {
     groups: list,
@@ -506,6 +515,7 @@ async function build(req: Request): Promise<Response> {
     total,
     deviceMap, // id -> label; bevat nooit de echte naam
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
+    auto: todayOnly ? undefined : auto,
     // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
     partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren

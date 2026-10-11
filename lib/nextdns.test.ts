@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { amsterdamMidnight, nextdnsError, windowStart } from "./nextdns.ts";
+import { amsterdamMidnight, autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
 import { netKey } from "./network.ts";
 import { sameText } from "./auth.ts";
 import { anonId } from "./names.ts";
@@ -49,4 +49,14 @@ test("apparaat zonder id: vaste anonieme sleutel, nooit de naam zelf", () => {
   assert.notEqual(anonId("iPhone van Jan"), anonId("iPhone van Piet"));
   assert.doesNotMatch(anonId("iPhone van Jan"), /Jan/);
   assert.match(anonId("x"), /^anon-/);
+});
+
+test("sites die zichzelf verversen (widget/app): vaak, meerdere dagen, steeds één losse pagina", () => {
+  const m = new Map<string, number[]>([
+    ["iPhone|voetbalkrant.com", [10, 12, 8, 9]], // widget
+    ["iPhone|werkenbijseverinus.nl", [1, 2, 1]], // echte bezoeken
+    ["MacBook|canva.com", [12]], // één drukke dag
+    ["iPhone|rabobank.nl", [6, 6]], // maar 2 dagen
+  ]);
+  assert.deepEqual(autoRefreshing(m), ["iPhone|voetbalkrant.com"]);
 });

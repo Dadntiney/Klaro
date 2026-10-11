@@ -30,3 +30,11 @@ export function nextdnsError(status: number, body = ""): string {
   if (status === 404) return "NextDNS gaf fout 404. Controleer het profiel-ID.";
   return `NextDNS gaf fout ${status}.`;
 }
+
+/**
+ * Sites die zichzelf verversen (widget, app of open tabblad): op een apparaat minstens 3 dagen, gemiddeld 4 of meer losse
+ * één-pagina-opvragingen per dag. Die losse opvragingen zijn nooit een bezoek, ook niet op een dag dat het er nog maar 1 is.
+ */
+export function autoRefreshing(singles: Map<string, number[]>): string[] {
+  return [...singles].filter(([, perDay]) => perDay.length >= 3 && perDay.reduce((a, b) => a + b, 0) / perDay.length >= 4).map(([k]) => k);
+}
