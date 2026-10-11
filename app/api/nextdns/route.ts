@@ -11,7 +11,7 @@ import { suspicion } from "@/lib/suspect";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
 import { autoRefreshing, nextdnsError, windowStart } from "@/lib/nextdns";
 import { anchorOf, chainTimes, companionFor, COMPANIONS } from "@/lib/companion";
-import { isVideoOnlyClip } from "@/lib/clip";
+import { isVideoOnlyClip, isYouTubeAppHost } from "@/lib/clip";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -236,6 +236,7 @@ async function build(req: Request): Promise<Response> {
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
   const devSearch = new Map<string, number[]>(); // momenten met een zoekopdracht (Google/Bing/...)
+  const devYtApp = new Map<string, number[]>(); // adressen die alleen de YouTube-app zelf gebruikt (zie lib/clip.ts)
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
@@ -322,6 +323,7 @@ async function build(req: Request): Promise<Response> {
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
       if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
+      if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
       if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devSearch.get(dev) ?? devSearch.set(dev, []).get(dev)!).push(t);
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
@@ -460,6 +462,7 @@ async function build(req: Request): Promise<Response> {
       const yh = siteHosts.get(gkey) ?? [];
       for (const x of sessions) {
         const hs = yh.filter((h) => h.t >= x.s - 60_000 && h.t <= x.e + 60_000).map((h) => h.host);
+        if ((devYtApp.get(g.dev) ?? []).some((t) => t >= x.s - 60_000 && t <= x.e + 60_000)) hs.push("youtubei.googleapis.com");
         const recent = sessions.some((y) => y !== x && y.e <= x.s && x.s - y.e < 1_800_000 && isHuman(y));
         if (isVideoOnlyClip(hs, x.e - x.s, recent)) x.emb = 1;
       }
