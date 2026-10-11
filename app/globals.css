@@ -344,3 +344,15 @@ h2 .dview + .dview.icon { margin-left:0; }
 /* Dagkop: dag + samenvatting als één doorlopende tekst (geen losse kolommen), knoppen rechts. */
 .dh-t { flex:1 1 auto; min-width:0; line-height:1.45; }
 .dh-d, .dh-m { white-space:nowrap; }
+
+/* "Waarom" in een opengeklapte regel, en de lijst "Niet getoond" onder een dag. */
+.detail .why { font-size:13px; color:var(--muted); margin:0 0 8px; }
+.hidden-list { margin:8px 2px 0; font-size:13px; color:var(--muted); }
+.hidden-list summary { cursor:pointer; padding:6px 0; list-style:none; }
+.hidden-list summary::-webkit-details-marker { display:none; }
+.hidden-list summary::before { content:"›"; display:inline-block; margin-right:6px; transition:transform .15s; }
+.hidden-list[open] summary::before { transform:rotate(90deg); }
+.hid { display:grid; grid-template-columns:44px 1fr; gap:0 8px; padding:6px 0; border-top:1px solid var(--line); }
+.hid .ht { grid-row:span 2; font-variant-numeric:tabular-nums; }
+.hid .hn { color:var(--fg); }
+.hid .hw { font-size:12px; }

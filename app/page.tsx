@@ -126,6 +126,33 @@ function aroundIn(g: Group, list: Group[]) {
   return out.sort((a, b) => (a.flag ? 0 : 1) - (b.flag ? 0 : 1) || b.t - a.t).slice(0, 15);
 }
 
+/** Waarom een regel als echt gebruik telt, in één zin. */
+function whyShown(g: Group, ss: Session[]): string {
+  if (g.flag) return `Staat op de vangnet-lijst (${g.flag}).`;
+  if (g.susp) return "Verdacht adres: lijkt op een bekende site of komt uit een spam-hoek.";
+  const x = ss.reduce((a, b) => ((b.n ?? 0) > (a.n ?? 0) ? b : a), ss[0]);
+  if (!x) return "";
+  const mins = Math.round(ss.reduce((n, y) => n + (y.e - y.s), 0) / 60_000);
+  if (x.lg) return "Inlog- of bankierpagina geopend.";
+  if (x.ck) return "Geopend via een link (in een mail of na zoeken).";
+  if ((x.m ?? 0) >= 2) return `Video of geluid afgespeeld${mins ? `, ongeveer ${mins} min` : ""}.`;
+  if ((x.f ?? 0) >= 2) return `App geopend en inhoud geladen (${x.f}× nieuw).`;
+  if (x.pv) return "Website geopend: een pagina met meerdere onderdelen geladen.";
+  if (ALWAYS_SHOW.has(g.site)) return "Staat op de lijst 'altijd tonen'.";
+  return `Steeds nieuwe inhoud geladen (${x.n ?? 1} momenten${mins ? `, ${mins} min` : ""}).`;
+}
+
+/** Waarom een sessie bewust niet getoond wordt. */
+function whyHidden(x: Session, auto: boolean, tvShort: boolean): string {
+  if (x.ml) return "plaatje of teller in een nieuwsbrief";
+  if (x.res) return "alleen tellers/plaatjes, geen pagina";
+  if (x.emb) return "filmpje binnen een andere site";
+  if (auto) return "ververst zichzelf (widget of open tabblad)";
+  if (tvShort) return "tv-beginscherm, niets afgespeeld";
+  if (x.f !== undefined) return "app op de achtergrond, niets geopend";
+  return "één los adres, geen pagina geladen (bijv. advertentie of voorvertoning)";
+}
+
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -723,6 +750,17 @@ export default function Home() {
         return {
           d,
           list: per.map((x) => x.g),
+          // Bewust niet getoond (met reden): sessies van echte sites/apps die op gebruik leken, maar het niet waren.
+          hidden: groups
+            .filter((g) => g.d === d && g.main && !g.bg && !g.flag && !g.susp && (!device || g.dev === device))
+            .flatMap((g) => {
+              const shownS = new Set(shown(g).map((x) => x.s));
+              return (g.ss ?? [])
+                .filter((x) => !shownS.has(x.s) && !(isTv(g.dev) && per.some((p) => p.g === g)) && ((x.mh ?? 0) >= 1 || (x.n ?? 0) >= 2 || (x.m ?? 0) >= 1 || (x.f ?? 0) >= 1))
+                .map((x) => ({ g, t: x.s, why: whyHidden(x, auto.has(g.dev + "|" + g.site), isTv(g.dev) && x.e - x.s < 60_000) }));
+            })
+            .sort((a, b) => b.t - a.t)
+            .slice(0, 60),
           mins: Math.round(mins),
           // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
           rows: mergeRows(
@@ -800,7 +838,7 @@ export default function Home() {
           )}
 
           {days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, mins: dm, rows: trows }, di) => {
+          {days.map(({ d, list, mins: dm, rows: trows, hidden }, di) => {
             // Per apparaat: wanneer begon het laatste bezoek? Een app waarna al een andere app begon, is niet meer "nu".
             const lastStart = new Map<string, number>();
             for (const r of trows) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.t));
@@ -934,6 +972,7 @@ export default function Home() {
                         const showNear = redNear;
                         return (
                           <div className="detail">
+                            <div className="why">Waarom: {whyShown(g, rss)}</div>
                             <a
                               className="open-link"
                               href={`https://${g.site}`}
@@ -1014,6 +1053,19 @@ export default function Home() {
                   });
                 })()}
               </div>
+              )}
+              {/* Wat er bewust níet staat, met de reden: zo is zelf na te gaan dat er niets gemist is. */}
+              {isDayOpen && hidden.length > 0 && (
+                <details className="hidden-list">
+                  <summary>Niet getoond ({hidden.length})</summary>
+                  {hidden.map((h, i) => (
+                    <div key={i} className="hid">
+                      <span className="ht">{timeFmt.format(h.t)}</span>
+                      <span className="hn">{h.g.name}{!device && <span className="muted"> · {h.g.dev}</span>}</span>
+                      <span className="hw">{h.why}</span>
+                    </div>
+                  ))}
+                </details>
               )}
             </section>
             );
