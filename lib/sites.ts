@@ -41,7 +41,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
   { name: "Ziggo GO", icon: "ziggogo.tv", domains: ["ziggogo.tv", "horizon.tv"] },
-  { name: "NPO", icon: "npo.nl", domains: ["npo.nl", "npoplayer.nl", "npostart.nl", "omroep.nl"] },
+  { name: "NPO", icon: "npo.nl", domains: ["npo.nl", "npoplayer.nl", "npostart.nl", "omroep.nl", "npox.nl", "zappelin.nl", "zapp.nl", "npo3.nl", "nporadio1.nl", "nporadio2.nl", "npo3fm.nl"] }, // Zappelin/Zapp = NPO voor kinderen
   { name: "Kijk", icon: "kijk.nl", domains: ["kijk.nl"] },
   { name: "Videoland", icon: "videoland.com", domains: ["videoland.com", "bedrock.tech"] },
   { name: "Prime Video", icon: "primevideo.com", domains: ["primevideo.com", "aiv-cdn.net", "pv-cdn.net"] },
@@ -59,6 +59,8 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "ChatGPT", icon: "chatgpt.com", domains: ["chatgpt.com", "openai.com", "oaiusercontent.com"] },
   { name: "Parro (school)", icon: "parro.com", domains: ["parro.com", "parnassys.net"] }, // ParnasSys is het schoolsysteem achter Parro
   { name: "Buienradar", icon: "buienradar.nl", domains: ["buienradar.nl"] },
+  { name: "Buienalarm", icon: "buienalarm.nl", domains: ["buienalarm.nl", "meteoplaza.com", "infoplaza.io"] }, // weer-app van Infoplaza
+  { name: "Weerplaza", icon: "weerplaza.nl", domains: ["weerplaza.nl"] },
   { name: "Waze", icon: "waze.com", domains: ["waze.com"] },
   { name: "Amazon", icon: "amazon.com", domains: ["a2z.com"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },

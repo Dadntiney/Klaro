@@ -283,3 +283,8 @@ test("advertentieteller van Bing in webwinkels is geen bezoek aan Bing; zoeken o
 test("adressen uit het eigen netwerk (router plakt .home/.lan erachter) zijn geen bezoek", () => {
   for (const h of ["image_intertoys.home", "printer.lan", "nas.localdomain"]) assert.ok(classify(h).bg, h);
 });
+
+test("Zappelin hoort bij NPO; Buienalarm (Infoplaza/Meteoplaza) is een eigen app", () => {
+  for (const h of ["www.zappelin.nl", "vod.ak.md.npox.nl", "prod.npoplayer.nl"]) assert.equal(classify(h).name, "NPO", h);
+  for (const h of ["ss.buienalarm.nl", "api.meteoplaza.com", "notifyhub.infoplaza.io"]) assert.equal(classify(h).name, "Buienalarm", h);
+});
