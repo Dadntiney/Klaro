@@ -12,6 +12,9 @@ curl -s -H "x-audit-token: $AUDIT_TOKEN" https://csva.vercel.app/api/audit > /tm
 `AUDIT_TOKEN` staat als omgevingsvariabele in de Claude-omgeving en in Vercel. Zet hem nooit in een bestand, commit, log of bericht.
 Werkt de sleutel niet (401), stop dan en meld dat de sleutel in Vercel en in de Claude-omgeving gelijk moet zijn.
 
+Zonder AUDIT_TOKEN (in het gesprek waar de controle binnenkomt, met toegang tot de site): haal het overzicht één keer op
+en draai `node --experimental-strip-types scripts/gemist.ts overzicht.json` voor de lijst "mogelijk gemist".
+
 ## Wat je nakijkt
 
 0. **`missed`** (eerst!): activiteit van de laatste 2 dagen die op gebruik lijkt maar niet zichtbaar is, met de reden (`why`).
