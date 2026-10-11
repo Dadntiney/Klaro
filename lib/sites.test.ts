@@ -279,3 +279,7 @@ test("advertentieteller van Bing in webwinkels is geen bezoek aan Bing; zoeken o
   assert.ok(classify("bat.bing.com").bg);
   assert.ok(!classify("www.bing.com").bg);
 });
+
+test("adressen uit het eigen netwerk (router plakt .home/.lan erachter) zijn geen bezoek", () => {
+  for (const h of ["image_intertoys.home", "printer.lan", "nas.localdomain"]) assert.ok(classify(h).bg, h);
+});

@@ -123,7 +123,7 @@ const BACKGROUND = new Set(["stripe.com", "shopifycloud.com", "shopifysvc.com",
   "akamaihd.net", "akamaiedge.net", "akamai.net", "edgekey.net", "edgesuite.net", "cloudfront.net", "fastly.net",
   "fastlylb.net", "azureedge.net", "trafficmanager.net", "amazonaws.com", "windowsupdate.com", "msftconnecttest.com",
   "msftncsi.com", "apple-dns.net", "mzstatic.com", "icloud-content.com", "sentry.io", "appsflyer.com", "adjust.com",
-  "branch.io", "scorecardresearch.com", "cloudflare-dns.com", "nextdns.io", "ntp.org", "arpa", "local", "lan",
+  "branch.io", "scorecardresearch.com", "cloudflare-dns.com", "nextdns.io", "ntp.org", "arpa", "local", "lan", "home", "localdomain", "internal", "intranet", "corp", "router",
   "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com",
   // reclame-, betaal-, chat- en mailwidgets die in andermans site zitten
   "dpgmedia.net", "stripe.network", "omnidesk.io", "belco.io", "vidyard.com", "cm.com", "editorify.net", "ccvshopserver.nl", "mailplus.nl", "laposta.nl",

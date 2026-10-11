@@ -378,6 +378,11 @@ async function build(req: Request): Promise<Response> {
         if (!FG_RULES[g.site] && inX > 0 && rt.filter((t) => t >= x.s && t <= x.e).length >= inX) x.res = 1;
       }
       if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length)) x.ml = 1;
+      // Eén pagina geopend op de site zelf (www. of de kale naam) is een echt bezoek, ook al is het maar één moment: wie een
+      // vacature of winkelpagina opent en leest, vraagt daarna vaak niets nieuws meer op. Behalve als die site die dag op dit
+      // apparaat vaker dan 4 keer zo los opduikt: dan ververst een widget of open tabblad zichzelf.
+      const single = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
+      if (single.length <= 4) for (const x of single) x.pv = 1;
     }
     const emb = embedTimes.get(gkey);
     if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });

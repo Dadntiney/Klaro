@@ -85,3 +85,10 @@ test("momenten: dezelfde foto die 3x wordt opgevraagd telt als één moment", as
   ss = extendSessions(ss, t + 30_000, true, true); // echt verder scrollen
   assert.equal(isHuman(ss[0]), true);
 });
+
+test("één pagina op de site zelf geopend is een bezoek, behalve uit een mail of als losse onderdelen", () => {
+  assert.ok(isHuman({ s: 0, e: 0, n: 1, mh: 1, pv: 1 }));
+  assert.ok(!isHuman({ s: 0, e: 0, n: 1, mh: 1 }));
+  assert.ok(!isHuman({ s: 0, e: 0, n: 1, mh: 1, pv: 1, ml: 1 }));
+  assert.ok(!isHuman({ s: 0, e: 0, n: 1, mh: 1, pv: 1, res: 1 }));
+});

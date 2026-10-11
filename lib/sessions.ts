@@ -10,6 +10,7 @@ export interface Session {
   lmt?: number; // tijdstip van het laatste beeld/geluid-moment (live tellen)
   emb?: 1;
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
+  pv?: 1; // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
   ml?: 1; // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
 }
 
@@ -109,6 +110,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
 export function isHuman(x: Session): boolean {
   if (x.emb || x.res) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
+  if (x.pv) return true; // één pagina op de site zelf geopend
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde
   if (x.n === undefined) return true;
   if ((x.m ?? 0) >= 2) return true; // beeld/geluid (Disney+, YouTube): er wordt gekeken of geluisterd
