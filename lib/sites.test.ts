@@ -274,3 +274,8 @@ test("techniek van webwinkels is achtergrond; schoolsysteem hoort bij Parro", ()
   assert.equal(classify("app.parnassys.net").name, "Parro (school)");
   assert.equal(classify("www.parro.com").name, "Parro (school)");
 });
+
+test("advertentieteller van Bing in webwinkels is geen bezoek aan Bing; zoeken op Bing wel", () => {
+  assert.ok(classify("bat.bing.com").bg);
+  assert.ok(!classify("www.bing.com").bg);
+});
