@@ -403,14 +403,15 @@ async function build(req: Request): Promise<Response> {
     }
   }
 
-  // Nieuw tabblad in Microsoft Edge: laadt vanzelf MSN-nieuws én de Bing-zoekbalk. Kort (< 1 min) en tegelijk = geen bezoek;
-  // wie echt MSN leest of zoekt, blijft langer en blijft zichtbaar.
+  // Nieuw tabblad in Microsoft Edge: laadt vanzelf MSN-nieuws (en vaak de Bing-zoekbalk). MSN korter dan een minuut = dat
+  // tabblad, geen bezoek; Bing telt dan ook niet als het tegelijk begon. Wie echt MSN leest of zoekt, blijft langer en blijft zichtbaar.
   {
     const of = (site: string) => [...groups.values()].filter((g) => g.site === site && g.main && !g.bg && !g.flag);
     const bing = of("bing.com");
     for (const m of of("msn.com")) {
       for (const x of m.ss) {
         if (x.e - x.s >= 60_000) continue;
+        x.emb = 1;
         for (const b of bing) {
           if (b.dev !== m.dev) continue;
           for (const y of b.ss) if (y.e - y.s < 60_000 && Math.abs(y.s - x.s) <= 15_000) { x.emb = 1; y.emb = 1; }
