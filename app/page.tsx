@@ -78,6 +78,20 @@ interface DetailData {
 /** Tv-apparaten: een "bezoek" korter dan een minuut is een voorvertoning op het beginscherm of de screensaver, geen kijken. */
 const isTv = (dev: string) => /^(Apple TV|TV)( \d+)?$/.test(dev);
 const tvBlip = (dev: string, x: { s: number; e: number }) => isTv(dev) && x.e - x.s < 60_000;
+/**
+ * Korte tv-stukjes (< 1 min) zijn meestal gepiep van het beginscherm. Uitzondering: iemand wisselt van app. Dan was er vlak
+ * ervoor (≤ 2 min) een andere app echt in gebruik, en speelt de nieuwe app meteen af (≥ 3 momenten, ≥ 2 keer beeld/geluid).
+ * Tijdens het kijken vraagt een tv weinig nieuws op (de verbinding blijft open), dus zo'n begin is vaak alles wat we zien.
+ */
+function tvBlipper(groups: Group[]) {
+  const long = new Map<string, { e: number; site: string }[]>();
+  for (const g of groups) {
+    if (!isTv(g.dev) || !g.main || g.bg) continue;
+    for (const x of g.ss ?? []) if (isHuman(x) && x.e - x.s >= 60_000) (long.get(g.dev) ?? long.set(g.dev, []).get(g.dev)!).push({ e: x.e, site: g.site });
+  }
+  return (g: Group, x: Session) =>
+    tvBlip(g.dev, x) && !((x.n ?? 0) >= 3 && (x.m ?? 0) >= 2 && (long.get(g.dev) ?? []).some((v) => v.site !== g.site && x.s - v.e >= -30_000 && x.s - v.e <= 120_000));
+}
 const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-apps worden ook op de achtergrond regelmatig wakker
 
 /**
@@ -557,16 +571,17 @@ export default function Home() {
     const media = new Map<string, number>();
     const steady = new Map<string, number>();
     const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
+    const blip = tvBlipper(groups);
     for (const g of groups) {
       const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
       // Afspeelsignalen (ook van achtergrond- of geblokkeerde adressen zoals Conviva) tellen altijd mee voor "er wordt gekeken".
       // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
       // Op een tv telt beeld pas als er langer dan een minuut gekeken wordt (geen voorvertoning op het beginscherm).
-      if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && !(g.ss?.[0] && tvBlip(g.dev, g.ss[0])) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
+      if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && !(g.ss?.[0] && blip(g, g.ss[0])) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
       // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
       if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
       for (const x of g.ss ?? []) {
-        if (!isHuman(x) || tvBlip(g.dev, x)) continue;
+        if (!isHuman(x) || blip(g, x)) continue;
         // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
         const until = x.e + (fgApp ? 120_000 : 0);
         if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
@@ -643,7 +658,8 @@ export default function Home() {
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
-    const human = (g: Group, x: Session) => isHuman(x) && !tvBlip(g.dev, x) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const blip = tvBlipper(groups);
+    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     const visBy = new Map<string, { s: number; site: string }[]>(); // per apparaat: begin van elk zichtbaar bezoek, met de site
