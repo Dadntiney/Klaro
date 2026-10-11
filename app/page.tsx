@@ -99,14 +99,24 @@ const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-app
  * Grijs en draait zolang er antwoorden komen; oranje en stil als er even geen antwoord kwam; rood als het misgaat.
  * Eigen component met eigen state: de rest van de pagina hoeft niet elke 1,5 sec. opnieuw te tekenen.
  */
-/** Percentage naast het draaicirkeltje zolang de oudere dagen nog laden (schatting op basis van de vorige keer); weg bij 100%. */
-function LoadPct({ start }: { start: number }) {
+/** Zolang de oudere dagen laden: het cirkeltje rechtsboven vult zich als voortgangsring, met het percentage erin (schatting op
+ *  basis van de vorige keer). Bij 100% wordt het weer het gewone draaicirkeltje. */
+function LoadRing({ start }: { start: number }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(id); }, []);
   let expected = 25_000;
   try { const v = Number(localStorage.getItem("csv-load-ms")); if (v > 2_000 && v < 120_000) expected = v; } catch {}
   const pct = Math.min(99, Math.round(100 * (1 - Math.exp((-2.5 * (now - start)) / expected))));
-  return <span className="loadpct" aria-label={`Oudere dagen laden: ${pct}%`}>{pct}%</span>;
+  const c = 2 * Math.PI * 9;
+  return (
+    <span className="loadring" role="progressbar" aria-label="Oudere dagen laden" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+      <svg viewBox="0 0 22 22" aria-hidden>
+        <circle cx="11" cy="11" r="9" className="lr-bg" />
+        <circle cx="11" cy="11" r="9" className="lr" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - pct / 100) }} />
+      </svg>
+      <span className="lr-t">{pct}</span>
+    </span>
+  );
 }
 
 function LiveDot() {
@@ -836,8 +846,7 @@ export default function Home() {
                 !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
               </button>
             )}
-            {!full && !histErr && <LoadPct start={loadStart.current} />}
-            <LiveDot />
+            {!full && !histErr ? <LoadRing start={loadStart.current} /> : <LiveDot />}
             </div>
           </div>
 
