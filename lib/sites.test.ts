@@ -312,3 +312,8 @@ test("X/Twitter is één app; advertentietellers van X en Reddit op andere sites
   for (const h of ["static.ads-twitter.com", "analytics.twitter.com", "alb.reddit.com"]) assert.ok(classify(h).bg, h);
   assert.equal(classify("www.reddit.com").name, "Reddit");
 });
+
+test("doorstuur-links en inlog/privacy van mediabedrijven zijn geen eigen bezoek", () => {
+  for (const h of ["ift.tt", "bit.ly", "login.dpgmedia.nl", "myprivacy.dpgmedia.net"]) assert.ok(classify(h).bg, h);
+  assert.ok(!classify("www.nu.nl").bg);
+});
