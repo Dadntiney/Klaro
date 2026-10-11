@@ -283,6 +283,8 @@ export function isMainHost(host: string, base: string): boolean {
   if (host === base) return !APEX_NOISE.test(base);
   if (!host.endsWith("." + base)) return false;
   const rest = host.slice(0, host.length - base.length - 1);
+  // Beeld-/bestandsservers (m.media-amazon.com, static-cdn.merk.nl): plaatjes, ook in meldingen en achtergrondverversen, geen bezoek.
+  if (/(^|-)(media|cdn|static|img|images|assets)(-|$)/.test(base.split(".")[0])) return false;
   if (rest === "www") return base !== "apple.com"; // www.apple.com wordt elk uur door apparaten zelf opgevraagd
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;

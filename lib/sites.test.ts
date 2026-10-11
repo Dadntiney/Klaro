@@ -332,3 +332,10 @@ test("chatknop in een andere site (replain, intercom, tawk) is achtergrond, geen
   for (const h of ["app.replain.cc", "widget.replain.cc", "widget.intercom.io", "embed.tawk.to", "client.crisp.chat"]) assert.equal(classify(h).bg, true, h);
   assert.equal(classify("www.vkmag.com").bg, false);
 });
+
+test("plaatjes van een beeldserver (m.media-amazon.com) zijn geen paginabezoek; echte portalen wel", () => {
+  assert.equal(isMainHost("m.media-amazon.com", "media-amazon.com"), false);
+  assert.equal(isMainHost("www.static-cdn.nl", "static-cdn.nl"), false);
+  assert.equal(isMainHost("mijn.postnl.nl", "postnl.nl"), true);
+  assert.equal(isMainHost("www.mediamarkt.nl", "mediamarkt.nl"), true); // gewone winkel met 'media' in de naam
+});

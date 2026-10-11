@@ -21,6 +21,7 @@ const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "dpgmedia.nl", at: "10:53", want: false, why: "inlog/privacy achter nu.nl" },
   { day: "2026-10-11", dev: "iPhone", site: "voetbalkrant.com", at: "*", want: false, why: "widget ververst zichzelf" },
   { day: "2026-10-11", dev: "iPhone", site: "onsoranje26.nl", at: "*", want: false, why: "widget ververst zichzelf" },
+  { day: "2026-10-11", dev: "iPhone", site: "amazon.com", at: "23:22", want: false, why: "Amazon-app op de achtergrond (melding/verversen), alleen plaatjes" },
   { day: "2026-10-08", dev: "Apple TV", site: "youtube.com", at: "00:16", want: true, why: "YouTube-app (kanaalplaatjes), alleen video daarna" },
   { day: "2026-10-11", dev: "iPhone", site: "youtube.com", at: "18:28", want: false, why: "videoclip in Shazam, YouTube niet geopend" },
   { day: "2026-10-11", dev: "iPad", site: "minecraft.net", at: "16:42", want: true, why: "Minecraft gespeeld (meetgegevens tijdens het spel)" },
