@@ -304,3 +304,11 @@ test("webinar-, e-book- en cursusapps herkend", () => {
   assert.equal(classify("readingservices.kobo.com").name, "Kobo (e-books)");
   assert.equal(classify("happywithyoga.thinkific.com").name, "Thinkific (cursus)");
 });
+
+test("X/Twitter is één app; advertentietellers van X en Reddit op andere sites zijn achtergrond", () => {
+  assert.equal(classify("x.com").name, "X (Twitter)");
+  assert.equal(classify("api.twitter.com").name, "X (Twitter)");
+  assert.equal(classify("pbs.twimg.com").site, classify("x.com").site);
+  for (const h of ["static.ads-twitter.com", "analytics.twitter.com", "alb.reddit.com"]) assert.ok(classify(h).bg, h);
+  assert.equal(classify("www.reddit.com").name, "Reddit");
+});

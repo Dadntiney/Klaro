@@ -62,6 +62,11 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "WebinarGeek (webinar)", icon: "webinargeek.com", domains: ["webinargeek.com"] },
   { name: "Kobo (e-books)", icon: "kobo.com", domains: ["kobo.com"] },
   { name: "Thinkific (cursus)", icon: "thinkific.com", domains: ["thinkific.com"] },
+  { name: "X (Twitter)", icon: "x.com", domains: ["x.com", "twitter.com", "twimg.com", "t.co"] },
+  { name: "Reddit", icon: "reddit.com", domains: ["reddit.com", "redd.it", "redditmedia.com", "redditstatic.com"] },
+  { name: "Telegram", icon: "telegram.org", domains: ["telegram.org", "t.me", "telegram.me"] },
+  { name: "Signal", icon: "signal.org", domains: ["signal.org", "signal.art"] },
+  { name: "BeReal", icon: "bereal.com", domains: ["bereal.com", "bere.al"] },
   { name: "Buienalarm", icon: "buienalarm.nl", domains: ["buienalarm.nl", "meteoplaza.com", "infoplaza.io"] }, // weer-app van Infoplaza
   { name: "Weerplaza", icon: "weerplaza.nl", domains: ["weerplaza.nl"] },
   { name: "Waze", icon: "waze.com", domains: ["waze.com"] },
@@ -155,6 +160,7 @@ const BACKGROUND_KEYWORDS = [
 /** Domeinen die als losse apex vrijwel alleen door apps worden opgevraagd; een echte bezoek loopt via www./een taalvariant. */
 const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|whatsapp|bing|yahoo)\.[a-z.]+$/;
 
+const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com"];
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "bat.bing.com", "c.bing.com", "th.bing.com", // advertentietellers/plaatjes van Microsoft in andere sites
   "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
@@ -345,6 +351,8 @@ function classifyUncached(host: string): SiteInfo {
   if (/^encrypted-tbn\d\.gstatic\.com$/.test(host)) return { site: "google.com", name: "Google", icon: "google.com", bg: false, adult: false, main: false };
   const base = baseDomain(host);
   const app = APP_BY_DOMAIN.get(host.replace(/^www\./, "")) ?? APP_BY_DOMAIN.get(base); // ook een volledig adres (zoals gofiev.vercel.app) kan een app zijn
+  // Advertentie-/meetadressen van apps die in andere sites en apps zitten (knoppen, pixels): geen gebruik van die app.
+  if (app && APP_TRACKERS.some((t) => host === t || host.endsWith("." + t))) return { site: app.icon, name: app.name, icon: app.icon, bg: true, adult: false, main: false };
   if (app) return { site: app.icon, name: app.name, icon: app.icon, bg: false, adult: false, main: true, flag: ALERT_APPS.has(app.name) ? app.name : undefined };
   // Eerst dating: sommige datingsites staan ook op de porno-lijst, maar het label Dating is dan duidelijker.
   // VPN/proxy en DNS-omzeiling eerst: altijd zichtbaar en rood, ook als het eigenlijk hulpverkeer is.
