@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
-import { isClickHost, isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
+import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { anonId, deviceType, labelDevices } from "@/lib/names";
 import { MOMENT, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
@@ -228,6 +228,7 @@ async function build(req: Request): Promise<Response> {
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
+  const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
@@ -380,7 +381,12 @@ async function build(req: Request): Promise<Response> {
         const inX = all.filter((t) => t >= x.s && t <= x.e).length;
         if (!FG_RULES[g.site] && inX > 0 && rt.filter((t) => t >= x.s && t <= x.e).length >= inX) x.res = 1;
       }
-      if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length, devClick.get(g.dev) ?? [])) x.ml = 1;
+      if (esp.length) for (const x of sessions) {
+        const mh = mt.filter((t) => t >= x.s && t <= x.e).length, mc = devMailClient.get(g.dev) ?? [], ck = devClick.get(g.dev) ?? [];
+        if (isMailSession(x, esp, mc, mh, ck)) x.ml = 1;
+        // Alleen een bezoek dankzij een klik in de mail: onthouden, want één klik leidt naar één site (zie hieronder).
+        else if (isMailSession(x, esp, mc, mh)) clickVisits.push({ g, x, click: clickBefore(x, ck)! });
+      }
       // Eén pagina geopend op de site zelf (www. of de kale naam) is een echt bezoek, ook al is het maar één moment: wie een
       // vacature of winkelpagina opent en leest, vraagt daarna vaak niets nieuws meer op. Behalve als die site die dag op dit
       // apparaat vaker dan 4 keer zo los opduikt: dan ververst een widget of open tabblad zichzelf.
@@ -397,6 +403,18 @@ async function build(req: Request): Promise<Response> {
     g.isNew = meaningful && g.main && !g.bg && g.bl < g.n && (siteFirst.get(g.site) ?? 0) >= newCutoff;
     if (g.main && !g.bg) g.susp = suspicion(g.site) ?? undefined;
     siteName.set(g.site, g.name);
+  }
+
+  // Eén tik op een mail-link opent één site. "Klikt" één moment meerdere sites tegelijk open, dan laadde een mail zijn plaatjes via
+  // een klik-adres: dan is het gewoon een geopende mail en telt geen van die sites. Echte klik-bezoeken krijgen een merkje (ck),
+  // zodat de pagina ze ook niet alsnog als mail ziet.
+  {
+    const byClick = new Map<string, typeof clickVisits>();
+    for (const v of clickVisits) (byClick.get(v.g.dev + "|" + v.click) ?? byClick.set(v.g.dev + "|" + v.click, []).get(v.g.dev + "|" + v.click)!).push(v);
+    for (const vs of byClick.values()) {
+      const single = new Set(vs.map((v) => v.g.site)).size === 1;
+      for (const { x } of vs) if (single) x.ck = 1; else { x.ml = 1; delete x.pv; }
+    }
   }
 
   // Een ingesloten filmpje (Vimeo/YouTube-speler) terwijl op hetzelfde apparaat een andere site open is, hoort bij die site.

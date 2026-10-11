@@ -49,6 +49,11 @@ export function isClickHost(host: string): boolean {
   return isEspHost(host) && CLICK.test(host);
 }
 
+/** De klik (op een mail-link) vlak vóór dit bezoek, als die er is. */
+export function clickBefore(x: { s: number }, clicks: number[]): number | undefined {
+  return clicks.filter((t) => t >= x.s - 30_000 && t <= x.s + 1_000).sort((a, b) => b - a)[0];
+}
+
 export function isMailClientHost(host: string): boolean {
   return CLIENT.test(host);
 }
@@ -65,7 +70,7 @@ export const MAIL_WINDOW = 60_000;
 export function isMailSession(x: { s: number; e: number; n?: number }, esp: number[], client: number[], mainHits?: number, clicks: number[] = []): boolean {
   if (x.e - x.s > 90_000) return false;
   // Op een link in de mail getikt (klikteller vlak ervoor) en daarna de site zelf geladen: een echt bezoek.
-  if (mainHits !== 0 && clicks.some((t) => t >= x.s - 30_000 && t <= x.s + 5_000)) return false;
+  if (mainHits !== 0 && clickBefore(x, clicks) !== undefined) return false;
   // Veel verzoeken én de site zelf erbij = echt bezoek. Weinig verzoeken, of alleen plaatjes/tellers (geen site zelf) = mail.
   if ((x.n ?? 1) > 3 && (mainHits === undefined || mainHits > 0)) return false;
   const near = (arr: number[], w: number) => arr.filter((t) => t >= x.s - w && t <= x.e + w).length;
