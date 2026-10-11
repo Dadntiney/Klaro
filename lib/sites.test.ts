@@ -327,3 +327,8 @@ test("door de eigenaar goedgekeurd: vkmag.com is geen 18+-melding, echte 18+ bli
   for (const h of ["vkmag.com", "www.vkmag.com", "cdn.vkmag.com"]) assert.equal(classify(h).flag, undefined);
   assert.equal(classify("www.pornhub.com").flag, "18+");
 });
+
+test("chatknop in een andere site (replain, intercom, tawk) is achtergrond, geen bezoek", () => {
+  for (const h of ["app.replain.cc", "widget.replain.cc", "widget.intercom.io", "embed.tawk.to", "client.crisp.chat"]) assert.equal(classify(h).bg, true, h);
+  assert.equal(classify("www.vkmag.com").bg, false);
+});

@@ -128,7 +128,10 @@ const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
-const BACKGROUND = new Set(["stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
+const BACKGROUND = new Set([
+  // chatknoppen die in andere sites zitten (geen eigen bezoek)
+  "replain.cc", "intercom.io", "intercomcdn.com", "intercomassets.com", "zdassets.com", "tawk.to", "crisp.chat", "livechatinc.com", "tidio.co", "tidiochat.com", "driftt.com", "usemessages.com", "olark.com", "jivosite.com",
+  "stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
   "ift.tt", "bit.ly", "tinyurl.com", "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com",
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
