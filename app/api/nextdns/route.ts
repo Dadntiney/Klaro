@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
-import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
+import { FG_RULES, TV_APPS, classify, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { anonId, deviceType, labelDevices } from "@/lib/names";
 import { MOMENT, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
@@ -225,6 +225,7 @@ async function build(req: Request): Promise<Response> {
   const fgTimes = new Map<string, number[]>();
   const embedTimes = new Map<string, number[]>();
   const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
+  const loginTimes = new Map<string, number[]>(); // inlog-/bankierpagina's (bankieren., mijn., login.): altijd bewust geopend
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
@@ -326,6 +327,7 @@ async function build(req: Request): Promise<Response> {
     }
     if (isResourceHost(host)) (resTimes.get(gkey) ?? resTimes.set(gkey, []).get(gkey)!).push(t);
     if (info.main && !info.flag) (mainTimes.get(gkey) ?? mainTimes.set(gkey, []).get(gkey)!).push(t);
+    if (!blocked && isLoginHost(host)) (loginTimes.get(gkey) ?? loginTimes.set(gkey, []).get(gkey)!).push(t);
     if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
     if (isPlaying(host, blocked)) {
@@ -395,6 +397,9 @@ async function build(req: Request): Promise<Response> {
       // Eén pagina geopend op de site zelf (www. of de kale naam) is een echt bezoek, ook al is het maar één moment: wie een
       // vacature of winkelpagina opent en leest, vraagt daarna vaak niets nieuws meer op. Behalve als die site die dag op dit
       // apparaat vaker dan 4 keer zo los opduikt: dan ververst een widget of open tabblad zichzelf.
+      // Inloggen of bankieren (bankieren.rabobank.nl, mijn.merk.nl): bewust geopend, nooit een mail of widget.
+      const lt = loginTimes.get(gkey) ?? [];
+      for (const x of sessions) if (lt.some((t) => t >= x.s && t <= x.e)) { x.lg = 1; delete x.ml; }
       const single = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
       if (single.length <= 4) for (const x of single) x.pv = 1;
       if (single.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), single.length]);

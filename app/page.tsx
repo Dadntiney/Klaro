@@ -589,7 +589,7 @@ export default function Home() {
       // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
       if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
       for (const x of g.ss ?? []) {
-        if (!isHuman(x) || blip(g, x) || (x.pv && auto.has(g.dev + "|" + g.site))) continue;
+        if (!isHuman(x) || blip(g, x) || (x.pv && !x.lg && auto.has(g.dev + "|" + g.site))) continue;
         // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
         const until = x.e + (fgApp ? 120_000 : 0);
         if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
@@ -667,7 +667,7 @@ export default function Home() {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
     const blip = tvBlipper(groups);
-    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && auto.has(g.dev + "|" + g.site)) && !(isPlainSite(g) && mailT.get(g.dev) && !x.ck && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site)) && !(isPlainSite(g) && mailT.get(g.dev) && !x.ck && !x.lg && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     const visBy = new Map<string, { s: number; site: string }[]>(); // per apparaat: begin van elk zichtbaar bezoek, met de site

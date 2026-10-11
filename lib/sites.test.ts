@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, fgHit, isEmbedHost, payKind, isMedia, isMainHost } from "./sites.ts";
+import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -292,4 +292,9 @@ test("Zappelin hoort bij NPO; Buienalarm (Infoplaza/Meteoplaza) is een eigen app
 test("bank-app openen (bankieren.bank.nl) is de site zelf", () => {
   assert.ok(classify("bankieren.rabobank.nl").main);
   assert.ok(!classify("log.rabobank.nl").main);
+});
+
+test("inlog-/bankierpagina's herkennen", () => {
+  for (const h of ["bankieren.rabobank.nl", "mijn.ing.nl", "inloggen.belastingdienst.nl"]) assert.ok(isLoginHost(h), h);
+  for (const h of ["log.rabobank.nl", "www.rabobank.nl", "auth.split.io", "login.mso.msidentity.com", "account.apple.com", "auth.meethue.com"]) assert.ok(!isLoginHost(h), h);
 });

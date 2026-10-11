@@ -256,6 +256,11 @@ const ALERT_APPS = new Set<string>();
 /** Hoofdadres: het domein zelf, www., een taal-/mobiele variant (nl., m.). Hulpadressen als cdn., api., static. tellen niet. */
 const LANG = new Set("nl en de fr es it pt be uk us da sv no fi pl ru ja zh ko ar tr cs hu ro el he sk bg hr sl lt lv et nb nn id vi th hi fa ca eu gl is ga mt sq sr uk ms".split(" "));
 
+/** Inlog- of bankierpagina van een site (bankieren.rabobank.nl, mijn.ing.nl, login.merk.nl): wordt alleen bewust geopend. */
+export function isLoginHost(host: string): boolean {
+  return /^(bankieren|internetbankieren|mijn|inloggen)\./.test(host) && !classify(host).bg;
+}
+
 export function isMainHost(host: string, base: string): boolean {
   if (host === base) return !APEX_NOISE.test(base);
   if (!host.endsWith("." + base)) return false;
