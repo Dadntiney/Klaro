@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clusterSessions, extendSessions, isHuman, minutes, totalMinutes } from "./sessions.ts";
+import { OPEN_BURST, clusterSessions, extendSessions, isHuman, minutes, totalMinutes } from "./sessions.ts";
 
 const m = (x: number) => 1_700_000_000_000 + x * 60_000; // vaste starttijd (0 zou "geen tijd" betekenen)
 
@@ -107,4 +107,14 @@ test("app opent: twee verschillende inhoud-adressen in één moment tellen als g
   bg = extendSessions(bg, t + 700, false, false, undefined, "mmx-ds.cdn.whatsapp.net");
   assert.equal(bg[0].f, 1);
   assert.equal(isHuman(bg[0]), false);
+});
+
+test("twee adressen in één moment telt alleen bij WhatsApp, niet bij apps die zo ook op de achtergrond verversen", () => {
+  assert.ok(OPEN_BURST.has("whatsapp.com"));
+  for (const s of ["facebook.com", "instagram.com", "youtube.com", "google.com"]) assert.ok(!OPEN_BURST.has(s));
+  const t = 1_000_000_000;
+  let ss = extendSessions([], t, false, true); // Facebook: geen adres meegegeven → telt per moment
+  ss = extendSessions(ss, t + 300, false, true);
+  assert.equal(ss[0].f, 1);
+  assert.equal(isHuman(ss[0]), false);
 });

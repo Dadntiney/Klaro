@@ -4,7 +4,7 @@ import { isPlainSite } from "@/lib/system";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { anonId, deviceType, labelDevices } from "@/lib/names";
-import { MOMENT, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
+import { MOMENT, OPEN_BURST, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
 import { categoryOf } from "@/lib/categories";
 import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
@@ -374,8 +374,8 @@ async function build(req: Request): Promise<Response> {
       for (const x of sessions) {
         const inX = real.filter((t) => t >= x.s && t <= x.e);
         // Inhoud-momenten, of het aantal verschillende inhoud-adressen als dat meer is: een app die opent haalt in één
-        // moment instellingen én plaatjes op (WhatsApp: graph + static); achtergrond raakt hooguit één zo'n adres.
-        const fgHosts = new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s && h.t <= x.e && fgHit(g.site, h.host)).map((h) => h.host)).size;
+        // moment instellingen én plaatjes op (WhatsApp: graph + static); achtergrond raakt hooguit één zo'n adres. Zie OPEN_BURST.
+        const fgHosts = !OPEN_BURST.has(g.site) ? 0 : new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s && h.t <= x.e && fgHit(g.site, h.host)).map((h) => h.host)).size;
         x.f = Math.max(moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e)), fgHosts);
         if (inX.length) { x.s = inX.reduce((a, b) => Math.min(a, b)); x.e = inX.reduce((a, b) => Math.max(a, b)); }
         // Op een tv telt kijken vanaf het afspelen (met 2 minuten om iets te kiezen), niet vanaf het beginscherm dat open stond.

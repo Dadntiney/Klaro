@@ -59,6 +59,11 @@ export function totalMinutes(times: number[]): number {
   return allSessions(times).reduce((n, x) => n + minutes(x), 0);
 }
 
+// Apps waarbij openen in één moment meerdere inhoud-adressen tegelijk ophaalt (WhatsApp: graph + static bij openen en
+// versturen). Alleen hier telt elk ander adres als extra teken van gebruik; bij Facebook/Instagram/YouTube doet
+// achtergrondverversen dat ook, daar zou het vals alarm geven (nagerekend over de hele CSV).
+export const OPEN_BURST = new Set(["whatsapp.com"]);
+
 /**
  * Voeg één nieuw tijdstip toe aan bestaande sessies (nieuwste eerst).
  * `fg`: alleen bij apps met achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): true = inhoud geladen, false = achtergrond.
