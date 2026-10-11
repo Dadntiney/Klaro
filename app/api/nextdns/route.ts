@@ -138,6 +138,9 @@ async function fetchToday(profile: string, key: string, hours = 0): Promise<{ ro
   return { rows: oldestFirst(out), cutAt: Number.isFinite(oldest) ? oldest : Date.now() };
 }
 
+/** Social-apps waarin advertenties en links staan die de app alvast "aanklopt". */
+const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net", "youtube.com"]);
+
 // Komen er tegelijk meer verzoeken voor alles binnen (meerdere telefoons, of de maandelijkse controle), dan één keer ophalen.
 let inflight: Promise<Response> | null = null;
 
@@ -351,7 +354,11 @@ async function build(req: Request): Promise<Response> {
   // Momenten waarop op een apparaat in een social-app gescrold werd (inhoud geladen), voor alle sites samen.
   const fgByDev = new Map<string, number[]>();
   const devFg = (dev: string) => {
-    if (!fgByDev.size) for (const [k, ts] of fgTimes) { const dv = k.split("|")[1]; fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
+    if (!fgByDev.size) {
+    for (const [k, ts] of fgTimes) { const dv = k.split("|")[1]; fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
+    // Ook apps zonder eigen "inhoud"-regel: elk verkeer van X, TikTok, Reddit, LinkedIn, Snapchat, Pinterest telt als scrollen.
+    for (const [k, ts] of times) { const [, dv, site] = k.split("|"); if (SOCIAL.has(site)) fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
+  }
     return fgByDev.get(dev) ?? [];
   };
   for (const [gkey, g] of groups) {
