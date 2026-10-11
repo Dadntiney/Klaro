@@ -15,6 +15,10 @@ Werkt de sleutel niet (401), stop dan en meld dat de sleutel in Vercel en in de 
 Zonder AUDIT_TOKEN (in het gesprek waar de controle binnenkomt, met toegang tot de site): haal het overzicht één keer op
 en draai `node --experimental-strip-types scripts/gemist.ts overzicht.json` voor de lijst "mogelijk gemist".
 
+**Na elke wijziging die live gaat:** haal het overzicht op en draai `node --experimental-strip-types scripts/referentie.ts overzicht.json`.
+Dat zijn gevallen die de eigenaar zelf heeft gecontroleerd; klopt er één niet, dan is de wijziging fout en wordt die meteen hersteld.
+Nieuwe gevallen die de eigenaar aanwijst komen erbij in `scripts/referentie.ts`.
+
 ## Wat je nakijkt
 
 0. **`missed`** (eerst!): activiteit van de laatste 2 dagen die op gebruik lijkt maar niet zichtbaar is, met de reden (`why`).
