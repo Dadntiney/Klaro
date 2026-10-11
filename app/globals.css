@@ -331,8 +331,8 @@ h2 .dview + .dview.icon { margin-left:0; }
 .skel-day { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
 .skel-err { margin:24px 0; font-size:13px; }
 
-/* Live-bolletje: subtiel teken dat het ophalen loopt. */
-.livedot { flex:0 0 auto; width:7px; height:7px; border-radius:50%; margin:0 2px 0 4px; background:#34c759; opacity:.45; }
+/* Live-bolletje: grijs en zacht knipperend als het ophalen loopt (groen is voor "apparaat in gebruik"); oranje/rood bij een probleem. */
+.livedot { flex:0 0 auto; width:7px; height:7px; border-radius:50%; margin:0 2px 0 8px; background:var(--muted); opacity:.4; }
 .livedot.ok { animation:beat .9s ease-out; }
 .livedot.slow { background:#ff9f0a; opacity:.9; }
 .livedot.fail { background:#ff453a; opacity:1; }

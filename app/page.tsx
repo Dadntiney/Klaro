@@ -96,7 +96,7 @@ const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-app
 
 /**
  * Klein bolletje rechts in de balk: laat zien dat het live ophalen (elke 1,5 sec.) echt loopt.
- * Groen en knippert zacht bij elk antwoord; oranje als er even geen antwoord kwam; rood als het misgaat.
+ * Grijs en knippert zacht bij elk antwoord; oranje als er even geen antwoord kwam; rood als het misgaat.
  * Eigen component met eigen state: de rest van de pagina hoeft niet elke 1,5 sec. opnieuw te tekenen.
  */
 function LiveDot() {
