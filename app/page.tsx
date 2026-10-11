@@ -679,7 +679,7 @@ export default function Home() {
       }
     }
     const standalone = (g: Group, x: Session) =>
-      (x.n ?? 0) >= 3 && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
+      (x.n ?? 0) >= 3 && !x.ml && !x.res && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
     for (const g of groups) {
       if ((device && g.dev !== device) || g.bg) continue;
       if (!g.main && (isSystemSite(g.site) || !(g.ss ?? []).some((x) => standalone(g, x)))) continue;

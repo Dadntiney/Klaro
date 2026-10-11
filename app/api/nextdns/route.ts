@@ -379,7 +379,7 @@ async function build(req: Request): Promise<Response> {
       for (const x of sessions) x.m = Math.max(x.m ?? 0, moments(dm.filter((t) => t >= x.s - 120_000 && t <= x.e + 120_000)));
     }
     // Korte "bezoeken" tegelijk met het openen van een nieuwsbrief zijn plaatjes uit die mail, geen bezoek (rood blijft altijd zichtbaar).
-    if (!g.flag && g.main && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
+    if (!g.flag && !g.bg && isPlainSite(g)) { // herkende apps (eigen naam) komen nooit uit een mail
       const esp = devEsp.get(g.dev) ?? [];
       const mt = mainTimes.get(gkey) ?? [];
       const rt = resTimes.get(gkey) ?? [];
