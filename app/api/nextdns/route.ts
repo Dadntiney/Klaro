@@ -353,6 +353,9 @@ async function build(req: Request): Promise<Response> {
         const inX = real.filter((t) => t >= x.s && t <= x.e);
         x.f = moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e));
         if (inX.length) { x.s = inX.reduce((a, b) => Math.min(a, b)); x.e = inX.reduce((a, b) => Math.max(a, b)); }
+        // Op een tv telt kijken vanaf het afspelen (met 2 minuten om iets te kiezen), niet vanaf het beginscherm dat open stond.
+        const play = (mediaTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e);
+        if (/^(Apple TV|TV)( \d+)?$/.test(g.dev) && play.length) x.s = Math.max(x.s, play.reduce((a, b) => Math.min(a, b)) - 120_000);
       }
     }
     g.sc = sessions.length;
