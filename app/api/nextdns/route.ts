@@ -10,6 +10,7 @@ import { gapP95 } from "@/lib/devstats";
 import { suspicion } from "@/lib/suspect";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
 import { autoRefreshing, nextdnsError, windowStart } from "@/lib/nextdns";
+import { anchorOf, chainTimes, companionFor, COMPANIONS } from "@/lib/companion";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -254,6 +255,23 @@ async function build(req: Request): Promise<Response> {
   let minT = Infinity;
   let maxT = 0;
   const lastHit = new Map<string, number>();
+  // Algemene adressen die alleen in een keten bij een spel horen (Minecraft: meetgegevens van Microsoft), zie lib/companion.ts.
+  const compRaw = new Map<string, { a: number[]; h: number[] }>();
+  for (const r of body) {
+    const host = extractHost(r[hostCol] ?? "");
+    const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    if (!t) continue;
+    const c = anchorOf(host!) ?? companionFor(host!);
+    if (!c) continue;
+    const k = deviceMap[idOf(r)] + "|" + c.app;
+    const e = compRaw.get(k) ?? compRaw.set(k, { a: [], h: [] }).get(k)!;
+    (c.anchor.test(host!) ? e.a : e.h).push(t);
+  }
+  const compIn = new Map<string, Set<number>>();
+  for (const [k, e] of compRaw) {
+    const c = COMPANIONS.find((x) => x.app === k.slice(k.lastIndexOf("|") + 1))!;
+    if (e.a.length) compIn.set(k, chainTimes(e.a, e.h, c.keep, c.lead));
+  }
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
@@ -266,6 +284,8 @@ async function build(req: Request): Promise<Response> {
     if (t && prevHit !== undefined && Math.abs(t - prevHit) <= MOMENT) continue;
     if (t) lastHit.set(dk, t);
     let info = classify(host);
+    const comp = t ? companionFor(host) : undefined;
+    if (comp && compIn.get(dev + "|" + comp.app)?.has(t)) info = classify(comp.app);
     const d = t ? dayFmt.format(t) : "onbekend";
 
     // Door NextDNS geblokkeerd? Een geblokkeerde poging naar porno/dating is altijd belangrijk, ook als het adres niet op mijn lijst staat.

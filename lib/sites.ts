@@ -17,7 +17,9 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Snapchat", icon: "snapchat.com", domains: ["snapchat.com", "sc-cdn.net", "snap-dev.net"] },
   { name: "Discord", icon: "discord.com", domains: ["discord.com", "discordapp.com", "discordapp.net", "discord.gg", "discord.media"] },
   { name: "Twitch", icon: "twitch.tv", domains: ["twitch.tv", "ttvnw.net", "jtvnw.net", "twitchcdn.net"] },
-  { name: "Minecraft", icon: "minecraft.net", domains: ["minecraft.net", "mojang.com", "minecraftservices.com"] },
+  { name: "Minecraft", icon: "minecraft.net", domains: ["minecraft.net", "mojang.com", "minecraftservices.com", "minecraft-services.net",
+    // servers in de lijst van het spel (worden bij openen allemaal even aangeklopt)
+    "hivebedrock.eu", "hivebedrock.network", "lbsg.net", "lifeboat.games", "cubecraft.net", "galaxite.net", "enchanted.gg", "megasmp.gg", "inpvp.net", "donutsmp.org", "mineville.org"] },
   { name: "Epic Games / Fortnite", icon: "epicgames.com", domains: ["epicgames.com", "fortnite.com", "unrealengine.com", "epicgames.dev"] },
   { name: "Budge Studios (spel)", icon: "budgestudios.ca", domains: ["budgestudios.ca", "budgenetwork.com"] },
   { name: "GoFiev.nl", icon: "gofiev.nl", domains: ["gofiev.vercel.app", "gofiev.nl"] },

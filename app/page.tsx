@@ -6,6 +6,7 @@ import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
+import { companionFor } from "@/lib/companion";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
@@ -408,8 +409,12 @@ export default function Home() {
     setGroups((prev) => {
       const next = [...prev];
       for (const ev of events) {
-        const e = { ...ev, dev: deviceMap.current[ev.devId] };
+        let e = { ...ev, dev: deviceMap.current[ev.devId] };
         const d = dayKeyFmt.format(e.t);
+        // Meetgegevens van Microsoft die aansluiten op een lopend spel (Minecraft) horen bij dat spel, net als op de server.
+        const comp = e.host ? companionFor(e.host) : undefined;
+        const game = comp && next.find((g) => g.d === d && g.dev === e.dev && g.site === comp.app);
+        if (comp && game && e.t - game.last <= comp.keep && e.t >= game.last - 1_500) e = { ...e, site: game.site, name: game.name, icon: game.icon, bg: false, main: true, fg: undefined, res: undefined, cat: game.cat ?? e.cat };
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
         if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), lm: e.media ? Math.max(next[i].lm ?? 0, e.t) : next[i].lm, ss: extendSessions(next[i].ss ?? [], e.t, !!e.media, e.fg, isPlainSite(next[i]) && e.fg === undefined ? !!e.res : undefined, OPEN_BURST.has(e.site) ? e.host : undefined), sc: (next[i].sc ?? 0) + ((next[i].ss ?? []).some((x) => e.t >= x.s - 300_000 && e.t <= x.e + 300_000) ? 0 : 1), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t, !!e.media, e.fg)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
         else {
