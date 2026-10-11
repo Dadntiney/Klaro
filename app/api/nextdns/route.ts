@@ -230,6 +230,7 @@ async function build(req: Request): Promise<Response> {
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
+  const devSearch = new Map<string, number[]>(); // momenten met een zoekopdracht (Google/Bing/...)
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
@@ -297,8 +298,7 @@ async function build(req: Request): Promise<Response> {
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
       if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
-      // Zoeken op Google/Bing/DuckDuckGo: wie daarna een site opent, heeft op een zoekresultaat getikt (geen mail).
-      if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
+      if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devSearch.get(dev) ?? devSearch.set(dev, []).get(dev)!).push(t);
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
@@ -348,6 +348,12 @@ async function build(req: Request): Promise<Response> {
   const siteName = new Map<string, string>();
   const embedSes: { g: Group; x: Session }[] = [];
   const singles = new Map<string, number[]>(); // per apparaat|site: aantal losse één-pagina-opvragingen per dag
+  // Momenten waarop op een apparaat in een social-app gescrold werd (inhoud geladen), voor alle sites samen.
+  const fgByDev = new Map<string, number[]>();
+  const devFg = (dev: string) => {
+    if (!fgByDev.size) for (const [k, ts] of fgTimes) { const dv = k.split("|")[1]; fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
+    return fgByDev.get(dev) ?? [];
+  };
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
     const sessions = allSessions(all);
@@ -404,14 +410,16 @@ async function build(req: Request): Promise<Response> {
       // Inloggen of bankieren (bankieren.rabobank.nl, mijn.merk.nl): bewust geopend, nooit een mail of widget.
       const lt = loginTimes.get(gkey) ?? [];
       for (const x of sessions) if (lt.some((t) => t >= x.s && t <= x.e)) { x.lg = 1; delete x.ml; }
-      // Eén pagina telt alleen als er echt een pagina laadde (minstens 2 verschillende adressen van de site), of als er een klik
-      // (mail-link of zoekresultaat) aan voorafging. Eén los adres = een app die een advertentie/link alvast "aanklopt".
+      // Eén pagina telt als bezoek, behalve als het gebeurde terwijl er in een social-app (X, Facebook, Instagram, ...) gescrold
+      // werd en er maar één adres van de site opgevraagd werd: dan klopte de app een advertentie of link alvast aan.
       const sh = siteHosts.get(gkey) ?? [];
       const hostsIn = (x: Session) => new Set(sh.filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host)).size;
-      const ckd = devClick.get(g.dev) ?? [];
-      const single = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m && (hostsIn(x) >= 2 || clickBefore(x, ckd) !== undefined));
-      if (single.length <= 4) for (const x of single) x.pv = 1;
-      if (single.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), single.length]);
+      const fgDev = devFg(g.dev);
+      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 20_000 && t <= x.e + 20_000);
+      const cand = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
+      const single = cand.filter((x) => hostsIn(x) >= 2 || !inSocial(x));
+      if (cand.length <= 4) for (const x of single) x.pv = 1;
+      if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
     }
     const emb = embedTimes.get(gkey);
     if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });
@@ -422,6 +430,21 @@ async function build(req: Request): Promise<Response> {
     g.isNew = meaningful && g.main && !g.bg && g.bl < g.n && (siteFirst.get(g.site) ?? 0) >= newCutoff;
     if (g.main && !g.bg) g.susp = suspicion(g.site) ?? undefined;
     siteName.set(g.site, g.name);
+  }
+
+  // Eerst zoeken en daarna de site zelf laden = op een zoekresultaat getikt, ook al kwam er net een nieuwsbrief binnen. Alleen als
+  // die zoeksessie zelf echt gebruik was (een widget die Google ververst telt niet).
+  {
+    const searchSes = new Map<string, Session[]>();
+    for (const g of groups.values()) if (["google.com", "bing.com", "duckduckgo.com", "ecosia.org"].includes(g.site)) for (const x of g.ss) if (isHuman(x) && (x.n ?? 0) >= 2) (searchSes.get(g.dev) ?? searchSes.set(g.dev, []).get(g.dev)!).push(x);
+    for (const g of groups.values()) {
+      if (!g.main || g.bg || g.flag || !isPlainSite(g)) continue;
+      for (const x of g.ss) {
+        if (!x.ml || !(x.mh ?? 0)) continue;
+        const q = (devSearch.get(g.dev) ?? []).filter((t) => t >= x.s - 60_000 && t <= x.s + 1_000);
+        if (q.length && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
+      }
+    }
   }
 
   // Eén tik op een mail-link opent één site. "Klikt" één moment meerdere sites tegelijk open, dan laadde een mail zijn plaatjes via
