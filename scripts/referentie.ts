@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import { isHuman } from "../lib/sessions.ts";
 
-type Case = { day: string; dev: string; site: string; at: string; want: boolean; why: string };
+type Case = { day: string; dev: string; site: string; at: string; want: boolean | "onzeker"; why: string };
 const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "praxis.nl", at: "10:27", want: true, why: "website geopend na zoeken" },
   { day: "2026-10-11", dev: "iPhone", site: "decathlon.nl", at: "10:16", want: true, why: "inloggen na zoeken" },
@@ -15,8 +15,8 @@ const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "inspirerendleven.nl", at: "09:33", want: true, why: "klik in nieuwsbrief" },
   { day: "2026-10-11", dev: "iPhone", site: "marktplaats.nl", at: "09:14", want: true, why: "app geopend" },
   { day: "2026-10-11", dev: "iPhone", site: "nespresso.com", at: "10:47", want: false, why: "plaatje in nieuwsbrief" },
-  { day: "2026-10-11", dev: "iPhone", site: "jobescape.me", at: "11:00", want: false, why: "advertentie in X" },
-  { day: "2026-10-11", dev: "iPhone", site: "wwiqtest.com", at: "10:53", want: false, why: "advertentie in X" },
+  { day: "2026-10-11", dev: "iPhone", site: "jobescape.me", at: "11:00", want: "onzeker", why: "advertentie in X (of toch geopend)" },
+  { day: "2026-10-11", dev: "iPhone", site: "wwiqtest.com", at: "10:53", want: "onzeker", why: "advertentie in X (of toch geopend)" },
   { day: "2026-10-11", dev: "iPhone", site: "ift.tt", at: "10:53", want: false, why: "doorstuur-link" },
   { day: "2026-10-11", dev: "iPhone", site: "dpgmedia.nl", at: "10:53", want: false, why: "inlog/privacy achter nu.nl" },
   { day: "2026-10-11", dev: "iPhone", site: "voetbalkrant.com", at: "*", want: false, why: "widget ververst zichzelf" },
@@ -30,11 +30,13 @@ const hm = (t: number) => new Date(t).toLocaleTimeString("nl-NL", { timeZone: "E
 let bad = 0;
 for (const c of CASES) {
   const gs = d.groups.filter((g: any) => g.d === c.day && g.dev === c.dev && g.site === c.site && !g.bg && g.main);
-  const vis = gs.flatMap((g: any) => (g.ss ?? []).filter((x: any) => isHuman(x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site)))).map((x: any) => hm(x.s));
+  const visS = gs.flatMap((g: any) => (g.ss ?? []).filter((x: any) => isHuman(x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site))));
+  const vis = visS.map((x: any) => hm(x.s));
   const got = c.at === "*" ? vis.length > 0 : vis.includes(c.at);
-  const ok = got === c.want;
+  const unsure = visS.some((x: any) => (c.at === "*" || hm(x.s) === c.at) && x.uz);
+  const ok = c.want === "onzeker" ? got && unsure : got === c.want && !(c.want && unsure);
   if (!ok) bad++;
-  console.log(`${ok ? "✓" : "✗"} ${c.day} ${c.at} ${c.site} → ${c.want ? "tonen" : "niet tonen"} (${c.why})${ok ? "" : `  [nu: ${got ? "getoond" : "niet getoond"}]`}`);
+  console.log(`${ok ? "✓" : "✗"} ${c.day} ${c.at} ${c.site} → ${c.want === "onzeker" ? "tonen als onzeker" : c.want ? "tonen" : "niet tonen"} (${c.why})${ok ? "" : `  [nu: ${got ? (unsure ? "getoond als onzeker" : "getoond") : "niet getoond"}]`}`);
 }
 console.log(bad ? `\n${bad} referentiegeval(len) kloppen niet.` : "\nAlle referentiegevallen kloppen.");
 process.exit(bad ? 1 : 0);

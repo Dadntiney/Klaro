@@ -11,7 +11,8 @@ export interface Session {
   emb?: 1;
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   lg?: 1; // inlog- of bankierpagina geopend (bankieren.*, mijn.*): altijd een bewust bezoek
-  pv?: 1; // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
+  pv?: 1;
+  uz?: 1; // onzeker: één los adres terwijl in een social-app gescrold werd (advertentie óf echt geopend) // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
   ml?: 1;
   ck?: 1; // via een tik op een link in een mail naar de site gegaan: een echt bezoek (niet als mail zien) // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
 }

@@ -426,8 +426,9 @@ async function build(req: Request): Promise<Response> {
       // Ruim venster: ook social-apps onthouden adressen, dus tijdens scrollen komen er soms minuten lang geen nieuwe.
       const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 150_000 && t <= x.e + 150_000);
       const cand = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
-      const single = cand.filter((x) => hostsIn(x) >= 2 || !inSocial(x));
-      if (cand.length <= 4) for (const x of single) x.pv = 1;
+      // Eén los adres tijdens scrollen in een social-app: kan een aangeklopte advertentie zijn, maar ook een echt geopende
+      // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
+      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x)) x.uz = 1; }
       if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
     }
     const emb = embedTimes.get(gkey);

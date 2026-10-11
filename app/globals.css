@@ -364,3 +364,6 @@ h2 .dview + .dview.icon { margin-left:0; }
 .loadring .lr-bg { stroke:color-mix(in srgb, var(--muted) 25%, transparent); }
 .loadring .lr { stroke:var(--muted); stroke-linecap:round; transition:stroke-dashoffset .5s linear; }
 .loadring .lr-t { font-size:7.5px; font-weight:600; fill:var(--muted); font-variant-numeric:tabular-nums; }
+
+/* Onzeker: één los adres tijdens scrollen in een social-app. Rustig label, geen alarm. */
+.unsure { font-size:12px; padding:0 6px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }

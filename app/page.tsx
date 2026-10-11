@@ -155,6 +155,7 @@ function whyShown(g: Group, ss: Session[]): string {
   if (!x) return "";
   const mins = Math.round(ss.reduce((n, y) => n + (y.e - y.s), 0) / 60_000);
   if (x.lg) return "Inlog- of bankierpagina geopend.";
+  if (ss.every((y) => y.uz)) return "Onzeker: één adres terwijl in X/Facebook gescrold werd. Misschien een advertentie die de app alvast aanklopte, misschien echt geopend.";
   if (x.ck) return "Geopend via een link (in een mail of na zoeken).";
   if ((x.m ?? 0) >= 2) return `Video of geluid afgespeeld${mins ? `, ongeveer ${mins} min` : ""}.`;
   if ((x.f ?? 0) >= 2) return `App geopend en inhoud geladen (${x.f}× nieuw).`;
@@ -969,6 +970,7 @@ export default function Home() {
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             if (m > 0) parts.push(<span key="m" className="mdur">{dur(m)}</span>);
+                            if (rss.every((x) => x.uz)) parts.push(<span key="u" className="unsure">onzeker</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
