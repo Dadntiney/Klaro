@@ -646,9 +646,13 @@ export default function Home() {
     const human = (g: Group, x: Session) => isHuman(x) && !tvBlip(g.dev, x) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
+    const visBy = new Map<string, { s: number; site: string }[]>(); // per apparaat: begin van elk zichtbaar bezoek, met de site
     for (const g of groups) {
       if (g.bg || !g.main) continue;
-      for (const x of g.ss ?? []) if (g.flag || g.susp || human(g, x)) (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
+      for (const x of g.ss ?? []) if (g.flag || g.susp || human(g, x)) {
+        (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
+        (visBy.get(g.dev) ?? visBy.set(g.dev, []).get(g.dev)!).push({ s: x.s, site: g.site });
+      }
     }
     const standalone = (g: Group, x: Session) =>
       (x.n ?? 0) >= 3 && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
@@ -669,7 +673,9 @@ export default function Home() {
       const out: Session[] = [];
       for (const x of [...ss].sort((a, b) => a.s - b.s)) {
         const last = out[out.length - 1];
-        if (last && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0) };
+        // Niet samenvoegen als er tussendoor een andere app op deze tv gebruikt is (F1 TV, dan YouTube: YouTube is een nieuw bezoek).
+        const other = last && (visBy.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s > last.e && v.s < x.s);
+        if (last && !other && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0) };
         else out.push({ ...x });
       }
       return out.reverse();
@@ -771,6 +777,9 @@ export default function Home() {
 
           {days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, rows: trows }, di) => {
+            // Per apparaat: wanneer begon het laatste bezoek? Een app waarna al een andere app begon, is niet meer "nu".
+            const lastStart = new Map<string, number>();
+            for (const r of trows) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.t));
             const rows = trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
@@ -887,7 +896,7 @@ export default function Home() {
                             // Nog bezig (laatste activiteit < 3 min geleden) = "nu" in groen; anders gerekend vanaf het begin, net als de volgorde.
                             const end = Math.max(t, ...rss.map((x) => x.e));
                             const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
-                            if (clock - end < 180_000) return <span className="tcol reltime nowtag" title={span}>nu</span>;
+                            if (clock - end < 180_000 && !((lastStart.get(g.dev) ?? 0) > end)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
                             const age = Math.floor((clock - t) / 60_000);
                             if (age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
                             return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;
