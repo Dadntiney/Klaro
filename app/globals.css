@@ -359,8 +359,8 @@ h2 .dview + .dview.icon { margin-left:0; }
 
 /* Voortgangsring rechtsboven zolang de oudere dagen laden (percentage in het midden). */
 .loadring { position:relative; flex:0 0 auto; width:24px; height:24px; margin:0 0 0 6px; }
-.loadring svg { width:24px; height:24px; transform:rotate(-90deg); }
+.loadring svg { width:24px; height:24px; display:block; }
 .loadring circle { fill:none; stroke-width:2; }
 .loadring .lr-bg { stroke:color-mix(in srgb, var(--muted) 25%, transparent); }
 .loadring .lr { stroke:var(--muted); stroke-linecap:round; transition:stroke-dashoffset .5s linear; }
-.loadring .lr-t { position:absolute; inset:0; display:grid; place-items:center; font-size:8.5px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; }
+.loadring .lr-t { font-size:7.5px; font-weight:600; fill:var(--muted); font-variant-numeric:tabular-nums; }

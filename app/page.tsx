@@ -112,9 +112,10 @@ function LoadRing({ start }: { start: number }) {
     <span className="loadring" role="progressbar" aria-label="Oudere dagen laden" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
       <svg viewBox="0 0 22 22" aria-hidden>
         <circle cx="11" cy="11" r="9" className="lr-bg" />
-        <circle cx="11" cy="11" r="9" className="lr" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - pct / 100) }} />
+        <circle cx="11" cy="11" r="9" className="lr" transform="rotate(-90 11 11)" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - pct / 100) }} />
+        {/* Precies in het midden: centreren op de wiskundige middenlijn van de cijfers, niet op de regelhoogte. */}
+        <text x="11" y="11" className="lr-t" textAnchor="middle" dominantBaseline="central">{pct}</text>
       </svg>
-      <span className="lr-t">{pct}</span>
     </span>
   );
 }
