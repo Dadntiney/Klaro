@@ -296,6 +296,8 @@ async function build(req: Request): Promise<Response> {
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
       if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
+      // Zoeken op Google/Bing/DuckDuckGo: wie daarna een site opent, heeft op een zoekresultaat getikt (geen mail).
+      if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
