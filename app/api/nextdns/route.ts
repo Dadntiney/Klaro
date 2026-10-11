@@ -306,6 +306,8 @@ async function build(req: Request): Promise<Response> {
     if (g) {
       g.n++;
       g.main ||= info.main;
+      // Begon de dag met een teller van de site (log.merk.nl) en kwam daarna de site zelf: dan is het geen achtergrond.
+      if (g.bg && info.main && !info.bg) g.bg = false;
       if (blocked) g.bl++;
       if (info.flag && !g.flag) {
         g.flag = info.flag;

@@ -288,3 +288,8 @@ test("Zappelin hoort bij NPO; Buienalarm (Infoplaza/Meteoplaza) is een eigen app
   for (const h of ["www.zappelin.nl", "vod.ak.md.npox.nl", "prod.npoplayer.nl"]) assert.equal(classify(h).name, "NPO", h);
   for (const h of ["ss.buienalarm.nl", "api.meteoplaza.com", "notifyhub.infoplaza.io"]) assert.equal(classify(h).name, "Buienalarm", h);
 });
+
+test("bank-app openen (bankieren.bank.nl) is de site zelf", () => {
+  assert.ok(classify("bankieren.rabobank.nl").main);
+  assert.ok(!classify("log.rabobank.nl").main);
+});

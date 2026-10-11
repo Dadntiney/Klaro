@@ -264,7 +264,7 @@ export function isMainHost(host: string, base: string): boolean {
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;
   // Adressen waarachter meestal echt een bezoek zit (mijn.postnl.nl, shop.lego.com, webmail.provider.nl), geen hulpdienst; mail.merk.nl is nieuwsbrief-verkeer, geen bezoek.
-  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "webmail", "chat", "play", "music", "news", "nieuws", "online"];
+  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "webmail", "chat", "play", "music", "news", "nieuws", "online", "bankieren", "internetbankieren", "mijnzaken"];
   return LANG.has(rest) || PORTAL.includes(rest);
 }
 
