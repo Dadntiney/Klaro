@@ -317,3 +317,8 @@ test("doorstuur-links en inlog/privacy van mediabedrijven zijn geen eigen bezoek
   for (const h of ["ift.tt", "bit.ly", "login.dpgmedia.nl", "myprivacy.dpgmedia.net"]) assert.ok(classify(h).bg, h);
   assert.ok(!classify("www.nu.nl").bg);
 });
+
+test("netwerkmeting van de Facebook/Instagram-app telt als gebruik (alleen als de app open staat)", () => {
+  assert.equal(fgHit("facebook.com", "cc8ffdab-0a59-4e51-b1d3-7d75d23f48fe-netseer-ipaddr-assoc.xy.fbcdn.net"), true);
+  assert.equal(fgHit("facebook.com", "mqtt.c10r.facebook.com"), false);
+});

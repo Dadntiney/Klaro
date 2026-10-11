@@ -85,7 +85,9 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
  * profielfoto's, stickers) bewijst dat iemand de app echt open heeft; verbindingsadressen (graph, mqtt, gateway, chat) niet.
  */
 export const FG_RULES: Record<string, RegExp> = {
-  "facebook.com": /^(scontent|video|static|external|lookaside)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$|^(m|web|touch|mbasic)\.facebook\.com$/,
+  // netseer-ipaddr-assoc: netwerkmeting die de Facebook/Instagram-app alleen doet terwijl hij open staat (elke paar minuten);
+  // tijdens scrollen worden foto's vaak niet opnieuw opgezocht, dus dit is dan het enige teken van gebruik. 's Nachts: nooit.
+  "facebook.com": /^(scontent|video|static|external|lookaside)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$|^(m|web|touch|mbasic)\.facebook\.com$|-netseer-ipaddr-assoc\.[a-z]+\.fbcdn\.net$/,
   "instagram.com": /(^|\.)cdninstagram\.com$|^(scontent|instagram|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/,
   "whatsapp.com": /^(pps|static|mmg|media[^.]*|web)\.(cdn\.)?whatsapp\.(net|com)$|^graph\.whatsapp\.com$/,
   "tiktok.com": /tiktokcdn(-[a-z]+)?\.com$|(^|\.)ibyteimg\.com$/,
