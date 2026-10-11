@@ -333,9 +333,9 @@ test("chatknop in een andere site (replain, intercom, tawk) is achtergrond, geen
   assert.equal(classify("www.vkmag.com").bg, false);
 });
 
-test("plaatjes van een beeldserver (m.media-amazon.com) zijn geen paginabezoek; echte portalen wel", () => {
-  assert.equal(isMainHost("m.media-amazon.com", "media-amazon.com"), false);
-  assert.equal(isMainHost("www.static-cdn.nl", "static-cdn.nl"), false);
-  assert.equal(isMainHost("mijn.postnl.nl", "postnl.nl"), true);
-  assert.equal(isMainHost("www.mediamarkt.nl", "mediamarkt.nl"), true); // gewone winkel met 'media' in de naam
+test("Amazon-meetadres (minerva.devices.a2z.com) is achtergrond, geen app-gebruik", () => {
+  const c = classify("b79c.us-east-1.prod.service.minerva.devices.a2z.com");
+  assert.equal(c.bg, true);
+  assert.equal(c.main, false);
+  assert.equal(classify("www.amazon.nl").main, true);
 });

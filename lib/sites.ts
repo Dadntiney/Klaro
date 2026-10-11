@@ -169,7 +169,8 @@ const BACKGROUND_KEYWORDS = [
 /** Domeinen die als losse apex vrijwel alleen door apps worden opgevraagd; een echte bezoek loopt via www./een taalvariant. */
 const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|whatsapp|bing|yahoo)\.[a-z.]+$/;
 
-const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com"];
+const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com",
+  "devices.a2z.com"]; // apparaat-statistieken van Amazon (Minerva): ook als de app op de achtergrond ververst
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "bat.bing.com", "c.bing.com", "th.bing.com", // advertentietellers/plaatjes van Microsoft in andere sites
   "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
@@ -283,8 +284,6 @@ export function isMainHost(host: string, base: string): boolean {
   if (host === base) return !APEX_NOISE.test(base);
   if (!host.endsWith("." + base)) return false;
   const rest = host.slice(0, host.length - base.length - 1);
-  // Beeld-/bestandsservers (m.media-amazon.com, static-cdn.merk.nl): plaatjes, ook in meldingen en achtergrondverversen, geen bezoek.
-  if (/(^|-)(media|cdn|static|img|images|assets)(-|$)/.test(base.split(".")[0])) return false;
   if (rest === "www") return base !== "apple.com"; // www.apple.com wordt elk uur door apparaten zelf opgevraagd
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;
