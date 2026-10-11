@@ -754,6 +754,8 @@ export default function Home() {
       }
       return out.reverse();
     };
+    const nowT = Date.now();
+    const sortKey = (r: { t: number; ss: Session[] }) => { const e = Math.max(...r.ss.map((x) => x.e)); return nowT - e < 180_000 ? nowT + e : r.t; };
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
       .map(([d, list]) => {
@@ -793,7 +795,8 @@ export default function Home() {
                 const oldest = Math.min(...all.map((x) => x.s));
                 return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
               })
-              .sort((a, b) => b.t - a.t)
+              // Wat nu nog bezig is (laatste activiteit < 3 min) staat bovenaan; de rest op begintijd, nieuwste eerst.
+              .sort((a, b) => sortKey(b) - sortKey(a))
           ),
         };
       })
