@@ -267,3 +267,10 @@ test("afspeelsignaal telt als kijken, ook als NextDNS het blokkeert", async () =
   assert.equal(isPlaying("rr3---sn-u15hn5-5t.googlevideo.com", true), false); // geblokkeerde video speelt niet
   assert.equal(isPlaying("rr3---sn-u15hn5-5t.googlevideo.com", false), true);
 });
+
+test("techniek van webwinkels is achtergrond; schoolsysteem hoort bij Parro", () => {
+  for (const h of ["cdn.shopifycloud.com", "monorail-edge.shopifysvc.com", "mask.icloud.com.fastly-masque.net", "dev.visualwebsiteoptimizer.com", "a1.tuyaeu.com", "x.tm-azurefd.net"]) assert.ok(classify(h).bg, h);
+  for (const h of ["www.kobo.com", "www.thinkific.com"]) assert.ok(!classify(h).bg, h);
+  assert.equal(classify("app.parnassys.net").name, "Parro (school)");
+  assert.equal(classify("www.parro.com").name, "Parro (school)");
+});
