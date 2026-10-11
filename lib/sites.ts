@@ -59,6 +59,9 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "ChatGPT", icon: "chatgpt.com", domains: ["chatgpt.com", "openai.com", "oaiusercontent.com"] },
   { name: "Parro (school)", icon: "parro.com", domains: ["parro.com", "parnassys.net"] }, // ParnasSys is het schoolsysteem achter Parro
   { name: "Buienradar", icon: "buienradar.nl", domains: ["buienradar.nl"] },
+  { name: "WebinarGeek (webinar)", icon: "webinargeek.com", domains: ["webinargeek.com"] },
+  { name: "Kobo (e-books)", icon: "kobo.com", domains: ["kobo.com"] },
+  { name: "Thinkific (cursus)", icon: "thinkific.com", domains: ["thinkific.com"] },
   { name: "Buienalarm", icon: "buienalarm.nl", domains: ["buienalarm.nl", "meteoplaza.com", "infoplaza.io"] }, // weer-app van Infoplaza
   { name: "Weerplaza", icon: "weerplaza.nl", domains: ["weerplaza.nl"] },
   { name: "Waze", icon: "waze.com", domains: ["waze.com"] },

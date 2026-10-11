@@ -298,3 +298,9 @@ test("inlog-/bankierpagina's herkennen", () => {
   for (const h of ["bankieren.rabobank.nl", "mijn.ing.nl", "inloggen.belastingdienst.nl"]) assert.ok(isLoginHost(h), h);
   for (const h of ["log.rabobank.nl", "www.rabobank.nl", "auth.split.io", "login.mso.msidentity.com", "account.apple.com", "auth.meethue.com"]) assert.ok(!isLoginHost(h), h);
 });
+
+test("webinar-, e-book- en cursusapps herkend", () => {
+  assert.equal(classify("ggdhvb.webinargeek.com").name, "WebinarGeek (webinar)");
+  assert.equal(classify("readingservices.kobo.com").name, "Kobo (e-books)");
+  assert.equal(classify("happywithyoga.thinkific.com").name, "Thinkific (cursus)");
+});
