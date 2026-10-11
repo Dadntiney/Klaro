@@ -308,19 +308,19 @@ export default function Home() {
 
   const seen = useRef<Set<string>>(new Set());
   const lastHost = useRef<Map<string, number>>(new Map());
-  const [mailT, setMailT] = useState<Map<string, { esp: number[]; mc: number[] }>>(new Map());
+  const [mailT, setMailT] = useState<Map<string, { esp: number[]; mc: number[]; ck?: number[] }>>(new Map());
 
   /** Verwerk nieuwe verzoeken (uit de rechtstreekse stroom of de periodieke controle). */
   const applyEvents = useCallback((incoming: Event[]) => {
     // Mailverkeer onthouden (per apparaat, laatste half uur): korte "bezoeken" tegelijk met een geopende nieuwsbrief zijn geen bezoek.
-    const mailEv = incoming.filter((e) => e.esp || e.mc);
+    const mailEv = incoming.filter((e) => e.esp || e.mc || e.ck);
     if (mailEv.length) setMailT((prev) => {
       const next = new Map(prev);
       const cut = Date.now() - 1_800_000;
       for (const e of mailEv) {
         const dev = deviceMap.current[e.devId] ?? e.type;
         const cur = next.get(dev) ?? { esp: [], mc: [] };
-        next.set(dev, { esp: e.esp ? [...cur.esp.filter((t) => t > cut), e.t] : cur.esp, mc: e.mc ? [...cur.mc.filter((t) => t > cut), e.t] : cur.mc });
+        next.set(dev, { esp: e.esp ? [...cur.esp.filter((t) => t > cut), e.t] : cur.esp, mc: e.mc ? [...cur.mc.filter((t) => t > cut), e.t] : cur.mc, ck: e.ck ? [...(cur.ck ?? []).filter((t) => t > cut), e.t] : cur.ck });
       }
       return next;
     });
@@ -667,7 +667,7 @@ export default function Home() {
     const byDay = new Map<string, Group[]>();
     // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
     const blip = tvBlipper(groups);
-    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && auto.has(g.dev + "|" + g.site)) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
+    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && auto.has(g.dev + "|" + g.site)) && !(isPlainSite(g) && mailT.get(g.dev) && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc, undefined, mailT.get(g.dev)!.ck));
     // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
     const visSes = new Map<string, Session[]>();
     const visBy = new Map<string, { s: number; site: string }[]>(); // per apparaat: begin van elk zichtbaar bezoek, met de site

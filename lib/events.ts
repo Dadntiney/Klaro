@@ -1,4 +1,4 @@
-import { isEspHost, isMailClientHost } from "./mail.ts";
+import { isClickHost, isEspHost, isMailClientHost } from "./mail.ts";
 import { extractHost } from "./parse.ts";
 import { classify, fgHit, isPlaying, isResourceHost, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType } from "./names.ts";
@@ -23,6 +23,7 @@ export interface LiveEvent {
   fg?: boolean; // bij apps met achtergrondverkeer: true = inhoud geladen, false = alleen achtergrond
   res?: boolean; // los onderdeel (teller, plaatje, advertentie)
   esp?: boolean; // mailbedrijf (nieuwsbrief geopend)
+  ck?: boolean; // klikteller van een mailbedrijf (op een link in een mail getikt)
   mc?: boolean; // mailprogramma haalt mail op
   pay?: { kind: string; level: "checkout" | "store" }; // betaalmoment
 }
@@ -43,5 +44,5 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
     .join(" ")
     .toLowerCase();
   if (blocked && /porn|adult|sex|dating|erotic/.test(reasons) && !info.flag) info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
-  return { t, host, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: isPlaying(host, blocked), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), res: isResourceHost(host) || undefined, esp: isEspHost(host) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
+  return { t, host, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, media: isPlaying(host, blocked), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), res: isResourceHost(host) || undefined, esp: isEspHost(host) || undefined, ck: (!blocked && isClickHost(host)) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
 }

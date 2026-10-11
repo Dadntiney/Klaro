@@ -45,6 +45,7 @@ export interface Event {
   fg?: boolean;
   res?: boolean;
   esp?: boolean;
+  ck?: boolean;
   mc?: boolean;
   pay?: { kind: string; level: "checkout" | "store" };
 }

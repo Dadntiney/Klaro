@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
 import { isPlainSite } from "@/lib/system";
-import { isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
+import { isClickHost, isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
 import { FG_RULES, TV_APPS, classify, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
 import { anonId, deviceType, labelDevices } from "@/lib/names";
 import { MOMENT, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
@@ -227,6 +227,7 @@ async function build(req: Request): Promise<Response> {
   const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
+  const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
@@ -292,6 +293,7 @@ async function build(req: Request): Promise<Response> {
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
       if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
+      if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
@@ -378,7 +380,7 @@ async function build(req: Request): Promise<Response> {
         const inX = all.filter((t) => t >= x.s && t <= x.e).length;
         if (!FG_RULES[g.site] && inX > 0 && rt.filter((t) => t >= x.s && t <= x.e).length >= inX) x.res = 1;
       }
-      if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length)) x.ml = 1;
+      if (esp.length) for (const x of sessions) if (isMailSession(x, esp, devMailClient.get(g.dev) ?? [], mt.filter((t) => t >= x.s && t <= x.e).length, devClick.get(g.dev) ?? [])) x.ml = 1;
       // Eén pagina geopend op de site zelf (www. of de kale naam) is een echt bezoek, ook al is het maar één moment: wie een
       // vacature of winkelpagina opent en leest, vraagt daarna vaak niets nieuws meer op. Behalve als die site die dag op dit
       // apparaat vaker dan 4 keer zo los opduikt: dan ververst een widget of open tabblad zichzelf.

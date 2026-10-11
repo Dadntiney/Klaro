@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
+import { isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
 import { isHuman } from "./sessions.ts";
 
 test("adressen van mailbedrijven en nieuwsbrieven", () => {
@@ -43,4 +43,15 @@ test("adressen van mailbedrijven zijn achtergrond, hun eigen website niet", asyn
   for (const h of ["trackcmp.net", "prism.app-us1.com.trackcmp.net", "u1.ct.sendgrid.net", "lt.acemlna.com", "gallery.mailchimp.com"]) assert.ok(classify(h).bg, h);
   for (const h of ["spotler.com", "www.spotler.com"]) assert.ok(!classify(h).bg, h);
   assert.ok(!classify("nieuwsbrief.ah.nl").bg, "merkadres blijft voor mailherkenning");
+});
+
+test("op een link in een nieuwsbrief getikt en de site geladen = bezoek; alleen de mail openen = geen bezoek", () => {
+  for (const h of ["clicks.mailplus.nl", "ctrk.klclick1.com", "click.e.zalando.com", "links.e.bol.com"]) assert.ok(isClickHost(h), h);
+  for (const h of ["static.mailplus.nl", "cdn.klaviyomail.com", "www.inspirerendleven.nl", "clicks.example-shop.nl"]) assert.ok(!isClickHost(h), h);
+  const visit = { s: 100_000, e: 100_000, n: 1 };
+  const esp = [95_000, 99_000, 101_000];
+  assert.ok(isMailSession(visit, esp, [], 1), "zonder klik: mail");
+  assert.ok(!isMailSession(visit, esp, [], 1, [96_000]), "klik vlak ervoor + site zelf: bezoek");
+  assert.ok(isMailSession(visit, esp, [], 0, [96_000]), "klik maar alleen plaatjes van de site: mail");
+  assert.ok(isMailSession(visit, esp, [], 1, [10_000]), "klik veel eerder: telt niet");
 });
