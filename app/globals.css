@@ -340,3 +340,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 .livedot.fail { border-color:#ff453a; }
 @keyframes spin { to { transform:rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .livedot.ok { animation-duration:3s; } }
+
+/* Dagkop: dag + samenvatting als één doorlopende tekst (geen losse kolommen), knoppen rechts. */
+.dh-t { flex:1 1 auto; min-width:0; line-height:1.45; }
+.dh-d, .dh-m { white-space:nowrap; }

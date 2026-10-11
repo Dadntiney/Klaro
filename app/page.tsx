@@ -811,7 +811,8 @@ export default function Home() {
                 role={recent ? undefined : "button"}
                 aria-expanded={recent ? undefined : isDayOpen}
               >
-                {dayLabel(d)}{!recent && <span className="muted"> · {list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)} actief` : ""}</span>}
+                {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{!recent && <> <span className="muted dh-m"><span className="dh-dot">· </span>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</span></>}</span>
                 {di === 0 && (
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}
@@ -914,7 +915,7 @@ export default function Home() {
                             const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
                             if (clock - end < 180_000 && !((lastStart.get(g.dev) ?? 0) > end)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
                             const age = Math.floor((clock - t) / 60_000);
-                            if (age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
+                            if (age >= 0 && age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
                             return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;
                           })()}
                         </div>
