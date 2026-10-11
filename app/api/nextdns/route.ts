@@ -423,8 +423,8 @@ async function build(req: Request): Promise<Response> {
       const sh = siteHosts.get(gkey) ?? [];
       const hostsIn = (x: Session) => new Set(sh.filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host)).size;
       const fgDev = devFg(g.dev);
-      // Ruim venster: ook social-apps onthouden adressen, dus tijdens scrollen komen er soms minuten lang geen nieuwe.
-      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 150_000 && t <= x.e + 150_000);
+      // Ruim venster: ook social-apps onthouden adressen, dus tijdens scrollen komen er soms minuten lang geen nieuwe (3 min).
+      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 180_000 && t <= x.e + 180_000);
       const cand = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
       // Eén los adres tijdens scrollen in een social-app: kan een aangeklopte advertentie zijn, maar ook een echt geopende
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
