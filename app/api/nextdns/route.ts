@@ -225,6 +225,7 @@ async function build(req: Request): Promise<Response> {
   const fgTimes = new Map<string, number[]>();
   const embedTimes = new Map<string, number[]>();
   const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
+  const siteHosts = new Map<string, { t: number; host: string }[]>(); // welke adressen van de site wanneer (een echte pagina laadt er meerdere)
   const loginTimes = new Map<string, number[]>(); // inlog-/bankierpagina's (bankieren., mijn., login.): altijd bewust geopend
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
@@ -329,6 +330,7 @@ async function build(req: Request): Promise<Response> {
     }
     if (isResourceHost(host)) (resTimes.get(gkey) ?? resTimes.set(gkey, []).get(gkey)!).push(t);
     if (info.main && !info.flag) (mainTimes.get(gkey) ?? mainTimes.set(gkey, []).get(gkey)!).push(t);
+    if (!info.bg) (siteHosts.get(gkey) ?? siteHosts.set(gkey, []).get(gkey)!).push({ t, host });
     if (!blocked && isLoginHost(host)) (loginTimes.get(gkey) ?? loginTimes.set(gkey, []).get(gkey)!).push(t);
     if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
@@ -402,7 +404,12 @@ async function build(req: Request): Promise<Response> {
       // Inloggen of bankieren (bankieren.rabobank.nl, mijn.merk.nl): bewust geopend, nooit een mail of widget.
       const lt = loginTimes.get(gkey) ?? [];
       for (const x of sessions) if (lt.some((t) => t >= x.s && t <= x.e)) { x.lg = 1; delete x.ml; }
-      const single = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
+      // Eén pagina telt alleen als er echt een pagina laadde (minstens 2 verschillende adressen van de site), of als er een klik
+      // (mail-link of zoekresultaat) aan voorafging. Eén los adres = een app die een advertentie/link alvast "aanklopt".
+      const sh = siteHosts.get(gkey) ?? [];
+      const hostsIn = (x: Session) => new Set(sh.filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host)).size;
+      const ckd = devClick.get(g.dev) ?? [];
+      const single = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m && (hostsIn(x) >= 2 || clickBefore(x, ckd) !== undefined));
       if (single.length <= 4) for (const x of single) x.pv = 1;
       if (single.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), single.length]);
     }
