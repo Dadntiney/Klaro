@@ -92,3 +92,19 @@ test("één pagina op de site zelf geopend is een bezoek, behalve uit een mail o
   assert.ok(!isHuman({ s: 0, e: 0, n: 1, mh: 1, pv: 1, ml: 1 }));
   assert.ok(!isHuman({ s: 0, e: 0, n: 1, mh: 1, pv: 1, res: 1 }));
 });
+
+test("app opent: twee verschillende inhoud-adressen in één moment tellen als gebruik, hetzelfde adres herhaald niet", () => {
+  const t = 1_000_000_000;
+  // WhatsApp geopend en bericht verstuurd: instellingen en plaatjes binnen een seconde.
+  let ss = extendSessions([], t, false, false, undefined, "g.whatsapp.net");
+  ss = extendSessions(ss, t + 200, false, true, undefined, "static.whatsapp.net");
+  ss = extendSessions(ss, t + 600, false, true, undefined, "graph.whatsapp.com");
+  assert.equal(ss[0].f, 2);
+  assert.equal(isHuman(ss[0]), true);
+  // Achtergrond: hetzelfde inhoud-adres een paar keer vlak na elkaar blijft één moment.
+  let bg = extendSessions([], t, false, true, undefined, "media-ams2-1.cdn.whatsapp.net");
+  bg = extendSessions(bg, t + 300, false, true, undefined, "media-ams2-1.cdn.whatsapp.net");
+  bg = extendSessions(bg, t + 700, false, false, undefined, "mmx-ds.cdn.whatsapp.net");
+  assert.equal(bg[0].f, 1);
+  assert.equal(isHuman(bg[0]), false);
+});

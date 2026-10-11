@@ -7,6 +7,7 @@ export interface Session {
   f?: number; // bij apps met veel achtergrondverkeer: aantal keer dat er echt inhoud laadde (foto's, video's)
   mh?: number; // bij gewone websites: hoe vaak de site zelf (www., nl., ...) werd opgevraagd; 0 = alleen losse onderdelen (plaatjes, tellers)
   lf?: number; // tijdstip van het laatste inhoud-moment (live tellen)
+  lfh?: string; // adres van dat laatste inhoud-moment
   lmt?: number; // tijdstip van het laatste beeld/geluid-moment (live tellen)
   emb?: 1;
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
@@ -63,7 +64,7 @@ export function totalMinutes(times: number[]): number {
  * `fg`: alleen bij apps met achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): true = inhoud geladen, false = achtergrond.
  * Achtergrondverkeer telt dan wel als verzoek, maar verlengt de gebruiksduur niet.
  */
-export function extendSessions(ss: Session[], t: number, media = false, fg?: boolean, res?: boolean): Session[] {
+export function extendSessions(ss: Session[], t: number, media = false, fg?: boolean, res?: boolean, host?: string): Session[] {
   const next = ss.map((x) => ({ ...x }));
   const i = next.findIndex((x) => t >= x.s - GAP && t <= x.e + GAP);
   if (i >= 0) {
@@ -79,12 +80,13 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
     // Momenten tellen, geen opvragingen: dezelfde foto die 3x wordt opgevraagd is één moment.
     if (media && !(x.lmt && Math.abs(t - x.lmt) <= MOMENT)) x.m = (x.m ?? 0) + 1;
     if (media) x.lmt = t;
-    if (fg && !(x.lf && Math.abs(t - x.lf) <= MOMENT)) x.f = (x.f ?? 0) + 1;
-    if (fg) x.lf = t;
+    // Twee verschillende inhoud-adressen in één moment (app opent: instellingen + plaatjes) telt ook als twee.
+    if (fg && (!(x.lf && Math.abs(t - x.lf) <= MOMENT) || (host && x.lfh && host !== x.lfh))) x.f = (x.f ?? 0) + 1;
+    if (fg) { x.lf = t; if (host) x.lfh = host; }
     if (res === false) delete x.res; // iets van de site zelf erbij: wel een bezoek
     return next.sort((a, b) => b.e - a.e);
   }
-  return [{ s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t } : {}) } : {}), ...(res ? { res: 1 as const } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
+  return [{ s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t, ...(host ? { lfh: host } : {}) } : {}) } : {}), ...(res ? { res: 1 as const } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }
 
 /** Minuten van een sessie, minimaal 1 als er meer dan een paar seconden tussen zit; 0 = alleen een korte aanraking. */
