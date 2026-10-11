@@ -95,15 +95,15 @@ function tvBlipper(groups: Group[]) {
 const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-apps worden ook op de achtergrond regelmatig wakker
 
 /**
- * Klein bolletje rechts in de balk: laat zien dat het live ophalen (elke 1,5 sec.) echt loopt.
- * Grijs en knippert zacht bij elk antwoord; oranje als er even geen antwoord kwam; rood als het misgaat.
+ * Klein draaicirkeltje rechts in de balk: laat zien dat het live ophalen (elke 1,5 sec.) echt loopt.
+ * Grijs en draait zolang er antwoorden komen; oranje en stil als er even geen antwoord kwam; rood als het misgaat.
  * Eigen component met eigen state: de rest van de pagina hoeft niet elke 1,5 sec. opnieuw te tekenen.
  */
 function LiveDot() {
-  const [last, setLast] = useState<{ ok: boolean; at: number; n: number }>({ ok: true, at: Date.now(), n: 0 });
+  const [last, setLast] = useState<{ ok: boolean; at: number }>({ ok: true, at: Date.now() });
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const on = (e: globalThis.Event) => setLast((p) => ({ ok: (e as CustomEvent<boolean>).detail, at: Date.now(), n: p.n + 1 }));
+    const on = (e: globalThis.Event) => setLast({ ok: (e as CustomEvent<boolean>).detail, at: Date.now() });
     window.addEventListener("klaro-beat", on);
     const id = setInterval(() => setNow(Date.now()), 2000);
     return () => { window.removeEventListener("klaro-beat", on); clearInterval(id); };
@@ -111,7 +111,7 @@ function LiveDot() {
   const stale = now - last.at > 10_000;
   const kind = !last.ok ? "fail" : stale ? "slow" : "ok";
   const label = kind === "ok" ? "Live: werkt" : kind === "slow" ? "Live: even geen antwoord" : "Live: lukt nu niet";
-  return <span key={kind === "ok" ? last.n : kind} className={"livedot " + kind} role="status" aria-label={label} title={label} />;
+  return <span className={"livedot " + kind} role="status" aria-label={label} title={label} />;
 }
 
 /** Andere adressen van hetzelfde apparaat rond (±30 s) dit bezoek, rode eerst. */

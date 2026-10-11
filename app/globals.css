@@ -331,10 +331,12 @@ h2 .dview + .dview.icon { margin-left:0; }
 .skel-day { display:flex; justify-content:space-between; align-items:center; padding:20px 0; }
 .skel-err { margin:24px 0; font-size:13px; }
 
-/* Live-bolletje: grijs en zacht knipperend als het ophalen loopt (groen is voor "apparaat in gebruik"); oranje/rood bij een probleem. */
-.livedot { flex:0 0 auto; width:7px; height:7px; border-radius:50%; margin:0 2px 0 8px; background:var(--muted); opacity:.4; }
-.livedot.ok { animation:beat .9s ease-out; }
-.livedot.slow { background:#ff9f0a; opacity:.9; }
-.livedot.fail { background:#ff453a; opacity:1; }
-@keyframes beat { 0% { opacity:1; transform:scale(1.35); } 100% { opacity:.45; transform:scale(1); } }
-@media (prefers-reduced-motion: reduce) { .livedot.ok { animation:none; } }
+/* Live-teken: klein grijs draaicirkeltje zolang het binnenhalen loopt (groen is voor "apparaat in gebruik");
+   staat stil en kleurt oranje als er even geen antwoord kwam, rood bij een fout. */
+.livedot { flex:0 0 auto; box-sizing:border-box; width:11px; height:11px; border-radius:50%; margin:0 2px 0 8px;
+  border:1.5px solid color-mix(in srgb, var(--muted) 30%, transparent); border-top-color:var(--muted); }
+.livedot.ok { animation:spin 1.1s linear infinite; }
+.livedot.slow { border-color:#ff9f0a; border-top-color:transparent; }
+.livedot.fail { border-color:#ff453a; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .livedot.ok { animation-duration:3s; } }
