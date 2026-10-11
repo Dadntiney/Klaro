@@ -322,3 +322,8 @@ test("netwerkmeting van de Facebook/Instagram-app telt als gebruik (alleen als d
   assert.equal(fgHit("facebook.com", "cc8ffdab-0a59-4e51-b1d3-7d75d23f48fe-netseer-ipaddr-assoc.xy.fbcdn.net"), true);
   assert.equal(fgHit("facebook.com", "mqtt.c10r.facebook.com"), false);
 });
+
+test("door de eigenaar goedgekeurd: vkmag.com is geen 18+-melding, echte 18+ blijft rood", () => {
+  for (const h of ["vkmag.com", "www.vkmag.com", "cdn.vkmag.com"]) assert.equal(classify(h).flag, undefined);
+  assert.equal(classify("www.pornhub.com").flag, "18+");
+});
