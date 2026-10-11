@@ -5,6 +5,7 @@ import { mergeRows } from "@/lib/merge";
 import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
+import { hasNewRow, rowCounts } from "@/lib/sound";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
@@ -199,7 +200,6 @@ export default function Home() {
   const alarm = useRef<HTMLAudioElement | null>(null);
   const [clock, setClock] = useState(() => Date.now()); // elke 20 sec: "nu actief" opnieuw beoordelen
   const [tick, setTick] = useState(0); // elke minuut: "ongewoon stil" opnieuw beoordelen
-  const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
   const loadStart = useRef(Date.now()); // begin van het laden (voor het percentage rechtsboven)
@@ -312,7 +312,6 @@ export default function Home() {
     return () => clearInterval(id);
   }, [state]);
 
-  useEffect(() => { deviceRef.current = device; }, [device]);
 
   // Geluid staat altijd aan. Een gewoon <audio>-element (met een zelfgemaakte piep) is op iPhone betrouwbaarder dan
   // Web Audio: het wordt niet gedempt door de stilteschakelaar en blijft na één ontgrendeling bruikbaar.
@@ -396,10 +395,9 @@ export default function Home() {
     if (!events.length) return;
     lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
     setUpdated(new Date());
-    // Geluid alleen voor nieuwe bezoeken die je nu ook in de lijst ziet.
-    // Rood (18+, dating, VPN, geblokkeerd) klinkt altijd, ongeacht filter, met een ander, dringender geluid.
+    // Rood (18+, dating, VPN, geblokkeerd) klinkt altijd meteen, ongeacht filter, met een ander, dringender geluid.
+    // Het gewone geluid klinkt pas als er een nieuwe regel in de lijst komt (zie hieronder bij `days`).
     if (events.some((e) => e.flag)) beep(true);
-    else if (events.some((e) => !e.bg && e.main && (!deviceRef.current || deviceMap.current[e.devId] === deviceRef.current))) beep();
     setTotal((n) => n + events.length);
     // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
     for (const e of events) {
@@ -802,6 +800,18 @@ export default function Home() {
       })
       .filter((d) => d.rows.length > 0);
   }, [groups, device, mailT, cut, auto]);
+
+  // Geluid alleen bij een nieuwe regel van vandaag (nieuwe app, site of game), niet bij elke opvraging.
+  // Pas na het volledig laden, en opnieuw beginnen bij een ander apparaat-filter: dan is alles "nieuw" maar niet gebeurd.
+  const rowsSeen = useRef<{ key: string; counts: Map<string, number> } | null>(null);
+  useEffect(() => {
+    const today = dayKeyFmt.format(Date.now());
+    const rows = days.find((d) => d.d === today)?.rows ?? [];
+    const key = `${device ?? ""}|${today}`;
+    const prev = rowsSeen.current;
+    if (full && prev && prev.key === key && hasNewRow(prev.counts, rows, Date.now())) beep();
+    rowsSeen.current = full ? { key, counts: rowCounts(rows) } : null;
+  }, [days, device, full, beep]);
 
   return (
     <main>
