@@ -356,3 +356,6 @@ h2 .dview + .dview.icon { margin-left:0; }
 .hid .ht { grid-row:span 2; font-variant-numeric:tabular-nums; }
 .hid .hn { color:var(--fg); }
 .hid .hw { font-size:12px; }
+
+/* Percentage rechtsboven zolang de oudere dagen laden. */
+.loadpct { flex:0 0 auto; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; margin-left:6px; }

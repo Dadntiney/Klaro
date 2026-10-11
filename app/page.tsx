@@ -99,6 +99,16 @@ const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-app
  * Grijs en draait zolang er antwoorden komen; oranje en stil als er even geen antwoord kwam; rood als het misgaat.
  * Eigen component met eigen state: de rest van de pagina hoeft niet elke 1,5 sec. opnieuw te tekenen.
  */
+/** Percentage naast het draaicirkeltje zolang de oudere dagen nog laden (schatting op basis van de vorige keer); weg bij 100%. */
+function LoadPct({ start }: { start: number }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(id); }, []);
+  let expected = 25_000;
+  try { const v = Number(localStorage.getItem("csv-load-ms")); if (v > 2_000 && v < 120_000) expected = v; } catch {}
+  const pct = Math.min(99, Math.round(100 * (1 - Math.exp((-2.5 * (now - start)) / expected))));
+  return <span className="loadpct" aria-label={`Oudere dagen laden: ${pct}%`}>{pct}%</span>;
+}
+
 function LiveDot() {
   const [last, setLast] = useState<{ ok: boolean; at: number }>({ ok: true, at: Date.now() });
   const [now, setNow] = useState(Date.now());
@@ -180,6 +190,7 @@ export default function Home() {
   const deviceRef = useRef<string | null>(null);
   const [full, setFull] = useState(false);
   const fullRef = useRef(false);
+  const loadStart = useRef(Date.now()); // begin van het laden (voor het percentage rechtsboven)
   const [live, setLive] = useState<"ok" | "fail">("ok");
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
@@ -825,6 +836,7 @@ export default function Home() {
                 !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
               </button>
             )}
+            {!full && !histErr && <LoadPct start={loadStart.current} />}
             <LiveDot />
             </div>
           </div>
