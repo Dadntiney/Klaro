@@ -11,6 +11,7 @@ import { suspicion } from "@/lib/suspect";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
 import { autoRefreshing, nextdnsError, windowStart } from "@/lib/nextdns";
 import { anchorOf, chainTimes, companionFor, COMPANIONS } from "@/lib/companion";
+import { isVideoOnlyClip } from "@/lib/clip";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -453,6 +454,15 @@ async function build(req: Request): Promise<Response> {
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
       if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x)) x.uz = 1; }
       if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
+    }
+    // Clip in een andere app (Shazam): alleen videoservers van YouTube, kort, niet vlak na echt YouTube-gebruik. Zie lib/clip.ts.
+    if (g.site === "youtube.com") {
+      const yh = siteHosts.get(gkey) ?? [];
+      for (const x of sessions) {
+        const hs = yh.filter((h) => h.t >= x.s - 60_000 && h.t <= x.e + 60_000).map((h) => h.host);
+        const recent = sessions.some((y) => y !== x && y.e <= x.s && x.s - y.e < 1_800_000 && isHuman(y));
+        if (isVideoOnlyClip(hs, x.e - x.s, recent)) x.emb = 1;
+      }
     }
     const emb = embedTimes.get(gkey);
     if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });

@@ -170,7 +170,7 @@ function whyShown(g: Group, ss: Session[]): string {
 function whyHidden(x: Session, auto: boolean, tvShort: boolean): string {
   if (x.ml) return "plaatje of teller in een nieuwsbrief";
   if (x.res) return "alleen tellers/plaatjes, geen pagina";
-  if (x.emb) return "filmpje binnen een andere site";
+  if (x.emb) return "filmpje binnen een andere site of app";
   if (auto) return "ververst zichzelf (widget of open tabblad)";
   if (tvShort) return "tv-beginscherm, niets afgespeeld";
   if (x.f !== undefined) return "app op de achtergrond, niets geopend";
