@@ -356,8 +356,9 @@ async function build(req: Request): Promise<Response> {
   const devFg = (dev: string) => {
     if (!fgByDev.size) {
     for (const [k, ts] of fgTimes) { const dv = k.split("|")[1]; fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
-    // Ook apps zonder eigen "inhoud"-regel: elk verkeer van X, TikTok, Reddit, LinkedIn, Snapchat, Pinterest telt als scrollen.
-    for (const [k, ts] of times) { const [, dv, site] = k.split("|"); if (SOCIAL.has(site)) fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
+    // Apps zonder eigen "inhoud"-regel (X, Reddit, LinkedIn, Threads): hun verkeer telt als scrollen. Facebook e.d. hebben al een
+    // inhoud-regel (hun achtergrondverkeer telt dus niet).
+    for (const [k, ts] of times) { const [, dv, site] = k.split("|"); if (SOCIAL.has(site) && !FG_RULES[site]) fgByDev.set(dv, [...(fgByDev.get(dv) ?? []), ...ts]); }
   }
     return fgByDev.get(dev) ?? [];
   };
