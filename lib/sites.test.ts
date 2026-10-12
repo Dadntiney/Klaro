@@ -339,3 +339,9 @@ test("Amazon-meetadres (minerva.devices.a2z.com) is achtergrond, geen app-gebrui
   assert.equal(c.main, false);
   assert.equal(classify("www.amazon.nl").main, true);
 });
+
+test("kanaalplaatjes van YouTube (yt3.ggpht.com) horen bij YouTube; andere ggpht-adressen niet", () => {
+  assert.equal(classify("yt3.ggpht.com").name, "YouTube");
+  assert.equal(classify("yt3.googleusercontent.com").name, "YouTube");
+  assert.notEqual(classify("lh3.ggpht.com").name, "YouTube");
+});
