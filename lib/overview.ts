@@ -10,6 +10,7 @@ import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
 import { anchorOf, chainTimes, companionFor, COMPANIONS, loadedWith } from "./companion.ts";
+import { GELEERD, geldig } from "./geleerd.ts";
 import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
 import { prepareLists } from "./adultlist.ts";
@@ -292,6 +293,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     for (const [dev, ev] of byDev) for (const [t, site] of assignPlayback(ev)) playOf.set(dev + "|" + t, site);
   }
   // Sites die altijd met een hulpadres van een andere site meekomen (script van een websitebouwer), zie lib/companion.ts.
+  let learnedHelpers: string[] = [];
   const helperSites = (() => {
     const ev: Parameters<typeof loadedWith>[0] = [];
     for (const r of body) {
@@ -302,7 +304,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (info.bg || info.flag) continue;
       ev.push({ t, dev: idOf(r), host: host!, site: info.site, page: info.main && isPlainSite(info), helper: !info.main });
     }
-    return loadedWith(ev);
+    learnedHelpers = [...loadedWith(ev)];
+    return new Set([...learnedHelpers, ...geldig(GELEERD.helpers, Date.now())]);
   })();
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
@@ -761,7 +764,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
 
   // Sites die zichzelf verversen: alleen te zien over meerdere dagen (dus bij de volledige download). De pagina onthoudt de lijst,
   // zodat ze ook bij het snelle laden van vandaag meteen weg blijven.
-  const auto = todayOnly ? [] : autoRefreshing(singles);
+  const autoNow = todayOnly ? [] : autoRefreshing(singles);
+  const auto = [...new Set([...autoNow, ...geldig(GELEERD.auto, Date.now())])];
   if (auto.length) {
     const set = new Set(auto);
     for (const g of groups.values()) if (set.has(g.dev + "|" + g.site)) for (const x of g.ss) delete x.pv;
@@ -775,6 +779,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     deviceMap, // id -> label; bevat nooit de echte naam
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     auto: todayOnly ? undefined : auto,
+    learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers }, // wat nu uit de logboeken blijkt (scripts/leer.ts legt het vast)
     // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
     partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren

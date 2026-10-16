@@ -35,8 +35,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    "Nog uitzoeken" zetten en de volgende dagen opnieuw bekijken (meer dagen = meer bewijs). Wat geleerd is komt onder "Geleerd".
 
    Wordt het NextDNS-logboek leeggemaakt: de regels staan in de code en blijven. Referentiegevallen van dagen die er niet
-   meer zijn worden overgeslagen; wat Klaro uit de geschiedenis afleidt (widgets, vaste hulpjes) bouwt zich in een paar dagen
-   weer op.
+   meer zijn worden overgeslagen; wat Klaro uit de geschiedenis afleidt (widgets, vaste hulpjes) staat vast in lib/geleerd.ts.
 
    Geleerd (niet opnieuw uitzoeken): Netflix op een telefoon/tablet wordt elk uur op de achtergrond wakker; zonder beeld
    en zonder plaatjes is dat nooit langer dan 2 minuten en geen kijken (opgelost, 16 okt). Canva-tabblad dat zich elke ~6 min
@@ -49,6 +48,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
 
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.
-6. `npm test`, `npx tsc --noEmit`, `npx next build` moeten slagen. Dan naar `main`: GitHub zet het via SFTP live en
+6. Geleerde kennis vastleggen (blijft ook als het NextDNS-logboek wordt leeggemaakt):
+
+       node --experimental-strip-types scripts/leer.ts /tmp/overzicht.json
+
+   Dat vult lib/geleerd.ts aan (widgets/open tabbladen en vaste hulpjes, met datum "laatst gezien"; geldt 90 dagen na de laatste
+   bevestiging). Is het bestand veranderd: meenemen in de commit.
+7. `npm test`, `npx tsc --noEmit`, `npx next build` moeten slagen. Dan naar `main`: GitHub zet het via SFTP live en
    controleert pichya.nl. Daarna stap 1, 2 en 4 opnieuw.
-7. Kort melden in eenvoudig Nederlands wat er is opgelost; niets gevonden = één zin.
+8. Kort melden in eenvoudig Nederlands wat er is opgelost; niets gevonden = één zin.
