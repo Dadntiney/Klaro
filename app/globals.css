@@ -482,3 +482,6 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .item .sub { font-size:12.5px; }
 .list > div > .hourmark { padding:14px 14px 6px; }
 .list > div + div:has(.tstart)::before { display:none; }
+/* Uren alleen met lucht gescheiden, zonder lijn. */
+.list > div > .hourmark { padding:0; height:16px; }
+.list > div > .hourmark::after { display:none; }
