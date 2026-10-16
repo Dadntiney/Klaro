@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost } from "./sites.ts";
+import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost, isNeverFlag } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -359,4 +359,6 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   // geen vals alarm: gewone sites met een vergelijkbaar stukje in de naam blijven gewone sites
   assert.equal(classify("www.awin.nl").bg, false);
   assert.equal(classify("www.tolkien.nl").bg, false);
+  assert.equal(isNeverFlag("www.vkmag.com"), true); // door de eigenaar goedgekeurd
+  assert.equal(isNeverFlag("www.voorbeeldsite.nl"), false);
 });

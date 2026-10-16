@@ -1,0 +1,151 @@
+/**
+ * Dagelijkse zelfcontrole van Klaro over ALLE opgeslagen logboeken (zie docs/dagelijkse-controle.md). Haalt de volledige download
+ * één keer op via de eigen server (pichya.nl/api/nd.php) en kijkt of de regels zelf kloppen:
+ *   1. Vangnet: adressen op de 18+/datinglijst of met duidelijke woorden (porn, dating, vpn, versleutelde dns) die niet rood zijn.
+ *   2. Door NextDNS als gevaarlijk geblokkeerd.
+ *   3. Achtergrond-adressen die op een echte site lijken en vaak los voorkomen (misschien ten onrechte achtergrond).
+ *   4. Getoonde sites die elke keer binnen 5 s na een andere pagina opduiken (misschien een onderdeel van die pagina).
+ *   5. Onbekende adressen met veel verkeer (misschien een app die we nog niet kennen, zoals een spel).
+ *   6. Chip en rij nagespeeld: elke 10 minuten van het laatste etmaal, alleen met de gegevens tot dat moment.
+ * Alles wat hier verschijnt: nalopen in de ruwe regels, en alleen algemeen oplossen (met doorrekenen en tests).
+ * Gebruik: KLARO_PW=... node --experimental-strip-types scripts/controle.ts [--bestand download.tsv] [--uren 24]
+ * Toont nooit echte apparaatnamen (alleen de labels van Klaro) en geen lokale namen uit het thuisnetwerk.
+ */
+import fs from "node:fs";
+import { buildOverview } from "../lib/overview.ts";
+import { classify, isMainHost, isNeverFlag } from "../lib/sites.ts";
+import { baseDomain } from "../lib/parse.ts";
+import { inAdultList, inDatingList } from "../lib/adultlist.ts";
+import { isPlainSite, isSystemSite } from "../lib/system.ts";
+import { isHuman, type Session } from "../lib/sessions.ts";
+import { isNow } from "../lib/play.ts";
+import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, tvBlipper, type LiveGroup } from "../lib/livestatus.ts";
+
+const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
+let text: string;
+if (arg("--bestand")) text = fs.readFileSync(arg("--bestand")!, "utf8");
+else {
+  const pw = process.env.KLARO_PW;
+  if (!pw) throw new Error("KLARO_PW ontbreekt");
+  const site = process.env.KLARO_SITE ?? "https://pichya.nl";
+  const res = await fetch(`${site}/api/nd.php?download=1`, { headers: { Authorization: "Basic " + Buffer.from("klaro:" + pw).toString("base64") }, signal: AbortSignal.timeout(180_000) });
+  if (!res.ok) throw new Error("Download mislukt: " + res.status);
+  text = await res.text();
+}
+const lines = text.split("\n").filter(Boolean);
+const head = lines[0].split(/[\t,]/);
+const col = (n: string) => head.indexOf(n);
+const [cT, cH, cS, cR, cD] = [col("timestamp"), col("domain"), col("status"), col("reasons"), col("device_id")];
+const rows = lines.slice(1).map((l) => l.split("\t")).map((r) => ({ t: Date.parse(r[cT]), h: (r[cH] ?? "").toLowerCase(), blocked: r[cS] === "blocked", why: r[cR] ?? "", id: r[cD] ?? "" })).filter((r) => r.t && r.h);
+rows.sort((a, b) => a.t - b.t);
+const LOCAL = /\.(home|lan|local|localdomain|internal)$|^[^.]+$/; // namen uit het thuisnetwerk: nooit tonen
+const days = new Set(rows.map((r) => new Date(r.t).toISOString().slice(0, 10)));
+
+const overview = async (body: string[], now: number) => {
+  const txt = [lines[0], ...body].join("\n");
+  const res = { ok: true, status: 200, text: async () => txt, json: async () => ({}) };
+  const real = Date.now;
+  Date.now = () => now;
+  try { return (await buildOverview({ logs: async () => res, download: async () => res }, { todayOnly: false })).body as { groups: (LiveGroup & { ss: Session[]; susp?: string })[]; auto?: string[]; deviceMap: Record<string, string> }; }
+  finally { Date.now = real; }
+};
+const now = Date.now();
+const ov = await overview(lines.slice(1), now);
+const label = (id: string) => ov.deviceMap[id] ?? "onbekend";
+const hm = (t: number) => new Date(t).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const section = (title: string, items: string[], none: string) => { console.log(`\n## ${title} (${items.length})`); console.log(items.length ? items.join("\n") : none); };
+console.log(`Klaro-controle: ${rows.length} regels, ${days.size} dagen (${[...days].sort()[0]} t/m ${[...days].sort().pop()}).`);
+
+// 1. Vangnet
+const WORDS = /porn|xxx|hentai|nude|naakt|escort|onlyfans|fansly|chaturbate|stripchat|bongacams|livejasmin|camgirl|nsfw|dating|tinder|bumble|badoo|grindr|parship|lexa\.|flirt|vpn|psiphon|torproject|ultrasurf|windscribe|dns\.google|cloudflare-dns|quad9|adguard-dns|dns\.nextdns|controld|doh\./;
+const hosts = [...new Set(rows.map((r) => r.h))].filter((h) => !LOCAL.test(h));
+const vang = hosts.filter((h) => !classify(h).flag && !isNeverFlag(h) && (inAdultList(h) || inDatingList(h) || WORDS.test(h)))
+  .map((h) => `${h}  [${inAdultList(h) ? "18+-lijst" : inDatingList(h) ? "datinglijst" : "woord"}, ${rows.filter((r) => r.h === h).length}x]`);
+section("Vangnet: verdacht maar niet rood", vang, "Niets.");
+const never = hosts.filter((h) => isNeverFlag(h) && (inAdultList(h) || inDatingList(h)));
+if (never.length) console.log(`(Op een lijst, maar bewust nooit rood: ${never.join(", ")})`);
+const flagged = ov.groups.filter((g) => g.flag || g.susp).map((g) => `${g.d} ${g.dev} ${g.flag ?? "verdacht"} ${g.site}`);
+section("Rood of verdacht getoond", flagged, "Niets rood of verdacht.");
+
+// 2. Bedreigingen
+const threats = new Map<string, number>();
+for (const r of rows) if (r.blocked && /threat|malware|phish/.test(r.why)) threats.set(`${label(r.id)} ${r.h}`, (threats.get(`${label(r.id)} ${r.h}`) ?? 0) + 1);
+section("Door NextDNS als gevaarlijk geblokkeerd", [...threats].map(([k, n]) => `${k}  ${n}x`), "Niets.");
+
+// 3. Achtergrond die op een echte site lijkt en vaak los voorkomt
+const visT = new Map<string, number[]>();
+for (const r of rows) { const c = classify(r.h); if (!c.bg && c.main) (visT.get(r.id) ?? visT.set(r.id, []).get(r.id)!).push(r.t); }
+const near = (id: string, t: number) => { const a = visT.get(id) ?? []; let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < t - 60_000) lo = m + 1; else hi = m; } return lo < a.length && a[lo] <= t + 60_000; };
+const bgLoose = new Map<string, { n: number; alone: number }>();
+for (const r of rows) {
+  if (r.blocked || LOCAL.test(r.h)) continue;
+  const c = classify(r.h), base = baseDomain(r.h);
+  if (!c.bg || !isMainHost(r.h, base) || isSystemSite(base)) continue;
+  const a = bgLoose.get(base) ?? { n: 0, alone: 0 }; a.n++; if (!near(r.id, r.t)) a.alone++; bgLoose.set(base, a);
+}
+section("Achtergrond die vaak los voorkomt (nalopen: echt gebruik?)", [...bgLoose].filter(([, a]) => a.alone >= 5).sort((p, q) => q[1].alone - p[1].alone).map(([b, a]) => `${b}  ${a.alone} van ${a.n}x los`),
+  "Niets opvallends.");
+
+// 4. Getoonde sites die elke keer vlak na een andere pagina opduiken
+const SEARCH = new Set(["google.com", "bing.com", "duckduckgo.com", "ecosia.org"]);
+const pages = new Map<string, { t: number; site: string }[]>();
+for (const r of rows) { const c = classify(r.h); if (c.main && !c.bg && !c.flag && isPlainSite(c) && !SEARCH.has(c.site)) (pages.get(label(r.id)) ?? pages.set(label(r.id), []).get(label(r.id))!).push({ t: r.t, site: c.site }); }
+const auto = new Set(ov.auto ?? []);
+const fol = new Map<string, { n: number; f: number }>();
+for (const g of ov.groups) {
+  if (!g.main || g.bg || g.flag || !isPlainSite(g) || isTv(g.dev)) continue;
+  for (const x of g.ss) {
+    if (!isHuman(x) || x.lg || (x.n ?? 0) > 1 || (x.pv && auto.has(g.dev + "|" + g.site))) continue;
+    const a = fol.get(g.site) ?? { n: 0, f: 0 }; a.n++;
+    if ((pages.get(g.dev) ?? []).some((p) => p.site !== g.site && p.t <= x.s && x.s - p.t <= 5_000)) a.f++;
+    fol.set(g.site, a);
+  }
+}
+section("Getoond, maar elke keer vlak na een andere pagina (onderdeel?)", [...fol].filter(([, a]) => a.n >= 2 && a.f === a.n).map(([s, a]) => `${s}  ${a.n}x`), "Niets.");
+
+// 5. Onbekende adressen met veel verkeer (geen app, geen achtergrond, nooit getoond)
+const shownSites = new Set(ov.groups.filter((g) => g.ss.some((x) => isHuman(x))).map((g) => g.site));
+const unk = new Map<string, { n: number; devs: Set<string>; days: Set<string> }>();
+for (const g of ov.groups) {
+  if (g.bg || g.name !== g.site || isSystemSite(g.site) || shownSites.has(g.site) || LOCAL.test(g.site)) continue;
+  const a = unk.get(g.site) ?? { n: 0, devs: new Set(), days: new Set() }; a.n += g.n; a.devs.add(g.dev); a.days.add(g.d); unk.set(g.site, a);
+}
+section("Onbekend met veel verkeer (een app die we nog niet kennen?)", [...unk].filter(([, a]) => a.n >= 20).sort((p, q) => q[1].n - p[1].n).slice(0, 15).map(([s, a]) => `${s}  ${a.n}x op ${a.days.size} dagen, ${[...a.devs].join("+")}`),
+  "Niets opvallends.");
+
+// 6. Chip en rij nagespeeld
+const hours = Number(arg("--uren") ?? 24);
+const today = (t: number) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(t);
+const mism: string[] = [];
+let checks = 0;
+for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
+  const o = await overview(lines.slice(1).filter((l) => { const t = Date.parse(l.slice(0, 24)); return t <= T && t >= T - 30 * 3_600_000; }), T);
+  const groups = o.groups, au = new Set(o.auto ?? []);
+  const use = deviceUse(groups, au);
+  const blip = tvBlipper(groups);
+  const hum = (g: LiveGroup, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && !x.lg && au.has(g.dev + "|" + g.site));
+  const vis = new Map<string, Session[]>(), visBy = new Map<string, { s: number; site: string }[]>();
+  for (const g of groups) { if (g.bg || !g.main) continue; for (const x of g.ss) if (g.flag || g.susp || hum(g, x)) { (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push(x); (visBy.get(g.dev) ?? visBy.set(g.dev, []).get(g.dev)!).push({ s: x.s, site: g.site }); } }
+  const standalone = (g: LiveGroup, x: Session) => (x.n ?? 0) >= 3 && !x.ml && !x.res && !(vis.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
+  const rowsT: { g: LiveGroup; x: Session }[] = [];
+  for (const g of groups) {
+    if (g.d !== today(T) || g.bg || ((g.bl ?? 0) >= g.n && !g.flag)) continue;
+    if (!g.main && (isSystemSite(g.site) || !g.ss.some((x) => standalone(g, x)))) continue;
+    let ss = g.ss.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || hum(g, x) : standalone(g, x)));
+    if (isTv(g.dev) && ss.length >= 2) {
+      const out: Session[] = [];
+      for (const x of [...ss].sort((a, b) => a.s - b.s)) { const l = out[out.length - 1]; const other = l && (visBy.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s > l.e && v.s < x.s); if (l && !other && x.s - l.e <= 900_000) out[out.length - 1] = { ...l, e: Math.max(l.e, x.e) }; else out.push({ ...x }); }
+      ss = out;
+    }
+    for (const x of ss) rowsT.push({ g, x });
+  }
+  const lastStart = new Map<string, number>();
+  for (const r of rowsT) if (r.g.flag || isHuman(r.x)) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.x.s));
+  for (const dev of new Set(groups.filter((g) => g.d === today(T)).map((g) => g.dev))) {
+    checks++;
+    const nu = rowsT.filter((r) => r.g.dev === dev && (r.g.flag || isHuman(r.x)) && isNow(T, r.x, r.g) && !((lastStart.get(dev) ?? 0) > r.x.s));
+    const chip = isActiveNow(use, dev, T);
+    if (chip !== nu.length > 0) mism.push(`${hm(T)} ${dev}: chip ${chip ? "groen" : "uit"}, rij "nu": ${nu.map((r) => r.g.name).join(", ") || "geen"}`);
+  }
+}
+section(`Chip en rij nagespeeld (${checks} momenten, laatste ${hours} uur)`, mism, "Chip en rij zeggen steeds hetzelfde.");

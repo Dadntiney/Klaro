@@ -319,6 +319,10 @@ function isVpn(host: string): boolean {
 /** Nooit rood markeren, ook niet als een lijst ze (ten onrechte) bevat. */
 // Door de eigenaar goedgekeurd (staat op een 18+-lijst, maar is dat voor ons gezin niet): vkmag.com (mannenblad, artikelen via Facebook).
 const NEVER_FLAG = new Set(["vkmag.com", "list-manage.com", "mailchimp.com", "mcusercontent.com", "sendgrid.net", "mandrillapp.com", "google.com", "youtube.com", "facebook.com", "instagram.com", "microsoft.com", "apple.com", "amazon.com", "wikipedia.org", "reddit.com", "twitter.com", "x.com"]);
+/** Staat dit adres bewust op "nooit rood" (door de eigenaar goedgekeurd of een bekende dienst)? */
+export function isNeverFlag(host: string): boolean {
+  return NEVER_FLAG.has(baseDomain(host));
+}
 
 const memo = new Map<string, SiteInfo>();
 
