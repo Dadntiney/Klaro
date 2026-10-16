@@ -80,6 +80,28 @@ function CalendarIcon() {
   );
 }
 
+/** Klein logo voor de NextDNS-weergave; zonder logo een rustig bolletje in plaats van een letter. */
+function MiniFav({ domain }: { domain: string }) {
+  const [ok, setOk] = useState<boolean | null>(null);
+  return (
+    <span className="mfav" aria-hidden>
+      {ok !== false && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className={ok ? "ok" : ""}
+          alt=""
+          width={18}
+          height={18}
+          loading="lazy"
+          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`}
+          onLoad={(e) => setOk(e.currentTarget.naturalWidth > 16)}
+          onError={() => setOk(false)}
+        />
+      )}
+    </span>
+  );
+}
+
 /**
  * De regels zoals NextDNS ze binnenkrijgt (nieuwste bovenaan), zonder filter: zo hoeft niemand naar my.nextdns.io.
  * Bovenaan komen ze live binnen; daaronder alles uit de volledige download: zoeken in alle dagen, verder terugbladeren en
@@ -96,6 +118,7 @@ function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; dev
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [range, setRange] = useState<{ since: number; until: number } | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null); // opengeklapte regel (details)
   const req = useRef(0);
   const devKey = devIds?.join(",") ?? "";
   const load = useCallback(async (before: number | null, append: boolean) => {
@@ -182,15 +205,32 @@ function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; dev
           const sub = host.length > base.length ? host.slice(0, host.length - base.length) : "";
           const day = dayKeyFmt.format(e.t);
           const newDay = i === 0 ? at !== null || day !== dayKeyFmt.format(Date.now()) : day !== dayKeyFmt.format(shown[i - 1].t);
+          const key = `${e.t}|${e.devId}|${host}`;
+          const isOpen = openKey === key;
+          const dev = devName(e.devId);
           return (
-            <Fragment key={`${e.t}|${e.devId}|${host}`}>
+            <Fragment key={key}>
               {newDay && <div className="hourmark">{dayLabel(day)}</div>}
-              <div className={"item rawi" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "")}>
-                <Favicon domain={base} name={base} />
-                <div className="rawt">
-                  <div className="rawh"><span className="muted">{sub}</span>{base}</div>
-                  <div className="sub">{devName(e.devId)} · {timeSecFmt.format(e.t)}{e.flag ? ` · ${e.flag}` : ""}{e.blocked ? " · geblokkeerd" : ""}</div>
-                </div>
+              <div className={"rawrow" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "") + (isOpen ? " open" : "")}>
+                <button type="button" className="rawline" onClick={() => setOpenKey(isOpen ? null : key)} aria-expanded={isOpen}>
+                  <MiniFav domain={base} />
+                  <span className="rawhost"><span className="muted">{sub}</span>{base}</span>
+                  {!device && <span className="rawdev" title={dev}><DevIcon name={dev} /></span>}
+                  <span className="rawtime">{timeSecFmt.format(e.t)}</span>
+                  <span className="rawchev" aria-hidden>›</span>
+                </button>
+                {isOpen && (
+                  <div className="rawdet">
+                    <div className="rawfull">{host}</div>
+                    <dl>
+                      <dt>Apparaat</dt><dd>{dev}</dd>
+                      <dt>Tijd</dt><dd>{dayLabel(day)} {timeSecFmt.format(e.t)}</dd>
+                      <dt>Status</dt><dd>{e.blocked ? `Geblokkeerd door NextDNS${e.why ? ` (${e.why})` : ""}` : "Doorgelaten"}</dd>
+                      <dt>Hoort bij</dt><dd>{e.name}{e.flag ? ` · vangnet: ${e.flag}` : e.bg ? " · achtergrond (geen gebruik)" : ""}</dd>
+                    </dl>
+                    {q.trim().toLowerCase() !== host && <button type="button" className="rawsearch" onClick={() => { setQ(host); setOpenKey(null); }}>Alle regels van dit adres</button>}
+                  </div>
+                )}
               </div>
             </Fragment>
           );

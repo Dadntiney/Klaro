@@ -394,3 +394,25 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .rawat button, .rawmore button { font:inherit; font-size:14px; font-weight:600; padding:6px 14px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }
 .rawmore { display:flex; justify-content:center; padding:14px 0 24px; font-size:14px; }
 .rawmore button:disabled { opacity:.6; cursor:default; }
+/* NextDNS-weergave: één regel per adres (zoals my.nextdns.io), tikken klapt de details open. */
+.rawlog { padding:0; }
+.rawlog > .rawrow + div::before, .rawlog > div + .rawrow::before { left:42px; } /* scheidingslijn begint bij het adres */
+.rawlog > .hourmark + .rawrow::before { display:none; }
+.rawrow.blk { box-shadow:inset 4px 0 0 #e5484d; } /* geblokkeerd: rood streepje links, zoals bij NextDNS */
+.rawrow.flag { background:color-mix(in srgb, #e5484d 12%, transparent); }
+.rawline { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:8px 12px 8px 14px; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.mfav { flex:none; width:18px; height:18px; border-radius:50%; background:color-mix(in srgb, var(--muted) 25%, transparent); overflow:hidden; display:inline-flex; }
+.mfav img { width:18px; height:18px; opacity:0; }
+.mfav img.ok { opacity:1; background:var(--card); }
+.rawhost { flex:1; min-width:0; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rawdev { flex:none; color:var(--muted); display:inline-flex; }
+.rawdev svg { width:14px; height:14px; }
+.rawtime { flex:none; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.rawchev { flex:none; color:var(--muted); font-size:18px; line-height:1; transition:transform .15s; }
+.rawrow.open .rawchev { transform:rotate(90deg); }
+.rawdet { padding:2px 14px 12px 42px; font-size:13px; }
+.rawfull { font-size:14px; overflow-wrap:anywhere; margin-bottom:6px; }
+.rawdet dl { display:grid; grid-template-columns:auto 1fr; gap:3px 12px; margin:0; }
+.rawdet dt { color:var(--muted); }
+.rawdet dd { margin:0; overflow-wrap:anywhere; }
+.rawsearch { margin-top:8px; font:inherit; font-size:13px; font-weight:600; padding:5px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }

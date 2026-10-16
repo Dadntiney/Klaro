@@ -40,6 +40,7 @@ export interface Event {
   flag?: string;
   cat?: string;
   blocked?: boolean;
+  why?: string;
   media?: boolean;
   quiet?: boolean;
   fg?: boolean;
