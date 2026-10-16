@@ -117,8 +117,8 @@ export function isResourceHost(host: string): boolean {
   return RESOURCE.test(host);
 }
 
-/** Ingesloten videospelers (een filmpje óp een andere site): Vimeo-speler, YouTube zonder cookies, Wistia, Twitch-speler. */
-const EMBED = /^player\.vimeo\.com$|^(www\.)?youtube-nocookie\.com$|^fast\.wistia\.(com|net)$|^player\.twitch\.tv$/;
+/** Ingesloten spelers en onderdelen (óp een andere site): Vimeo-speler, YouTube zonder cookies, Wistia, Twitch-speler, embed.*. */
+const EMBED = /^player\.vimeo\.com$|^(www\.)?youtube-nocookie\.com$|^fast\.wistia\.(com|net)$|^player\.twitch\.tv$|^embed\./; // embed.: een ingebouwd onderdeel (tool, formulier) in een andere site
 export function isEmbedHost(host: string): boolean {
   return EMBED.test(host);
 }
@@ -137,7 +137,7 @@ const BACKGROUND = new Set([
   "ift.tt", "bit.ly", "tinyurl.com", "awin1.com", "tradetracker.net", "go2cloud.org", "bigspark.link", // ook affiliate-links
    "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com",
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
-  "tm-azurefd.net", "azurefd.net", "t-msedge.net", "fastly-masque.net", "impervadns.net", "akaquill.net", "visualwebsiteoptimizer.com", "at-o.net", "wt-eu02.net", "snplow.net", "nr-data.net", "marketingcloudapis.com", "rudderlabs.com", "kameleoon.eu", "tealiumiq.com", "contentsquare.net", "blueconic.net", "mparticle.com", "dynatrace.com", "usabilla.com", "typekit.net", "addthis.com", "privacy-center.org", "tuyaeu.com", "tuyaus.com", "tuyacn.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
+  "tm-azurefd.net", "azurefd.net", "t-msedge.net", "fastly-masque.net", "impervadns.net", "akaquill.net", "visualwebsiteoptimizer.com", "at-o.net", "wt-eu02.net", "snplow.net", "nr-data.net", "marketingcloudapis.com", "rudderlabs.com", "ecomm.events", "kameleoon.eu", "tealiumiq.com", "contentsquare.net", "blueconic.net", "mparticle.com", "dynatrace.com", "usabilla.com", "typekit.net", "addthis.com", "privacy-center.org", "tuyaeu.com", "tuyaus.com", "tuyacn.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
   "googletagservices.com", "doubleclick.net", "googlesyndication.com", "googleadservices.com", "gvt1.com", "gvt2.com",
   "app-measurement.com", "crashlytics.com", "firebaseio.com", "firebaseinstallations.googleapis.com",
@@ -172,7 +172,9 @@ const BACKGROUND_KEYWORDS = [
 const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|whatsapp|bing|yahoo)\.[a-z.]+$/;
 
 const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com",
-  "devices.a2z.com"]; // apparaat-statistieken van Amazon (Minerva): ook als de app op de achtergrond ververst
+  "devices.a2z.com", // apparaat-statistieken van Amazon (Minerva): ook als de app op de achtergrond ververst
+  // bestanden van cursusplatform Thinkific in de eigen cursus-site (academy.merk.nl): die site is het bezoek, niet Thinkific
+  "cdn.thinkific.com", "assets.thinkific.com", "cdn-internal.thinkific.com", "cdn-themes.thinkific.com"];
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
   "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
@@ -290,7 +292,7 @@ export function isMainHost(host: string, base: string): boolean {
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;
   // Adressen waarachter meestal echt een bezoek zit (mijn.postnl.nl, shop.lego.com, webmail.provider.nl), geen hulpdienst; mail.merk.nl is nieuwsbrief-verkeer, geen bezoek.
-  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "webmail", "chat", "play", "music", "news", "nieuws", "online", "bankieren", "internetbankieren", "mijnzaken"];
+  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "academy", "learn", "leren", "cursus", "courses", "webmail", "chat", "play", "music", "news", "nieuws", "online", "bankieren", "internetbankieren", "mijnzaken"];
   return LANG.has(rest) || PORTAL.includes(rest);
 }
 

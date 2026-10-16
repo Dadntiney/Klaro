@@ -104,7 +104,8 @@ test("ingesloten videospeler die doorspeelt (Wistia in een cursus): de cursus-si
   const rows: R[] = [[0, "academy.cursussite.com"], [1_000, "cdn.thinkific.com"], [17_000, "assets.thinkific.com"], [17_000, "fast.wistia.net"], [69_000, "fast.wistia.com"], [70_000, "embed-ssl.wistia.com"]];
   for (let x = 2; x <= 48; x += 2) rows.push([x * min, "distillery.wistia.com", "P1", "blocked"], [x * min + 500, "pipedream.wistia.com", "P1", "blocked"]);
   const o = await overview(rows);
-  const end = Math.max(...shown(o, "thinkific.com").map((x) => x.e));
+  const end = Math.max(...shown(o, "cursussite.com").map((x) => x.e));
+  assert.ok(o.groups.filter((g) => g.site === "thinkific.com").every((g) => (g as { bg?: boolean }).bg)); // het platform eronder is geen eigen bezoek
   assert.ok(end >= T0 + 48 * min, "cursus tot het einde van het filmpje");
   assert.equal(shown(o, "wistia.com").length, 0);
 });
@@ -112,4 +113,26 @@ test("ingesloten videospeler die doorspeelt (Wistia in een cursus): de cursus-si
 test("geen vals kijken: een los filmpje zonder site eromheen telt niet als bezoek aan een andere site", async () => {
   const o = await overview([[0, "www.nieuws.nl"], [600_000, "player.vimeo.com"], [610_000, "player.vimeo.com"]]);
   assert.equal(Math.max(...shown(o, "nieuws.nl").map((x) => x.e)), T0);
+});
+
+test("winkelplatform dat bij elke pagina van een webwinkel meelaadt (ook binnen één bezoek): onderdeel; de winkel blijft", async () => {
+  const o = await overview([
+    [0, "www.google.com"], [28_000, "hoerakinderschoenen.nl"], [28_450, "app.ecwid.com"],
+    [68_000, "hoerakinderschoenen.nl"], [68_300, "app.ecwid.com"],
+  ]);
+  assert.equal(shown(o, "hoerakinderschoenen.nl").length, 1);
+  assert.equal(shown(o, "ecwid.com").length, 0);
+});
+
+test("ingebouwde tool (embed.) in een cursusportaal: het portaal is het bezoek, de tool niet; gebruik van de tool telt mee", async () => {
+  const o = await overview([[0, "academy.cursussite.nl"], [700, "embed.toolsite.com"], [42_000, "app.toolsite.com"]]);
+  assert.equal(shown(o, "toolsite.com").length, 0);
+  const s = shown(o, "cursussite.nl");
+  assert.equal(s.length, 1);
+  assert.ok(s[0].e >= T0 + 42_000, "portaal loopt door zolang de tool gebruikt wordt");
+});
+
+test("geen vals weglaten: een site die zelf geopend wordt met zijn eigen embed.-onderdeel blijft een bezoek", async () => {
+  const o = await overview([[0, "www.nieuwssite.nl"], [3_000, "www.tijdschrift.nl"], [3_400, "embed.tijdschrift.nl"], [12_000, "www.tijdschrift.nl"]]);
+  assert.equal(shown(o, "tijdschrift.nl").length, 1);
 });

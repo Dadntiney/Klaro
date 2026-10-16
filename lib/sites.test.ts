@@ -362,3 +362,13 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   assert.equal(isNeverFlag("www.vkmag.com"), true); // door de eigenaar goedgekeurd
   assert.equal(isNeverFlag("www.voorbeeldsite.nl"), false);
 });
+
+test("cursusportaal en ingebouwde onderdelen: academy. is een pagina, embed. en platformbestanden niet", () => {
+  assert.equal(classify("academy.cursussite.nl").main, true);
+  assert.equal(isEmbedHost("embed.toolsite.com"), true);
+  assert.equal(isEmbedHost("www.embedded.nl"), false); // geen vals alarm op een gewone naam
+  assert.equal(classify("cdn.thinkific.com").bg, true); // bestanden van het platform
+  assert.equal(classify("school.thinkific.com").name, "Thinkific (cursus)"); // een eigen Thinkific-school blijft herkend
+  assert.equal(classify("ecomm.events").bg, true);
+  assert.equal(classify("www.events.nl").bg, false);
+});

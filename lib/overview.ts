@@ -224,6 +224,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const mediaTimes = new Map<string, number[]>();
   const fgTimes = new Map<string, number[]>();
   const embedTimes = new Map<string, number[]>();
+  const embedGen = new Map<string, number[]>(); // alleen embed.*-adressen (algemene ingebouwde onderdelen)
   const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
   const siteHosts = new Map<string, { t: number; host: string }[]>(); // welke adressen van de site wanneer (een echte pagina laadt er meerdere)
   const loginTimes = new Map<string, number[]>(); // inlog-/bankierpagina's (bankieren., mijn., login.): altijd bewust geopend
@@ -373,6 +374,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (!info.bg) (siteHosts.get(gkey) ?? siteHosts.set(gkey, []).get(gkey)!).push({ t, host });
     if (!blocked && isLoginHost(host)) (loginTimes.get(gkey) ?? loginTimes.set(gkey, []).get(gkey)!).push(t);
     if (isEmbedHost(host)) (embedTimes.get(gkey) ?? embedTimes.set(gkey, []).get(gkey)!).push(t);
+    if (/^embed\./.test(host)) (embedGen.get(gkey) ?? embedGen.set(gkey, []).get(gkey)!).push(t);
     if (!blocked && fgHit(info.site, host)) (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(t);
     if (isPlaying(host, blocked)) {
       (mediaTimes.get(gkey) ?? mediaTimes.set(gkey, []).get(gkey)!).push(t);
@@ -482,7 +484,11 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       }
     }
     const emb = embedTimes.get(gkey);
-    if (emb) for (const x of sessions) if (emb.some((t) => t >= x.s - 5_000 && t <= x.e + 5_000)) embedSes.push({ g, x });
+    // Een embed.-onderdeel hoort alleen bij een andere site als de eigen site (www. of de kale naam) er niet zelf bij geopend werd.
+    const near = (ts: number[] | undefined, x: Session) => (ts ?? []).some((t) => t >= x.s - 5_000 && t <= x.e + 5_000);
+    const own = (x: Session) => (siteHosts.get(gkey) ?? []).some((h) => h.t >= x.s - 5_000 && h.t <= x.e + 5_000 && (h.host === g.site || h.host === "www." + g.site));
+    const player = (x: Session) => (emb ?? []).some((t) => t >= x.s - 5_000 && t <= x.e + 5_000 && !(embedGen.get(gkey) ?? []).includes(t));
+    if (emb) for (const x of sessions) if (near(emb, x) && (player(x) || !own(x))) embedSes.push({ g, x });
     // (Na het bepalen van beeld/geluid, mail en inhoud.) Zichtbare sites: de laatste 20 sessies, plus alle oudere sessies die echt gebruik waren (op drukke dagen meer dan 20).
     g.ss = g.main && !g.bg ? sessions.filter((x, i) => i < 20 || isHuman(x) || !!g.flag).slice(0, 120) : sessions.slice(0, 5);
     g.ts = all.filter(Boolean).sort((a, b) => b - a).slice(0, 8);
@@ -528,7 +534,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (!g.main || g.bg || g.flag) continue;
       for (const x of g.ss) if (isHuman(x)) (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push({ g, x });
     }
-    for (const { g, x } of embedSes) {
+    // Op volgorde van tijd: een speler die net begon verlengt de pagina eerst, zodat het vervolg daar weer op aansluit.
+    for (const { g, x } of [...embedSes].sort((a, b) => a.x.s - b.x.s)) {
       if (g.flag) continue;
       const on = (vis.get(g.dev) ?? []).filter((v) => v.g.site !== g.site && v.x.s <= x.e + 60_000 && v.x.e >= x.s - 60_000);
       if (!on.length) continue;
@@ -537,6 +544,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (host && x.e > host.x.e) {
         const before = minutes(host.x);
         host.x.e = x.e;
+        delete host.x.uz; // er speelde echt iets af op deze site: geen aangeklopte advertentie
         host.g.mins += minutes(host.x) - before;
         if (x.e > host.g.last) host.g.last = x.e;
       }
@@ -557,16 +565,16 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const pg = pages.get(g.dev);
       if (!pg) continue;
       for (const x of g.ss) {
-        if (!(x.pv || x.ck) || x.lg || x.n !== 1) continue;
+        if (!(x.pv || x.ck) || x.lg || x.n !== 1 || x.e - x.s >= 60_000) continue; // een bezoek dat een filmpje laat doorlopen is geen los onderdeel
         const hs = new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host));
         if (hs.size !== 1 || [...hs][0].startsWith("www.")) continue;
         if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000)) { delete x.pv; delete x.ck; x.emb = 1; }
       }
     }
-    // Een site die elke keer (minstens 2 keer) tegelijk met een pagina van een andere site opduikt (hooguit 5 s erna), en nooit
+    // Een site die elke keer (minstens 2 momenten) tegelijk met een pagina van een andere site opduikt (hooguit 5 s erna), en nooit
     // los, is een onderdeel van die sites: de maker van de website, een hulp- of maatknop, een zustersite in de voettekst.
     // Ook als het een www.-adres is. De pagina die hem laadt blijft altijd staan (twee sites die alleen samen voorkomen: allebei).
-    const cand = new Map<string, { x: Session; leads: Set<string> }[]>();
+    const cand = new Map<string, { x: Session; leads: Set<string>; m: number }[]>();
     const loose = new Set<string>();
     for (const [gkey, g] of groups) {
       if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g) || SEARCH.has(g.site)) continue;
@@ -578,17 +586,20 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // Elk moment van deze sessie samen met (hooguit 5 s na) een pagina van een andere site?
         const leads = new Set<string>();
         let alone = false;
+        const inX: number[] = [];
         for (const t of all) {
           if (t < x.s || t > x.e) continue;
+          inX.push(t);
           const l = pg.filter((p) => p.site !== g.site && p.t <= t + 300 && t - p.t <= 5_000);
           if (!l.length) { alone = true; break; }
           for (const p of l) leads.add(p.site);
         }
         if (alone) loose.add(g.site);
-        else (cand.get(g.site) ?? cand.set(g.site, []).get(g.site)!).push({ x, leads });
+        else (cand.get(g.site) ?? cand.set(g.site, []).get(g.site)!).push({ x, leads, m: moments(inX) });
       }
     }
-    const part = new Set([...cand].filter(([site, xs]) => xs.length >= 2 && !loose.has(site)).map(([site]) => site));
+    // Minstens 2 momenten (ook binnen één bezoek: een winkel die zijn pagina's laadt, laadt het platform elke keer opnieuw mee).
+    const part = new Set([...cand].filter(([site, xs]) => xs.reduce((n, c) => n + c.m, 0) >= 2 && !loose.has(site)).map(([site]) => site));
     for (const site of part) {
       const xs = cand.get(site)!;
       if (xs.every((c) => [...c.leads].every((l) => part.has(l)))) continue;
@@ -599,7 +610,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const starts: { g: Group; x: Session }[] = [];
     for (const [, g] of groups) {
       if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g) || SEARCH.has(g.site)) continue;
-      for (const x of g.ss) if ((x.pv || x.ck) && !x.lg && x.n === 1 && !part.has(g.site)) starts.push({ g, x });
+      for (const x of g.ss) if ((x.pv || x.ck) && !x.lg && x.n === 1 && x.e - x.s < 60_000 && !part.has(g.site)) starts.push({ g, x });
     }
     for (const a of starts) {
       const twin = starts.some((b) => b.g.dev === a.g.dev && b.g.site !== a.g.site && Math.abs(b.x.s - a.x.s) <= 500);

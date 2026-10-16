@@ -36,12 +36,20 @@ const CASES: Case[] = [
   { day: "2026-10-16", dev: "Apple TV", site: "disneyplus.com", at: "*", want: false, why: "Ziggo-videoplatform (dmdsdp) is geen Disney+" },
   { day: "2026-10-15", dev: "iPad", site: "tutotoons.com", at: "06:31", want: true, why: "TutoTOONS-spel gespeeld (reclame/gegevens elke paar minuten)" },
   { day: "2026-10-10", dev: "Apple TV", site: "pathe-thuis.nl", at: "21:29", until: "23:22", want: true, why: "film op Pathé Thuis (melding elke minuut)" },
-  { day: "2026-10-16", dev: "iPhone", site: "thinkific.com", at: "09:56", until: "10:45", want: true, why: "cursusvideo (Wistia) gekeken" },
+  { day: "2026-10-16", dev: "iPhone", site: "happywithyoga.com", at: "09:56", until: "10:45", want: true, why: "cursusvideo (Wistia) gekeken op de cursus-site" },
+  { day: "2026-10-16", dev: "iPhone", site: "thinkific.com", at: "*", want: false, why: "platform onder de cursus-site, geen eigen bezoek" },
   { day: "2026-10-15", dev: "iPhone", site: "dewerkendewebsite.nl", at: "*", want: false, why: "maker van de website, laadt mee met stap.nu" },
   { day: "2026-10-16", dev: "iPhone", site: "scapino.nl", at: "13:02", want: true, why: "winkel geopend na zoeken" },
   { day: "2026-10-16", dev: "iPhone", site: "youshouldask.ai", at: "*", want: false, why: "advies-widget in de winkelpagina" },
   { day: "2026-10-07", dev: "iPhone", site: "scanid.nl", at: "11:55", want: true, why: "site geopend na zoeken" },
   { day: "2026-10-07", dev: "iPhone", site: "agepop.nl", at: "*", want: false, why: "zustersite die scanid.nl meelaadt" },
+  { day: "2026-10-16", dev: "iPhone", site: "hoerakinderschoenen.nl", at: "13:12", want: true, why: "webwinkel geopend na zoeken" },
+  { day: "2026-10-16", dev: "iPhone", site: "ecwid.com", at: "*", want: false, why: "winkelplatform dat de webwinkel meelaadt" },
+  { day: "2026-10-16", dev: "iPhone", site: "ecomm.events", at: "*", want: false, why: "teller van het winkelplatform" },
+  { day: "2026-10-16", dev: "iPhone", site: "anjazerrouk.nl", at: "13:25", want: true, why: "cursusportaal (academy.) geopend" },
+  { day: "2026-10-16", dev: "iPhone", site: "bodygraphchart.com", at: "*", want: false, why: "ingebouwde tool (embed.) in het cursusportaal" },
+  { day: "2026-10-16", dev: "iPhone", site: "weeztix.com", at: "11:50", want: true, why: "ticketshop geopend vanaf de evenementensite" },
+  { day: "2026-10-11", dev: "iPhone", site: "vkmag.com", at: "19:59", want: true, why: "site zelf geopend (eigen embed. hoort erbij)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);
