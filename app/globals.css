@@ -446,3 +446,12 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .time .tdur { font-size:15px; font-weight:600; }
 /* Rechts: duur, daaronder klein de tijd (van–tot). */
 .time .twhen { display:flex; justify-content:flex-end; align-items:center; gap:5px; font-size:12.5px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+/* Wat nu bezig is: een rustige groene zweem die langzaam door de regel trekt (leeft, maar stoort niet). */
+.item.nowrow {
+  background-image:linear-gradient(100deg, transparent 25%, color-mix(in srgb, #22c55e 13%, transparent) 50%, transparent 75%);
+  background-size:260% 100%;
+  background-repeat:no-repeat;
+  animation:nowsheen 4.5s ease-in-out infinite;
+}
+@keyframes nowsheen { 0% { background-position:120% 0; } 100% { background-position:-20% 0; } }
+@media (prefers-reduced-motion: reduce) { .item.nowrow { animation:none; background-position:50% 0; } }
