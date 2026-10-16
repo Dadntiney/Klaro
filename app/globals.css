@@ -458,9 +458,6 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 /* Agenda: links een vaste kolom met de begintijd, midden logo/naam/toestel, rechts alleen de duur. */
 .item .tstart { flex:none; width:40px; margin-right:-2px; font-size:13px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; }
 .list > div + div:has(.tstart)::before { left:96px; }
-.item.nowrow .tstart { color:#16a34a; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .item.nowrow .tstart { color:#4ade80; } }
-:root[data-theme="dark"] .item.nowrow .tstart { color:#4ade80; }
 /* Uurkopjes zonder tekst: de tijd staat al links. Alleen een iets duidelijkere lijn over de hele breedte tussen de uren. */
 .list > div > .hourmark { padding:6px 14px 2px; }
 .list > div > .hourmark span { display:none; }
@@ -470,3 +467,8 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip.act:not(.on), :root:not([data-theme="light"]) .chip.act:not(.on) .di { color:#4ade80; } }
 :root[data-theme="dark"] .chip.act:not(.on), :root[data-theme="dark"] .chip.act:not(.on) .di { color:#4ade80; }
 :root[data-theme="light"] .chip.act:not(.on), :root[data-theme="light"] .chip.act:not(.on) .di { color:#15803d; }
+/* Per regel bovenaan uitgelijnd: tijd, naam en duur op één lijn; het toestel rustig eronder. */
+.list .item { align-items:flex-start; }
+.list .item .fav { align-self:center; }
+.list .item .tstart, .list .item .time { line-height:20px; }
+.list .item .time .tdur { line-height:20px; }

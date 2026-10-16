@@ -1174,7 +1174,7 @@ export default function Home() {
                           })()}
                         </div>
                         <div className="time">
-                          {mins > 0 ? <span className={"tdur" + (nowRow ? " nowtag" : "")}>{dur(mins)}</span> : nowRow ? <span className="tdur nowtag">nu</span> : null}
+                          {nowRow ? <span className="tdur nowtag">{mins > 0 ? `nu · ${dur(mins)}` : "nu"}</span> : mins > 0 ? <span className="tdur">{dur(mins)}</span> : null}
                         </div>
                       </div>
                       {isOpen && (() => {
