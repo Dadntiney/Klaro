@@ -1,7 +1,7 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, TV_APPS, classify, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { FG_RULES, TV_APPS, classify, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
@@ -745,6 +745,19 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       };
     })
     .sort((a, b) => b.n - a.n);
+
+  // Netflix op een telefoon of tablet wordt ook op de achtergrond wakker (op een iPad ongeveer elk uur: push., ios.prod., één keer
+  // logs.). Gemeten over alle dagen: zulke sessies zonder beeld (nflxvideo) en zonder plaatjes van titels duren nooit langer dan
+  // 2 minuten; elke langere kijksessie heeft wel beeld. Kort, zonder beeld en zonder plaatjes = achtergrond. Alleen Netflix: bij
+  // andere kijk-apps (NPO/Zappelin, Videoland) herkennen we het beeld nog niet volledig (licentie-adressen), dus daar niet.
+  for (const [gkey, g] of groups) {
+    if (g.site !== "netflix.com" || /^(Apple TV|TV)/.test(g.dev) || g.flag) continue;
+    const sh = siteHosts.get(gkey) ?? [];
+    for (const x of g.ss) {
+      if ((x.m ?? 0) > 0 || x.e - x.s >= 180_000 || x.lg) continue;
+      if (!sh.some((h) => h.t >= x.s - 2_000 && h.t <= x.e + 2_000 && isStreamArt(h.host))) x.rf = 1;
+    }
+  }
 
   // Sites die zichzelf verversen: alleen te zien over meerdere dagen (dus bij de volledige download). De pagina onthoudt de lijst,
   // zodat ze ook bij het snelle laden van vandaag meteen weg blijven.

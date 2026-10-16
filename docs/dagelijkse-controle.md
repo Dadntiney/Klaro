@@ -28,18 +28,21 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    - **Ritme**: een site die kort en regelmatig terugkomt (open tabblad, widget; zoals Canva op de MacBook).
    - **Veel korte rijen op één dag**: achtergrond of echt kort gebruik? (WhatsApp kort openen is normaal.)
    - **App misschien geopend maar niet getoond**: veel adressen van een app binnen 5 s zonder rij (gemist openen?).
-   Regels met `*` zijn van de laatste 3 dagen: die eerst. Elk punt nalopen in de ruwe regels; is het niet zeker uit de
-   gegevens, dan niets veranderen maar de eigenaar één concrete vraag stellen ("Is op 16 okt om 08:41 op de iPad Netflix
-   gekeken?"). Het antwoord wordt een referentiegeval.
+   Regels met `*` zijn van de laatste 3 dagen: die eerst. Elk punt zelf uitzoeken in de ruwe regels: zet alle sessies van die
+   app/site over alle dagen naast elkaar (welke adressen, hoe lang, beeld of niet) en zoek het patroon dat echt gebruik van
+   achtergrond scheidt (voorbeeld Netflix: sessies zonder beeld en plaatjes zijn altijd kort; elke lange sessie heeft beeld).
+   De eigenaar niets vragen wat uit de gegevens te halen is. Vind je geen patroon dat zeker is: niets veranderen, onder
+   "Nog uitzoeken" zetten en de volgende dagen opnieuw bekijken (meer dagen = meer bewijs). Wat geleerd is komt onder "Geleerd".
 
-   Open vragen (wacht op antwoord van de eigenaar):
-   - Netflix op de iPad wordt ongeveer elk uur op de achtergrond wakker (push., ios.prod., logs., www., zonder beeld) en
-     geeft dan korte rijen. Een regel "alleen met plaatjes/video" haalt die weg, maar kort ook lange kijksessies in
-     (tijdens kijken komen er soms geen nieuwe opvragingen). Eerst bevestigen wat echt kijken was.
+   Geleerd (niet opnieuw uitzoeken): Netflix op een telefoon/tablet wordt elk uur op de achtergrond wakker; zonder beeld
+   en zonder plaatjes is dat nooit langer dan 2 minuten en geen kijken (opgelost, 16 okt). Canva-tabblad dat zich elke ~6 min
+   meldt: geen gebruik (opgelost). WhatsApp kort openen geeft veel korte rijen: normaal. Facebook/Instagram vragen vaak veel
+   adressen op de achtergrond op (mqtt, gateway, graph): zonder plaatjes geen gebruik.
 
-   Al nagelopen en in orde (niet opnieuw uitzoeken, tenzij het verandert): `k8s-sdkvpnde…amazonaws.com` (VPN-check in de
-   Vinted-app, geen VPN), app-analytics-services.com, media-amazon.com (plaatjes in de Amazon-app), gravatar.com
-   (profielfoto's in een webinar-chat), googletagmanager.com, en in "onbekend": tellers, meetdiensten en filmspelers.
+   Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
+   (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.
+   Uitzoeken over alle dagen of die altijd en alleen bij kijken voorkomen; dan als beeld laten tellen (net als bij Netflix).
+
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.
 6. `npm test`, `npx tsc --noEmit`, `npx next build` moeten slagen. Dan naar `main`: GitHub zet het via SFTP live en

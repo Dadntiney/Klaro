@@ -197,3 +197,15 @@ test("open tabblad (Canva): elke paar minuten alleen www. en een meetadres is ge
   assert.equal(vis.length, 1);
   assert.equal(vis[0].s, T0 + 3 * day);
 });
+
+test("Netflix op een tablet: elk uur even wakker op de achtergrond (zonder beeld of plaatjes) is geen kijken; kijken wel", async () => {
+  const min = 60_000;
+  const rows: R[] = [];
+  for (const h of [0, 60, 120]) rows.push([h * min, "push.prod.netflix.com"], [h * min + 300, "ios.prod.cloud.netflix.com"], [h * min + 2_000, "logs.netflix.com"], [h * min + 2_500, "www.netflix.com"]);
+  // echt kijken: titels (plaatjes) en beeld, met tussendoor meldingen van de speler
+  rows.push([200 * min, "www.netflix.com"], [200 * min + 1_000, "occ-0-1-2.1.nflxso.net"], [201 * min, "ipv6-c1-ams001-ix.1.oca.nflxvideo.net"], [204 * min, "logs.netflix.com"], [208 * min, "logs.netflix.com"]);
+  const o = await overview(rows);
+  const vis = shown(o, "netflix.com");
+  assert.equal(vis.length, 1);
+  assert.equal(vis[0].s, T0 + 200 * min);
+});

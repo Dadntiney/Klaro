@@ -406,6 +406,11 @@ const MEDIA = [
   /^ott-video[^.]*\.formula1\.com$/, /^d8penbt6jsl3i\.cloudfront\.net$/, // F1 TV: video van de race
   /(^|\.)conviva\.com$/, /(^|\.)(aiv-cdn|pv-cdn)\.net$/, // conviva meldt de voortgang van video aan de aanbieder: er wordt gekeken
 ];
+/** Plaatjes van titels in een kijk-app (Netflix): de app is open en er wordt gekozen, ook als er (nog) niets speelt. */
+export function isStreamArt(host: string): boolean {
+  return /(^|\.)(nflxso|nflximg)\.net$/.test(host);
+}
+
 export function isMedia(host: string): boolean {
   return MEDIA.some((re) => re.test(host));
 }
