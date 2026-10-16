@@ -236,7 +236,7 @@ function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; dev
                   <MiniFav domain={logoDomain(host, base, e.icon)} />
                   <span className="rawhost"><span className="muted">{sub}</span>{base}</span>
                   {!device && <span className="rawdev" title={dev}><DevIcon name={dev} /></span>}
-                  <span className="rawtime">{timeSecFmt.format(e.t)}</span>
+                  <span className="rawtime">{timeFmt.format(e.t)}</span>
                   <span className="rawchev" aria-hidden>›</span>
                 </button>
                 {isOpen && (
