@@ -324,6 +324,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 .login-card input { font:inherit; font-size:16px; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
 .login-card button { font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:10px; border:0; background:var(--accent); color:#fff; cursor:pointer; }
 .login-err { margin:0; color:#dc2626; font-size:14px; }
+.login-note { margin:0; padding:8px 10px; border-radius:8px; background:var(--chip, rgba(127,127,127,.12)); font-size:14px; }
 
 /* Oudere dagen die nog laden */
 .skel-days { margin-top:20px; }
@@ -383,3 +384,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 .dpair .dview.icon { margin:0; border-color:transparent; }
 .dpair .dview.icon.on { border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); }
 h2.fold .dpair + .fold-chev { margin-left:2px; }
+
+/* Uitloggen onderaan: rustig, valt niet op */
+.logout { display:flex; justify-content:center; align-items:center; gap:8px; padding:28px 16px 36px; color:var(--muted); font-size:13px; }
+.logout button { background:none; border:0; padding:4px; color:var(--muted); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }

@@ -1,9 +1,10 @@
 import type { NDResponse, NextDNSClient } from "./overview.ts";
 import { setRemoteLists } from "./adultlist.ts";
 
-/** Niet ingelogd (of uitgelogd na een nieuw wachtwoord): naar het inlogscherm (alleen op de pagina, niet in de worker). */
-function checkLogin(res: Response): Response {
-  if (res.status === 401 && typeof location !== "undefined" && typeof document !== "undefined" && !location.pathname.startsWith("/login")) location.href = "/login";
+/** Niet ingelogd, of automatisch uitgelogd na 60 minuten zonder gebruik: naar het inlogscherm (alleen op de pagina, niet in de worker). */
+export function checkLogin(res: Response): Response {
+  if (res.status === 401 && typeof location !== "undefined" && typeof document !== "undefined" && !location.pathname.startsWith("/login"))
+    location.href = res.headers.get("X-Klaro-Login") === "verlopen" ? "/login?verlopen=1" : "/login";
   return res;
 }
 

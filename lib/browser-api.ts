@@ -25,7 +25,7 @@ function inWorker(opts: { todayOnly: boolean; hours?: number }): Promise<{ statu
     const id = nextId++;
     return new Promise((done) => { waiting.set(id, done); worker!.postMessage({ id, ...opts }); }).then((r) => {
       const res = r as { status: number; body: unknown };
-      if (res.status === 401 && typeof location !== "undefined") location.href = "/login";
+      if (res.status === 401 && typeof location !== "undefined") location.href = "/login?verlopen=1"; // in de worker: sessie verlopen of uitgelogd
       return res.status === 0 ? buildOverview(php, opts) : res;
     });
   } catch {

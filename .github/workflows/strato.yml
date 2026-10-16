@@ -26,6 +26,7 @@ jobs:
         run: |
           npm ci
           npm test
+          php tests/sessies.php
           npx tsc --noEmit
           npx next build
           node scripts/build-site.mjs
@@ -68,8 +69,10 @@ jobs:
             a=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/login || true)
             b=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/api/nd.php || true)
             c=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/api/_private/.htaccess || true)
-            echo "login=$a api=$b privaat=$c"
-            if [ "$a" = 200 ] && { [ "$b" = 401 ] || [ "$b" = 503 ]; } && [ "$c" = 403 ]; then echo "pichya.nl werkt"; exit 0; fi
+            d=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/ || true)
+            e=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/api/common.php || true)
+            echo "login=$a api=$b privaat=$c pagina-zonder-inlog=$d hulpbestand=$e"
+            if [ "$a" = 200 ] && { [ "$b" = 401 ] || [ "$b" = 503 ]; } && [ "$c" = 403 ] && [ "$d" = 303 ] && [ "$e" = 403 ]; then echo "pichya.nl werkt"; exit 0; fi
             sleep 5
           done
           echo "--- diagnose ---"

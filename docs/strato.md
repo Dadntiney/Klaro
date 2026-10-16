@@ -7,9 +7,19 @@ draait in de browser met precies dezelfde code als voorheen. De server (map `php
 |---|---|
 | `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles, 2 min bewaard) |
 | `api/lists.php` | welke adressen op de 18+/datinglijst staan (lijsten per vakje in `api/_private/lists/`) |
-| `api/login.php` | inloggen (cookie 180 dagen, zelfde handtekening als vroeger; ook basic-auth voor scripts) |
+| `api/login.php` | inloggen: nieuwe sessie per apparaat (willekeurig cookie; op de server alleen de hash in `_private/sessions.json`) |
+| `api/activity.php` | de pagina meldt hier echt gebruik (tikken, scrollen, typen; hooguit eens per minuut, alleen vanuit een tabblad in beeld) |
+| `api/gate.php` | de pagina zelf (`/`) alleen met een geldige sessie; anders naar het inlogscherm |
+| `api/logout.php` | uitloggen: dit apparaat, of alle apparaten |
 | `api/setup.php` | eenmalig: NextDNS-sleutel, profiel-ID en wachtwoord invullen; daarna dicht |
 | `api/_private/` | instellingen en lijsten, via `.htaccess` nooit van buitenaf te openen |
+
+## Inloggen en automatisch uitloggen
+- Na **60 minuten zonder echt gebruik** (op geen enkel apparaat) zijn alle sessies ongeldig en is opnieuw inloggen nodig. De
+  server dwingt dit af; live bijwerken, alles ophalen en andere automatische verzoeken verlengen niets.
+- Gebruik op het ene apparaat of tabblad houdt de andere geldig (één eigenaar, één wachtwoord).
+- Scripts (dagelijkse controle) loggen per verzoek in met het wachtwoord (basic-auth); dat maakt of verlengt geen sessie.
+- Tests: `php tests/sessies.php` (draait ook bij elke update).
 
 ## Live zetten
 Elke wijziging op `main` gaat via GitHub Actions ("Live zetten op Strato", `.github/workflows/strato.yml`) met SFTP naar

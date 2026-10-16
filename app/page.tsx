@@ -10,6 +10,8 @@ import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
 import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
+import { startActivityReporting } from "@/lib/activity";
+import { checkLogin } from "@/lib/php-client";
 import { baseDomain } from "@/lib/parse";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -225,6 +227,8 @@ export default function Home() {
   // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet (onthouden per toestel).
   const [rawView, setRawView] = useState(false);
   useEffect(() => { try { setRawView(localStorage.getItem("klaro-view") === "nextdns"); } catch {} }, []);
+  // Echt gebruik (tikken, scrollen, typen) aan de server melden: na 60 minuten zonder gebruik logt de server iedereen uit.
+  useEffect(() => startActivityReporting(checkLogin), []);
   const toggleRaw = () => setRawView((v) => { try { localStorage.setItem("klaro-view", v ? "klaro" : "nextdns"); } catch {} return !v; });
   const [rawLog, setRawLog] = useState<Event[]>([]);
   const rawSeen = useRef<Set<string>>(new Set());
@@ -1145,6 +1149,12 @@ export default function Home() {
             </div>
           )}
           {histErr && <p className="muted skel-err">{cut > 0 ? "Eerder vandaag en oudere dagen laden lukt nu even niet." : "Oudere dagen laden lukt nu even niet; vandaag is wel compleet."}</p>}
+          {/* Uitloggen: na 60 minuten zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
+          <form className="logout" method="post" action="/api/logout.php">
+            <button type="submit">Uitloggen</button>
+            <span aria-hidden>·</span>
+            <button type="submit" name="alle" value="1">Overal uitloggen</button>
+          </form>
         </>
       )}
       {open && (

@@ -10,13 +10,26 @@ Options -Indexes
   Header always set Referrer-Policy "no-referrer"
   Header always set X-Frame-Options "DENY"
   Header always set Strict-Transport-Security "max-age=31536000"
+  # Alleen eigen scripts en de eigen server; favicons van Google; geen insluiten in andere sites.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google.com https://*.gstatic.com; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
+# Hulpbestanden van de server: alleen voor de andere api-bestanden, niet los op te vragen.
+<FilesMatch "^(common|slim)\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
 <IfModule mod_rewrite.c>
   RewriteEngine On
   # Altijd https
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # De pagina zelf alleen met een geldige sessie (api/gate.php controleert dat en telt het openen als gebruik).
+  RewriteRule ^(index\.html)?$ api/gate.php [L]
+  # Browsers vragen altijd /favicon.ico: het icoon van de app geven (anders een 404 bij elke opening).
+  RewriteRule ^favicon\.ico$ icon.svg [L,T=image/svg+xml]
   # /login -> login.html
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME}.html -f

@@ -15,6 +15,7 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm test
+      - run: php tests/sessies.php
       - run: npx tsc --noEmit
       - run: npx next build
       # Het vangnet werkt alleen als de 18+/dating-lijsten mee gaan naar de server (api/_private/lists).
