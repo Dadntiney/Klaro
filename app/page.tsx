@@ -7,6 +7,7 @@ import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
+import { liveTvApp, nowWindow } from "@/lib/play";
 import { apiFetch } from "@/lib/browser-api";
 import { baseDomain } from "@/lib/parse";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -475,6 +476,9 @@ export default function Home() {
         const comp = e.host ? companionFor(e.host) : undefined;
         const game = comp && next.find((g) => g.d === d && g.dev === e.dev && g.site === comp.app);
         if (comp && game && e.t - game.last <= comp.keep && e.t >= game.last - 1_500) e = { ...e, site: game.site, name: game.name, icon: game.icon, bg: false, main: true, fg: undefined, res: undefined, cat: game.cat ?? e.cat };
+        // Afspeelsignalen (Conviva) horen bij de tv-app waarvan de reeks nog loopt, net als op de server (lib/play.ts).
+        const tv = e.media && !e.main && isPlainSite(e) ? liveTvApp(next, d, e.dev, e.t) : undefined;
+        if (tv) e = { ...e, site: tv.site, name: tv.name, icon: tv.icon, bg: false, main: true, fg: undefined, res: undefined, cat: tv.cat ?? e.cat };
         const i = next.findIndex((g) => g.d === d && g.dev === e.dev && g.site === e.site);
         if (i >= 0) next[i] = { ...next[i], n: next[i].n + 1, bl: (next[i].bl ?? 0) + (e.blocked ? 1 : 0), flag: next[i].flag ?? e.flag, last: Math.max(next[i].last, e.t), main: next[i].main || e.main, ts: [e.t, ...(next[i].ts ?? [])].slice(0, 8), lm: e.media ? Math.max(next[i].lm ?? 0, e.t) : next[i].lm, ss: extendSessions(next[i].ss ?? [], e.t, !!e.media, e.fg, isPlainSite(next[i]) && e.fg === undefined ? !!e.res : undefined, OPEN_BURST.has(e.site) ? e.host : undefined), sc: (next[i].sc ?? 0) + ((next[i].ss ?? []).some((x) => e.t >= x.s - 300_000 && e.t <= x.e + 300_000) ? 0 : 1), mins: (next[i].mins ?? 0) + Math.max(0, sumMin(extendSessions(next[i].ss ?? [], e.t, !!e.media, e.fg)) - sumMin(next[i].ss ?? [])), flash: Date.now() };
         else {
@@ -1067,10 +1071,10 @@ export default function Home() {
                         <div className="time">
                           {(() => {
                             if (!t) return <span className="tcol">–</span>;
-                            // Nog bezig (laatste activiteit < 3 min geleden) = "nu" in groen; anders gerekend vanaf het begin, net als de volgorde.
+                            // Nog bezig (laatste activiteit < 3 min geleden, bij beeld/geluid 5 min zoals de chip) = "nu" in groen; anders gerekend vanaf het begin, net als de volgorde.
                             const end = Math.max(t, ...rss.map((x) => x.e));
                             const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
-                            if (clock - end < 180_000 && !((lastStart.get(g.dev) ?? 0) > end)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
+                            if (clock - end < nowWindow(end, g.lm) && !((lastStart.get(g.dev) ?? 0) > end)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
                             const age = Math.floor((clock - t) / 60_000);
                             if (age >= 0 && age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
                             return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;

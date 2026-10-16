@@ -10,6 +10,7 @@ import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
 import { anchorOf, chainTimes, companionFor, COMPANIONS } from "./companion.ts";
+import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
 import { prepareLists } from "./adultlist.ts";
 
@@ -157,6 +158,9 @@ export async function fetchToday(client: NextDNSClient, hours = 0): Promise<{ ro
   return { rows: oldestFirst(out), cutAt: Number.isFinite(oldest) ? oldest : Date.now() };
 }
 
+/** Zoekmachines: daarna een site openen is op een resultaat tikken. */
+const SEARCH = new Set(["google.com", "bing.com", "duckduckgo.com", "ecosia.org"]);
+
 /** Social-apps waarin advertenties en links staan die de app alvast "aanklopt". */
 const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net"]);
 
@@ -265,6 +269,23 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const c = COMPANIONS.find((x) => x.app === k.slice(k.lastIndexOf("|") + 1))!;
     if (e.a.length) compIn.set(k, chainTimes(e.a, e.h, c.keep, c.lead));
   }
+  // Afspeelsignalen zonder eigen app (Conviva) horen bij de tv-app waarmee hun reeks begon, zie lib/play.ts.
+  const playOf = new Map<string, string>(); // apparaat|tijdstip -> site van de tv-app
+  {
+    const byDev = new Map<string, { t: number; host: string; site?: string }[]>();
+    for (const r of body) {
+      const host = extractHost(r[hostCol] ?? "");
+      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+      if (!t) continue;
+      const info = classify(host!);
+      const blocked = (statusCol >= 0 ? r[statusCol] ?? "" : "").trim().toLowerCase() === "blocked";
+      const app = TV_APPS.has(info.site) && !info.bg;
+      if (!app && !(isPlaying(host!, blocked) && isPlainSite(info))) continue;
+      const dev = deviceMap[idOf(r)];
+      (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, host: host!, site: app ? info.site : undefined });
+    }
+    for (const [dev, ev] of byDev) for (const [t, site] of assignPlayback(ev)) playOf.set(dev + "|" + t, site);
+  }
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
@@ -279,6 +300,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     let info = classify(host);
     const comp = t ? companionFor(host) : undefined;
     if (comp && compIn.get(dev + "|" + comp.app)?.has(t)) info = classify(comp.app);
+    const play = t ? playOf.get(dev + "|" + t) : undefined;
+    if (play) info = classify(play);
     const d = t ? dayFmt.format(t) : "onbekend";
 
     // Door NextDNS geblokkeerd? Een geblokkeerde poging naar porno/dating is altijd belangrijk, ook als het adres niet op mijn lijst staat.
@@ -473,7 +496,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   // die zoeksessie zelf echt gebruik was (een widget die Google ververst telt niet).
   {
     const searchSes = new Map<string, Session[]>();
-    for (const g of groups.values()) if (["google.com", "bing.com", "duckduckgo.com", "ecosia.org"].includes(g.site)) for (const x of g.ss) if (isHuman(x) && (x.n ?? 0) >= 2) (searchSes.get(g.dev) ?? searchSes.set(g.dev, []).get(g.dev)!).push(x);
+    for (const g of groups.values()) if (SEARCH.has(g.site)) for (const x of g.ss) if (isHuman(x) && (x.n ?? 0) >= 2) (searchSes.get(g.dev) ?? searchSes.set(g.dev, []).get(g.dev)!).push(x);
     for (const g of groups.values()) {
       if (!g.main || g.bg || g.flag || !isPlainSite(g)) continue;
       for (const x of g.ss) {
@@ -506,6 +529,28 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     for (const { g, x } of embedSes) {
       if (g.flag) continue;
       if ((vis.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s <= x.e + 60_000 && v.e >= x.s - 60_000)) x.emb = 1;
+    }
+  }
+
+  // Eén los adres van een andere site binnen 3 seconden nadat op hetzelfde apparaat een pagina werd geopend: dat laadt die pagina
+  // zelf (affiliate-links, productwidgets, tellers op een eigen domein), geen eigen bezoek. Zo snel tikt niemand op een link.
+  // Een www.-adres is wel een eigen pagina (doorgestuurd naar een webwinkel), en na een zoekmachine is het juist een tik op een resultaat.
+  {
+    const pages = new Map<string, { t: number; site: string }[]>();
+    for (const [gkey, g] of groups) {
+      if (!g.main || g.bg || g.flag || !isPlainSite(g) || SEARCH.has(g.site)) continue;
+      for (const t of mainTimes.get(gkey) ?? []) (pages.get(g.dev) ?? pages.set(g.dev, []).get(g.dev)!).push({ t, site: g.site });
+    }
+    for (const [gkey, g] of groups) {
+      if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g)) continue;
+      const pg = pages.get(g.dev);
+      if (!pg) continue;
+      for (const x of g.ss) {
+        if (!x.pv || x.lg || x.n !== 1) continue;
+        const hs = new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host));
+        if (hs.size !== 1 || [...hs][0].startsWith("www.")) continue;
+        if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000)) { delete x.pv; x.emb = 1; }
+      }
     }
   }
 

@@ -42,7 +42,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Sago Mini (spel)", icon: "sagomini.com", domains: ["sagomini.com"] },
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
-  { name: "Ziggo GO", icon: "ziggogo.tv", domains: ["ziggogo.tv", "horizon.tv"] },
+  { name: "Ziggo GO", icon: "ziggogo.tv", domains: ["ziggogo.tv", "horizon.tv", "dmdsdp.com"] }, // dmdsdp: videoplatform van Ziggo (hzn-nl, gnp.cloud), komt alleen samen met Ziggo GO voor
   { name: "NPO", icon: "npo.nl", domains: ["npo.nl", "npoplayer.nl", "npostart.nl", "omroep.nl", "npox.nl", "zappelin.nl", "zapp.nl", "npo3.nl", "nporadio1.nl", "nporadio2.nl", "npo3fm.nl"] }, // Zappelin/Zapp = NPO voor kinderen
   { name: "Kijk", icon: "kijk.nl", domains: ["kijk.nl"] },
   { name: "Videoland", icon: "videoland.com", domains: ["videoland.com", "bedrock.tech"] },
@@ -74,7 +74,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Waze", icon: "waze.com", domains: ["waze.com"] },
   { name: "Amazon", icon: "amazon.com", domains: ["a2z.com"] },
   { name: "Steam", icon: "steampowered.com", domains: ["steampowered.com", "steamcontent.com", "steamstatic.com", "steamcommunity.com", "steamserver.net"] },
-  { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com", "dmdsdp.com"] },
+  { name: "Disney+", icon: "disneyplus.com", domains: ["disneyplus.com", "disney-plus.net", "bamgrid.com", "dssott.com"] },
   { name: "Vinted", icon: "vinted.com", domains: ["vinted.com", "vinted.nl", "vinted.be", "vinted.de", "vinted.fr", "vinted.co.uk", "vintedapp.com", "vinted.net"] },
   { name: "Nintendo", icon: "nintendo.com", domains: ["nintendo.com", "nintendo.net"] },
   { name: "PlayStation", icon: "playstation.com", domains: ["playstation.com", "playstation.net", "sonyentertainmentnetwork.com"] },

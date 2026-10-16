@@ -231,7 +231,8 @@ test("controle: eigen app, betaalmodules en technische namen van tv-apps", () =>
   assert.equal(classify("www.pichya.nl").bg, true);
   assert.equal(classify("m.stripe.com").bg, true); // betaalmodule binnen een webwinkel
   assert.equal(classify("videoland.bedrock.tech").name, "Videoland");
-  assert.equal(classify("x.dmdsdp.com").name, "Disney+");
+  assert.equal(classify("messagebroker-prod-nl.gnp.cloud.dmdsdp.com").name, "Ziggo GO"); // videoplatform van Ziggo (hzn-nl), niet van Disney+
+  assert.equal(classify("disney.playback.edge.bamgrid.com").name, "Disney+");
   assert.equal(classify("api.parro.com").name, "Parro (school)");
 });
 

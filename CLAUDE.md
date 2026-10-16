@@ -16,7 +16,7 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
 - Laden: eerst het laatste 1,5 uur, dan heel vandaag (`/logs`), dan alles (CSV-download, 2 min cache). Live: elke 1,5 s.
   Elke 5 min volledig opnieuw berekend. Niet vaker ophalen: NextDNS geeft dan 429.
 - Herkenning: `lib/sites.ts` (apps, achtergrond, vangnet), `lib/mail.ts` (nieuwsbrieven, klikken), `lib/sessions.ts`
-  (sessies, `isHuman`), overzicht-regels in `lib/overview.ts`, weergave-regels in `app/page.tsx`. Dit draait allemaal in de
+  (sessies, `isHuman`), `lib/play.ts` (afspeelmeldingen bij tv-apps), overzicht-regels in `lib/overview.ts`, weergave-regels in `app/page.tsx`. Dit draait allemaal in de
   browser (`lib/browser-api.ts`); de PHP-server (`php/api`) bewaart alleen de geheimen en de 18+/datinglijsten.
 - Tellen in **momenten** (alles van een site binnen 1,5 s = één moment), zelfde telling live en op de server.
 
