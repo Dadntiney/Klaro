@@ -371,4 +371,8 @@ test("cursusportaal en ingebouwde onderdelen: academy. is een pagina, embed. en 
   assert.equal(classify("school.thinkific.com").name, "Thinkific (cursus)"); // een eigen Thinkific-school blijft herkend
   assert.equal(classify("ecomm.events").bg, true);
   assert.equal(classify("www.events.nl").bg, false);
+  // Microsoft: Teams/Office-verkeer en het eigen netwerk (zoals office.com al was), geen site
+  for (const h of ["s-0006.dual-s-dc-msedge.net", "s-0005.dual-s-msedge.net", "ax-0003.ax-msedge.net", "res.cdn.office.net", "teams.nel.measure.office.net"]) assert.equal(classify(h).bg, true, h);
+  assert.equal(classify("www.boxoffice.nl").bg, false);
+  assert.equal(classify("www.edgenet.nl").bg, false);
 });

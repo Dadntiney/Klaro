@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import { isHuman } from "../lib/sessions.ts";
 
-type Case = { day: string; dev: string; site: string; at: string; until?: string; want: boolean | "onzeker"; why: string }; // until: sessie loopt minstens tot dan
+type Case = { day: string; dev: string; site: string /* "*.github.io": elke site daaronder */; at: string; until?: string; want: boolean | "onzeker"; why: string }; // until: sessie loopt minstens tot dan
 const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "praxis.nl", at: "10:27", want: true, why: "website geopend na zoeken" },
   { day: "2026-10-11", dev: "iPhone", site: "decathlon.nl", at: "10:16", want: true, why: "inloggen na zoeken" },
@@ -39,6 +39,10 @@ const CASES: Case[] = [
   { day: "2026-10-16", dev: "iPhone", site: "happywithyoga.com", at: "09:56", until: "10:45", want: true, why: "cursusvideo (Wistia) gekeken op de cursus-site" },
   { day: "2026-10-16", dev: "iPhone", site: "thinkific.com", at: "*", want: false, why: "platform onder de cursus-site, geen eigen bezoek" },
   { day: "2026-10-15", dev: "iPhone", site: "dewerkendewebsite.nl", at: "*", want: false, why: "maker van de website, laadt mee met stap.nu" },
+  { day: "2026-10-15", dev: "iPhone", site: "*.github.io", at: "*", want: false, why: "script dat de websitebouwer bij elke pagina laadt" },
+  { day: "2026-10-15", dev: "MacBook", site: "*.github.io", at: "*", want: false, why: "script dat de websitebouwer bij elke pagina laadt" },
+  { day: "2026-10-15", dev: "iPhone", site: "voetbalkrant.com", at: "*", want: false, why: "widget ververst zichzelf (ook twee keer kort na elkaar)" },
+  { day: "2026-10-15", dev: "iPhone", site: "exact.com", at: "12:45", want: true, why: "geopend na zoeken in Google" },
   { day: "2026-10-16", dev: "iPhone", site: "scapino.nl", at: "13:02", want: true, why: "winkel geopend na zoeken" },
   { day: "2026-10-16", dev: "iPhone", site: "youshouldask.ai", at: "*", want: false, why: "advies-widget in de winkelpagina" },
   { day: "2026-10-07", dev: "iPhone", site: "scanid.nl", at: "11:55", want: true, why: "site geopend na zoeken" },
@@ -56,7 +60,7 @@ const auto = new Set<string>(d.auto ?? []);
 const hm = (t: number) => new Date(t).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" });
 let bad = 0;
 for (const c of CASES) {
-  const gs = d.groups.filter((g: any) => g.d === c.day && g.dev === c.dev && g.site === c.site && !g.bg && g.main);
+  const gs = d.groups.filter((g: any) => g.d === c.day && g.dev === c.dev && (c.site.startsWith("*.") ? g.site.endsWith(c.site.slice(1)) : g.site === c.site) && !g.bg && g.main);
   const visS = gs.flatMap((g: any) => (g.ss ?? []).filter((x: any) => isHuman(x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site))));
   const vis = visS.map((x: any) => hm(x.s));
   const got = c.at === "*" ? vis.length > 0 : visS.some((x: any) => hm(x.s) === c.at && (!c.until || hm(x.e) >= c.until));

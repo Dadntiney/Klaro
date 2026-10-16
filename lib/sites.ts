@@ -145,7 +145,7 @@ const BACKGROUND = new Set([
   "fastlylb.net", "azureedge.net", "trafficmanager.net", "amazonaws.com", "windowsupdate.com", "msftconnecttest.com",
   "msftncsi.com", "apple-dns.net", "mzstatic.com", "icloud-content.com", "sentry.io", "appsflyer.com", "adjust.com",
   "branch.io", "scorecardresearch.com", "cloudflare-dns.com", "nextdns.io", "ntp.org", "arpa", "local", "lan", "home", "localdomain", "internal", "intranet", "corp", "router",
-  "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com",
+  "microsoft.com", "windows.com", "live.com", "office.com", "office365.com", "skype.com", "office.net",
   // reclame-, betaal-, chat- en mailwidgets die in andermans site zitten
   "dpgmedia.net", "stripe.network", "omnidesk.io", "belco.io", "vidyard.com", "cm.com", "editorify.net", "ccvshopserver.nl", "mailplus.nl", "laposta.nl",
   // meet- en slimme-dns-diensten die alleen meekomen met een app
@@ -158,7 +158,7 @@ const BACKGROUND_KEYWORDS = [
   "analytics", "telemetry", "tracking", "tracker", "metrics", "adservice", "adsystem", "adserver", "adnxs", "pixel", "beacon",
   "statistic", "crash", "bugsnag", "sentry", "appsflyer", "amplitude", "mixpanel", "braze", "onesignal", "firebase", "newrelic",
   "datadog", "hotjar", "optimizely", "criteo", "taboola", "outbrain", "rubiconproject", "pubmatic", "openx", "moatads", "2mdn",
-  "quantserve", "demdex", "omtrdc", "adobedtm", "consent", "cookie", "akadns", "cloudfront", "cdn", "static", "assets",
+  "msedge.net", "quantserve", "demdex", "omtrdc", "adobedtm", "consent", "cookie", "akadns", "cloudfront", "cdn", "static", "assets",
   // gevonden in echte logs: advertentie-, tracking-, e-mail- en hulpdiensten
   "adsafeprotected", "adsrvr", "applovin", "btloader", "clarity.ms", "clevertap", "content-loader", "dwin1", "error-report", "googleoptimize",
   "html-load", "id5-sync", "igodigital", "kickbite", "linkdirects", "loox.io", "mandrillapp", "mcusercontent", "list-manage", "mailchimp",

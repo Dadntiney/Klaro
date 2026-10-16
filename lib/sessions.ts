@@ -10,6 +10,7 @@ export interface Session {
   lfh?: string; // adres van dat laatste inhoud-moment
   lmt?: number; // tijdstip van het laatste beeld/geluid-moment (live tellen)
   emb?: 1;
+  rf?: 1; // een widget of open tabblad dat zichzelf ververst (zelfde site die dag vaak los): geen bezoek
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   lg?: 1; // inlog- of bankierpagina geopend (bankieren.*, mijn.*): altijd een bewust bezoek
   pv?: 1;
@@ -118,7 +119,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
  * Sessies zonder telling (oudere gegevens) tellen mee.
  */
 export function isHuman(x: Session): boolean {
-  if (x.emb || x.res) return false;
+  if (x.emb || x.res || x.rf) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
   if (x.lg || x.pv || x.ck) return true; // inlogpagina, losse pagina, of via een klik (mail-link of zoekresultaat) geopend // één pagina op de site zelf geopend
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde

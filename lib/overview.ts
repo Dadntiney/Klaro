@@ -9,7 +9,7 @@ import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
-import { anchorOf, chainTimes, companionFor, COMPANIONS } from "./companion.ts";
+import { anchorOf, chainTimes, companionFor, COMPANIONS, loadedWith } from "./companion.ts";
 import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
 import { prepareLists } from "./adultlist.ts";
@@ -287,6 +287,19 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignPlayback(ev)) playOf.set(dev + "|" + t, site);
   }
+  // Sites die altijd met een hulpadres van een andere site meekomen (script van een websitebouwer), zie lib/companion.ts.
+  const helperSites = (() => {
+    const ev: Parameters<typeof loadedWith>[0] = [];
+    for (const r of body) {
+      const host = extractHost(r[hostCol] ?? "");
+      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+      if (!t) continue;
+      const info = classify(host!);
+      if (info.bg || info.flag) continue;
+      ev.push({ t, dev: idOf(r), host: host!, site: info.site, page: info.main && isPlainSite(info), helper: !info.main });
+    }
+    return loadedWith(ev);
+  })();
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
@@ -390,6 +403,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const siteName = new Map<string, string>();
   const embedSes: { g: Group; x: Session }[] = [];
   const singles = new Map<string, number[]>(); // per apparaat|site: aantal losse één-pagina-opvragingen per dag
+  const refreshLike: { key: string; x: Session }[] = []; // mogelijke verversingen van een widget (2-3 keer alleen de site zelf)
   // Momenten waarop op een apparaat in een social-app gescrold werd (inhoud geladen), voor alle sites samen.
   const fgByDev = new Map<string, number[]>();
   const devFg = (dev: string) => {
@@ -472,6 +486,12 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
       if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x)) x.uz = 1; }
       if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
+      // Twee of drie opvragingen binnen 5 minuten met weer alleen de kale naam en www. van de site, verder niets van de site (een
+      // echte pagina laadt ook plaatjes en onderdelen): bij een site die zichzelf ververst zijn dat verversingen (zie onder).
+      for (const x of sessions) {
+        if ((x.n ?? 0) < 2 || (x.n ?? 0) > 3 || x.lg || x.ml || x.ck || x.m || x.f !== undefined || hostsIn(x) > 2) continue;
+        if ((x.mh ?? 0) >= all.filter((t) => t >= x.s && t <= x.e).length) refreshLike.push({ key: g.dev + "|" + g.site, x });
+      }
     }
     // Clip in een andere app (Shazam): alleen videoservers van YouTube, kort, niet vlak na echt YouTube-gebruik. Zie lib/clip.ts.
     if (g.site === "youtube.com") {
@@ -605,6 +625,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (xs.every((c) => [...c.leads].every((l) => part.has(l)))) continue;
       for (const { x } of xs) { delete x.pv; delete x.ck; delete x.uz; x.emb = 1; }
     }
+    for (const [, g] of groups) {
+      if (!g.main || g.bg || g.flag || g.susp || !helperSites.has(g.site)) continue;
+      for (const x of g.ss) if (!x.lg) { delete x.pv; delete x.ck; delete x.uz; x.emb = 1; }
+    }
     // Twee of meer andere sites die in dezelfde halve seconde beginnen, kort (hooguit 5 s) na een pagina: die laadt de pagina
     // (zustersites in de voettekst, logo's op een nep-pagina). Zo snel opent een mens nooit twee nieuwe sites.
     const starts: { g: Group; x: Session }[] = [];
@@ -718,6 +742,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   if (auto.length) {
     const set = new Set(auto);
     for (const g of groups.values()) if (set.has(g.dev + "|" + g.site)) for (const x of g.ss) delete x.pv;
+    for (const { key, x } of refreshLike) if (set.has(key)) x.rf = 1;
   }
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
   const result = {

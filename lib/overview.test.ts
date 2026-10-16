@@ -136,3 +136,37 @@ test("geen vals weglaten: een site die zelf geopend wordt met zijn eigen embed.-
   const o = await overview([[0, "www.nieuwssite.nl"], [3_000, "www.tijdschrift.nl"], [3_400, "embed.tijdschrift.nl"], [12_000, "www.tijdschrift.nl"]]);
   assert.equal(shown(o, "tijdschrift.nl").length, 1);
 });
+
+test("script dat een websitebouwer bij elke pagina laadt (op github.io): elke keer na hetzelfde hulpadres, dus geen eigen bezoek", async () => {
+  const day = 86_400_000;
+  const rows: R[] = [];
+  for (const d of [0, 1, 2]) rows.push([d * day, "publish.sitebouwer.nl"], [d * day + 300, "maker-script.github.io"]);
+  rows.push([2 * day + 600_000, "publish.sitebouwer.nl"], [2 * day + 608_000, "maker-script.github.io"]); // tot 10 s erna
+  const o = await overview(rows);
+  assert.equal(shown(o, "maker-script.github.io").length, 0);
+});
+
+test("geen vals weglaten: een github.io-site die ook een keer zonder dat hulpadres geopend wordt, of maar twee keer, blijft staan", async () => {
+  const day = 86_400_000;
+  const rows: R[] = [];
+  for (const d of [0, 1, 2]) rows.push([d * day, "publish.sitebouwer.nl"], [d * day + 300, "maker-script.github.io"]);
+  rows.push([3 * day, "maker-script.github.io"]); // los geopend
+  for (const d of [0, 1]) rows.push([d * day + 3_600_000, "publish.sitebouwer.nl"], [d * day + 3_600_300, "ander-project.github.io"]);
+  const o = await overview(rows);
+  assert.ok(shown(o, "maker-script.github.io").length >= 1);
+  assert.equal(shown(o, "ander-project.github.io").length, 2);
+});
+
+test("widget die zichzelf ververst: twee verversingen binnen 5 minuten zijn ook geen bezoek; een echte pagina met plaatjes wel", async () => {
+  const day = 86_400_000, min = 60_000;
+  const rows: R[] = [];
+  for (const d of [0, 1, 2]) for (let i = 0; i < 6; i++) rows.push([d * day + i * 40 * min, "voetbalwidget.nl"], [d * day + i * 40 * min + 100, "www.voetbalwidget.nl"]);
+  rows.push([3 * day, "voetbalwidget.nl"], [3 * day + 4 * min, "www.voetbalwidget.nl"]); // twee verversingen 4 min uit elkaar
+  rows.push([3 * day + 120 * min, "www.voetbalwidget.nl"], [3 * day + 120 * min + 2_000, "img.voetbalwidget.nl"], [3 * day + 123 * min, "www.voetbalwidget.nl"]); // echt bekeken
+  rows.push([3 * day + 200 * min, "www.krant.nl"], [3 * day + 204 * min, "krant.nl"]); // andere site: gewoon een bezoek
+  const o = await overview(rows);
+  const vis = shown(o, "voetbalwidget.nl");
+  assert.equal(vis.length, 1);
+  assert.equal(vis[0].s, T0 + 3 * day + 120 * min);
+  assert.equal(shown(o, "krant.nl").length, 1);
+});

@@ -32,3 +32,16 @@ test("herkenning: spel-adressen en algemene adressen", () => {
   assert.equal(companionFor("www.microsoft.com"), undefined);
   assert.equal(companionFor("portal.azure.com"), undefined);
 });
+
+test("loadedWith: alleen sites die elke keer (3 keer, 2 dagen) na hetzelfde hulpadres komen", async () => {
+  const { loadedWith } = await import("./companion.ts");
+  const day = 86_400_000;
+  const ev = [0, 1, 2].flatMap((d) => [
+    { t: d * day, dev: "A", host: "publish.bouwer.nl", site: "bouwer.nl", helper: true },
+    { t: d * day + 200, dev: "A", host: "script.github.io", site: "script.github.io", page: true },
+    { t: d * day + 500, dev: "A", host: "www.eigen.nl", site: "eigen.nl", page: true }, // laadt het hulpadres niet: ander apparaat ook niet
+  ]);
+  ev.push({ t: 5 * day, dev: "A", host: "www.eigen.nl", site: "eigen.nl", page: true });
+  assert.deepEqual([...loadedWith(ev)], ["script.github.io"]);
+  assert.equal(loadedWith(ev.filter((e) => e.t < 2 * day)).size, 0); // maar 2 keer: te weinig bewijs
+});
