@@ -491,3 +491,9 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .list .item .fav.badge { font-size:9px; }
 .list > div + div:has(.tstart)::before { display:block; left:110px; }
 .list > div.hourstart:has(.tstart)::before { display:none; }
+/* Weer verticaal gecentreerd (luchtiger): tijd, logo, naam/toestel en duur in het midden van de regel; logo's 28px. */
+.list .item { align-items:center; padding-top:12px; padding-bottom:12px; }
+.list .item .fav, .list .item .fav.badge, .list .item .fav.ph { align-self:center; width:28px; height:28px; border-radius:7px; margin-top:0; }
+.list .item .fav.ph { font-size:13px; }
+.list .item .fav.badge { font-size:10px; }
+.list > div + div:has(.tstart)::before { left:112px; }
