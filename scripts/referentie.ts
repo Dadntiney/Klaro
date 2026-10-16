@@ -65,8 +65,11 @@ const CASES: Case[] = [
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);
 const hm = (t: number) => new Date(t).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" });
-let bad = 0;
+let bad = 0, skipped = 0;
+// Dagen die niet meer in NextDNS staan (logboek leeggemaakt of te oud): overslaan. De regels zelf staan in de code en blijven.
+const have = new Set<string>(d.groups.map((g: any) => g.d));
 for (const c of CASES) {
+  if (!have.has(c.day)) { skipped++; continue; }
   const gs = d.groups.filter((g: any) => g.d === c.day && g.dev === c.dev && (c.site.startsWith("*.") ? g.site.endsWith(c.site.slice(1)) : g.site === c.site) && !g.bg && g.main);
   const visS = gs.flatMap((g: any) => (g.ss ?? []).filter((x: any) => isHuman(x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site))));
   const vis = visS.map((x: any) => hm(x.s));
@@ -76,5 +79,6 @@ for (const c of CASES) {
   if (!ok) bad++;
   console.log(`${ok ? "✓" : "✗"} ${c.day} ${c.at} ${c.site} → ${c.want === "onzeker" ? "tonen als onzeker" : c.want ? "tonen" + (c.until ? ` tot ${c.until}` : "") : "niet tonen"} (${c.why})${ok ? "" : `  [nu: ${got ? (unsure ? "getoond als onzeker" : "getoond") : "niet getoond"}]`}`);
 }
+if (skipped) console.log(`\n${skipped} referentiegeval(len) overgeslagen: die dag staat niet meer in NextDNS.`);
 console.log(bad ? `\n${bad} referentiegeval(len) kloppen niet.` : "\nAlle referentiegevallen kloppen.");
 process.exit(bad ? 1 : 0);
