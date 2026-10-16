@@ -1166,7 +1166,6 @@ export default function Home() {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
-                            if (t) parts.push(<span key="w" className="mwhen">{nowRow ? <><span className="pulse" aria-hidden />sinds {timeFmt.format(t)}</> : `${timeFmt.format(t)}${endT - t >= 60_000 ? `–${timeFmt.format(endT)}` : ""}`}</span>);
                             if (rss.every((x) => x.uz)) parts.push(<span key="u" className="unsure">onzeker</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
@@ -1176,6 +1175,7 @@ export default function Home() {
                         </div>
                         <div className="time">
                           {mins > 0 ? <span className={"tdur" + (nowRow ? " nowtag" : "")}>{dur(mins)}</span> : nowRow ? <span className="tdur nowtag">nu</span> : null}
+                          {t ? <span className="twhen">{nowRow ? <><span className="pulse" aria-hidden />sinds {timeFmt.format(t)}</> : `${timeFmt.format(t)}${endT - t >= 60_000 ? `–${timeFmt.format(endT)}` : ""}`}</span> : null}
                         </div>
                       </div>
                       {isOpen && (() => {
