@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { OPEN_BURST, clusterSessions, extendSessions, isHuman, minutes, totalMinutes } from "./sessions.ts";
+import { OPEN_BURST, clusterSessions, extendSessions, isHuman, minutes, totalMinutes, type Session } from "./sessions.ts";
 
 const m = (x: number) => 1_700_000_000_000 + x * 60_000; // vaste starttijd (0 zou "geen tijd" betekenen)
 
@@ -117,4 +117,13 @@ test("twee adressen in één moment telt alleen bij WhatsApp, niet bij apps die 
   ss = extendSessions(ss, t + 300, false, true);
   assert.equal(ss[0].f, 1);
   assert.equal(isHuman(ss[0]), false);
+});
+
+test("live WhatsApp: de volledige opstart (kale naam, api., g., static.) telt meteen als openen; een binnenkomend bericht niet", () => {
+  const T = 1_800_000_000_000;
+  const feed = (ev: [number, string, boolean][]) => ev.reduce((ss, [t, h, fg]) => extendSessions(ss, T + t, false, fg, undefined, h), [] as Session[]);
+  const open = feed([[0, "g.whatsapp.net", false], [1_000, "whatsapp.com", false], [2_500, "static.whatsapp.net", true], [2_600, "mmx-ds.cdn.whatsapp.net", false], [3_500, "api.whatsapp.net", false]]);
+  assert.equal(isHuman(open[0]), true);
+  const bericht = feed([[0, "api.whatsapp.net", false], [500, "g.whatsapp.net", false], [1_000, "static.whatsapp.net", true], [60_000, "whatsapp.com", false]]);
+  assert.equal(isHuman(bericht[0]), false);
 });

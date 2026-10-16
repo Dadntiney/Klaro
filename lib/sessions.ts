@@ -8,6 +8,8 @@ export interface Session {
   mh?: number; // bij gewone websites: hoe vaak de site zelf (www., nl., ...) werd opgevraagd; 0 = alleen losse onderdelen (plaatjes, tellers)
   lf?: number; // tijdstip van het laatste inhoud-moment (live tellen)
   lfh?: string; // adres van dat laatste inhoud-moment
+  ob?: { h: string; t: number }[]; // live: opstart-adressen van de laatste 5 s (zie OPEN_START)
+  os?: 1; // live: volledige opstart gezien (telt één keer als extra inhoud-adres, net als bij de volledige berekening)
   lmt?: number; // tijdstip van het laatste beeld/geluid-moment (live tellen)
   emb?: 1;
   rf?: 1; // een widget of open tabblad dat zichzelf ververst (zelfde site die dag vaak los): geen bezoek
@@ -70,6 +72,13 @@ export const OPEN_BURST = new Set(["whatsapp.com"]);
  */
 export const OPEN_START = [/^whatsapp\.com$/, /^api\.whatsapp\.net$/, /^g\.whatsapp\.net$/, /^static\.whatsapp\.net$/];
 
+/** Live: onthoud opstart-adressen (5 s); is het rijtje compleet, dan telt dat één keer als extra inhoud-adres. */
+function openStart(x: Session, host: string, t: number) {
+  if (x.os || !OPEN_START.some((re) => re.test(host))) return;
+  x.ob = [...(x.ob ?? []).filter((o) => Math.abs(t - o.t) <= 5_000), { h: host, t }];
+  if (OPEN_START.every((re) => x.ob!.some((o) => re.test(o.h)))) { x.os = 1; x.f = (x.f ?? 0) + 1; delete x.ob; }
+}
+
 /**
  * Voeg één nieuw tijdstip toe aan bestaande sessies (nieuwste eerst).
  * `fg`: alleen bij apps met achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): true = inhoud geladen, false = achtergrond.
@@ -95,9 +104,12 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
     if (fg && (!(x.lf && Math.abs(t - x.lf) <= MOMENT) || (host && x.lfh && host !== x.lfh))) x.f = (x.f ?? 0) + 1;
     if (fg) { x.lf = t; if (host) x.lfh = host; }
     if (res === false) delete x.res; // iets van de site zelf erbij: wel een bezoek
+    if (host) openStart(x, host, t);
     return next.sort((a, b) => b.e - a.e);
   }
-  return [{ s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t, ...(host ? { lfh: host } : {}) } : {}) } : {}), ...(res ? { res: 1 as const } : {}) }, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
+  const fresh: Session = { s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t, ...(host ? { lfh: host } : {}) } : {}) } : {}), ...(res ? { res: 1 as const } : {}) };
+  if (host) openStart(fresh, host, t);
+  return [fresh, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }
 
 /** Minuten van een sessie, minimaal 1 als er meer dan een paar seconden tussen zit; 0 = alleen een korte aanraking. */
