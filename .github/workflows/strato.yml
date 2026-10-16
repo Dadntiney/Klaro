@@ -67,4 +67,7 @@ jobs:
           getent hosts pichya.nl www.pichya.nl || echo "pichya.nl heeft geen adres (DNS)"
           curl -sv -m 15 -o /dev/null http://pichya.nl/login 2>&1 | grep -E '^\*|^< HTTP|^< Location' | head -15 || true
           curl -sv -m 15 -o /dev/null https://pichya.nl/login 2>&1 | grep -E '^\*|^< HTTP' | head -15 || true
+          echo "--- inhoud via http ---"
+          curl -s -m 15 http://pichya.nl/login | head -c 300; echo
+          for u in /login /api/nd.php /api/_private/.htaccess /api/setup.php; do curl -s -m 15 -o /dev/null -w "http $u %{http_code}\n" http://pichya.nl$u || true; done
           exit 1
