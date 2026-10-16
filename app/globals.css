@@ -416,14 +416,13 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .rawdet dt { color:var(--muted); }
 .rawdet dd { margin:0; overflow-wrap:anywhere; }
 .rawsearch { margin-top:8px; font:inherit; font-size:13px; font-weight:600; padding:5px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }
-/* Gekozen tab = gevuld (paars), zoals elk tabblad. Online = niet gevuld, maar groen knipperend bolletje, groene rand en letters,
-   met de app erbij. Gekozen én online: paars gevuld met het groene bolletje. Zo zijn "gekozen" en "nu bezig" nooit te verwarren. */
+/* Gekozen tab = gevuld (paars), zoals elk tabblad. Nu in gebruik = alleen een groen knipperend bolletje met de app erbij,
+   verder een gewone chip. Gekozen én online: paars gevuld met het groene bolletje. Zo zijn "gekozen" en "nu bezig" nooit te verwarren. */
 .chip.on { background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:600; }
 .chip.on .di { opacity:1; }
-.chip.act:not(.on) { background:var(--card); border:1.5px solid #22c55e; color:#15803d; font-weight:600; }
-@media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:#4ade80; } }
-:root[data-theme="dark"] .chip.act:not(.on) { color:#4ade80; }
-:root[data-theme="light"] .chip.act:not(.on) { color:#15803d; }
+.chip.act:not(.on) { background:var(--card); border:1px solid var(--line); color:var(--fg); font-weight:400; }
+@media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:var(--fg); } }
+:root[data-theme] .chip.act:not(.on) { color:var(--fg); }
 .chip.act .di { opacity:1; }
 .chip.on.act { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:none; }
 .chip-app { font-weight:500; opacity:.95; max-width:9.5em; overflow:hidden; text-overflow:ellipsis; }
