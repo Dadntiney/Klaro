@@ -388,3 +388,5 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 /* Uitloggen onderaan: rustig, valt niet op */
 .logout { display:flex; justify-content:center; align-items:center; gap:8px; padding:28px 16px 36px; color:var(--muted); font-size:13px; }
 .logout button { background:none; border:0; padding:4px; color:var(--muted); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+/* iPhone/iPad zoomt in zodra je in een invulveld tikt met tekst kleiner dan 16px; met 16px blijft de pagina staan (zoomen met twee vingers kan nog steeds). */
+@media (pointer: coarse) { .rawq, .goto select, .goto input, .login-card input { font-size:16px; } }
