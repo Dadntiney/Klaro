@@ -1175,7 +1175,7 @@ export default function Home() {
                         </div>
                         <div className="time">
                           {mins > 0 ? <span className={"tdur" + (nowRow ? " nowtag" : "")}>{dur(mins)}</span> : nowRow ? <span className="tdur nowtag">nu</span> : null}
-                          {t ? <span className="twhen">{nowRow ? `sinds ${timeFmt.format(t)}` : `${timeFmt.format(t)}${endT - t >= 60_000 ? `–${timeFmt.format(endT)}` : ""}`}</span> : null}
+                          {t ? <span className="twhen" title={`${timeFmt.format(t)}${endT - t >= 60_000 ? `–${timeFmt.format(endT)}` : ""}`}>{nowRow ? `sinds ${timeFmt.format(t)}` : timeFmt.format(t)}</span> : null}
                         </div>
                       </div>
                       {isOpen && (() => {

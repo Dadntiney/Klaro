@@ -453,3 +453,5 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 }
 @keyframes nowsheen { 0% { background-position:120% 0; } 100% { background-position:-20% 0; } }
 @media (prefers-reduced-motion: reduce) { .item.nowrow { animation:none; background-position:50% 0; } }
+/* Rustiger rechts: de duur niet vet (de naam links is het enige vette), daaronder alleen de begintijd. */
+.time .tdur { font-weight:500; }
