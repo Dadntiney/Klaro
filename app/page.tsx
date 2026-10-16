@@ -469,15 +469,16 @@ export default function Home() {
   const liveFailedRef = useRef(false);
   useEffect(() => { liveFailedRef.current = live === "fail"; }, [live]);
 
-  // Live: elke ~1,5 seconde nieuwe verzoeken ophalen, ook als het tabblad op de achtergrond staat.
-  // De klok draait in een aparte Web Worker: tabbladen op de achtergrond krijgen anders na een tijdje
-  // maar één klokslag per minuut, een worker niet. Terwijl een antwoord nog loopt, slaan we een slag over.
+  // Live: elke ~1,5 seconde nieuwe verzoeken ophalen, alleen zolang de pagina in beeld is. Op de achtergrond niet: een open
+  // tabblad dat de hele dag elke 1,5 s vraagt, kost tienduizenden aanroepen per dag en liet het gratis Vercel-tegoed
+  // opraken (site uitgeschakeld). Zodra de pagina weer in beeld komt, haalt hij alles in (ook rode meldingen).
+  // De klok draait in een aparte Web Worker (gelijkmatige slagen). Terwijl een antwoord nog loopt, slaan we een slag over.
   useEffect(() => {
     if (state !== "ready") return;
     let busy = false;
     let pauseUntil = 0;
     const run = async () => {
-      if (busy || Date.now() < pauseUntil) return;
+      if (busy || Date.now() < pauseUntil || document.visibilityState === "hidden") return;
       busy = true;
       await poll();
       if (liveFailedRef.current) pauseUntil = Date.now() + 15000; // bij een fout (bijv. rate limit) afremmen
@@ -543,7 +544,7 @@ export default function Home() {
 
   useEffect(() => {
     if (state !== "ready") return;
-    const id = setInterval(refreshFull, 300_000);
+    const id = setInterval(() => document.visibilityState === "visible" && refreshFull(), 300_000);
     const onVisible = () => document.visibilityState === "visible" && Date.now() - lastFull.current > 60_000 && refreshFull();
     document.addEventListener("visibilitychange", onVisible);
     return () => {
