@@ -54,9 +54,40 @@ export function liveTvApp<G extends { d: string; dev: string; site: string; lm?:
 }
 
 /**
- * Hoe lang een regel na de laatste activiteit nog "nu" heet. Speelt er beeld/geluid (laatste activiteit is een afspeelsignaal),
- * dan net zo lang als de chip van het apparaat groen blijft (5 minuten); anders 3 minuten.
+ * Hoe lang een regel na de laatste activiteit nog "nu" heet: precies zo lang als de chip van het apparaat daardoor groen blijft.
+ * Gewoon 3 minuten; 5 minuten als er beeld/geluid speelt (laatste activiteit is een afspeelsignaal) of bij een app als Facebook
+ * (scrollen laadt niet elke minuut iets nieuws); 6 minuten na minstens 10 minuten aaneengesloten gebruik (spelen, kijken).
  */
-export function nowWindow(end: number, lm?: number): number {
-  return lm && lm >= end - 1_500 ? 300_000 : 180_000;
+export function nowWindow(end: number, lm?: number, opt: { fg?: boolean; long?: boolean } = {}): number {
+  let w = 180_000;
+  if ((lm && lm >= end - 1_500) || opt.fg) w = 300_000;
+  if (opt.long) w = 360_000;
+  return w;
+}
+
+/** Berichten-apps worden ook op de achtergrond regelmatig wakker: daar telt lang open staan niet als lang gebruik. */
+export const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./;
+
+/**
+ * Is deze sessie (de laatst begonnen echte sessie van een apparaat) nu nog bezig? Eén regel voor de chip van het apparaat én
+ * voor "nu" bij de rij, zodat ze altijd hetzelfde zeggen. Ook zolang er beeld/geluid van die sessie speelt (laatste 5 minuten).
+ */
+export function isNow(clock: number, x: { s: number; e: number; n?: number; f?: number }, g: { site: string; lm?: number }): boolean {
+  const long = !MSG.test(g.site) && x.e - x.s >= 600_000 && (x.n ?? 0) >= 3;
+  if (clock - x.e < nowWindow(x.e, g.lm, { fg: x.f !== undefined, long })) return true;
+  return !!g.lm && g.lm >= x.s - 1_500 && clock - g.lm < 300_000;
+}
+
+/**
+ * Op een tv is kijken één geheel: stukjes van dezelfde app met minder dan 15 minuten ertussen horen bij elkaar, zolang er
+ * tussendoor geen andere app begon (zelfde samenvoeging als de lijst). Geeft het begin van het geheel waar `x` het laatste stukje van is.
+ */
+export function tvStart(x: { s: number }, pieces: { s: number; e: number }[], otherStarts: number[]): number {
+  let s = x.s;
+  for (const p of [...pieces].sort((a, b) => b.s - a.s)) {
+    if (p.s >= s) continue;
+    if (s - p.e > 15 * 60_000 || otherStarts.some((o) => o > p.e && o < s)) break;
+    s = p.s;
+  }
+  return s;
 }

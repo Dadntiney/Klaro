@@ -49,3 +49,26 @@ test("'nu' bij een rij: 5 minuten als er beeld/geluid speelt (zoals de chip), an
   assert.equal(nowWindow(m(10), m(2)), 180_000);
   assert.equal(nowWindow(m(10)), 180_000);
 });
+
+test("chip en rij: dezelfde regel voor 'nu' (lang gebruik 6 min, Facebook-achtig of beeld/geluid 5 min, anders 3)", async () => {
+  const { isNow } = await import("./play.ts");
+  const x = { s: m(0), e: m(20), n: 30 };
+  assert.equal(isNow(m(25), x, { site: "netflix.com" }), true); // lang gekeken: 6 minuten
+  assert.equal(isNow(m(27), x, { site: "netflix.com" }), false);
+  assert.equal(isNow(m(25), x, { site: "whatsapp.com" }), false); // berichten-app: open laten staan is geen lang gebruik
+  const y = { s: m(0), e: m(2), n: 3, f: 2 };
+  assert.equal(isNow(m(6), y, { site: "facebook.com" }), true);
+  assert.equal(isNow(m(8), y, { site: "facebook.com" }), false);
+  const z = { s: m(0), e: m(1), n: 2 };
+  assert.equal(isNow(m(3.5), z, { site: "nu.nl" }), true);
+  assert.equal(isNow(m(4.5), z, { site: "nu.nl" }), false);
+  assert.equal(isNow(m(4.5), z, { site: "youtube.com", lm: m(1) }), true); // beeld/geluid van deze sessie: 5 minuten
+});
+
+test("tv: stukjes kijken met minder dan 15 minuten ertussen zijn één geheel, tenzij er tussendoor een andere app begon", async () => {
+  const { tvStart } = await import("./play.ts");
+  const pieces = [{ s: m(0), e: m(10) }, { s: m(20), e: m(30) }, { s: m(40), e: m(41) }];
+  assert.equal(tvStart(pieces[2], pieces, []), m(0));
+  assert.equal(tvStart(pieces[2], pieces, [m(35)]), m(40)); // andere app tussendoor: nieuw bezoek
+  assert.equal(tvStart(pieces[2], [{ s: m(0), e: m(10) }, pieces[2]], []), m(40)); // 30 minuten ertussen
+});

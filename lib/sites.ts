@@ -40,6 +40,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Playrix (spel)", icon: "playrix.com", domains: ["playrix.com"] },
   { name: "Mobile Legends (spel)", icon: "mobilelegends.com", domains: ["mobilelegends.com", "moonton.com"] },
   { name: "Sago Mini (spel)", icon: "sagomini.com", domains: ["sagomini.com"] },
+  { name: "TutoTOONS (spel)", icon: "tutotoons.com", domains: ["tutotoons.com", "tutoads.tv"] }, // kinderspellen; tijdens het spelen elke paar minuten reclame/gegevens
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
   { name: "Ziggo GO", icon: "ziggogo.tv", domains: ["ziggogo.tv", "horizon.tv", "dmdsdp.com"] }, // dmdsdp: videoplatform van Ziggo (hzn-nl, gnp.cloud), komt alleen samen met Ziggo GO voor
@@ -50,7 +51,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Max", icon: "max.com", domains: ["max.com", "hbomax.com", "hbo.com"] },
   { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
   { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },
-  { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl"] },
+  { name: "Pathé Thuis", icon: "pathe-thuis.nl", domains: ["pathe-thuis.nl", "thuisbioscoop.nl", "force-public-alb-production-688060324.eu-central-1.elb.amazonaws.com"] }, // thuisbioscoop en de server erachter (laatste): de app meldt zich daar elke minuut tijdens een film
   { name: "F1 TV", icon: "formula1.com", domains: ["formula1.com", "watchliveformula1.com", "f1tv.com", "d8penbt6jsl3i.cloudfront.net"] }, // laatste: videoserver van F1 TV
   { name: "DAZN", icon: "dazn.com", domains: ["dazn.com", "indazn.com", "daznservices.com"] },
   { name: "NLZIET", icon: "nlziet.nl", domains: ["nlziet.nl"] },
@@ -130,10 +131,11 @@ for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
 const BACKGROUND = new Set([
   // chatknoppen die in andere sites zitten (geen eigen bezoek)
-  "replain.cc", "intercom.io", "intercomcdn.com", "intercomassets.com", "zdassets.com", "tawk.to", "crisp.chat", "livechatinc.com", "tidio.co", "tidiochat.com", "driftt.com", "usemessages.com", "olark.com", "jivosite.com",
+  "replain.cc", "tolkie.nl", "surfly.com", "usizy.com", "snapwidget.com", "giftomatic.io", "shopboostapp.com", "omniconvert.com", "masslytics.io", "klarnaevt.com", "intercom.io", "intercomcdn.com", "intercomassets.com", "zdassets.com", "tawk.to", "crisp.chat", "livechatinc.com", "tidio.co", "tidiochat.com", "driftt.com", "usemessages.com", "olark.com", "jivosite.com",
   "stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
-  "ift.tt", "bit.ly", "tinyurl.com", "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com",
+  "ift.tt", "bit.ly", "tinyurl.com", "awin1.com", "tradetracker.net", "go2cloud.org", "bigspark.link", // ook affiliate-links
+   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com",
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
   "tm-azurefd.net", "azurefd.net", "t-msedge.net", "fastly-masque.net", "impervadns.net", "akaquill.net", "visualwebsiteoptimizer.com", "at-o.net", "wt-eu02.net", "snplow.net", "nr-data.net", "marketingcloudapis.com", "rudderlabs.com", "kameleoon.eu", "tealiumiq.com", "contentsquare.net", "blueconic.net", "mparticle.com", "dynatrace.com", "usabilla.com", "typekit.net", "addthis.com", "privacy-center.org", "tuyaeu.com", "tuyaus.com", "tuyacn.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",

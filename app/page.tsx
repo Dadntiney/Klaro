@@ -7,7 +7,7 @@ import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
-import { liveTvApp, nowWindow } from "@/lib/play";
+import { MSG, isNow, liveTvApp, tvStart } from "@/lib/play";
 import { apiFetch } from "@/lib/browser-api";
 import { baseDomain } from "@/lib/parse";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -144,7 +144,6 @@ function tvBlipper(groups: Group[]) {
   return (g: Group, x: Session) =>
     tvBlip(g.dev, x) && !((x.n ?? 0) >= 3 && (x.m ?? 0) >= 2 && (long.get(g.dev) ?? []).some((v) => v.site !== g.site && x.s - v.e >= -30_000 && x.s - v.e <= 120_000));
 }
-const MSG = /^(whatsapp|telegram|signal|messenger|snapchat)\./; // berichten-apps worden ook op de achtergrond regelmatig wakker
 
 /**
  * Klein draaicirkeltje rechts in de balk: laat zien dat het live ophalen (elke 1,5 sec.) echt loopt.
@@ -700,40 +699,56 @@ export default function Home() {
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const lastUse = useMemo(() => {
     const hits = new Map<string, { t: number; site: string; fgApp: boolean }[]>();
-    const media = new Map<string, number>();
-    const steady = new Map<string, number>();
-    const human = new Map<string, number>(); // einde van de laatste sessie die als echt gebruik telt
+    const media = new Map<string, number>(); // beeld/geluid van adressen die zelf geen regel worden (bijv. Conviva zonder app)
+    const latest = new Map<string, { g: Group; x: Session }>(); // laatst begonnen echte sessie per apparaat (zoals de lijst)
     const blip = tvBlipper(groups);
+    // Zichtbare echte sessies per apparaat: een app zonder eigen website telt (net als in de lijst) alleen als er niets anders speelde.
+    const vis = new Map<string, Session[]>();
+    for (const g of groups) if (!g.bg && g.main) for (const x of g.ss ?? []) if (isHuman(x) && !blip(g, x)) (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push(x);
     for (const g of groups) {
       const fgApp = (g.ss ?? []).some((x) => x.f !== undefined);
-      // Afspeelsignalen (ook van achtergrond- of geblokkeerde adressen zoals Conviva) tellen altijd mee voor "er wordt gekeken".
-      // Beeld/geluid van een app met achtergrondverkeer telt alleen als die sessie echt gebruik was (geen voorgeladen plaatje).
-      // Op een tv telt beeld pas als er langer dan een minuut gekeken wordt (geen voorvertoning op het beginscherm).
-      if (g.lm && (!fgApp || (g.ss?.[0] && isHuman(g.ss[0]))) && !(g.ss?.[0] && blip(g, g.ss[0])) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
-      // Herkende apps (Facebook, WhatsApp, ...) tellen altijd mee; losse systeemdomeinen (apple.com, google.com) niet.
-      if (!g.flag && (g.bg || !g.main || (isSystemSite(g.site) && isPlainSite(g)) || (g.bl ?? 0) >= g.n)) continue;
+      const standalone = !g.main && !g.flag && !isSystemSite(g.site);
+      const rowable = !g.bg && ((g.bl ?? 0) < g.n || !!g.flag) && (g.main || !!g.flag || standalone);
+      // Beeld/geluid van iets dat geen eigen regel kan worden (afspeelsignalen zonder app) telt alleen als die sessie echt
+      // gebruik lijkt, en op een tv pas na een minuut (geen voorvertoning op het beginscherm).
+      const cur = g.ss?.[0];
+      if (!rowable && g.lm && cur && isHuman(cur) && !blip(g, cur) && g.lm > (media.get(g.dev) ?? 0)) media.set(g.dev, g.lm);
+      if (!rowable) continue;
+      // Zelfde sessies als in de lijst: echte bezoeken van sites en apps (ook een zoekopdracht bij Google), en apps zonder website.
       for (const x of g.ss ?? []) {
-        if (!isHuman(x) || blip(g, x) || (x.pv && !x.lg && auto.has(g.dev + "|" + g.site))) continue;
-        // Bij apps als Facebook/Instagram laadt scrollen niet elke minuut iets nieuws (alles staat al klaar): 5 minuten speling.
-        const until = x.e + (fgApp ? 120_000 : 0);
-        if (until > (human.get(g.dev) ?? 0)) human.set(g.dev, until);
-        if (!MSG.test(g.site) && x.e - x.s >= 600_000 && (x.n ?? 0) >= 3 && x.e > (steady.get(g.dev) ?? 0)) steady.set(g.dev, x.e);
+        const real = g.flag
+          ? true
+          : standalone
+          ? (x.n ?? 0) >= 3 && !x.ml && !x.res && !(vis.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000)
+          : isHuman(x) && !blip(g, x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site));
+        const cur2 = latest.get(g.dev);
+        if (real && (!cur2 || x.s > cur2.x.s || (x.s === cur2.x.s && x.e > cur2.x.e))) latest.set(g.dev, { g, x });
       }
+      // Losse opvragingen: alleen van gewone sites en apps. Apps met een eigen inhoud-regel (Facebook, Instagram, WhatsApp, Google)
+      // verversen op de achtergrond vaak samen; hun echte gebruik telt hierboven al.
+      if (!g.main || fgApp || (isSystemSite(g.site) && isPlainSite(g)) || auto.has(g.dev + "|" + g.site)) continue; // ook geen widget die zichzelf ververst
       const a = hits.get(g.dev) ?? [];
       for (const t of g.ts ?? []) a.push({ t, site: g.site, fgApp });
       hits.set(g.dev, a);
     }
-    return { hits, media, steady, human };
+    // Op een tv: het laatste stukje telt samen met de stukjes ervoor, net als in de lijst.
+    for (const [dev, l] of latest) {
+      if (!isTv(dev)) continue;
+      const pieces = (l.g.ss ?? []).filter((x) => isHuman(x) && !blip(l.g, x));
+      const others = groups.filter((g) => g.dev === dev && g !== l.g && !g.bg && g.main).flatMap((g) => (g.ss ?? []).filter((x) => isHuman(x) && !blip(g, x)).map((x) => x.s));
+      latest.set(dev, { g: l.g, x: { ...l.x, s: tvStart(l.x, pieces, others) } });
+    }
+    return { hits, media, latest };
   }, [groups, auto]);
   // In gebruik (per apparaat, niet per app):
-  // - net een bezoek dat als echt gebruik telt (laatste 3 minuten), of langdurig spelen, of beeld/geluid (laatste 5 minuten);
+  // - de laatst begonnen echte sessie is nog bezig (zelfde regel als "nu" bij de rij, zie lib/play.ts isNow);
+  // - of beeld/geluid van iets zonder eigen regel (laatste 5 minuten);
   // - of activiteit in de laatste 3 minuten, verspreid over minstens 45 seconden, en de laatste minder dan 2 minuten geleden,
-  //   met minstens 2 verschillende apps/sites (wisselen tussen apps = een mens), of 1 gewone site. Eén app die op de achtergrond
-  //   ververst (Facebook, WhatsApp) doet alles binnen een paar seconden of blijft bij één app, en telt dus niet.
+  //   met minstens 2 verschillende gewone sites/apps (wisselen = een mens), of 1 gewone site.
   const activeNow = (name: string) => {
+    const l = lastUse.latest.get(name);
+    if (l && isNow(clock, l.x, l.g)) return true;
     if (clock - (lastUse.media.get(name) ?? 0) < 300_000) return true;
-    if (clock - (lastUse.steady.get(name) ?? 0) < 360_000) return true;
-    if (clock - (lastUse.human.get(name) ?? 0) < 180_000) return true;
     const t = (lastUse.hits.get(name) ?? []).filter((x) => clock - x.t < 180_000);
     if (t.length < 3) return false;
     const hi = Math.max(...t.map((x) => x.t));
@@ -955,7 +970,8 @@ export default function Home() {
             if (rawView) return null;
             // Per apparaat: wanneer begon het laatste bezoek? Een app waarna al een andere app begon, is niet meer "nu".
             const lastStart = new Map<string, number>();
-            for (const r of trows) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.t));
+            // Alleen regels van echt gebruik (niet de altijd-getoonde regels van achtergrondverkeer, zoals Philips Hue).
+            for (const r of trows) for (const x of r.ss) if (r.g.flag || isHuman(x)) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, x.s));
             const rows = trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
@@ -1071,10 +1087,11 @@ export default function Home() {
                         <div className="time">
                           {(() => {
                             if (!t) return <span className="tcol">–</span>;
-                            // Nog bezig (laatste activiteit < 3 min geleden, bij beeld/geluid 5 min zoals de chip) = "nu" in groen; anders gerekend vanaf het begin, net als de volgorde.
+                            // Nog bezig = "nu" in groen, precies zo lang als de chip van het apparaat groen blijft (zie nowWindow); alleen bij echt gebruik; anders gerekend vanaf het begin, net als de volgorde.
                             const end = Math.max(t, ...rss.map((x) => x.e));
                             const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
-                            if (clock - end < nowWindow(end, g.lm) && !((lastStart.get(g.dev) ?? 0) > end)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
+                            const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
+                            if ((g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
                             const age = Math.floor((clock - t) / 60_000);
                             if (age >= 0 && age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
                             return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;

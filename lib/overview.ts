@@ -519,16 +519,27 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
   }
 
-  // Een ingesloten filmpje (Vimeo/YouTube-speler) terwijl op hetzelfde apparaat een andere site open is, hoort bij die site.
+  // Een ingesloten filmpje (Vimeo/YouTube/Wistia-speler) terwijl op hetzelfde apparaat een andere site open is, hoort bij die site.
+  // Zolang de speler doorloopt (Wistia meldt elke ~2 minuten dat er nog afgespeeld wordt), kijkt iemand op die site: de sessie van
+  // de site waarop het filmpje begon (de laatst geopende) loopt dan door tot het einde van het filmpje.
   if (embedSes.length) {
-    const vis = new Map<string, { site: string; s: number; e: number }[]>();
+    const vis = new Map<string, { g: Group; x: Session }[]>();
     for (const g of groups.values()) {
       if (!g.main || g.bg || g.flag) continue;
-      for (const x of g.ss) if (isHuman(x)) (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push({ site: g.site, s: x.s, e: x.e });
+      for (const x of g.ss) if (isHuman(x)) (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push({ g, x });
     }
     for (const { g, x } of embedSes) {
       if (g.flag) continue;
-      if ((vis.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s <= x.e + 60_000 && v.e >= x.s - 60_000)) x.emb = 1;
+      const on = (vis.get(g.dev) ?? []).filter((v) => v.g.site !== g.site && v.x.s <= x.e + 60_000 && v.x.e >= x.s - 60_000);
+      if (!on.length) continue;
+      x.emb = 1;
+      const host = on.filter((v) => v.x.s <= x.s + 60_000).sort((a, b) => b.x.s - a.x.s)[0];
+      if (host && x.e > host.x.e) {
+        const before = minutes(host.x);
+        host.x.e = x.e;
+        host.g.mins += minutes(host.x) - before;
+        if (x.e > host.g.last) host.g.last = x.e;
+      }
     }
   }
 
@@ -546,11 +557,56 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const pg = pages.get(g.dev);
       if (!pg) continue;
       for (const x of g.ss) {
-        if (!x.pv || x.lg || x.n !== 1) continue;
+        if (!(x.pv || x.ck) || x.lg || x.n !== 1) continue;
         const hs = new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host));
         if (hs.size !== 1 || [...hs][0].startsWith("www.")) continue;
-        if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000)) { delete x.pv; x.emb = 1; }
+        if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000)) { delete x.pv; delete x.ck; x.emb = 1; }
       }
+    }
+    // Een site die elke keer (minstens 2 keer) tegelijk met een pagina van een andere site opduikt (hooguit 5 s erna), en nooit
+    // los, is een onderdeel van die sites: de maker van de website, een hulp- of maatknop, een zustersite in de voettekst.
+    // Ook als het een www.-adres is. De pagina die hem laadt blijft altijd staan (twee sites die alleen samen voorkomen: allebei).
+    const cand = new Map<string, { x: Session; leads: Set<string> }[]>();
+    const loose = new Set<string>();
+    for (const [gkey, g] of groups) {
+      if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g) || SEARCH.has(g.site)) continue;
+      const pg = pages.get(g.dev) ?? [];
+      const all = times.get(gkey) ?? [];
+      for (const x of g.ss) {
+        if (!isHuman(x)) continue;
+        if (x.lg) { loose.add(g.site); continue; }
+        // Elk moment van deze sessie samen met (hooguit 5 s na) een pagina van een andere site?
+        const leads = new Set<string>();
+        let alone = false;
+        for (const t of all) {
+          if (t < x.s || t > x.e) continue;
+          const l = pg.filter((p) => p.site !== g.site && p.t <= t + 300 && t - p.t <= 5_000);
+          if (!l.length) { alone = true; break; }
+          for (const p of l) leads.add(p.site);
+        }
+        if (alone) loose.add(g.site);
+        else (cand.get(g.site) ?? cand.set(g.site, []).get(g.site)!).push({ x, leads });
+      }
+    }
+    const part = new Set([...cand].filter(([site, xs]) => xs.length >= 2 && !loose.has(site)).map(([site]) => site));
+    for (const site of part) {
+      const xs = cand.get(site)!;
+      if (xs.every((c) => [...c.leads].every((l) => part.has(l)))) continue;
+      for (const { x } of xs) { delete x.pv; delete x.ck; delete x.uz; x.emb = 1; }
+    }
+    // Twee of meer andere sites die in dezelfde halve seconde beginnen, kort (hooguit 5 s) na een pagina: die laadt de pagina
+    // (zustersites in de voettekst, logo's op een nep-pagina). Zo snel opent een mens nooit twee nieuwe sites.
+    const starts: { g: Group; x: Session }[] = [];
+    for (const [, g] of groups) {
+      if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g) || SEARCH.has(g.site)) continue;
+      for (const x of g.ss) if ((x.pv || x.ck) && !x.lg && x.n === 1 && !part.has(g.site)) starts.push({ g, x });
+    }
+    for (const a of starts) {
+      const twin = starts.some((b) => b.g.dev === a.g.dev && b.g.site !== a.g.site && Math.abs(b.x.s - a.x.s) <= 500);
+      if (!twin) continue;
+      const pg = pages.get(a.g.dev) ?? [];
+      const lead = pg.some((p) => p.site !== a.g.site && p.t < a.x.s - 300 && a.x.s - p.t <= 5_000 && !starts.some((b) => b.g.dev === a.g.dev && b.g.site === p.site && Math.abs(b.x.s - a.x.s) <= 500));
+      if (lead) { delete a.x.pv; delete a.x.ck; delete a.x.uz; a.x.emb = 1; }
     }
   }
 

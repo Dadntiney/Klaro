@@ -348,3 +348,15 @@ test("kanaalplaatjes van YouTube (yt3.ggpht.com) horen bij YouTube; andere ggpht
   assert.equal(classify("yt3.googleusercontent.com").name, "YouTube");
   assert.notEqual(classify("lh3.ggpht.com").name, "YouTube");
 });
+
+test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en spel-adressen worden herkend", () => {
+  for (const h of ["www.awin1.com", "tc.tradetracker.net", "bigspark.link", "app.tolkie.nl", "surfly.com", "usizy.com", "snapwidget.com", "www.giftomatic.io"]) assert.equal(classify(h).bg, true, h);
+  assert.equal(classify("force.thuisbioscoop.nl").name, "Pathé Thuis");
+  assert.equal(classify("force-public-alb-production-688060324.eu-central-1.elb.amazonaws.com").name, "Pathé Thuis");
+  assert.equal(classify("other-alb-production-1.eu-central-1.elb.amazonaws.com").bg, true); // andere Amazon-servers blijven achtergrond
+  assert.equal(classify("apps.tutotoons.com").name, "TutoTOONS (spel)");
+  assert.equal(classify("vast.tutoads.tv").name, "TutoTOONS (spel)");
+  // geen vals alarm: gewone sites met een vergelijkbaar stukje in de naam blijven gewone sites
+  assert.equal(classify("www.awin.nl").bg, false);
+  assert.equal(classify("www.tolkien.nl").bg, false);
+});

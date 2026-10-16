@@ -57,3 +57,59 @@ test("geen vals kijken: afspeelmeldingen na het stoppen (meer dan 5 minuten stil
   const zig = o.groups.find((g) => g.site === "ziggogo.tv")!;
   assert.equal(Math.max(...zig.ss.map((x) => x.e)), T0 + min);
 });
+
+test("onderdelen van een pagina na zoeken (rond een geopende nieuwsbrief): alleen de site zelf telt", async () => {
+  // Echt voorbeeld: mail opgehaald, nieuwsbrief, dan zoeken op Google, dan de winkel; de winkel laadt een advies-widget mee.
+  const o = await overview([
+    [0, "imap.mail.me.com"], [430, "winkel.acemlna.com"], [18_600, "www.google.nl"], [18_800, "www.google.com"], [21_000, "encrypted-tbn0.gstatic.com"],
+    [38_100, "www.scapino.nl"], [39_400, "product-images.scapino.nl"], [39_400, "app.youshouldask.ai"], [130_000, "www.google.nl"], [131_000, "encrypted-tbn1.gstatic.com"],
+  ]);
+  assert.equal(shown(o, "scapino.nl").length, 1);
+  assert.equal(shown(o, "youshouldask.ai").length, 0);
+});
+
+test("site die altijd samen met een andere site opduikt (maker van de website) is een onderdeel; de site zelf blijft", async () => {
+  const day = 86_400_000;
+  const rows: R[] = [];
+  for (let i = 0; i < 3; i++) rows.push([i * day, "www.stap.nu"], [i * day + 300, "www.dewerkendewebsite.nl"], [i * day + 400, "code.dewerkendewebsite.nl"]);
+  rows.push([3 * day, "www.stap.nu"]); // de site zelf wordt ook los geopend
+  const o = await overview(rows);
+  assert.equal(shown(o, "dewerkendewebsite.nl").length, 0);
+  assert.equal(shown(o, "stap.nu").length, 4);
+});
+
+test("geen vals weglaten: een site die ook los geopend wordt, blijft ook als hij soms samen met een andere opduikt", async () => {
+  const day = 86_400_000;
+  const o = await overview([[0, "www.stap.nu"], [300, "www.zorgsite.nl"], [day, "www.stap.nu"], [day + 300, "www.zorgsite.nl"], [2 * day, "www.zorgsite.nl"]]);
+  assert.equal(shown(o, "zorgsite.nl").length, 3);
+  // Twee sites die alleen samen voorkomen: allebei tonen (niet allebei wegstrepen).
+  const p = await overview([[0, "www.a-winkel.nl"], [0, "www.b-winkel.nl"], [day, "www.a-winkel.nl"], [day, "www.b-winkel.nl"]]);
+  assert.ok(shown(p, "a-winkel.nl").length + shown(p, "b-winkel.nl").length >= 2);
+});
+
+test("twee nieuwe sites in dezelfde halve seconde na een pagina: zustersites die de pagina laadt", async () => {
+  const o = await overview([[0, "www.scanid.nl"], [1100, "www.leeftijdscanner.nl"], [1150, "www.agepop.nl"]]);
+  assert.equal(shown(o, "scanid.nl").length, 1);
+  assert.equal(shown(o, "leeftijdscanner.nl").length, 0);
+  assert.equal(shown(o, "agepop.nl").length, 0);
+});
+
+test("geen vals weglaten: twee sites kort na elkaar zonder pagina ervoor, of na een zoekmachine, blijven", async () => {
+  const o = await overview([[0, "www.google.com"], [900, "www.fietsen-a.nl"], [1000, "www.fietsen-b.nl"]]);
+  assert.equal(shown(o, "fietsen-a.nl").length + shown(o, "fietsen-b.nl").length, 2);
+});
+
+test("ingesloten videospeler die doorspeelt (Wistia in een cursus): de cursus-site loopt door tot het einde van het filmpje", async () => {
+  const min = 60_000;
+  const rows: R[] = [[0, "academy.cursussite.com"], [1_000, "cdn.thinkific.com"], [17_000, "assets.thinkific.com"], [17_000, "fast.wistia.net"], [69_000, "fast.wistia.com"], [70_000, "embed-ssl.wistia.com"]];
+  for (let x = 2; x <= 48; x += 2) rows.push([x * min, "distillery.wistia.com", "P1", "blocked"], [x * min + 500, "pipedream.wistia.com", "P1", "blocked"]);
+  const o = await overview(rows);
+  const end = Math.max(...shown(o, "thinkific.com").map((x) => x.e));
+  assert.ok(end >= T0 + 48 * min, "cursus tot het einde van het filmpje");
+  assert.equal(shown(o, "wistia.com").length, 0);
+});
+
+test("geen vals kijken: een los filmpje zonder site eromheen telt niet als bezoek aan een andere site", async () => {
+  const o = await overview([[0, "www.nieuws.nl"], [600_000, "player.vimeo.com"], [610_000, "player.vimeo.com"]]);
+  assert.equal(Math.max(...shown(o, "nieuws.nl").map((x) => x.e)), T0);
+});
