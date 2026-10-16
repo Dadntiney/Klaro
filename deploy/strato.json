@@ -1,1 +1,1 @@
-{ "dir": "/klaro" }
+{ "dir": "/klaro", "cleanupRoot": true }

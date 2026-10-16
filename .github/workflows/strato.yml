@@ -37,6 +37,7 @@ jobs:
         run: |
           if [ -z "$PW" ]; then echo "STRATO_SFTP_PASSWORD ontbreekt: niets geüpload."; echo "go=no" >> $GITHUB_OUTPUT; else echo "go=yes" >> $GITHUB_OUTPUT; fi
           echo "dir=$(node -e 'console.log(require("./deploy/strato.json").dir||"")')" >> $GITHUB_OUTPUT
+          echo "cleanup=$(node -e 'console.log(require("./deploy/strato.json").cleanupRoot?"yes":"no")')" >> $GITHUB_OUTPUT
       - name: Uploaden
         if: steps.s.outputs.go == 'yes'
         env:
@@ -52,6 +53,13 @@ jobs:
           fi
           # Instellingen (config.php) en tijdelijke bestanden op de server nooit overschrijven of weggooien.
           lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms out/_next/ $DIR/_next/; mirror -R --delete --no-perms out/api/_private/lists/ $DIR/api/_private/lists/"
+      - name: Oude kopie in de hoofdmap opruimen (eenmalig; alleen bekende Klaro-bestanden, nooit de map klaro)
+        if: steps.s.outputs.go == 'yes' && steps.s.outputs.cleanup == 'yes'
+        env:
+          LFTP_PASSWORD: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          L="set sftp:auto-confirm yes; set cmd:fail-exit no; open --env-password -u $SFTP_USER sftp://$SFTP_HOST"
+          lftp -c "$L; rm -rf /_next /_not-found /api /login; rm -f /.htaccess /404.html /index.html /index.txt /login.html /login.txt /_not-found.html /_not-found.txt /__next.__PAGE__.txt /__next._full.txt /__next._tree.txt; cls -la /"
       - name: Controleren
         if: steps.s.outputs.go == 'yes' && steps.s.outputs.dir != ''
         run: |
