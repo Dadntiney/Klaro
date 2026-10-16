@@ -472,3 +472,13 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .list .item .fav { align-self:center; }
 .list .item .tstart, .list .item .time { line-height:20px; }
 .list .item .time .tdur { line-height:20px; }
+/* Variant C (gekozen): agenda met ruimte – kleine logo's bovenaan bij de naam, lichtere namen, geen lijntjes tussen de
+   regels, meer lucht tussen de uren. */
+.list .item { padding-top:9px; padding-bottom:9px; min-height:0; }
+.list .item .fav, .list .item .fav.badge { align-self:flex-start; width:20px; height:20px; border-radius:5px; margin-top:0; }
+.list .item .fav.ph { width:20px; height:20px; font-size:10px; }
+.list .item .fav.badge { font-size:8px; }
+.item .name { font-weight:500; }
+.item .sub { font-size:12.5px; }
+.list > div > .hourmark { padding:14px 14px 6px; }
+.list > div + div:has(.tstart)::before { display:none; }
