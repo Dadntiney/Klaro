@@ -67,18 +67,30 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="5" width="18" height="16" rx="3" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
 /**
  * Live de regels zoals NextDNS ze binnenkrijgt (nieuwste bovenaan), zonder filter: zo hoeft niemand naar my.nextdns.io.
  * Rood streepje = door NextDNS geblokkeerd; rode regel = Klaro-vangnet (18+, dating, VPN).
  */
-function RawLog({ rows, devName, device, onClose }: { rows: Event[]; devName: (id: string) => string; device: string | null; onClose: () => void }) {
+function RawLog({ rows, devName, device, onClose, onCalendar }: { rows: Event[]; devName: (id: string) => string; device: string | null; onClose: () => void; onCalendar: () => void }) {
   const [q, setQ] = useState("");
   const shown = rows.filter((e) => (!device || devName(e.devId) === device) && (!q || (e.host ?? "").includes(q.trim().toLowerCase())));
   return (
     <section>
       <h2>
         <span className="dh-t"><span className="dh-d">Live van NextDNS</span></span>
-        <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><b>N</b></button>
+        <span className="dpair">
+          <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><b>N</b></button>
+          <button className="dview icon" onClick={onCalendar} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
+        </span>
       </h2>
       <input className="rawq" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zoeken" aria-label="Zoeken in de regels" />
       <div className="list rawlog">
@@ -933,7 +945,7 @@ export default function Home() {
             </div>
           )}
 
-          {rawView && <RawLog rows={rawLog} devName={(id) => deviceMap.current[id] ?? id} device={device} onClose={toggleRaw} />}
+          {rawView && <RawLog rows={rawLog} devName={(id) => deviceMap.current[id] ?? id} device={device} onClose={toggleRaw} onCalendar={() => { toggleRaw(); setGoOpen(true); if (!goDay && days[0]) setGoDay(days[0].d); }} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, rows: trows, hidden }, di) => {
             if (rawView) return null;
@@ -967,10 +979,7 @@ export default function Home() {
                     aria-label="Ga naar dag en tijd"
                     title="Ga naar dag en tijd"
                   >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <rect x="3" y="5" width="18" height="16" rx="3" />
-                      <path d="M3 10h18M8 3v4M16 3v4" />
-                    </svg>
+                    <CalendarIcon />
                   </button>
                   </span>
                 )}
