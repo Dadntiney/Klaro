@@ -1,14 +1,20 @@
 name: Lijsten bijwerken
 
-# Elke maandagochtend de 18+- en datinglijsten bijwerken. Alleen als alle tests slagen, gaat de nieuwe versie naar main
-# (en dus live via Vercel).
+# Elke dag de 18+- en datinglijsten bijwerken uit de bronlijsten (scripts/update-lists.ts: elke bron tot 3 keer proberen,
+# alleen toevoegen, logboek in data/wijzigingen.md). Alleen als alle tests slagen gaat de nieuwe versie naar main, en daarna
+# meteen live (een push door deze bot start de livegang niet vanzelf, dus die wordt hier gestart).
+# Lukt een bron niet, dan wordt de rest wel verwerkt en eindigt deze run rood: GitHub meldt dat per e-mail aan de eigenaar,
+# en de run is met "Re-run" opnieuw te starten. De volgende dag probeert hij het ook weer.
 on:
   schedule:
-    - cron: "17 4 * * 1"
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
+
+concurrency: lijsten
 
 jobs:
   update:
@@ -19,14 +25,24 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: node scripts/update-lists.mjs
+      - name: Bronnen ophalen
+        id: upd
+        run: node --experimental-strip-types scripts/update-lists.ts || echo "mislukt=1" >> "$GITHUB_OUTPUT"
       - run: npm test
       - run: npx tsc --noEmit
-      - name: Opslaan als er iets veranderd is
+      - name: Opslaan en live zetten als er iets veranderd is
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet data/; then echo "Geen nieuwe domeinen."; exit 0; fi
+          if git diff --quiet data/ && [ -z "$(git ls-files --others --exclude-standard data/)" ]; then echo "Geen nieuwe domeinen."; exit 0; fi
           git config user.name "lijsten-bot"
           git config user.email "lijsten-bot@users.noreply.github.com"
           git add data/
           git commit -m "Lijsten bijgewerkt ($(date -u +%Y-%m-%d))"
-          git push
+          for i in 1 2 3; do git pull --rebase -q origin main && git push && break; sleep 10; done
+          gh workflow run strato.yml --ref main
+      - name: Mislukte bron melden
+        if: steps.upd.outputs.mislukt == '1'
+        run: |
+          echo "Een of meer bronlijsten waren na 3 pogingen niet bereikbaar; zie data/wijzigingen.md en de log hierboven."
+          exit 1

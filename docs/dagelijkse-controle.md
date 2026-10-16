@@ -56,4 +56,6 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    bevestiging). Is het bestand veranderd: meenemen in de commit.
 7. `npm test`, `npx tsc --noEmit`, `npx next build` moeten slagen. Dan naar `main`: GitHub zet het via SFTP live en
    controleert pichya.nl. Daarna stap 1, 2 en 4 opnieuw.
-8. Kort melden in eenvoudig Nederlands wat er is opgelost; niets gevonden = één zin.
+8. `docs/laatste-controle.md` bijwerken (datum van vandaag + één regel resultaat) en meenemen in de laatste commit van de dag,
+   ook als er niets veranderd is. Daaraan ziet de bewaking (`.github/workflows/leren.yml`) dat de controle gedraaid heeft.
+9. Kort melden in eenvoudig Nederlands wat er is opgelost; niets gevonden = één zin.
