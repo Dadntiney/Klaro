@@ -958,9 +958,8 @@ export default function Home() {
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
                 <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{!recent && <> <span className="muted dh-m"><span className="dh-dot">· </span>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</span></>}</span>
                 {di === 0 && (
+                  <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Live regels van NextDNS" title="Live regels van NextDNS"><b>N</b></button>
-                )}
-                {di === 0 && (
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}
                     onClick={(e) => { e.stopPropagation(); setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
@@ -973,6 +972,7 @@ export default function Home() {
                       <path d="M3 10h18M8 3v4M16 3v4" />
                     </svg>
                   </button>
+                  </span>
                 )}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>

@@ -377,3 +377,9 @@ h2 .dview + .dview.icon { margin-left:0; }
 .rawlog .rawi.flag { background:color-mix(in srgb, #e5484d 12%, transparent); }
 .rawt { min-width:0; }
 .rawh { font-size:15px; overflow-wrap:anywhere; }
+/* N en kalender: twee ronde knoppen in één ronde houder. */
+.dview.icon { width:24px; height:24px; padding:0; justify-content:center; border-radius:50%; }
+.dpair { margin-left:auto; display:inline-flex; align-items:center; gap:2px; padding:2px; border:1px solid var(--line); border-radius:99px; }
+.dpair .dview.icon { margin:0; border-color:transparent; }
+.dpair .dview.icon.on { border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); }
+h2.fold .dpair + .fold-chev { margin-left:2px; }
