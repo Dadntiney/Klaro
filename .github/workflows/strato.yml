@@ -1,0 +1,66 @@
+name: Live zetten op Strato
+
+# Bij elke wijziging op main: testen, bouwen en via SFTP naar pichya.nl (Strato-webhosting met PHP).
+# Nodig: het geheim STRATO_SFTP_PASSWORD (Settings → Secrets and variables → Actions). Doelmap: deploy/strato.json.
+# Is de doelmap nog leeg, dan wordt alleen getoond welke mappen er op de hosting staan (niets geüpload).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: strato
+
+env:
+  SFTP_HOST: 5021648507.ssh.w2.strato.hosting
+  SFTP_USER: su707245
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Testen en bouwen
+        run: |
+          npm ci
+          npm test
+          npx tsc --noEmit
+          npx next build
+          node scripts/build-site.mjs
+          test -f out/index.html && test -f out/login.html && test -f out/api/nd.php && test -f out/api/_private/.htaccess
+      - name: Geheim aanwezig?
+        id: s
+        env:
+          PW: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$PW" ]; then echo "STRATO_SFTP_PASSWORD ontbreekt: niets geüpload."; echo "go=no" >> $GITHUB_OUTPUT; else echo "go=yes" >> $GITHUB_OUTPUT; fi
+          echo "dir=$(node -e 'console.log(require("./deploy/strato.json").dir||"")')" >> $GITHUB_OUTPUT
+      - name: Uploaden
+        if: steps.s.outputs.go == 'yes'
+        env:
+          LFTP_PASSWORD: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          DIR: ${{ steps.s.outputs.dir }}
+        run: |
+          sudo apt-get install -y lftp >/dev/null
+          L="set sftp:auto-confirm yes; set net:max-retries 3; set net:timeout 30; open --env-password -u $SFTP_USER sftp://$SFTP_HOST"
+          if [ -z "$DIR" ]; then
+            echo "Doelmap nog niet ingesteld. Inhoud van de hosting:"
+            lftp -c "$L; cls -la /; cls -la /*/"
+            exit 0
+          fi
+          # Instellingen (config.php) en tijdelijke bestanden op de server nooit overschrijven of weggooien.
+          lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms out/_next/ $DIR/_next/; mirror -R --delete --no-perms out/api/_private/lists/ $DIR/api/_private/lists/"
+      - name: Controleren
+        if: steps.s.outputs.go == 'yes' && steps.s.outputs.dir != ''
+        run: |
+          for i in $(seq 1 10); do
+            a=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/login || true)
+            b=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/api/nd.php || true)
+            c=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/api/_private/.htaccess || true)
+            echo "login=$a api=$b privaat=$c"
+            if [ "$a" = 200 ] && { [ "$b" = 401 ] || [ "$b" = 503 ]; } && [ "$c" = 403 ]; then echo "pichya.nl werkt"; exit 0; fi
+            sleep 5
+          done
+          exit 1

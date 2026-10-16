@@ -1,20 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Zelfstandige serverversie (map .next/standalone): draait met alleen `node server.js` op een eigen server (Strato).
-  output: "standalone",
-  async headers() {
-    const secure = [
-      { key: "X-Robots-Tag", value: "noindex, nofollow" },
-      { key: "X-Content-Type-Options", value: "nosniff" },
-      { key: "Referrer-Policy", value: "no-referrer" },
-      { key: "X-Frame-Options", value: "DENY" },
-    ];
-    return [
-      { source: "/:path*", headers: secure },
-      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
-    ];
-  },
-  // De grote adreslijsten (18+, dating) moeten mee in élke serverfunctie die adressen beoordeelt.
-  outputFileTracingIncludes: { "/api/**/*": ["./data/**"] },
+  // Gewone bestanden (map out/) voor eigen hosting: de pagina's draaien in de browser, het geheime deel in php/ (zie docs/strato.md).
+  // Beveiligingskoppen en de afscherming staan in php/.htaccess.
+  output: "export",
+  images: { unoptimized: true },
 };
 export default nextConfig;

@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { amsterdamMidnight, autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
 import { netKey } from "./network.ts";
-import { sameText } from "./auth.ts";
 import { anonId } from "./names.ts";
 
 test("begin van de dag klopt ook op de dagen dat de klok verzet wordt", () => {
@@ -35,13 +34,6 @@ test("thuisnetwerk (IPv6): verkort en voluit geschreven adressen geven hetzelfde
   assert.equal(netKey("2a02:a46:12:3400::1"), netKey("2a02:a46:0012:3400:9:8:7:6"));
   assert.equal(netKey("84.1.2.3"), "84.1.2.3");
   assert.notEqual(netKey("::ffff:1.2.3.4"), netKey("::ffff:5.6.7.8"));
-});
-
-test("wachtwoord vergelijken", () => {
-  assert.ok(sameText("geheim123", "geheim123"));
-  assert.ok(!sameText("geheim12", "geheim123"));
-  assert.ok(!sameText("geheim1234", "geheim123"));
-  assert.ok(!sameText("", "x"));
 });
 
 test("apparaat zonder id: vaste anonieme sleutel, nooit de naam zelf", () => {

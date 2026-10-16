@@ -1,41 +1,26 @@
 # Klaro op Strato (pichya.nl)
 
-Klaro draait op een eigen Strato-server (VPS) in plaats van Vercel. Elke wijziging op `main` gaat er automatisch heen
-(GitHub Actions: "Live zetten op Strato"). Wachtwoorden en sleutels staan alleen in GitHub-geheimen en op de server,
-nooit in de code of in een chat.
+Klaro draait op Strato-webhosting (PHP) in plaats van Vercel. Alles wat telt (wat echt gebruik is, het vangnet, sessies)
+draait in de browser met precies dezelfde code als voorheen. De server (map `php/`) doet alleen wat geheim moet blijven:
 
-## Eenmalig instellen (eigenaar, ±20 minuten)
+| Bestand | Wat |
+|---|---|
+| `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles, 2 min bewaard) |
+| `api/lists.php` | welke adressen op de 18+/datinglijst staan (lijsten per vakje in `api/_private/lists/`) |
+| `api/login.php` | inloggen (cookie 180 dagen, zelfde handtekening als vroeger; ook basic-auth voor scripts) |
+| `api/setup.php` | eenmalig: NextDNS-sleutel, profiel-ID en wachtwoord invullen; daarna dicht |
+| `api/_private/` | instellingen en lijsten, via `.htaccess` nooit van buitenaf te openen |
 
-1. **VPS bij Strato.** Een gewoon webhostingpakket (alleen PHP) werkt niet. Bestel de kleinste *Linux VPS* met
-   **Ubuntu 24.04** en noteer het **IP-adres** en het root-wachtwoord dat Strato geeft.
-2. **Domein naar de server.** In Strato bij *Domeinen → pichya.nl → DNS-instellingen*: zet het **A-record** van
-   `pichya.nl` én `www.pichya.nl` op het IP-adres van de VPS. (Het kan tot een uur duren voor dit overal werkt.)
-3. **Installatie op de server.** Log in op de VPS (in Strato via de webconsole, of met `ssh root@IP-ADRES`) en plak:
+## Live zetten
+Elke wijziging op `main` gaat via GitHub Actions ("Live zetten op Strato", `.github/workflows/strato.yml`) met SFTP naar
+de map uit `deploy/strato.json`, en daarna wordt gecontroleerd dat pichya.nl werkt en `_private` dicht is.
+Nodig in GitHub: het geheim `STRATO_SFTP_PASSWORD`. Instellingen op de server (`config.php`) worden nooit overschreven.
 
-       curl -fsSL https://raw.githubusercontent.com/Dadntiney/Klaro/main/deploy/setup-strato.sh | bash -s -- pichya.nl
+## Eenmalig (eigenaar)
+1. GitHub → Settings → Secrets and variables → Actions → New repository secret: `STRATO_SFTP_PASSWORD` = het SFTP-wachtwoord.
+2. Na de eerste upload: open https://pichya.nl/api/setup.php en vul de NextDNS API-sleutel, het profiel-ID en een nieuw
+   inlogwachtwoord in. Daarna is die pagina dicht.
 
-4. **Sleutel voor automatisch live zetten.** Plak op de server, regel voor regel:
-
-       ssh-keygen -t ed25519 -f /root/klaro-deploy -N "" -C klaro-deploy
-       cat /root/klaro-deploy.pub >> /home/klaro/.ssh/authorized_keys
-       chown klaro:klaro /home/klaro/.ssh/authorized_keys && chmod 600 /home/klaro/.ssh/authorized_keys
-       cat /root/klaro-deploy
-
-   Kopieer wat het laatste commando toont (van `-----BEGIN` t/m `END ... KEY-----`). Daarna: `rm /root/klaro-deploy`.
-5. **Geheimen in GitHub.** Op github.com → *Dadntiney/Klaro → Settings → Secrets and variables → Actions →
-   New repository secret*, vijf keer:
-
-   | Naam | Waarde |
-   |---|---|
-   | `STRATO_HOST` | het IP-adres van de VPS |
-   | `STRATO_SSH_KEY` | de sleutel uit stap 4 |
-   | `NEXTDNS_API_KEY` | API-sleutel uit NextDNS (*Account → API*) |
-   | `NEXTDNS_PROFILE_ID` | de profiel-ID (staat in het adres van my.nextdns.io, bijv. `abc123`) |
-   | `APP_PASSWORD` | het inlogwachtwoord voor Klaro (kies een nieuw, sterk wachtwoord) |
-
-6. **Starten.** GitHub → *Actions → Live zetten op Strato → Run workflow*. Na ±3 minuten werkt https://pichya.nl.
-
-## Daarna
-- Elke wijziging op `main` gaat vanzelf live; de laatste stap controleert dat pichya.nl reageert.
-- Server herstart? Klaro start vanzelf weer op. Https-certificaat wordt automatisch verlengd (Caddy).
-- Logboek van de server: `journalctl -u klaro -n 100` (als root op de VPS).
+## Zelf controleren
+`KLARO_PW=... node --experimental-strip-types scripts/overzicht.ts > overzicht.json` geeft het overzicht zoals de pagina het
+berekent; daarna `scripts/referentie.ts` en `scripts/gemist.ts` erop.

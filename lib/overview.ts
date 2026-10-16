@@ -1,20 +1,41 @@
-import { NextResponse } from "next/server";
-import { detectColumns, extractHost, parseCsv } from "@/lib/parse";
-import { isPlainSite } from "@/lib/system";
-import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "@/lib/mail";
-import { FG_RULES, TV_APPS, classify, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "@/lib/sites";
-import { anonId, deviceType, labelDevices } from "@/lib/names";
-import { MOMENT, OPEN_BURST, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "@/lib/sessions";
-import { categoryOf } from "@/lib/categories";
-import { gapP95 } from "@/lib/devstats";
-import { suspicion } from "@/lib/suspect";
-import { analyzeNetwork, type AwayInfo, type NetRow } from "@/lib/network";
-import { autoRefreshing, nextdnsError, windowStart } from "@/lib/nextdns";
-import { anchorOf, chainTimes, companionFor, COMPANIONS } from "@/lib/companion";
-import { isVideoOnlyClip, isYouTubeAppHost } from "@/lib/clip";
+import { detectColumns, extractHost, parseCsv } from "./parse.ts";
+import { isPlainSite } from "./system.ts";
+import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
+import { FG_RULES, TV_APPS, classify, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { anonId, deviceType, labelDevices } from "./names.ts";
+import { MOMENT, OPEN_BURST, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
+import { categoryOf } from "./categories.ts";
+import { gapP95 } from "./devstats.ts";
+import { suspicion } from "./suspect.ts";
+import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
+import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
+import { anchorOf, chainTimes, companionFor, COMPANIONS } from "./companion.ts";
+import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
+import { prepareLists } from "./adultlist.ts";
 
-export const maxDuration = 60;
-export const dynamic = "force-dynamic";
+/** Antwoord van NextDNS (of de eigen doorgeefserver): genoeg van `Response` voor wat hier nodig is. */
+export interface NDResponse {
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+  json(): Promise<unknown>;
+}
+
+/** Hoe de logs bij NextDNS worden opgehaald: rechtstreeks met de sleutel (server, scripts) of via de eigen server (browser). */
+export interface NextDNSClient {
+  /** GET /profiles/{id}/logs?{query} */
+  logs(query: string, timeoutMs: number): Promise<NDResponse>;
+  /** GET /profiles/{id}/logs/download (alle opgeslagen logs als CSV) */
+  download(timeoutMs: number): Promise<NDResponse>;
+}
+
+/** Rechtstreeks bij NextDNS (Node: scripts en tests). */
+export function directClient(key: string, profile: string): NextDNSClient {
+  const base = `https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs`;
+  const get = (url: string, ms: number) => fetch(url, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", redirect: "follow", signal: AbortSignal.timeout(ms) });
+  return { logs: (q, ms) => get(`${base}?${q}`, ms), download: (ms) => get(`${base}/download`, ms) };
+}
+
 
 const MAX_GROUPS = 15000;
 const DAY = 86_400_000;
@@ -80,9 +101,6 @@ const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }
 const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Amsterdam" });
 const hourOf = (t: number) => parseInt(hourFmt.format(t), 10) % 24;
 
-// Het samenstellen van de download bij NextDNS is traag; hergebruik het resultaat kort (de live-route vult het aan).
-let cache: { at: number; body: unknown } | null = null;
-const CACHE_MS = 120_000;
 
 /** Dichtstbijzijnde index in een gesorteerde lijst tijdstippen. */
 function nearestIdx(sorted: number[], t: number): number {
@@ -107,18 +125,17 @@ function oldestFirst(rows: string[][]): string[][] {
 }
 
 /** Alleen de logs van vandaag via de gewone log-endpoint (pagina's van 1000). Veel sneller dan de volledige download, maar geeft geen geschiedenis. */
-async function fetchToday(profile: string, key: string, hours = 0): Promise<{ rows: string[][]; cutAt?: number } | { error: string; status: number }> {
+export async function fetchToday(client: NextDNSClient, hours = 0): Promise<{ rows: string[][]; cutAt?: number } | { error: string; status: number }> {
   const from = windowStart(hours);
-  const base = `https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs`;
   const out: string[][] = [TODAY_HEADER];
   let cursor = "";
   const deadline = Date.now() + 40_000;
   let oldest = Infinity;
   for (let page = 0; page < 40 && Date.now() < deadline; page++) {
-    let res: Response;
+    let res: NDResponse;
     try {
       // Elke pagina hooguit 15 sec.: één hangend antwoord mag het geheel niet laten vastlopen.
-      res = await fetch(`${base}?from=${from}&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", signal: AbortSignal.timeout(Math.max(1000, Math.min(15_000, deadline - Date.now()))) });
+      res = await client.logs(`from=${from}&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`, Math.max(1000, Math.min(15_000, deadline - Date.now())));
     } catch {
       return { error: "NextDNS is niet bereikbaar.", status: 502 };
     }
@@ -143,70 +160,44 @@ async function fetchToday(profile: string, key: string, hours = 0): Promise<{ ro
 /** Social-apps waarin advertenties en links staan die de app alvast "aanklopt". */
 const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net"]);
 
-// Komen er tegelijk meer verzoeken voor alles binnen (meerdere telefoons, of de maandelijkse controle), dan één keer ophalen.
-let inflight: Promise<Response> | null = null;
-
-export async function GET(req: Request) {
-  // Eerst de instellingen controleren, ook vóór de bewaarde gegevens: zonder wachtwoord nooit logs tonen.
-  if (!process.env.NEXTDNS_API_KEY || !process.env.NEXTDNS_PROFILE_ID || !process.env.APP_PASSWORD) return build(req);
-  if (new URL(req.url).searchParams.get("scope") === "today") return build(req);
-  if (cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
-  if (!inflight) inflight = build(req).finally(() => { inflight = null; });
-  return (await inflight).clone();
-}
-
-async function build(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const todayOnly = url.searchParams.get("scope") === "today";
-  const hours = Math.min(24, Math.max(0, Number(url.searchParams.get("hours")) || 0));
-  const key = process.env.NEXTDNS_API_KEY;
-  const profile = process.env.NEXTDNS_PROFILE_ID;
-  if (!key || !profile) {
-    return NextResponse.json({ error: "NEXTDNS_API_KEY en NEXTDNS_PROFILE_ID zijn niet ingesteld in Vercel." }, { status: 503 });
-  }
-  // Echte DNS-gegevens nooit publiek: zonder wachtwoord weigeren we.
-  if (!process.env.APP_PASSWORD) {
-    return NextResponse.json({ error: "Stel eerst APP_PASSWORD in in Vercel, zodat je logs niet publiek zijn." }, { status: 503 });
-  }
-
-  if (!todayOnly && cache && Date.now() - cache.at < CACHE_MS) return NextResponse.json(cache.body);
+/** Het overzicht van alle (of alleen vandaag de) logs: precies dezelfde berekening op de server, in scripts en in de browser. */
+export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const todayOnly = opts.todayOnly;
+  const hours = Math.min(24, Math.max(0, Number(opts.hours) || 0));
 
   let rows: string[][];
   let cutAt: number | undefined;
   if (todayOnly) {
     const t0 = Date.now();
-    const r = await fetchToday(profile, key, hours);
-    if ("error" in r) return NextResponse.json({ error: r.error }, { status: r.status });
+    const r = await fetchToday(client, hours);
+    if ("error" in r) return ({ status: r.status, body: { error: r.error } });
     rows = r.rows;
     cutAt = r.cutAt;
     console.log(`scope=today: ${rows.length - 1} regels in ${Date.now() - t0} ms${cutAt ? " (niet compleet)" : ""}`);
   } else {
   // De download-endpoint accepteert geen filters (alleen X-Api-Key): we krijgen alle opgeslagen logs.
-  let res: Response;
+  let res: NDResponse;
   try {
-    res = await fetch(`https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs/download`, {
-      headers: { "X-Api-Key": key.trim() },
-      redirect: "follow",
-      cache: "no-store",
-      signal: AbortSignal.timeout(50_000),
-    });
+    res = await client.download(50_000);
   } catch {
-    return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
+    return ({ status: 502, body: { error: "NextDNS is niet bereikbaar." } });
   }
-  if (!res.ok) return NextResponse.json({ error: nextdnsError(res.status, await res.text().catch(() => "")) }, { status: 502 });
+  if (!res.ok) return ({ status: 502, body: { error: nextdnsError(res.status, await res.text().catch(() => "")) } });
 
   try {
     rows = parseCsv(await res.text());
   } catch {
-    return NextResponse.json({ error: "NextDNS is niet bereikbaar." }, { status: 502 });
+    return ({ status: 502, body: { error: "NextDNS is niet bereikbaar." } });
   }
   }
-  if (rows.length < 2) return NextResponse.json({ groups: [], devices: [], total: 0, insights: { payments: [], trackers: [] } });
+  if (rows.length < 2) return ({ status: 200, body: { groups: [], devices: [], total: 0, insights: { payments: [], trackers: [] } } });
   const [header, ...body] = rows;
   const col = (name: string) => header.findIndex((h) => h.trim().toLowerCase() === name);
   const tCol = col("timestamp");
   const hostCol = col("domain") >= 0 ? col("domain") : (detectColumns(header, body)?.hostCol ?? -1);
-  if (hostCol < 0) return NextResponse.json({ error: "Geen domeinkolom in de NextDNS-logs gevonden." }, { status: 502 });
+  if (hostCol < 0) return ({ status: 502, body: { error: "Geen domeinkolom in de NextDNS-logs gevonden." } });
+  // In de browser: eerst bij de eigen server navragen welke adressen op de 18+/dating-lijst staan.
+  await prepareLists(body.map((r) => extractHost(r[hostCol] ?? "")).filter((h): h is string => !!h));
   const nameCol = col("device_name");
   const idCol = col("device_id");
   const modelCol = col("device_model");
@@ -628,6 +619,5 @@ async function build(req: Request): Promise<Response> {
     partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren
   };
-  if (!todayOnly) cache = { at: Date.now(), body: result };
-  return NextResponse.json(result);
+  return ({ status: 200, body: result });
 }

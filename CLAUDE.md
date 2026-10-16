@@ -1,6 +1,6 @@
 # Klaro — vaste projectregels
 
-Klaro (live: https://pichya.nl op een eigen Strato-server, deploy vanaf `main` via GitHub Actions, zie `docs/strato.md`; voorheen csva.vercel.app) laat zien wat de gezinsapparaten **echt** gebruiken,
+Klaro (live: https://pichya.nl op Strato-webhosting, deploy vanaf `main` via GitHub Actions + SFTP, zie `docs/strato.md`; voorheen csva.vercel.app) laat zien wat de gezinsapparaten **echt** gebruiken,
 uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Nederlands.
 
 ## Doelen (vast, in deze volgorde bij conflicten)
@@ -16,7 +16,8 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
 - Laden: eerst het laatste 1,5 uur, dan heel vandaag (`/logs`), dan alles (CSV-download, 2 min cache). Live: elke 1,5 s.
   Elke 5 min volledig opnieuw berekend. Niet vaker ophalen: NextDNS geeft dan 429.
 - Herkenning: `lib/sites.ts` (apps, achtergrond, vangnet), `lib/mail.ts` (nieuwsbrieven, klikken), `lib/sessions.ts`
-  (sessies, `isHuman`), server-regels in `app/api/nextdns/route.ts`, weergave-regels in `app/page.tsx`.
+  (sessies, `isHuman`), overzicht-regels in `lib/overview.ts`, weergave-regels in `app/page.tsx`. Dit draait allemaal in de
+  browser (`lib/browser-api.ts`); de PHP-server (`php/api`) bewaart alleen de geheimen en de 18+/datinglijsten.
 - Tellen in **momenten** (alles van een site binnen 1,5 s = één moment), zelfde telling live en op de server.
 
 ## Grenzen van DNS (eerlijk blijven)

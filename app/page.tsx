@@ -7,6 +7,7 @@ import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
+import { apiFetch } from "@/lib/browser-api";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
@@ -267,7 +268,7 @@ export default function Home() {
       setState("error");
       setFull(true);
     };
-    fetch("/api/nextdns?scope=today&hours=1.5")
+    apiFetch("/api/nextdns?scope=today&hours=1.5")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || fullDone || todayShown) return;
@@ -275,7 +276,7 @@ export default function Home() {
         apply(data, false);
       })
       .catch(() => {});
-    fetch("/api/nextdns?scope=today")
+    apiFetch("/api/nextdns?scope=today")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || fullDone) return;
@@ -284,7 +285,7 @@ export default function Home() {
       })
       .catch(() => {})
       .finally(() => { todayDone = true; settle(); });
-    fetch("/api/nextdns")
+    apiFetch("/api/nextdns")
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Ophalen mislukt");
@@ -453,7 +454,7 @@ export default function Home() {
   const poll = useCallback(async () => {
     try {
       // Na 10 sec. zonder antwoord afbreken: anders blijft het live bijwerken stil hangen op één verzoek.
-      const res = await fetch(`/api/nextdns/live?since=${lastSeen.current}`, { signal: AbortSignal.timeout(10_000) });
+      const res = await apiFetch(`/api/nextdns/live?since=${lastSeen.current}`, { signal: AbortSignal.timeout(10_000) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Live mislukt");
       setLive("ok");
@@ -510,7 +511,7 @@ export default function Home() {
   const lastFull = useRef(Date.now());
   const refreshFull = useCallback(async () => {
     try {
-      const res = await fetch("/api/nextdns");
+      const res = await apiFetch("/api/nextdns");
       const data = await res.json();
       if (!res.ok) return;
       lastFull.current = Date.now();
@@ -677,7 +678,7 @@ export default function Home() {
     const to = Math.max(...rss.map((x) => x.e)) + 30_000;
     const devId = Object.entries(deviceMap.current).find(([, label]) => label === g.dev)?.[0] ?? "";
     setDetails((d) => ({ ...d, [rk]: { state: "loading" } }));
-    fetch(`/api/nextdns/detail?site=${encodeURIComponent(g.site)}&dev=${encodeURIComponent(devId)}&from=${from}&to=${to}`)
+    apiFetch(`/api/nextdns/detail?site=${encodeURIComponent(g.site)}&dev=${encodeURIComponent(devId)}&from=${from}&to=${to}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "mislukt");
