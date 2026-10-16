@@ -80,6 +80,26 @@ function CalendarIcon() {
   );
 }
 
+/**
+ * Van wie is een adres, voor het logo (zoals NextDNS het toont): technische adressen van grote bedrijven krijgen het logo van
+ * de eigenaar (aaplimg.com → Apple, googleapis.com → Google). Anders het logo van de app/site waar Klaro het adres bij zet
+ * (maps.meteoplaza.com → Buienalarm), en anders van het adres zelf.
+ */
+const LOGO_OWNER: [RegExp, string][] = [
+  [/(^|\.)(aaplimg\.com|apple-dns\.net|apple\.news|icloud-content\.com|mzstatic\.com|cdn-apple\.com)$|push-apple\.com\.akadns\.net$|apple.*\.akadns\.net$/, "apple.com"],
+  [/(^|\.)(googleapis\.com|gstatic\.com|gvt[12]\.com|googleusercontent\.com|1e100\.net|app-measurement\.com|google-analytics\.com|googletagmanager\.com|googlesyndication\.com|doubleclick\.net|app-ads-services\.com|app-analytics-services\.com|crashlytics\.com)$/, "google.com"],
+  [/(^|\.)(akamai\.net|akamaiedge\.net|akamaihd\.net|akamaized\.net|akadns\.net|edgekey\.net|edgesuite\.net|akahost\.net)$/, "akamai.com"],
+  [/(^|\.)(cloudfront\.net|amazonaws\.com)$/, "aws.amazon.com"],
+  [/(^|\.)(fbcdn\.net|facebook\.net)$/, "facebook.com"],
+  [/(^|\.)(msedge\.net|azureedge\.net|azurefd\.net|trafficmanager\.net|office\.net|cloudapp\.azure\.com|msftauth\.net|msauth\.net)$/, "microsoft.com"],
+  [/(^|\.)(fastly\.net|fastlylb\.net)$/, "fastly.com"],
+  [/(^|\.)(cloudflare\.net|cloudflare-dns\.com)$/, "cloudflare.com"],
+];
+function logoDomain(host: string, base: string, icon?: string): string {
+  for (const [re, owner] of LOGO_OWNER) if (re.test(host)) return owner;
+  return icon && icon !== base && icon.includes(".") ? icon : base;
+}
+
 /** Klein logo voor de NextDNS-weergave; zonder logo een rustig bolletje in plaats van een letter. */
 function MiniFav({ domain }: { domain: string }) {
   const [ok, setOk] = useState<boolean | null>(null);
@@ -213,7 +233,7 @@ function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; dev
               {newDay && <div className="hourmark">{dayLabel(day)}</div>}
               <div className={"rawrow" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "") + (isOpen ? " open" : "")}>
                 <button type="button" className="rawline" onClick={() => setOpenKey(isOpen ? null : key)} aria-expanded={isOpen}>
-                  <MiniFav domain={base} />
+                  <MiniFav domain={logoDomain(host, base, e.icon)} />
                   <span className="rawhost"><span className="muted">{sub}</span>{base}</span>
                   {!device && <span className="rawdev" title={dev}><DevIcon name={dev} /></span>}
                   <span className="rawtime">{timeSecFmt.format(e.t)}</span>
