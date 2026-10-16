@@ -22,14 +22,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Testen en bouwen
         run: |
-          npm ci
-          npm test
+          # Sneller: het uploadprogramma installeren en de tests draaien terwijl er gebouwd wordt (alles moet slagen).
+          (sudo apt-get install -y lftp >/dev/null 2>&1) & APT=$!
+          npm ci --prefer-offline --no-audit --no-fund
+          npm test > /tmp/test.log 2>&1 & T=$!
+          npx tsc --noEmit & C=$!
           php tests/sessies.php
-          npx tsc --noEmit
           npx next build
           node scripts/build-site.mjs
+          wait $T || { cat /tmp/test.log; exit 1; }
+          wait $C
+          wait $APT
           test -f out/index.html && test -f out/login.html && test -f out/api/nd.php && test -f out/api/_private/.htaccess
       - name: Geheim aanwezig?
         id: s
@@ -45,7 +51,7 @@ jobs:
           LFTP_PASSWORD: ${{ secrets.STRATO_SFTP_PASSWORD }}
           DIR: ${{ steps.s.outputs.dir }}
         run: |
-          sudo apt-get install -y lftp >/dev/null
+          command -v lftp >/dev/null || sudo apt-get install -y lftp >/dev/null
           L="set sftp:auto-confirm yes; set net:max-retries 3; set net:timeout 30; open --env-password -u $SFTP_USER sftp://$SFTP_HOST"
           if [ -z "$DIR" ]; then
             echo "Doelmap nog niet ingesteld. Inhoud van de hosting:"
@@ -53,8 +59,9 @@ jobs:
             exit 0
           fi
           # Instellingen (config.php) en tijdelijke bestanden op de server nooit overschrijven of weggooien.
-          # Sneller: _next en de lijsten niet dubbel, en de lijsten (20 MB) alleen opnieuw als een bestand echt veranderd is.
-          lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --parallel=4 -x '^_next/' -x '^api/_private/lists/' --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms --parallel=4 out/_next/ $DIR/_next/; mirror -R --delete --no-perms --parallel=4 --ignore-time out/api/_private/lists/ $DIR/api/_private/lists/"
+          # Sneller: _next en de lijsten niet dubbel; _next en de lijsten alleen opnieuw als een bestand echt anders is (_next heeft
+          # namen met een vingerafdruk van de inhoud, dus gelijke naam en grootte = gelijk bestand); 8 bestanden tegelijk.
+          lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --parallel=8 -x '^_next/' -x '^api/_private/lists/' --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms --parallel=8 --ignore-time out/_next/ $DIR/_next/; mirror -R --delete --no-perms --parallel=4 --ignore-time out/api/_private/lists/ $DIR/api/_private/lists/"
       - name: Oude kopie in de hoofdmap opruimen (eenmalig; alleen bekende Klaro-bestanden, nooit de map klaro)
         if: steps.s.outputs.go == 'yes' && steps.s.outputs.cleanup == 'yes'
         env:
