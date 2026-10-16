@@ -17,6 +17,9 @@ function nd_get(string $url, string $key, int $timeout): array {
   return [$status, $body === false ? '{"error":"NextDNS is niet bereikbaar."}' : $body];
 }
 
+
+require __DIR__ . '/slim.php';
+
 if (isset($_GET['download'])) {
   // Alles ophalen is traag en NextDNS remt bij te vaak vragen: 2 minuten hergebruiken (meerdere toestellen tegelijk).
   $cache = PRIV . '/download.csv';
@@ -32,9 +35,14 @@ if (isset($_GET['download'])) {
     }
     flock($lock, LOCK_UN);
   }
-  header('Content-Type: text/csv; charset=utf-8');
+  // Voor de telefoon licht maken: alleen de kolommen die Klaro gebruikt, als tabel zonder aanhalingstekens (TSV), en dubbele
+  // opvragingen (A/AAAA/HTTPS van hetzelfde adres op hetzelfde apparaat binnen 1,5 s) alvast weg. Klaro telt die toch als één
+  // (lib/overview.ts doet precies hetzelfde), dus de uitkomst blijft gelijk; het scheelt de helft tot driekwart van het geheugen.
+  $slim = PRIV . '/download.tsv';
+  if (!is_file($slim) || filemtime($slim) < filemtime($cache)) slim_csv($cache, $slim . '.tmp') && rename($slim . '.tmp', $slim);
+  header('Content-Type: text/tab-separated-values; charset=utf-8');
   if (!ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
-  readfile($cache);
+  readfile(is_file($slim) ? $slim : $cache);
   exit;
 }
 

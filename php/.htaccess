@@ -26,6 +26,6 @@ Options -Indexes
   AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/plain
 </IfModule>
 # De pagina's zelf mogen niet uit de cache van tussenstations komen (altijd de nieuwste versie na een update).
-<FilesMatch "\.html$">
+<FilesMatch "(\.html|^overview-worker\.js)$">
   Header set Cache-Control "no-cache"
 </FilesMatch>

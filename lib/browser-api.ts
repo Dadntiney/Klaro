@@ -1,7 +1,7 @@
-import { buildOverview, type NDResponse, type NextDNSClient } from "./overview.ts";
+import { buildOverview } from "./overview.ts";
+import { php, serverLists } from "./php-client.ts";
 import { liveEvents } from "./live.ts";
 import { siteDetail } from "./detail.ts";
-import { setRemoteLists } from "./adultlist.ts";
 
 /**
  * Klaro in de browser (eigen hosting met PHP): de pagina roept dezelfde adressen aan als vroeger (/api/nextdns, /live,
@@ -9,22 +9,29 @@ import { setRemoteLists } from "./adultlist.ts";
  * moet blijven: de NextDNS-sleutel, het wachtwoord en de grote 18+/datinglijsten.
  */
 
-/** Niet ingelogd (of uitgelogd na een nieuw wachtwoord): naar het inlogscherm. */
-function checkLogin(res: Response): Response {
-  if (res.status === 401 && typeof location !== "undefined" && !location.pathname.startsWith("/login")) location.href = "/login";
-  return res;
+serverLists();
+
+// Het zware rekenwerk (alle dagen) in een worker; lukt dat niet (oude browser), dan gewoon hier.
+let worker: Worker | null = null;
+let nextId = 1;
+const waiting = new Map<number, (r: { status: number; body: unknown }) => void>();
+function inWorker(opts: { todayOnly: boolean; hours?: number }): Promise<{ status: number; body: unknown }> {
+  try {
+    if (!worker) {
+      worker = new Worker("/overview-worker.js");
+      worker.onmessage = (e: MessageEvent<{ id: number; status: number; body: unknown }>) => { waiting.get(e.data.id)?.(e.data); waiting.delete(e.data.id); };
+      worker.onerror = () => { for (const [, done] of waiting) done({ status: 0, body: null }); waiting.clear(); worker = null; };
+    }
+    const id = nextId++;
+    return new Promise((done) => { waiting.set(id, done); worker!.postMessage({ id, ...opts }); }).then((r) => {
+      const res = r as { status: number; body: unknown };
+      if (res.status === 401 && typeof location !== "undefined") location.href = "/login";
+      return res.status === 0 ? buildOverview(php, opts) : res;
+    });
+  } catch {
+    return buildOverview(php, opts);
+  }
 }
-
-const php: NextDNSClient = {
-  logs: async (q, ms) => checkLogin(await fetch(`/api/nd.php?q=${encodeURIComponent(q)}`, { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(ms) })) as NDResponse,
-  download: async (ms) => checkLogin(await fetch("/api/nd.php?download=1", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(Math.max(ms, 90_000)) })) as NDResponse,
-};
-
-setRemoteLists(async (hosts) => {
-  const res = checkLogin(await fetch("/api/lists.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hosts }), credentials: "same-origin" }));
-  if (!res.ok) throw new Error("lijsten niet bereikbaar");
-  return (await res.json()) as { adult: string[]; dating: string[] };
-});
 
 // Alles ophalen is traag (grote download): kort hergebruiken, en tegelijke aanvragen samennemen.
 let full: { at: number; status: number; body: unknown } | null = null;
@@ -42,7 +49,7 @@ export async function apiFetch(path: string, init?: { signal?: AbortSignal }): P
     if (url.pathname === "/api/nextdns") {
       if (url.searchParams.get("scope") === "today") return answer(await buildOverview(php, { todayOnly: true, hours: Number(url.searchParams.get("hours")) || 0 }));
       if (full && Date.now() - full.at < 120_000) return answer(full);
-      if (!fullInflight) fullInflight = buildOverview(php, { todayOnly: false }).finally(() => { fullInflight = null; });
+      if (!fullInflight) fullInflight = inWorker({ todayOnly: false }).finally(() => { fullInflight = null; });
       const r = await fullInflight;
       if (r.status === 200) full = { at: Date.now(), ...r };
       return answer(r);

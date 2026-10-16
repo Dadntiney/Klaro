@@ -3,9 +3,12 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
 import crypto from "node:crypto";
+import { buildSync } from "esbuild";
 
 if (!fs.existsSync("out/index.html")) throw new Error("Eerst `npx next build` (map out/ ontbreekt)");
 fs.cpSync("php", "out", { recursive: true });
+// Het zware rekenwerk (alle dagen) draait in een aparte achtergrond-thread; next build bundelt die niet mee.
+buildSync({ entryPoints: ["lib/overview.worker.ts"], bundle: true, minify: true, format: "iife", target: "es2020", outfile: "out/overview-worker.js" });
 for (const name of ["adult", "dating"]) {
   const domains = zlib.gunzipSync(fs.readFileSync(`data/${name}-domains.txt.gz`)).toString("utf8").split("\n").filter(Boolean);
   const buckets = new Map();
