@@ -25,6 +25,17 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    - **Getoond, maar elke keer vlak na een andere pagina**: misschien een onderdeel van die pagina (widget, zustersite).
    - **Onbekend met veel verkeer**: misschien een app die we nog niet kennen (zoals een spel op de iPad).
    - **Chip en rij nagespeeld**: elke 10 minuten van het laatste etmaal; moeten steeds hetzelfde zeggen.
+   - **Ritme**: een site die kort en regelmatig terugkomt (open tabblad, widget; zoals Canva op de MacBook).
+   - **Veel korte rijen op één dag**: achtergrond of echt kort gebruik? (WhatsApp kort openen is normaal.)
+   - **App misschien geopend maar niet getoond**: veel adressen van een app binnen 5 s zonder rij (gemist openen?).
+   Regels met `*` zijn van de laatste 3 dagen: die eerst. Elk punt nalopen in de ruwe regels; is het niet zeker uit de
+   gegevens, dan niets veranderen maar de eigenaar één concrete vraag stellen ("Is op 16 okt om 08:41 op de iPad Netflix
+   gekeken?"). Het antwoord wordt een referentiegeval.
+
+   Open vragen (wacht op antwoord van de eigenaar):
+   - Netflix op de iPad wordt ongeveer elk uur op de achtergrond wakker (push., ios.prod., logs., www., zonder beeld) en
+     geeft dan korte rijen. Een regel "alleen met plaatjes/video" haalt die weg, maar kort ook lange kijksessies in
+     (tijdens kijken komen er soms geen nieuwe opvragingen). Eerst bevestigen wat echt kijken was.
 
    Al nagelopen en in orde (niet opnieuw uitzoeken, tenzij het verandert): `k8s-sdkvpnde…amazonaws.com` (VPN-check in de
    Vinted-app, geen VPN), app-analytics-services.com, media-amazon.com (plaatjes in de Amazon-app), gravatar.com

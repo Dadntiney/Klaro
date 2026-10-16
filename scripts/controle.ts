@@ -7,6 +7,10 @@
  *   4. Getoonde sites die elke keer binnen 5 s na een andere pagina opduiken (misschien een onderdeel van die pagina).
  *   5. Onbekende adressen met veel verkeer (misschien een app die we nog niet kennen, zoals een spel).
  *   6. Chip en rij nagespeeld: elke 10 minuten van het laatste etmaal, alleen met de gegevens tot dat moment.
+ *   7. Ritme: een site die kort en regelmatig terugkomt (open tabblad, widget).
+ *   8. Veel korte rijen van één site op één dag.
+ *   9. Apps die misschien geopend zijn maar niet getoond (veel adressen van de app binnen 5 s).
+ * Met * gemarkeerd: de laatste 3 dagen (daar heeft nog niemand naar gekeken).
  * Alles wat hier verschijnt: nalopen in de ruwe regels, en alleen algemeen oplossen (met doorrekenen en tests).
  * Gebruik: KLARO_PW=... node --experimental-strip-types scripts/controle.ts [--bestand download.tsv] [--uren 24]
  * Toont nooit echte apparaatnamen (alleen de labels van Klaro) en geen lokale namen uit het thuisnetwerk.
@@ -112,6 +116,54 @@ for (const g of ov.groups) {
 }
 section("Onbekend met veel verkeer (een app die we nog niet kennen?)", [...unk].filter(([, a]) => a.n >= 20).sort((p, q) => q[1].n - p[1].n).slice(0, 15).map(([s, a]) => `${s}  ${a.n}x op ${a.days.size} dagen, ${[...a.devs].join("+")}`),
   "Niets opvallends.");
+
+// 7-9. Patronen in wat getoond wordt (zelf leren van de dagen, zonder dat iemand schermafbeeldingen hoeft na te kijken).
+const shownSs = (g: (typeof ov.groups)[number]) => g.ss.filter((x) => isHuman(x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site)));
+const recent = new Set([...days].sort().slice(-3)); // vooral de laatste dagen: daar is nog niets aan gedaan
+
+// 7. Ritme: een site die op één dag minstens 4 keer kort terugkomt met steeds ongeveer even lange pauzes (open tabblad, widget).
+const rhythm: string[] = [];
+for (const g of ov.groups) {
+  if (!g.main || g.bg || g.flag || isTv(g.dev) || ALWAYS_SHOW.has(g.site)) continue;
+  const xs = shownSs(g).filter((x) => x.e - x.s < 120_000).sort((a, b) => a.s - b.s);
+  if (xs.length < 4) continue;
+  const gaps = xs.slice(1).map((x, i) => x.s - xs[i].s).filter((d) => d < 3_600_000);
+  if (gaps.length < 3) continue;
+  const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  const sd = Math.sqrt(gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / gaps.length);
+  if (sd / mean < 0.35) rhythm.push(`${recent.has(g.d) ? "* " : "  "}${g.d} ${g.dev} ${g.site}  ${xs.length} korte rijen, elke ~${Math.round(mean / 60_000)} min`);
+}
+section("Ritme: kort en regelmatig terug (open tabblad of widget?)", rhythm.sort().reverse(), "Niets.");
+
+// 8. Veel korte losse rijen van één site op één dag (minstens 5, elk korter dan 30 s): achtergrond of een echt bezoek?
+const shorts: string[] = [];
+for (const g of ov.groups) {
+  if (!g.main || g.bg || g.flag || isTv(g.dev) || ALWAYS_SHOW.has(g.site) || SEARCH.has(g.site)) continue;
+  const xs = shownSs(g).filter((x) => x.e - x.s < 30_000);
+  if (xs.length >= 5) shorts.push(`${recent.has(g.d) ? "* " : "  "}${g.d} ${g.dev} ${g.site}  ${xs.length} korte rijen (${xs.map((x) => hm(x.s).slice(-5)).slice(0, 6).join(", ")}${xs.length > 6 ? ", ..." : ""})`);
+}
+section("Veel korte rijen op één dag (nalopen)", shorts.sort().reverse().slice(0, 30), "Niets.");
+
+// 9. App geopend maar niet getoond? Veel verschillende adressen van een app binnen 5 s (zo opent een app), zonder zichtbare rij.
+const missed: string[] = [];
+const byDevApp = new Map<string, { t: number; h: string }[]>();
+for (const r of rows) { const c = classify(r.h); if (!c.main || c.bg || c.flag || isPlainSite(c) || r.blocked) continue; const k = label(r.id) + "|" + c.site; (byDevApp.get(k) ?? byDevApp.set(k, []).get(k)!).push({ t: r.t, h: r.h }); }
+const shownAt = new Map<string, Session[]>();
+for (const g of ov.groups) (shownAt.get(g.dev + "|" + g.site) ?? shownAt.set(g.dev + "|" + g.site, []).get(g.dev + "|" + g.site)!).push(...shownSs(g));
+for (const [k, ev] of byDevApp) {
+  const [dev] = k.split("|");
+  if (isTv(dev)) continue;
+  let i = 0;
+  while (i < ev.length) {
+    let j = i; const hs = new Set<string>();
+    while (j < ev.length && ev[j].t - ev[i].t <= 5_000) { hs.add(ev[j].h); j++; }
+    const t = ev[i].t;
+    if (hs.size >= 5 && !(shownAt.get(k) ?? []).some((x) => t >= x.s - 120_000 && t <= x.e + 120_000))
+      missed.push(`${recent.has(new Date(t).toISOString().slice(0, 10)) ? "* " : "  "}${hm(t)} ${k.replace("|", " ")}  ${hs.size} adressen: ${[...hs].slice(0, 5).join(" ")}`);
+    i = j;
+  }
+}
+section("App misschien geopend maar niet getoond (veel adressen tegelijk)", missed.sort().reverse().slice(0, 30), "Niets.");
 
 // 6. Chip en rij nagespeeld
 const hours = Number(arg("--uren") ?? 24);
