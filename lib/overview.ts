@@ -3,7 +3,7 @@ import { isPlainSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
 import { FG_RULES, TV_APPS, classify, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
-import { MOMENT, OPEN_BURST, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
+import { MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
 import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
@@ -428,7 +428,11 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const inX = real.filter((t) => t >= x.s && t <= x.e);
         // Inhoud-momenten, of het aantal verschillende inhoud-adressen als dat meer is: een app die opent haalt in één
         // moment instellingen én plaatjes op (WhatsApp: graph + static); achtergrond raakt hooguit één zo'n adres. Zie OPEN_BURST.
-        const fgHosts = !OPEN_BURST.has(g.site) ? 0 : new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s && h.t <= x.e && fgHit(g.site, h.host)).map((h) => h.host)).size;
+        const sh = OPEN_BURST.has(g.site) ? (siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s && h.t <= x.e) : [];
+        const fgSet = new Set(sh.filter((h) => fgHit(g.site, h.host)).map((h) => h.host));
+        // De volledige opstart van de app (zie OPEN_START) telt ook als inhoud-adres: graph. ligt dan soms nog in het geheugen.
+        if (sh.some((h) => OPEN_START.every((re) => sh.some((o) => re.test(o.host) && Math.abs(o.t - h.t) <= 5_000)))) fgSet.add("(opstart)");
+        const fgHosts = fgSet.size;
         x.f = Math.max(moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e)), fgHosts);
         if (inX.length) { x.s = inX.reduce((a, b) => Math.min(a, b)); x.e = inX.reduce((a, b) => Math.max(a, b)); }
         // Op een tv telt kijken vanaf het afspelen (met 2 minuten om iets te kiezen), niet vanaf het beginscherm dat open stond.

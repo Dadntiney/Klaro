@@ -170,3 +170,18 @@ test("widget die zichzelf ververst: twee verversingen binnen 5 minuten zijn ook 
   assert.equal(vis[0].s, T0 + 3 * day + 120 * min);
   assert.equal(shown(o, "krant.nl").length, 1);
 });
+
+test("WhatsApp geopend terwijl graph. nog in het geheugen ligt: de volledige opstart (kale naam, api., g., static.) telt als openen", async () => {
+  const o = await overview([[0, "g.whatsapp.net"], [1_000, "whatsapp.com"], [2_500, "static.whatsapp.net"], [2_600, "mmx-ds.cdn.whatsapp.net"], [3_500, "api.whatsapp.net"]]);
+  assert.equal(shown(o, "whatsapp.com").length, 1);
+});
+
+test("geen vals WhatsApp: een binnenkomend bericht (api. + g. + plaatje, of zonder de kale naam) is geen openen", async () => {
+  const o = await overview([
+    [0, "api.whatsapp.net"], [500, "g.whatsapp.net"], [900, "mmx-ds.cdn.whatsapp.net"],
+    [600_000, "static.whatsapp.net"], [600_300, "mmx-ds.cdn.whatsapp.net"],
+    [1_200_000, "api.whatsapp.net"], [1_200_400, "g.whatsapp.net"], [1_201_000, "static.whatsapp.net"],
+    [1_800_000, "whatsapp.com"], [1_800_500, "api.whatsapp.net"], [1_801_000, "chat.cdn.whatsapp.net"],
+  ]);
+  assert.equal(shown(o, "whatsapp.com").length, 0);
+});

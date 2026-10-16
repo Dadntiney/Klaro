@@ -64,6 +64,11 @@ export function totalMinutes(times: number[]): number {
 // versturen). Alleen hier telt elk ander adres als extra teken van gebruik; bij Facebook/Instagram/YouTube doet
 // achtergrondverversen dat ook, daar zou het vals alarm geven (nagerekend over de hele CSV).
 export const OPEN_BURST = new Set(["whatsapp.com"]);
+/**
+ * WhatsApp opent met dit rijtje binnen 5 seconden: de kale naam, de server voor het account (api.), de chatverbinding (g.) en
+ * plaatjes (static.). Achtergrond (een binnenkomend bericht) haalt nooit alle vier: in drie weken alleen bij het openen.
+ */
+export const OPEN_START = [/^whatsapp\.com$/, /^api\.whatsapp\.net$/, /^g\.whatsapp\.net$/, /^static\.whatsapp\.net$/];
 
 /**
  * Voeg één nieuw tijdstip toe aan bestaande sessies (nieuwste eerst).
