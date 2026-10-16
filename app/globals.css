@@ -461,3 +461,12 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .item.nowrow .tstart { color:#16a34a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .item.nowrow .tstart { color:#4ade80; } }
 :root[data-theme="dark"] .item.nowrow .tstart { color:#4ade80; }
+/* Uurkopjes zonder tekst: de tijd staat al links. Alleen een iets duidelijkere lijn over de hele breedte tussen de uren. */
+.list > div > .hourmark { padding:6px 14px 2px; }
+.list > div > .hourmark span { display:none; }
+.list > div > .hourmark::after { opacity:1; background:color-mix(in srgb, var(--muted) 35%, var(--line)); }
+/* Chip van een toestel dat nu in gebruik is: icoon en tekst groen (geen rand, geen vulling). */
+.chip.act:not(.on), .chip.act:not(.on) .di { color:#15803d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip.act:not(.on), :root:not([data-theme="light"]) .chip.act:not(.on) .di { color:#4ade80; } }
+:root[data-theme="dark"] .chip.act:not(.on), :root[data-theme="dark"] .chip.act:not(.on) .di { color:#4ade80; }
+:root[data-theme="light"] .chip.act:not(.on), :root[data-theme="light"] .chip.act:not(.on) .di { color:#15803d; }
