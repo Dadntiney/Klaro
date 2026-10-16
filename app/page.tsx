@@ -1143,11 +1143,18 @@ export default function Home() {
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
+                  // Duur is het belangrijkste (waar ging de tijd heen): rechts groot. Daaronder klein wanneer het was.
+                  const mins = rss.reduce((n, x) => n + minutes(x), 0);
+                  const endT = t ? Math.max(t, ...rss.map((x) => x.e)) : 0;
+                  const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
+                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
+                  // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
+                  const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart ? " hourstart" : "")}>
                       {hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
-                        className={"item clickable" + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
+                        className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
                         role="button"
                         aria-expanded={isOpen}
@@ -1157,10 +1164,8 @@ export default function Home() {
                           <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
-                            const m = rss.reduce((n, x) => n + minutes(x), 0);
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
-                            if (m > 0) parts.push(<span key="m" className="mdur">{dur(m)}</span>);
                             if (rss.every((x) => x.uz)) parts.push(<span key="u" className="unsure">onzeker</span>);
                             if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
@@ -1171,14 +1176,10 @@ export default function Home() {
                         <div className="time">
                           {(() => {
                             if (!t) return <span className="tcol">–</span>;
-                            // Nog bezig = "nu" in groen, precies zo lang als de chip van het apparaat groen blijft (zie nowWindow); alleen bij echt gebruik; anders gerekend vanaf het begin, net als de volgorde.
-                            const end = Math.max(t, ...rss.map((x) => x.e));
-                            const span = `${timeFmt.format(t)}${end - t >= 60_000 ? `–${timeFmt.format(end)}` : ""}`;
-                            const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
-                            if ((g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s)) return <span className="tcol reltime nowtag" title={span}>nu</span>;
-                            const age = Math.floor((clock - t) / 60_000);
-                            if (age >= 0 && age < 30) return <span className="tcol reltime" title={span}>{age} min geleden</span>;
-                            return <span className="tcol" title={span}>{timeFmt.format(t)}</span>;
+                            const span = `${timeFmt.format(t)}${endT - t >= 60_000 ? `–${timeFmt.format(endT)}` : ""}`;
+                            const when = nowRow ? <><span className="pulse" aria-hidden />sinds {timeFmt.format(t)}</> : span;
+                            if (mins > 0 || nowRow) return <><span className={"tdur" + (nowRow ? " nowtag" : "")}>{mins > 0 ? dur(mins) : "nu"}</span><span className="twhen">{when}</span></>;
+                            return <span className="twhen solo">{timeFmt.format(t)}</span>;
                           })()}
                         </div>
                       </div>

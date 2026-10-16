@@ -431,3 +431,22 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .pulse::after { content:""; position:absolute; inset:0; border-radius:50%; background:#22c55e; animation:pulse 1.6s ease-out infinite; }
 @keyframes pulse { 0% { transform:scale(1); opacity:.8; } 100% { transform:scale(2.6); opacity:0; } }
 @media (prefers-reduced-motion: reduce) { .pulse::after { animation:none; } }
+/* Overzicht: waar ging de tijd heen. Rechts de duur groot, daaronder klein wanneer. Korte bezoeken lichter en lager. */
+.time { flex-direction:column; align-items:flex-end; justify-content:center; gap:1px; }
+.time .tdur { font-size:16px; font-weight:700; color:var(--fg); white-space:nowrap; }
+.time .twhen { display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:500; color:var(--muted); white-space:nowrap; }
+.time .twhen.solo { font-size:14px; }
+.time .tdur.nowtag { color:#16a34a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .time .tdur.nowtag { color:#4ade80; } }
+:root[data-theme="dark"] .time .tdur.nowtag { color:#4ade80; }
+.item.brief { min-height:44px; padding-top:6px; padding-bottom:6px; }
+.item.brief .fav { width:22px; height:22px; border-radius:6px; margin:0 3px; }
+.item.brief .fav.ph { font-size:11px; }
+.item.brief .name { font-weight:500; font-size:15px; color:color-mix(in srgb, var(--fg) 78%, var(--card)); }
+.item.brief .sub { font-size:12.5px; }
+.time .tdur { display:block; text-align:right; }
+.time .twhen { display:flex; justify-content:flex-end; }
+/* Kort bezoek op één regel: naam en apparaat naast elkaar */
+.item.brief .main { display:flex; align-items:baseline; gap:8px; min-width:0; }
+.item.brief .main .name { flex:0 1 auto; min-width:0; }
+.item.brief .main .sub { flex:0 1 auto; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
