@@ -52,7 +52,8 @@ jobs:
             exit 0
           fi
           # Instellingen (config.php) en tijdelijke bestanden op de server nooit overschrijven of weggooien.
-          lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms out/_next/ $DIR/_next/; mirror -R --delete --no-perms out/api/_private/lists/ $DIR/api/_private/lists/"
+          # Sneller: _next en de lijsten niet dubbel, en de lijsten (20 MB) alleen opnieuw als een bestand echt veranderd is.
+          lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --parallel=4 -x '^_next/' -x '^api/_private/lists/' --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms --parallel=4 out/_next/ $DIR/_next/; mirror -R --delete --no-perms --parallel=4 --ignore-time out/api/_private/lists/ $DIR/api/_private/lists/"
       - name: Oude kopie in de hoofdmap opruimen (eenmalig; alleen bekende Klaro-bestanden, nooit de map klaro)
         if: steps.s.outputs.go == 'yes' && steps.s.outputs.cleanup == 'yes'
         env:
