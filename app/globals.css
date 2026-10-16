@@ -450,3 +450,7 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .item.brief .main { display:flex; align-items:baseline; gap:8px; min-width:0; }
 .item.brief .main .name { flex:0 1 auto; min-width:0; }
 .item.brief .main .sub { flex:0 1 auto; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Rustiger: de duur iets minder zwaar, de tijd eronder kleiner en zachter. */
+.time .tdur { font-size:15px; font-weight:600; }
+.time .twhen { font-size:12px; opacity:.85; }
+.time .twhen.solo { font-size:13.5px; opacity:1; }

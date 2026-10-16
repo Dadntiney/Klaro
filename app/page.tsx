@@ -1149,7 +1149,7 @@ export default function Home() {
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
                   const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
-                  const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0;
+                  const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart ? " hourstart" : "")}>
                       {hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
