@@ -390,3 +390,7 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .logout button { background:none; border:0; padding:4px; color:var(--muted); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
 /* iPhone/iPad zoomt in zodra je in een invulveld tikt met tekst kleiner dan 16px; met 16px blijft de pagina staan (zoomen met twee vingers kan nog steeds). */
 @media (pointer: coarse) { .rawq, .goto select, .goto input, .login-card input { font-size:16px; } }
+.rawat { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; font-size:14px; color:var(--muted); }
+.rawat button, .rawmore button { font:inherit; font-size:14px; font-weight:600; padding:6px 14px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }
+.rawmore { display:flex; justify-content:center; padding:14px 0 24px; font-size:14px; }
+.rawmore button:disabled { opacity:.6; cursor:default; }

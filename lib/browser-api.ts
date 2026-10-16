@@ -2,6 +2,8 @@ import { buildOverview } from "./overview.ts";
 import { php, serverLists } from "./php-client.ts";
 import { liveEvents } from "./live.ts";
 import { siteDetail } from "./detail.ts";
+import { rawSource } from "./rawsource.ts";
+import type { RawQuery } from "./rawlog.ts";
 
 /**
  * Klaro in de browser (eigen hosting met PHP): de pagina roept dezelfde adressen aan als vroeger (/api/nextdns, /live,
@@ -15,7 +17,9 @@ serverLists();
 let worker: Worker | null = null;
 let nextId = 1;
 const waiting = new Map<number, (r: { status: number; body: unknown }) => void>();
-function inWorker(opts: { todayOnly: boolean; hours?: number }): Promise<{ status: number; body: unknown }> {
+const local = rawSource(php); // zonder worker (oude browser): hier zoeken
+function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery }): Promise<{ status: number; body: unknown }> {
+  const fallback = () => (opts.raw ? local.search(opts.raw) : buildOverview(local.client, opts));
   try {
     if (!worker) {
       worker = new Worker("/overview-worker.js");
@@ -26,10 +30,10 @@ function inWorker(opts: { todayOnly: boolean; hours?: number }): Promise<{ statu
     return new Promise((done) => { waiting.set(id, done); worker!.postMessage({ id, ...opts }); }).then((r) => {
       const res = r as { status: number; body: unknown };
       if (res.status === 401 && typeof location !== "undefined") location.href = "/login?verlopen=1"; // in de worker: sessie verlopen of uitgelogd
-      return res.status === 0 ? buildOverview(php, opts) : res;
+      return res.status === 0 ? fallback() : res;
     });
   } catch {
-    return buildOverview(php, opts);
+    return fallback();
   }
 }
 
@@ -53,6 +57,11 @@ export async function apiFetch(path: string, init?: { signal?: AbortSignal }): P
       const r = await fullInflight;
       if (r.status === 200) full = { at: Date.now(), ...r };
       return answer(r);
+    }
+    if (url.pathname === "/api/nextdns/raw") {
+      const q = url.searchParams;
+      const devs = q.get("devs");
+      return answer(await inWorker({ todayOnly: false, raw: { q: q.get("q") ?? "", devIds: devs ? devs.split(",") : null, before: Number(q.get("before")) || Infinity, limit: 300 } }));
     }
     if (url.pathname === "/api/nextdns/live") return answer(await liveEvents(php, Number(url.searchParams.get("since")) || 0));
     if (url.pathname === "/api/nextdns/detail") {

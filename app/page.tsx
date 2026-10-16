@@ -13,7 +13,7 @@ import { apiFetch } from "@/lib/browser-api";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
 import { baseDomain } from "@/lib/parse";
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
 
@@ -81,39 +81,132 @@ function CalendarIcon() {
 }
 
 /**
- * Live de regels zoals NextDNS ze binnenkrijgt (nieuwste bovenaan), zonder filter: zo hoeft niemand naar my.nextdns.io.
- * Rood streepje = door NextDNS geblokkeerd; rode regel = Klaro-vangnet (18+, dating, VPN).
+ * De regels zoals NextDNS ze binnenkrijgt (nieuwste bovenaan), zonder filter: zo hoeft niemand naar my.nextdns.io.
+ * Bovenaan komen ze live binnen; daaronder alles uit de volledige download: zoeken in alle dagen, verder terugbladeren en
+ * naar een dag en tijd springen (zie lib/rawlog.ts). Rood streepje = door NextDNS geblokkeerd; rode regel = Klaro-vangnet.
  */
-function RawLog({ rows, devName, device, onClose, onCalendar }: { rows: Event[]; devName: (id: string) => string; device: string | null; onClose: () => void; onCalendar: () => void }) {
+function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void }) {
   const [q, setQ] = useState("");
-  const shown = rows.filter((e) => (!device || devName(e.devId) === device) && (!q || (e.host ?? "").includes(q.trim().toLowerCase())));
+  const [at, setAt] = useState<number | null>(null); // gesprongen naar dit moment: regels van daarvoor
+  const [calOpen, setCalOpen] = useState(false);
+  const [calDay, setCalDay] = useState(() => dayKeyFmt.format(Date.now()));
+  const [calTime, setCalTime] = useState("10:00");
+  const [older, setOlder] = useState<Event[]>([]);
+  const [more, setMore] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [range, setRange] = useState<{ since: number; until: number } | null>(null);
+  const req = useRef(0);
+  const devKey = devIds?.join(",") ?? "";
+  const load = useCallback(async (before: number | null, append: boolean) => {
+    const id = ++req.current;
+    setBusy(true);
+    setErr("");
+    const p = new URLSearchParams({ q: q.trim().toLowerCase() });
+    if (devKey) p.set("devs", devKey);
+    if (before !== null) p.set("before", String(before));
+    try {
+      const d = (await (await apiFetch(`/api/nextdns/raw?${p}`)).json()) as { events?: Event[]; more?: boolean; since?: number; until?: number; error?: string };
+      if (id !== req.current) return;
+      if (d.error || !d.events) { setErr(d.error ?? "Ophalen lukte niet."); return; }
+      setOlder((prev) => (append ? [...prev, ...d.events!] : d.events!));
+      setMore(!!d.more);
+      if (d.since) setRange({ since: d.since, until: d.until ?? 0 });
+    } catch {
+      if (id === req.current) setErr("Ophalen lukte niet.");
+    } finally {
+      if (id === req.current) setBusy(false);
+    }
+  }, [q, devKey]);
+  useEffect(() => {
+    const t = setTimeout(() => load(at, false), q ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [load, at, q]);
+  const needle = q.trim().toLowerCase();
+  const shown = useMemo(() => {
+    const live = at !== null ? [] : rows.filter((e) => (!device || devName(e.devId) === device) && (!needle || (e.host ?? "").includes(needle)));
+    const seen = new Set<string>();
+    const out: Event[] = [];
+    for (const e of [...live, ...older]) {
+      const k = `${e.t}|${e.devId}|${e.host}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(e);
+    }
+    return out.sort((a, b) => b.t - a.t);
+  }, [rows, older, at, device, devName, needle]);
+  const oldest = shown.length ? shown[shown.length - 1].t : null;
   return (
     <section>
       <h2>
-        <span className="dh-t"><span className="dh-d">Live van NextDNS</span></span>
+        <span className="dh-t"><span className="dh-d">{at === null ? "Live van NextDNS" : "NextDNS"}</span></span>
         <span className="dpair">
           <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><b>N</b></button>
-          <button className="dview icon" onClick={onCalendar} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
+          <button className={"dview icon" + (calOpen ? " on" : "")} onClick={() => setCalOpen((v) => !v)} aria-expanded={calOpen} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
         </span>
       </h2>
-      <input className="rawq" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zoeken" aria-label="Zoeken in de regels" />
+      {calOpen && (
+        <form
+          className="goto"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const t = new Date(`${calDay}T${calTime || "00:00"}:00`).getTime();
+            if (!Number.isFinite(t)) return;
+            setAt(t + 60_000); // die hele minuut erbij
+            setCalOpen(false);
+          }}
+        >
+          <label>
+            <span>Dag</span>
+            <input type="date" value={calDay} min={range ? dayKeyFmt.format(range.since) : undefined} max={dayKeyFmt.format(Date.now())} onChange={(e) => setCalDay(e.target.value)} aria-label="Dag" />
+          </label>
+          <label>
+            <span>Tijd</span>
+            <input type="time" value={calTime} onChange={(e) => setCalTime(e.target.value)} aria-label="Tijd" />
+          </label>
+          <button type="submit">Ga</button>
+        </form>
+      )}
+      <input className="rawq" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zoeken in alle dagen" aria-label="Zoeken in alle regels" />
+      {at !== null && (
+        <p className="rawat">
+          Regels tot {dayLabel(dayKeyFmt.format(at - 60_000)).toLowerCase()} {timeFmt.format(at - 60_000)}
+          <button type="button" onClick={() => setAt(null)}>Terug naar nu</button>
+        </p>
+      )}
       <div className="list rawlog">
-        {shown.length === 0 && <p className="muted pad">Nog geen regels{q ? " met deze zoekterm" : ""}.</p>}
-        {shown.slice(0, 300).map((e) => {
+        {shown.length === 0 && <p className="muted pad">{busy ? "Laden…" : err || `Geen regels${q ? " met deze zoekterm" : ""}.`}</p>}
+        {shown.map((e, i) => {
           const host = e.host ?? e.site;
           const base = baseDomain(host);
           const sub = host.length > base.length ? host.slice(0, host.length - base.length) : "";
+          const day = dayKeyFmt.format(e.t);
+          const newDay = i === 0 ? at !== null || day !== dayKeyFmt.format(Date.now()) : day !== dayKeyFmt.format(shown[i - 1].t);
           return (
-            <div key={`${e.t}|${e.devId}|${host}`} className={"item rawi" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "")}>
-              <Favicon domain={base} name={base} />
-              <div className="rawt">
-                <div className="rawh"><span className="muted">{sub}</span>{base}</div>
-                <div className="sub">{devName(e.devId)} · {timeSecFmt.format(e.t)}{e.flag ? ` · ${e.flag}` : ""}{e.blocked ? " · geblokkeerd" : ""}</div>
+            <Fragment key={`${e.t}|${e.devId}|${host}`}>
+              {newDay && <div className="hourmark">{dayLabel(day)}</div>}
+              <div className={"item rawi" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "")}>
+                <Favicon domain={base} name={base} />
+                <div className="rawt">
+                  <div className="rawh"><span className="muted">{sub}</span>{base}</div>
+                  <div className="sub">{devName(e.devId)} · {timeSecFmt.format(e.t)}{e.flag ? ` · ${e.flag}` : ""}{e.blocked ? " · geblokkeerd" : ""}</div>
+                </div>
               </div>
-            </div>
+            </Fragment>
           );
         })}
       </div>
+      {shown.length > 0 && (
+        <div className="rawmore">
+          {more || (busy && older.length === 0) ? (
+            <button type="button" disabled={busy} onClick={() => oldest !== null && load(oldest, true)}>{busy ? "Laden…" : "Oudere regels laden"}</button>
+          ) : err ? (
+            <span className="muted">{err}</span>
+          ) : (
+            <span className="muted">Begin van de logboeken{range ? ` (${dayLabel(dayKeyFmt.format(range.since)).toLowerCase()})` : ""}.</span>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -251,6 +344,7 @@ export default function Home() {
   const [liveError, setLiveError] = useState("");
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
+  const devName = useCallback((id: string) => deviceMap.current[id] ?? id, []);
 
   // Eerst vandaag laden en tonen (skelet met voortgang tot dan), daarna de oudere dagen eronder.
   const [progress, setProgress] = useState(0);
@@ -892,7 +986,7 @@ export default function Home() {
             </div>
           )}
 
-          {rawView && <RawLog rows={rawLog} devName={(id) => deviceMap.current[id] ?? id} device={device} onClose={toggleRaw} onCalendar={() => { toggleRaw(); setGoOpen(true); if (!goDay && days[0]) setGoDay(days[0].d); }} />}
+          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, rows: trows, hidden }, di) => {
             if (rawView) return null;
