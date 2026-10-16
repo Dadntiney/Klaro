@@ -8,6 +8,7 @@ import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
 import { apiFetch } from "@/lib/browser-api";
+import { baseDomain } from "@/lib/parse";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
 import { DevIcon, dayKeyFmt, dayLabel, dur, hourOf, isNight, sumMin, timeFmt, timeSecFmt } from "./ui";
@@ -63,6 +64,41 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
         />
       )}
     </>
+  );
+}
+
+/**
+ * Live de regels zoals NextDNS ze binnenkrijgt (nieuwste bovenaan), zonder filter: zo hoeft niemand naar my.nextdns.io.
+ * Rood streepje = door NextDNS geblokkeerd; rode regel = Klaro-vangnet (18+, dating, VPN).
+ */
+function RawLog({ rows, devName, device, onClose }: { rows: Event[]; devName: (id: string) => string; device: string | null; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const shown = rows.filter((e) => (!device || devName(e.devId) === device) && (!q || (e.host ?? "").includes(q.trim().toLowerCase())));
+  return (
+    <section>
+      <h2>
+        <span className="dh-t"><span className="dh-d">Live van NextDNS</span></span>
+        <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><b>N</b></button>
+      </h2>
+      <input className="rawq" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zoeken" aria-label="Zoeken in de regels" />
+      <div className="list rawlog">
+        {shown.length === 0 && <p className="muted pad">Nog geen regels{q ? " met deze zoekterm" : ""}.</p>}
+        {shown.slice(0, 300).map((e) => {
+          const host = e.host ?? e.site;
+          const base = baseDomain(host);
+          const sub = host.length > base.length ? host.slice(0, host.length - base.length) : "";
+          return (
+            <div key={`${e.t}|${e.devId}|${host}`} className={"item rawi" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "")}>
+              <Favicon domain={base} name={base} />
+              <div className="rawt">
+                <div className="rawh"><span className="muted">{sub}</span>{base}</div>
+                <div className="sub">{devName(e.devId)} · {timeSecFmt.format(e.t)}{e.flag ? ` · ${e.flag}` : ""}{e.blocked ? " · geblokkeerd" : ""}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -194,6 +230,16 @@ export default function Home() {
   const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
   const [showOther, setShowOther] = useState<Set<string>>(new Set());
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
+  // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet (onthouden per toestel).
+  const [rawView, setRawView] = useState(false);
+  useEffect(() => { try { setRawView(localStorage.getItem("klaro-view") === "nextdns"); } catch {} }, []);
+  const toggleRaw = () => setRawView((v) => { try { localStorage.setItem("klaro-view", v ? "klaro" : "nextdns"); } catch {} return !v; });
+  const [rawLog, setRawLog] = useState<Event[]>([]);
+  const rawSeen = useRef<Set<string>>(new Set());
+  const addRaw = useCallback((evs: Event[]) => {
+    const fresh = evs.filter((e) => { const k = `${e.t}|${e.devId}|${e.host}`; if (rawSeen.current.has(k)) return false; rawSeen.current.add(k); return true; });
+    if (fresh.length) setRawLog((prev) => [...fresh, ...prev].sort((a, b) => b.t - a.t).slice(0, 500));
+  }, []);
   const [goDay, setGoDay] = useState("");
   const [goTime, setGoTime] = useState("10:00");
   const [gotoKey, setGotoKey] = useState<string | null>(null);
@@ -363,6 +409,7 @@ export default function Home() {
 
   /** Verwerk nieuwe verzoeken (uit de rechtstreekse stroom of de periodieke controle). */
   const applyEvents = useCallback((incoming: Event[]) => {
+    addRaw(incoming); // ruwe regels voor de NextDNS-weergave (alles, ook achtergrond)
     // Mailverkeer onthouden (per apparaat, laatste half uur): korte "bezoeken" tegelijk met een geopende nieuwsbrief zijn geen bezoek.
     const mailEv = incoming.filter((e) => e.esp || e.mc || e.ck);
     if (mailEv.length) setMailT((prev) => {
@@ -448,7 +495,13 @@ export default function Home() {
       }
       return next;
     });
-  }, [beep]);
+  }, [beep, addRaw]);
+
+  // Bij het openen van de NextDNS-weergave meteen de laatste 200 regels, daarna komen ze live binnen.
+  useEffect(() => {
+    if (!rawView || state !== "ready") return;
+    apiFetch("/api/nextdns/live?since=0").then((r) => r.json()).then((d) => addRaw(d.events ?? [])).catch(() => {});
+  }, [rawView, state, addRaw]);
 
   // Vangnet: alleen controleren als de rechtstreekse stroom niet werkt (anders gaan we over de limiet van NextDNS).
   const poll = useCallback(async () => {
@@ -880,8 +933,10 @@ export default function Home() {
             </div>
           )}
 
-          {days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
+          {rawView && <RawLog rows={rawLog} devName={(id) => deviceMap.current[id] ?? id} device={device} onClose={toggleRaw} />}
+          {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, rows: trows, hidden }, di) => {
+            if (rawView) return null;
             // Per apparaat: wanneer begon het laatste bezoek? Een app waarna al een andere app begon, is niet meer "nu".
             const lastStart = new Map<string, number>();
             for (const r of trows) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.t));
@@ -902,6 +957,9 @@ export default function Home() {
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
                 <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{!recent && <> <span className="muted dh-m"><span className="dh-dot">· </span>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</span></>}</span>
+                {di === 0 && (
+                  <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Live regels van NextDNS" title="Live regels van NextDNS"><b>N</b></button>
+                )}
                 {di === 0 && (
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}

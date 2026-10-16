@@ -367,3 +367,13 @@ h2 .dview + .dview.icon { margin-left:0; }
 
 /* Onzeker: één los adres tijdens scrollen in een social-app. Rustig label, geen alarm. */
 .unsure { font-size:12px; padding:0 6px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
+
+/* Live van NextDNS: ruwe regels zoals my.nextdns.io ze toont */
+.dview + .dview { margin-left:6px; }
+.dview b { font-weight:700; font-size:12px; line-height:18px; }
+.rawq { width:100%; box-sizing:border-box; margin:0 0 10px; padding:9px 14px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:inherit; font:inherit; }
+.rawlog .rawi { position:relative; }
+.rawlog .rawi.blk::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:#e5484d; }
+.rawlog .rawi.flag { background:color-mix(in srgb, #e5484d 12%, transparent); }
+.rawt { min-width:0; }
+.rawh { font-size:15px; overflow-wrap:anywhere; }
