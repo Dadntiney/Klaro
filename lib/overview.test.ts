@@ -185,3 +185,15 @@ test("geen vals WhatsApp: een binnenkomend bericht (api. + g. + plaatje, of zond
   ]);
   assert.equal(shown(o, "whatsapp.com").length, 0);
 });
+
+test("open tabblad (Canva): elke paar minuten alleen www. en een meetadres is geen gebruik; het openen zelf wel", async () => {
+  const day = 86_400_000, min = 60_000;
+  const rows: R[] = [];
+  for (const d of [0, 1, 2]) for (let i = 0; i < 6; i++) rows.push([d * day + i * 40 * min, "www.tekentool.nl"]);
+  rows.push([3 * day, "www.tekentool.nl"], [3 * day + 500, "static.tekentool.nl"], [3 * day + 2_000, "media.tekentool.nl"], [3 * day + 4_000, "template.tekentool.nl"]); // geopend
+  rows.push([3 * day + 6 * min, "www.tekentool.nl"], [3 * day + 6 * min + 15_000, "telemetry.tekentool.nl"]); // tabblad meldt zich
+  const o = await overview(rows);
+  const vis = shown(o, "tekentool.nl");
+  assert.equal(vis.length, 1);
+  assert.equal(vis[0].s, T0 + 3 * day);
+});

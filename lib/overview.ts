@@ -165,6 +165,9 @@ const SEARCH = new Set(["google.com", "bing.com", "duckduckgo.com", "ecosia.org"
 const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net"]);
 
 /** Het overzicht van alle (of alleen vandaag de) logs: precies dezelfde berekening op de server, in scripts en in de browser. */
+/** Meetadressen van een site zelf (telemetry., ct., ...): een open tabblad meldt zich daar, ook als niemand kijkt. */
+const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
+
 export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const todayOnly = opts.todayOnly;
   const hours = Math.min(24, Math.max(0, Number(opts.hours) || 0));
@@ -226,6 +229,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const embedTimes = new Map<string, number[]>();
   const embedGen = new Map<string, number[]>(); // alleen embed.*-adressen (algemene ingebouwde onderdelen)
   const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
+  const meterTimes = new Map<string, number[]>(); // meetadressen van de site zelf (zie METER)
   const siteHosts = new Map<string, { t: number; host: string }[]>(); // welke adressen van de site wanneer (een echte pagina laadt er meerdere)
   const loginTimes = new Map<string, number[]>(); // inlog-/bankierpagina's (bankieren., mijn., login.): altijd bewust geopend
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
@@ -383,6 +387,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       times.set(gkey, [t]);
     }
     if (isResourceHost(host)) (resTimes.get(gkey) ?? resTimes.set(gkey, []).get(gkey)!).push(t);
+    if (METER.test(host)) (meterTimes.get(gkey) ?? meterTimes.set(gkey, []).get(gkey)!).push(t);
     if (info.main && !info.flag) (mainTimes.get(gkey) ?? mainTimes.set(gkey, []).get(gkey)!).push(t);
     if (!info.bg) (siteHosts.get(gkey) ?? siteHosts.set(gkey, []).get(gkey)!).push({ t, host });
     if (!blocked && isLoginHost(host)) (loginTimes.get(gkey) ?? loginTimes.set(gkey, []).get(gkey)!).push(t);
@@ -490,11 +495,12 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
       if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x)) x.uz = 1; }
       if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
-      // Twee of drie opvragingen binnen 5 minuten met weer alleen de kale naam en www. van de site, verder niets van de site (een
-      // echte pagina laadt ook plaatjes en onderdelen): bij een site die zichzelf ververst zijn dat verversingen (zie onder).
+      // Twee of drie opvragingen binnen 5 minuten met weer alleen de kale naam en www. van de site (en hooguit een meetadres, zoals
+      // een open Canva-tabblad dat zich elke paar minuten meldt), verder niets van de site (een echte pagina laadt ook plaatjes en onderdelen): bij een site die zichzelf ververst zijn dat verversingen (zie onder).
       for (const x of sessions) {
         if ((x.n ?? 0) < 2 || (x.n ?? 0) > 3 || x.lg || x.ml || x.ck || x.m || x.f !== undefined || hostsIn(x) > 2) continue;
-        if ((x.mh ?? 0) >= all.filter((t) => t >= x.s && t <= x.e).length) refreshLike.push({ key: g.dev + "|" + g.site, x });
+        const inX = (ts: number[]) => ts.filter((t) => t >= x.s && t <= x.e).length;
+        if ((x.mh ?? 0) + inX(meterTimes.get(gkey) ?? []) >= inX(all)) refreshLike.push({ key: g.dev + "|" + g.site, x });
       }
     }
     // Clip in een andere app (Shazam): alleen videoservers van YouTube, kort, niet vlak na echt YouTube-gebruik. Zie lib/clip.ts.
