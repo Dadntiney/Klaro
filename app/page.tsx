@@ -1145,7 +1145,6 @@ export default function Home() {
                   const isOpen = expanded === rowKey;
                   // Duur is het belangrijkste (waar ging de tijd heen): rechts groot. Daaronder klein wanneer het was.
                   const mins = rss.reduce((n, x) => n + minutes(x), 0);
-                  const endT = t ? Math.max(t, ...rss.map((x) => x.e)) : 0;
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
                   const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
@@ -1159,6 +1158,7 @@ export default function Home() {
                         role="button"
                         aria-expanded={isOpen}
                       >
+                        <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
                         <div className="main">
                           <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
@@ -1175,7 +1175,6 @@ export default function Home() {
                         </div>
                         <div className="time">
                           {mins > 0 ? <span className={"tdur" + (nowRow ? " nowtag" : "")}>{dur(mins)}</span> : nowRow ? <span className="tdur nowtag">nu</span> : null}
-                          {t ? <span className="twhen" title={`${timeFmt.format(t)}${endT - t >= 60_000 ? `–${timeFmt.format(endT)}` : ""}`}>{nowRow ? `sinds ${timeFmt.format(t)}` : timeFmt.format(t)}</span> : null}
                         </div>
                       </div>
                       {isOpen && (() => {

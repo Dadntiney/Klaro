@@ -455,3 +455,9 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 @media (prefers-reduced-motion: reduce) { .item.nowrow { animation:none; background-position:50% 0; } }
 /* Rustiger rechts: de duur niet vet (de naam links is het enige vette), daaronder alleen de begintijd. */
 .time .tdur { font-weight:500; }
+/* Agenda: links een vaste kolom met de begintijd, midden logo/naam/toestel, rechts alleen de duur. */
+.item .tstart { flex:none; width:40px; margin-right:-2px; font-size:13px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; }
+.list > div + div:has(.tstart)::before { left:96px; }
+.item.nowrow .tstart { color:#16a34a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .item.nowrow .tstart { color:#4ade80; } }
+:root[data-theme="dark"] .item.nowrow .tstart { color:#4ade80; }
