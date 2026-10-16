@@ -1,0 +1,60 @@
+name: Live zetten op Strato
+
+# Bij elke wijziging op main: bouwen, testen en naar de eigen server (pichya.nl) kopiëren.
+# Werkt pas als de geheimen in GitHub staan (Settings → Secrets and variables → Actions):
+# STRATO_HOST, STRATO_SSH_KEY, NEXTDNS_API_KEY, NEXTDNS_PROFILE_ID, APP_PASSWORD. Zie docs/strato.md.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: deploy-strato
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_SERVER: ${{ secrets.STRATO_HOST != '' && secrets.STRATO_SSH_KEY != '' }}
+    steps:
+      - name: Nog geen server ingesteld
+        if: env.HAS_SERVER != 'true'
+        run: echo "STRATO_HOST/STRATO_SSH_KEY ontbreken; niets gedaan."
+      - uses: actions/checkout@v4
+        if: env.HAS_SERVER == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HAS_SERVER == 'true'
+        with:
+          node-version: 22
+      - name: Bouwen en testen
+        if: env.HAS_SERVER == 'true'
+        run: |
+          npm ci
+          npm test
+          npx next build
+          cp -r .next/static .next/standalone/.next/static
+          test -f .next/standalone/data/adult-domains.txt.gz
+      - name: Naar de server kopiëren en herstarten
+        if: env.HAS_SERVER == 'true'
+        env:
+          HOST: ${{ secrets.STRATO_HOST }}
+          KEY: ${{ secrets.STRATO_SSH_KEY }}
+          NEXTDNS_API_KEY: ${{ secrets.NEXTDNS_API_KEY }}
+          NEXTDNS_PROFILE_ID: ${{ secrets.NEXTDNS_PROFILE_ID }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: |
+          install -m 600 /dev/null ~/key && printf '%s\n' "$KEY" > ~/key
+          SSH="ssh -i $HOME/key -o StrictHostKeyChecking=accept-new"
+          printf 'NEXTDNS_API_KEY=%s\nNEXTDNS_PROFILE_ID=%s\nAPP_PASSWORD=%s\n' "$NEXTDNS_API_KEY" "$NEXTDNS_PROFILE_ID" "$APP_PASSWORD" \
+            | $SSH klaro@"$HOST" 'umask 077 && cat > /opt/klaro/klaro.env'
+          rsync -a --delete -e "$SSH" .next/standalone/ klaro@"$HOST":/opt/klaro/app/
+          $SSH klaro@"$HOST" 'sudo /bin/systemctl restart klaro'
+          rm -f ~/key
+      - name: Controleren of de site werkt
+        if: env.HAS_SERVER == 'true'
+        run: |
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://pichya.nl/login || true)
+            [ "$code" = 200 ] && { echo "pichya.nl werkt"; exit 0; }
+            sleep 3
+          done
+          echo "pichya.nl reageert niet goed (laatste code: $code)"; exit 1

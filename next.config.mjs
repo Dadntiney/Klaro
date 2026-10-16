@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Zelfstandige serverversie (map .next/standalone): draait met alleen `node server.js` op een eigen server (Strato).
+  output: "standalone",
   async headers() {
     const secure = [
       { key: "X-Robots-Tag", value: "noindex, nofollow" },

@@ -171,7 +171,7 @@ const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|wh
 
 const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com",
   "devices.a2z.com"]; // apparaat-statistieken van Amazon (Minerva): ook als de app op de achtergrond ververst
-const BACKGROUND_SUFFIX = ["csva.vercel.app", "bat.bing.com", "c.bing.com", "th.bing.com", // advertentietellers/plaatjes van Microsoft in andere sites
+const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
   "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
 

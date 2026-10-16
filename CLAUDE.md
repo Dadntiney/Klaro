@@ -1,6 +1,6 @@
 # Klaro — vaste projectregels
 
-Klaro (live: https://csva.vercel.app, deploy vanaf `main` via Vercel) laat zien wat de gezinsapparaten **echt** gebruiken,
+Klaro (live: https://pichya.nl op een eigen Strato-server, deploy vanaf `main` via GitHub Actions, zie `docs/strato.md`; voorheen csva.vercel.app) laat zien wat de gezinsapparaten **echt** gebruiken,
 uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Nederlands.
 
 ## Doelen (vast, in deze volgorde bij conflicten)

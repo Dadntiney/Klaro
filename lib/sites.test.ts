@@ -227,6 +227,8 @@ test("geen vals alarm op bekende gewone sites met een verdacht stukje in de naam
 
 test("controle: eigen app, betaalmodules en technische namen van tv-apps", () => {
   assert.equal(classify("csva.vercel.app").bg, true); // de app zelf is geen bezoek
+  assert.equal(classify("pichya.nl").bg, true);
+  assert.equal(classify("www.pichya.nl").bg, true);
   assert.equal(classify("m.stripe.com").bg, true); // betaalmodule binnen een webwinkel
   assert.equal(classify("videoland.bedrock.tech").name, "Videoland");
   assert.equal(classify("x.dmdsdp.com").name, "Disney+");
