@@ -485,3 +485,9 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 /* Uren alleen met lucht gescheiden, zonder lijn. */
 .list > div > .hourmark { padding:0; height:16px; }
 .list > div > .hourmark::after { display:none; }
+/* Logo's iets groter (herkenbaar), en weer dunne lijntjes tussen de regels (vanaf de naam); uren blijven met lucht gescheiden. */
+.list .item .fav, .list .item .fav.badge, .list .item .fav.ph { width:26px; height:26px; border-radius:6px; margin-top:-3px; }
+.list .item .fav.ph { font-size:12px; }
+.list .item .fav.badge { font-size:9px; }
+.list > div + div:has(.tstart)::before { display:block; left:110px; }
+.list > div.hourstart:has(.tstart)::before { display:none; }
