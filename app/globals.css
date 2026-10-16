@@ -416,18 +416,18 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .rawdet dt { color:var(--muted); }
 .rawdet dd { margin:0; overflow-wrap:anywhere; }
 .rawsearch { margin-top:8px; font:inherit; font-size:13px; font-weight:600; padding:5px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }
-/* Gekozen tab = gevuld (paars), zoals elk tabblad. Nu in gebruik = alleen een groen knipperend bolletje met de app erbij,
-   verder een gewone chip. Gekozen én online: paars gevuld met het groene bolletje. Zo zijn "gekozen" en "nu bezig" nooit te verwarren. */
-.chip.on { background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:600; }
+/* Gekozen tab = neutraal gevuld (wit in donker, donker in licht), zoals in iOS; kleur alleen waar het iets betekent (groen = nu in gebruik, rood = vangnet). Nu in gebruik = alleen een groen knipperend bolletje met de app erbij,
+   verder een gewone chip. Gekozen én online: neutraal gevuld met het groene bolletje. Zo zijn "gekozen" en "nu bezig" nooit te verwarren. */
+.chip.on { background:var(--fg); border:1px solid var(--fg); color:var(--bg); font-weight:600; }
 .chip.on .di { opacity:1; }
 .chip.act:not(.on) { background:var(--card); border:1px solid var(--line); color:var(--fg); font-weight:400; }
 @media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:var(--fg); } }
 :root[data-theme] .chip.act:not(.on) { color:var(--fg); }
 .chip.act .di { opacity:1; }
-.chip.on.act { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:none; }
+.chip.on.act { background:var(--fg); border-color:var(--fg); color:var(--bg); box-shadow:none; }
 .chip-app { font-weight:500; opacity:.95; max-width:9.5em; overflow:hidden; text-overflow:ellipsis; }
 .pulse { position:relative; flex:none; width:8px; height:8px; border-radius:50%; background:#22c55e; margin-right:1px; }
-.chip.on .pulse { background:#4ade80; box-shadow:0 0 0 1.5px #fff; }
+.chip.on .pulse { background:#22c55e; box-shadow:0 0 0 1.5px var(--bg); }
 .pulse::after { content:""; position:absolute; inset:0; border-radius:50%; background:#22c55e; animation:pulse 1.6s ease-out infinite; }
 @keyframes pulse { 0% { transform:scale(1); opacity:.8; } 100% { transform:scale(2.6); opacity:0; } }
 @media (prefers-reduced-motion: reduce) { .pulse::after { animation:none; } }
