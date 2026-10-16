@@ -63,4 +63,8 @@ jobs:
             if [ "$a" = 200 ] && { [ "$b" = 401 ] || [ "$b" = 503 ]; } && [ "$c" = 403 ]; then echo "pichya.nl werkt"; exit 0; fi
             sleep 5
           done
+          echo "--- diagnose ---"
+          getent hosts pichya.nl www.pichya.nl || echo "pichya.nl heeft geen adres (DNS)"
+          curl -sv -m 15 -o /dev/null http://pichya.nl/login 2>&1 | grep -E '^\*|^< HTTP|^< Location' | head -15 || true
+          curl -sv -m 15 -o /dev/null https://pichya.nl/login 2>&1 | grep -E '^\*|^< HTTP' | head -15 || true
           exit 1
