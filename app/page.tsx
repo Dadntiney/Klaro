@@ -8,7 +8,7 @@ import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
-import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
+import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
@@ -837,6 +837,7 @@ export default function Home() {
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const lastUse = useMemo(() => deviceUse(groups, auto), [groups, auto]);
   const activeNow = (name: string) => isActiveNow(lastUse, name, clock);
+  const activeApp = (name: string) => activeWhat(lastUse, name, clock);
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
   const loadDetail = (g: Group, rss: Session[], rk: string) => {
     if (details[rk]) return;
@@ -1024,9 +1025,10 @@ export default function Home() {
               <button className={"chip" + (deviceNow === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {/* Apparaten die in gebruik zijn staan links (naast Alle), de rest rechts; binnen elke groep blijft de volgorde gelijk. */}
               {[...devices.filter((d) => activeNow(d.name)), ...devices.filter((d) => !activeNow(d.name))].map((d) => (
-                <button key={d.name} className={"chip" + (deviceNow === d.name ? " on" : "") + (activeNow(d.name) ? " act" : " idle")} title={activeNow(d.name) ? "Nu in gebruik" : "Niet in gebruik"} onClick={() => setDevice(d.name)}>
-                  {silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
-                                  </button>
+                <button key={d.name} className={"chip" + (deviceNow === d.name ? " on" : "") + (activeNow(d.name) ? " act" : " idle")} title={activeNow(d.name) ? `Nu in gebruik${activeApp(d.name) ? ": " + activeApp(d.name) : ""}` : "Niet in gebruik"} onClick={() => setDevice(d.name)}>
+                  {activeNow(d.name) ? <span className="pulse" aria-hidden /> : silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
+                  {activeNow(d.name) && activeApp(d.name) && <span className="chip-app">· {activeApp(d.name)}</span>}
+                </button>
               ))}
             </div>
             {flagged.length + silent.length + extraAlerts.length > 0 && (

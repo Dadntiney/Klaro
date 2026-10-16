@@ -30,3 +30,11 @@ test("Google-zoekopdracht telt voor de chip (zoals in de lijst); een widget die 
   const w = g({ site: "voetbal.nl", name: "voetbal.nl", ss: [{ s: m(0), e: m(0), n: 1, pv: 1 }], ts: [m(0), m(0.5), m(1.2)] });
   assert.equal(isActiveNow(deviceUse([w], new Set(["iPhone|voetbal.nl"])), "iPhone", m(1.5)), false);
 });
+
+test("groene chip noemt de app alleen als die zeker nu bezig is; anders geen naam (niet raden)", async () => {
+  const { activeWhat } = await import("./livestatus.ts");
+  const use = deviceUse([g({ dev: "Apple TV", site: "ziggogo.tv", name: "Ziggo GO", lm: m(40), ss: [{ s: m(0), e: m(40), n: 30, m: 30 }], ts: [m(40)] })], new Set());
+  assert.equal(activeWhat(use, "Apple TV", m(42)), "Ziggo GO");
+  assert.equal(activeWhat(use, "Apple TV", m(60)), undefined); // al lang niets meer
+  assert.equal(activeWhat(use, "iPhone", m(42)), undefined);
+});

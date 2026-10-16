@@ -416,3 +416,16 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .rawdet dt { color:var(--muted); }
 .rawdet dd { margin:0; overflow-wrap:anywhere; }
 .rawsearch { margin-top:8px; font:inherit; font-size:13px; font-weight:600; padding:5px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }
+/* Online duidelijk: een toestel dat nu in gebruik is, is helemaal groen met een knipperend bolletje en de app erbij.
+   De gekozen chip (filter) is daarom rustig: alleen een gekleurde rand. Groen gevuld betekent dus altijd "nu bezig". */
+.chip.on { background:color-mix(in srgb, var(--accent) 12%, var(--card)); border:1.5px solid var(--accent); color:var(--accent); font-weight:600; }
+.chip.on .di { opacity:1; }
+.chip.act, .chip.act:not(.on) { background:#16a34a; border-color:#16a34a; color:#fff; font-weight:600; }
+.chip.act .di { opacity:1; }
+.chip.act.on { box-shadow:0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent); }
+@media (prefers-color-scheme: dark) { .chip.act:not(.on) { color:#fff; } }
+.chip-app { font-weight:500; opacity:.92; max-width:9.5em; overflow:hidden; text-overflow:ellipsis; }
+.pulse { position:relative; flex:none; width:8px; height:8px; border-radius:50%; background:#fff; margin-right:1px; }
+.pulse::after { content:""; position:absolute; inset:0; border-radius:50%; background:#fff; animation:pulse 1.6s ease-out infinite; }
+@keyframes pulse { 0% { transform:scale(1); opacity:.8; } 100% { transform:scale(2.6); opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .pulse::after { animation:none; } }

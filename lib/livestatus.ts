@@ -104,3 +104,12 @@ export function isActiveNow<G extends LiveGroup>(use: DeviceUse<G>, name: string
   if (clock - hi >= 120_000 || hi - Math.min(...t.map((x) => x.t)) < 45_000) return false;
   return new Set(t.map((x) => x.site)).size >= 2 || t.some((x) => !x.fgApp);
 }
+
+/**
+ * Waarmee is een apparaat nu bezig (voor in de groene chip)? Alleen als de chip groen is dankzij de laatst begonnen sessie die
+ * ook in de lijst "nu" heet: dan is het zeker. Groen door losse opvragingen of alleen beeld/geluid: geen naam (niet raden).
+ */
+export function activeWhat<G extends LiveGroup & { name?: string }>(use: DeviceUse<G>, name: string, clock: number): string | undefined {
+  const l = use.latest.get(name);
+  return l && isNow(clock, l.x, l.g) ? l.g.name ?? l.g.site : undefined;
+}
