@@ -567,3 +567,5 @@ h2 .livedot { margin:0 2px 0 12px; }
 .livedot.slow { color:#ff9f0a; }
 .livedot.fail { color:#ff453a; cursor:pointer; }
 @media (prefers-reduced-motion: reduce) { .livedot.blink .w1, .livedot.blink .w2 { animation:none; } }
+/* Korte bezoeken (minder dan een minuut): rechts een rustig grijs "kort", zodat elke rij dezelfde opbouw heeft. */
+.time .tdur.kort { font-size:14px; font-weight:400; color:var(--muted); }
