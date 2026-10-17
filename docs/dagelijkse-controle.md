@@ -86,6 +86,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    *-netseer-ipaddr-assoc.*.fbcdn.net, scontent-*.xx.fbcdn.net). Daardoor stond Instagram-gebruik als "Facebook" in het overzicht,
    of dubbel (Instagram én Facebook). Een gedeeld adres hoort nu bij de app van het dichtstbijzijnde eigen adres (5 min);
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
+   Geleerd (17 okt): Waze vraagt tijdens een rit soms 20 min niets eigens op, alleen elke ~1,5 min firebaselogging-pa (Google,
+   geblokkeerd). Die melding komt alleen als er een app open is (85 reeksen, 1 's nachts), maar veel apps gebruiken hem; daarom
+   telt hij alleen aansluitend op een navigatie-app zonder andere app ertussen. Niet bij spellen (iPad: andere app, Videoland).
    Instagram gestart (www.instagram.com, nooit 's nachts) zonder foto's: onzeker tonen. Bij de ontgrendel-golf (WhatsApp 07:24)
    telde ik eerder Facebook en Instagram als twee apps en www.google.com als Google; dat laatste vraagt WhatsApp zelf op.
 

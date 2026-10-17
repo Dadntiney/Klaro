@@ -137,15 +137,22 @@ export function followers(ev: { t: number; dev: string; host: string; site: stri
  * spelen, daarna pas weer 11 min of meer. Zonder bekend spel ervoor blijft het "Spel (naam onbekend)".
  */
 export const GAME_SDK = /(^|\.)(unity3d\.com|unity\.com|amplitude\.com|singular\.net|supersonicads\.com|applovin\.com|ironsrc\.(com|mobi)|vungle\.com|adcolony\.com|chartboost\.com)$/;
+/**
+ * Algemene meetmelding van Google (Firebase) die een app elke 1 à 2 minuten stuurt zolang hij open is: over alle dagen 85 reeksen,
+ * maar 1 's nachts. Veel apps gebruiken hem, dus hij telt alleen mee aansluitend op een navigatie-app (Waze, 17 okt 18:48: daarna
+ * nog 20 min elke ~1,5 min een melding tijdens de rit). Niet bij spellen: op de iPad stuurt een andere app die opent (zonder eigen
+ * naam, dus geen onderbreking) dezelfde melding (14 okt 16:52, 6 okt 20:09 Videoland).
+ */
+export const NAV_SDK = /^firebaselogging-pa\.googleapis\.com$/;
 
 /** `ev`: alles van één apparaat: `game` = adres van een bekend spel (site), `sdk` = adres van een spel-motor, `other` = een andere app. */
-export function assignGameSdk(ev: { t: number; game?: string; sdk?: boolean; other?: boolean }[], keep: number): Map<number, string> {
+export function assignGameSdk(ev: { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean }[], keep: number): Map<number, string> {
   const out = new Map<number, string>();
-  let cur: { site: string; last: number } | null = null;
+  let cur: { site: string; last: number; nav?: boolean } | null = null;
   for (const e of [...ev].sort((a, b) => a.t - b.t)) {
-    if (e.game) { cur = { site: e.game, last: e.t }; continue; }
+    if (e.game) { cur = { site: e.game, last: e.t, nav: e.nav }; continue; }
     if (e.other) { if (cur && e.t - cur.last > 1_500) cur = null; continue; }
-    if (e.sdk && cur && e.t - cur.last <= keep) { out.set(e.t, cur.site); cur.last = e.t; }
+    if ((e.sdk || (e.navSdk && cur?.nav)) && cur && e.t - cur.last <= keep) { out.set(e.t, cur.site); cur.last = e.t; }
   }
   return out;
 }

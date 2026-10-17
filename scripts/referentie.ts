@@ -62,6 +62,7 @@ const CASES: Case[] = [
   { day: "2026-10-16", dev: "iPhone", site: "weeztix.com", at: "11:50", want: true, why: "ticketshop geopend vanaf de evenementensite" },
   { day: "2026-10-11", dev: "iPhone", site: "vkmag.com", at: "19:59", want: true, why: "site zelf geopend (eigen embed. hoort erbij)" },
   { day: "2026-10-17", dev: "iPhone", site: "waze.com", at: "09:50", until: "10:22", want: true, why: "rit met Waze: kaartstukjes maar af en toe, één rit" },
+  { day: "2026-10-17", dev: "iPhone", site: "waze.com", at: "18:48", until: "19:07", want: true, why: "rit met Waze: daarna elke ~1,5 min een Firebase-melding van de app" },
   { day: "2026-10-17", dev: "Apple TV", site: "youtube.com", at: "01:49", want: true, why: "YouTube gekeken: kijkmeldingen aan www.youtube.com" },
   { day: "2026-10-17", dev: "iPad", site: "tocaboca.com", at: "10:43", until: "11:00", want: true, why: "Toca Boca gespeeld: meldingen via een Amazon-adres (doorverwijzing)" },
   { day: "2026-10-17", dev: "iPad", site: "tocaboca.com", at: "12:11", until: "12:42", want: true, why: "Toca Boca gespeeld, meldingen soms 6-8 min uit elkaar: één keer spelen" },

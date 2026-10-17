@@ -371,3 +371,19 @@ test("Instagram gestart (www.instagram.com) zonder foto's: tonen als onzeker; al
   assert.equal(ig[0].uz, 1);
   assert.equal(ig[0].ao, 1);
 });
+
+test("Waze: Firebase-meldingen tijdens de rit horen bij Waze; na een spel of zonder app ervoor niet", async () => {
+  const min = 60_000;
+  const fb = "firebaselogging-pa.googleapis.com";
+  const pings = (from: number, n: number, dev = "P1"): R[] => Array.from({ length: n }, (_, i) => [from + i * 1.5 * min, fb, dev, "blocked"] as R);
+  const o = await overview([
+    [0, "cresg.waze.com"], [300, "rt-xlb-row.waze.com"], [600, "dexter.waze.com"], [2 * min, "renderer-row.waze.com"], ...pings(3.5 * min, 12),
+    // iPad: spel, daarna een andere app met dezelfde melding
+    [0, "analytics.tocaboca.com", "P7"], [400, "lifeserver.tocaboca.com", "P7"], ...pings(3 * min, 12, "P7"),
+  ]);
+  const waze = o.groups.filter((g) => g.site === "waze.com").flatMap((g) => g.ss);
+  assert.equal(waze.length, 1);
+  assert.ok(waze[0].e - waze[0].s >= 19 * min);
+  const toca = o.groups.filter((g) => g.site === "tocaboca.com" && g.dev === "P7").flatMap((g) => g.ss);
+  assert.ok(toca.every((x) => x.e - x.s < 2 * min));
+});

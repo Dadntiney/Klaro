@@ -9,7 +9,7 @@ import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
-import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, instagramShared, loadedWith } from "./companion.ts";
+import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, instagramShared, loadedWith, NAV_SDK } from "./companion.ts";
 import { GELEERD, geldig } from "./geleerd.ts";
 import { learnFg } from "./selflearn.ts";
 import { assignPlayback } from "./play.ts";
@@ -331,18 +331,21 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   // Spel-motor/reclame-adressen in spellen (Unity, Amplitude, ...) horen bij het spel dat speelt, zie assignGameSdk in lib/companion.ts.
   const gameOf = new Map<string, string>(); // apparaat|tijdstip -> site van het spel
   {
-    const byDev = new Map<string, { t: number; game?: string; sdk?: boolean; other?: boolean }[]>();
+    const byDev = new Map<string, { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean }[]>();
     for (const r of body) {
       const host = extractHost(r[hostCol] ?? "");
       const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
       if (!t) continue;
       const info = classify(host!);
       const sdk = GAME_SDK.test(host!);
-      const game = !sdk && info.main && !info.bg && / \(spel\)$/.test(info.name) && info.site !== "unity3d.com" ? info.site : undefined;
-      const other = !sdk && !game && info.main && !info.bg && !info.flag && !isPlainSite(info);
-      if (!sdk && !game && !other) continue;
+      const navSdk = NAV_SDK.test(host!);
+      // Spellen en navigatie (Waze): tijdens gebruik vooral meetmeldingen, zie lib/companion.ts.
+      const nav = NAV_APPS.has(info.site);
+      const game = !sdk && !navSdk && info.main && !info.bg && (/ \(spel\)$/.test(info.name) || nav) && info.site !== "unity3d.com" ? info.site : undefined;
+      const other = !sdk && !navSdk && !game && info.main && !info.bg && !info.flag && !isPlainSite(info);
+      if (!sdk && !navSdk && !game && !other) continue;
       const dev = deviceMap[idOf(r)];
-      (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, game, sdk, other });
+      (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, game, nav: !!game && nav, sdk, navSdk, other });
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignGameSdk(ev, HEARTBEAT_GAP)) gameOf.set(dev + "|" + t, site);
   }
@@ -420,7 +423,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const play = t ? playOf.get(dev + "|" + t) : undefined;
     if (play) info = classify(play);
     const gsite = t ? gameOf.get(dev + "|" + t) : undefined;
-    if (gsite && GAME_SDK.test(host)) info = classify(gsite);
+    if (gsite && (GAME_SDK.test(host) || NAV_SDK.test(host))) info = classify(gsite);
     const fol = t ? followOf.get(dev + "|" + host) : undefined;
     if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
     if (t && igShared.has(dev + "|" + t + "|" + host)) info = classify("instagram.com");
