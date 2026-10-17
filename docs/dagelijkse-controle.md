@@ -58,6 +58,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    stukjes met hooguit 10 min ertussen zijn één keer spelen (HEARTBEAT_GAP, alleen als het adres vaak los terugkomt).
    Spel-motor (Unity, Amplitude, Singular, ironSource, ...): tijdens spelen elke 0-6 min meetgegevens (vaak geblokkeerd, wel in het
    logboek); hoort bij het spel dat speelt (GAME_SDK, assignGameSdk), zolang er geen andere app opende (opgelost 17 okt).
+   Losse www.google.com zonder zoekresultaten: een app/spel dat opstart (advertentiemodule), geen zoekopdracht; over alle dagen
+   17 van 18 tegelijk met een app (opgelost 17 okt). Dezelfde app een uur later = een nieuwe rij (samenvoegen alleen binnen 15 min).
 
    Versnipperd gebruik (controle.ts, sectie 10): apps waarvan het gebruik in 3+ stukjes valt met 5-15 min ertussen. Zo zagen
    de gemiste Toca Boca-speelbeurt en de Waze-rit eruit. Altijd eerst de verdeling van de pauzes over ALLE dagen meten (kleinste,

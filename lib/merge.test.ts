@@ -28,3 +28,11 @@ test("dezelfde app binnen 15 minuten wordt één regel, ook met andere apps ertu
   assert.equal(out.filter((r) => r.g === shop).length, 1);
   assert.deepEqual(out.map((r) => r.t), [...out.map((r) => r.t)].sort((a, b) => b - a)); // nog steeds op tijd
 });
+
+test("hetzelfde spel twee keer met een uur ertussen: twee rijen, ook als ze direct onder elkaar staan", () => {
+  const toca = { n: "toca" };
+  const min = 60_000;
+  const mk = (s: number, e: number) => ({ g: toca, t: s * min, ss: [{ s: s * min, e: e * min }], first: false, newest: false });
+  const out = mergeRows([mk(731, 762), mk(643, 663)]); // 12:11-12:42 en 10:43-11:03
+  assert.equal(out.length, 2);
+});

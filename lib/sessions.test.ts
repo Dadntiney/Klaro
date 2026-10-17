@@ -145,3 +145,9 @@ test("kijkmelding van YouTube rekt het kijken op, maar start nooit zelf gebruik"
   pagina = extendSessions(pagina, t + 3_000, false, false, undefined, undefined, true);
   assert.equal(pagina[0].f, 1);
 });
+
+test("Google: alleen www.google.com zonder zoekresultaten (een app die opstart) is geen bezoek; met zoekpagina wel", () => {
+  assert.equal(isHuman({ s: 1, e: 1, n: 1, f: 0, pv: 1 } as Session), false);
+  assert.equal(isHuman({ s: 1, e: 1, n: 1, f: 1, pv: 1 } as Session), true);
+  assert.equal(isHuman({ s: 1, e: 1, n: 1, f: 0, pv: 1, lg: 1 } as Session), true); // inloggen blijft een bezoek
+});

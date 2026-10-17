@@ -141,6 +141,9 @@ export function extendAll(ss: Session[], t: number): Session[] {
 export function isHuman(x: Session): boolean {
   if (x.emb || x.res || x.rf || x.rl) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
+  // App met een inhoud-regel (Google, Facebook, ...) en niets van die inhoud geladen: één los adres is dan geen bezoek, ook niet als
+  // losse pagina (Google: een spel of app vraagt bij het opstarten www.google.com op; een echte zoekopdracht laadt ook resultaten).
+  if (x.f === 0 && x.pv && !x.lg && !x.ck && (x.n ?? 0) <= 1) return false;
   if (x.lg || x.pv || x.ck) return true; // inlogpagina, losse pagina, of via een klik (mail-link of zoekresultaat) geopend // één pagina op de site zelf geopend
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde
   if (x.n === undefined) return true;
