@@ -39,3 +39,21 @@ function slim_csv(string $from, string $to): bool {
   fclose($out);
   return true;
 }
+
+/** Kop + alle regels van na `since` (ms) uit de lichte download (nieuwste eerst): stopt bij de eerste oudere regel. */
+function slim_since(string $file, int $since): void {
+  $in = fopen($file, 'r');
+  if (!$in) return;
+  $hdr = fgets($in);
+  if ($hdr === false) return;
+  echo $hdr;
+  $older = 0;
+  while (($line = fgets($in)) !== false) {
+    $ts = strstr($line, "\t", true);
+    $t = 0;
+    try { $t = $ts ? (int)(new DateTimeImmutable($ts))->format('Uv') : 0; } catch (Throwable $e) { $t = 0; }
+    if ($t && $t <= $since) { if (++$older >= 50) break; continue; } // een paar regels kunnen net door elkaar staan
+    echo $line;
+  }
+  fclose($in);
+}

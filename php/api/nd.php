@@ -42,6 +42,9 @@ if (isset($_GET['download'])) {
   if (!is_file($slim) || filemtime($slim) < filemtime($cache)) slim_csv($cache, $slim . '.tmp') && rename($slim . '.tmp', $slim);
   header('Content-Type: text/tab-separated-values; charset=utf-8');
   if (!ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
+  // ?since=<ms>: alleen regels van na dat moment (de telefoon bewaart de rest zelf). Het bestand staat op tijd, nieuwste eerst.
+  $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
+  if ($since > 0 && is_file($slim)) { slim_since($slim, $since); exit; }
   readfile(is_file($slim) ? $slim : $cache);
   exit;
 }

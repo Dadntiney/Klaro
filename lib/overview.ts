@@ -169,7 +169,9 @@ const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", 
 /** Meetadressen van een site zelf (telemetry., ct., ...): een open tabblad meldt zich daar, ook als niemand kijkt. */
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
-export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
+/** `known`: wat een eerdere berekening over alle dagen leerde (widgets, hulpjes, doorverwijs-adressen), voor het snelle herberekenen van alleen de laatste uren. */
+export type Known = { auto?: string[]; helpers?: string[]; followers?: string[]; parts?: string[] };
+export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number; known?: Known }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const todayOnly = opts.todayOnly;
   const hours = Math.min(24, Math.max(0, Number(opts.hours) || 0));
 
@@ -304,13 +306,15 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (info.bg || info.flag) continue;
       ev.push({ t, dev: idOf(r), host: host!, site: info.site, page: info.main && isPlainSite(info), helper: !info.main });
     }
-    learnedHelpers = [...loadedWith(ev)];
-    return new Set([...learnedHelpers, ...geldig(GELEERD.helpers, Date.now())]);
+    // Leren over meerdere dagen alleen bij de volledige berekening; bij het snelle herberekenen komt het uit `known`.
+    learnedHelpers = opts.known ? [] : [...loadedWith(ev)];
+    return new Set([...learnedHelpers, ...geldig(GELEERD.helpers, Date.now()), ...(opts.known?.helpers ?? [])]);
   })();
   // Doorverwijs-adressen (een cloud-adres waar een app naar doorverwijst) horen bij die app, in een keten vanaf echt verkeer
   // van de app (hooguit GAP ertussen), zie followers() in lib/companion.ts.
   const followOf = new Map<string, string>(); // apparaat|adres -> site
   let learnedFollowers: string[] = [];
+  let partsAll: string[] = []; // sites die (over alle dagen) altijd als onderdeel van een andere pagina meekomen
   const followIn = new Set<string>(); // apparaat|adres|tijdstip dat bij de app hoort
   {
     const ev: Parameters<typeof followers>[0] = [];
@@ -322,10 +326,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (info.flag) continue;
       ev.push({ t, dev: deviceMap[idOf(r)], host: host!, site: info.site, app: info.main && !info.bg && !isPlainSite(info), cloud: info.bg || !info.main });
     }
-    for (const [k, site] of followers(ev)) followOf.set(k, site);
+    if (!opts.known) for (const [k, site] of followers(ev)) followOf.set(k, site);
     learnedFollowers = [...followOf].map(([k, site]) => k + "|" + site);
     // Eerder geleerd (blijft ook als het logboek is leeggemaakt): apparaat|adres|site.
-    for (const k of geldig(GELEERD.followers, Date.now())) { const i = k.lastIndexOf("|"); if (!followOf.has(k.slice(0, i))) followOf.set(k.slice(0, i), k.slice(i + 1)); }
+    for (const k of [...geldig(GELEERD.followers, Date.now()), ...(opts.known?.followers ?? [])]) { const i = k.lastIndexOf("|"); if (!followOf.has(k.slice(0, i))) followOf.set(k.slice(0, i), k.slice(i + 1)); }
     if (followOf.size) {
       const appT = new Map<string, number[]>(), folT = new Map<string, number[]>();
       for (const e of ev) {
@@ -654,6 +658,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     // Een site die elke keer (minstens 2 momenten) tegelijk met een pagina van een andere site opduikt (hooguit 5 s erna), en nooit
     // los, is een onderdeel van die sites: de maker van de website, een hulp- of maatknop, een zustersite in de voettekst.
     // Ook als het een www.-adres is. De pagina die hem laadt blijft altijd staan (twee sites die alleen samen voorkomen: allebei).
+    let part: Set<string>;
     const cand = new Map<string, { x: Session; leads: Set<string>; m: number }[]>();
     const loose = new Set<string>();
     for (const [gkey, g] of groups) {
@@ -679,7 +684,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       }
     }
     // Minstens 2 momenten (ook binnen één bezoek: een winkel die zijn pagina's laadt, laadt het platform elke keer opnieuw mee).
-    const part = new Set([...cand].filter(([site, xs]) => xs.reduce((n, c) => n + c.m, 0) >= 2 && !loose.has(site)).map(([site]) => site));
+    // (Over alle dagen bepaald; bij het snelle herberekenen van de laatste uren komt het uit `known`.)
+    part = opts.known ? new Set((opts.known.parts ?? []).filter((site) => cand.has(site))) : new Set([...cand].filter(([site, xs]) => xs.reduce((n, c) => n + c.m, 0) >= 2 && !loose.has(site)).map(([site]) => site));
+    partsAll = opts.known ? opts.known.parts ?? [] : [...part];
     for (const site of part) {
       const xs = cand.get(site)!;
       if (xs.every((c) => [...c.leads].every((l) => part.has(l)))) continue;
@@ -837,8 +844,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
 
   // Sites die zichzelf verversen: alleen te zien over meerdere dagen (dus bij de volledige download). De pagina onthoudt de lijst,
   // zodat ze ook bij het snelle laden van vandaag meteen weg blijven.
-  const autoNow = todayOnly ? [] : autoRefreshing(singles);
-  const auto = [...new Set([...autoNow, ...geldig(GELEERD.auto, Date.now())])];
+  const autoNow = todayOnly || opts.known ? [] : autoRefreshing(singles);
+  const auto = [...new Set([...autoNow, ...geldig(GELEERD.auto, Date.now()), ...(opts.known?.auto ?? [])])];
   if (auto.length) {
     const set = new Set(auto);
     for (const g of groups.values()) if (set.has(g.dev + "|" + g.site)) for (const x of g.ss) delete x.pv;
@@ -853,6 +860,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     auto: todayOnly ? undefined : auto,
     learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers, followers: learnedFollowers },
+    parts: todayOnly ? undefined : partsAll, // voor het snelle herberekenen (lib/recent.ts)
     followers: Object.fromEntries(followOf), // live: dezelfde doorverwijs-adressen (apparaat|adres -> site) // wat nu uit de logboeken blijkt (scripts/leer.ts legt het vast)
     // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
     partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,

@@ -18,7 +18,7 @@ let worker: Worker | null = null;
 let nextId = 1;
 const waiting = new Map<number, (r: { status: number; body: unknown }) => void>();
 const local = rawSource(php); // zonder worker (oude browser): hier zoeken
-function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery }): Promise<{ status: number; body: unknown }> {
+function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery; recent?: boolean }): Promise<{ status: number; body: unknown }> {
   const fallback = () => (opts.raw ? local.search(opts.raw) : buildOverview(local.client, opts));
   try {
     if (!worker) {
@@ -52,6 +52,8 @@ export async function apiFetch(path: string, init?: { signal?: AbortSignal }): P
   try {
     if (url.pathname === "/api/nextdns") {
       if (url.searchParams.get("scope") === "today") return answer(await buildOverview(php, { todayOnly: true, hours: Number(url.searchParams.get("hours")) || 0 }));
+      // Alleen de laatste uren opnieuw, met dezelfde regels (elke minuut; zie lib/recent.ts). Zonder worker: gewoon alles.
+      if (url.searchParams.get("scope") === "recent") return answer(await inWorker({ todayOnly: false, recent: true }));
       if (full && Date.now() - full.at < 120_000) return answer(full);
       if (!fullInflight) fullInflight = inWorker({ todayOnly: false }).finally(() => { fullInflight = null; });
       const r = await fullInflight;

@@ -9,9 +9,11 @@ export function checkLogin(res: Response): Response {
 }
 
 /** Via de eigen server (api/nd.php voegt de geheime NextDNS-sleutel toe). Werkt op de pagina en in een worker. */
-export const php: NextDNSClient = {
+export const php: NextDNSClient & { since: (since: number, ms: number) => Promise<NDResponse> } = {
   logs: async (q, ms) => checkLogin(await fetch(`/api/nd.php?q=${encodeURIComponent(q)}`, { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(ms) })) as NDResponse,
   download: async (ms) => checkLogin(await fetch("/api/nd.php?download=1", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(Math.max(ms, 90_000)) })) as NDResponse,
+  /** Alleen de regels van na `since` (ms): de rest bewaart de browser zelf (lib/rawsource.ts). */
+  since: async (since: number, ms: number) => checkLogin(await fetch(`/api/nd.php?download=1&since=${Math.floor(since)}`, { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(Math.max(ms, 60_000)) })) as NDResponse,
 };
 
 /** De grote 18+/datinglijsten staan op de server: daar navragen. */

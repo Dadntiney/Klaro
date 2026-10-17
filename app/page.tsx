@@ -764,15 +764,18 @@ export default function Home() {
     };
   }, [state, poll]);
 
-  // De volledige lijst (alle regels van NextDNS) opnieuw ophalen en bijwerken: elke 5 minuten, en zodra de pagina weer zichtbaar wordt na een tijd op de achtergrond.
-  // Zo komt ook alles binnen wat de live-controle gemist heeft (bijvoorbeeld als de telefoon vergrendeld was), inclusief rode sites.
+  // Opnieuw berekenen met precies dezelfde regels: elke minuut de laatste uren (snel; de download wordt alleen aangevuld) en
+  // elke 5 minuten alles, en zodra de pagina weer zichtbaar wordt na een tijd op de achtergrond. Zo komt ook alles binnen wat
+  // de live-controle gemist heeft (bijvoorbeeld als de telefoon vergrendeld was), inclusief rode sites, en lopen live en
+  // volledig rekenen nooit lang uit elkaar.
   const lastFull = useRef(Date.now());
-  const refreshFull = useCallback(async () => {
+  const refreshFull = useCallback(async (recent = false) => {
     try {
-      const res = await apiFetch("/api/nextdns");
+      const res = await apiFetch(recent ? "/api/nextdns?scope=recent" : "/api/nextdns");
       const data = await res.json();
       if (!res.ok) return;
-      lastFull.current = Date.now();
+      if (!recent) lastFull.current = Date.now();
+      if (data.followers) followOf.current = data.followers;
       setInsights(data.insights ?? null);
       // Nieuwe apparaten van na het laden ook benoemen; bestaande namen blijven gelijk (anders wisselen regels van apparaat).
       if (data.deviceMap) deviceMap.current = { ...data.deviceMap, ...deviceMap.current };
@@ -803,8 +806,8 @@ export default function Home() {
 
   useEffect(() => {
     if (state !== "ready") return;
-    const id = setInterval(() => document.visibilityState === "visible" && refreshFull(), 300_000);
-    const onVisible = () => document.visibilityState === "visible" && Date.now() - lastFull.current > 60_000 && refreshFull();
+    const id = setInterval(() => document.visibilityState === "visible" && refreshFull(Date.now() - lastFull.current < 290_000), 60_000);
+    const onVisible = () => document.visibilityState === "visible" && Date.now() - lastFull.current > 60_000 && refreshFull(Date.now() - lastFull.current < 290_000);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(id);
