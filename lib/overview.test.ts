@@ -396,3 +396,17 @@ test("regel zonder geldige tijd (half overgekomen) telt niet mee: geen 'Datum on
   const b = r.body as { groups: { d: string; site: string }[] };
   assert.equal(b.groups.some((g) => g.d === "onbekend"), false);
 });
+
+test("Facebook-pixel op een website is geen Facebook-gebruik; een website vanuit de Facebook-app laat het Facebook-gebruik staan", async () => {
+  const pixel = (t: number, dev: string): R[] => [[t, "connect.facebook.net", dev], [t + 100, "scontent.xx.fbcdn.net", dev], [t + 200, "scontent.fallback.xx.fbcdn.net", dev], [t + 300, "star-mini.c10r.facebook.com", dev], [t + 2_000, "static.xx.fbcdn.net", dev]];
+  const ns = "11111111-2222-3333-4444-555555555555-netseer-ipaddr-assoc.xy.fbcdn.net";
+  const o = await overview([
+    [0, "www.voorbeeldwinkel.nl", "P8"], [300, "cdn.voorbeeldwinkel.nl", "P8"], ...pixel(1_000, "P8"),
+    // P9: eerst de Facebook-app (netwerkmeting, chat), daarna vanuit Facebook een website met dezelfde pixel
+    [0, ns, "P9"], [200, "scontent.xx.fbcdn.net", "P9"], [500, "chat-e2ee.c10r.facebook.com", "P9"], [27_000, "www.voorbeeldwinkel.nl", "P9"], ...pixel(27_500, "P9"),
+  ]);
+  const lab = (o as unknown as { deviceMap: Record<string, string> }).deviceMap;
+  const fb = (id: string) => o.groups.filter((g) => g.site === "facebook.com" && g.dev === lab[id]).flatMap((g) => g.ss).filter((x) => isHuman(x as never)).length;
+  assert.equal(fb("P8"), 0);
+  assert.equal(fb("P9"), 1);
+});

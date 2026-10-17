@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mergeDownload } from "./rawsource.ts";
-import { mergeRecent } from "./recent.ts";
+import { mergeLiveGroup, mergeRecent } from "./recent.ts";
 
 const H = "timestamp\tdomain\tstatus";
 const line = (iso: string, host: string) => `${iso}\t${host}\t`;
@@ -64,4 +64,20 @@ test("download aanvullen: een kapotte regel zonder tijd wordt weggelaten en stop
   const fresh = [H, line("2026-10-17T09:10:00.000Z", "c.nl"), "7T09:07:00.000Z\tgraph.facebook.com\t", line("2026-10-17T09:05:00.000Z", "b.nl")].join("\n") + "\n";
   const out = mergeDownload(old, fresh, since)!.trim().split("\n");
   assert.deepEqual(out.map((l) => l.split("\t")[1]), ["domain", "c.nl", "b.nl", "a.nl"]);
+});
+
+test("live en herberekening samen: de herberekende (echte) sessie blijft, live verlengt hem alleen met de nieuwste minuten", () => {
+  const m = 60_000;
+  const full: { last: number; ss: { s: number; e: number; n?: number; pv?: 1 }[] } = { last: 10 * m, ss: [{ s: 0, e: 10 * m, n: 4, pv: 1 }] };
+  const live = { last: 14 * m, ss: [{ s: 0, e: 14 * m, n: 6 }] }; // live is nieuwer, maar weet niet dat het een echt bezoek is
+  const out = mergeLiveGroup(full, live);
+  assert.equal(out.last, 14 * m);
+  assert.equal(out.ss!.length, 1);
+  assert.equal((out.ss![0] as { pv?: 1 }).pv, 1);
+  assert.equal(out.ss![0].e, 14 * m);
+  // live met een losse nieuwe opvraging later: komt er als eigen stukje bij
+  const out2 = mergeLiveGroup(full, { last: 40 * m, ss: [{ s: 0, e: 10 * m }, { s: 40 * m, e: 40 * m, n: 1 }] });
+  assert.equal(out2.ss!.length, 2);
+  // herberekening even nieuw of nieuwer: die geldt helemaal
+  assert.equal(mergeLiveGroup(full, { last: 5 * m, ss: [] }), full);
 });

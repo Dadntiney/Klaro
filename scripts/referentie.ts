@@ -74,7 +74,7 @@ const CASES: Case[] = [
   { day: "2026-10-16", dev: "iPad", site: "budgestudios.ca", at: "06:45", until: "07:01", want: true, why: "Budge-spel gespeeld: meetgegevens van Unity/Amplitude" },
   { day: "2026-10-11", dev: "iPhone", site: "trivago.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "allcamps.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
-  { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: "onzeker", why: "winkel geopend tijdens scrollen (advertentie of echt)" },
+  { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: true, why: "winkel echt geopend (hele pagina geladen); het 'scrollen in Facebook' erna was de Facebook-pixel van een andere site" },
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.cloud", at: "16:01", want: false, why: "onderdeel van ravensburger.nl (zelfde merk)" },
   { day: "2026-10-11", dev: "iPhone", site: "nu.nl", at: "10:53", want: true, why: "link uit X geopend" },
   { day: "2026-10-17", dev: "iPhone", site: "shazam.com", at: "14:49", want: true, why: "Shazam geopend (nummer herkend, daarna door naar Spotify)" },
@@ -84,6 +84,8 @@ const CASES: Case[] = [
   { day: "2026-10-17", dev: "iPhone", site: "instagram.com", at: "08:59", want: true, why: "Instagram gebruikt, daarna via een link naar een webwinkel" },
   { day: "2026-10-17", dev: "iPhone", site: "instagram.com", at: "14:50", want: "onzeker", why: "Instagram gestart (www.instagram.com), geen foto's geladen" },
   { day: "2026-10-16", dev: "iPhone", site: "facebook.com", at: "11:57", want: true, why: "echt Facebook: chat, lookaside en eigen foto-servers" },
+  { day: "2026-10-17", dev: "iPhone", site: "facebook.com", at: "20:23", want: false, why: "Facebook-pixel op een website (vanuit Google geopend)" },
+  { day: "2026-10-10", dev: "iPhone", site: "facebook.com", at: "15:38", want: true, why: "Facebook-app open (chat, netwerkmeting), daarna een website vanuit Facebook" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);

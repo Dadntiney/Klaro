@@ -38,3 +38,21 @@ export function mergeRecent(full: Body, recent: Body, now: number): Body {
   for (const [k, site] of Object.entries(recent.followers ?? {})) { const i = k.indexOf("|"); followers[(label.get(k.slice(0, i)) ?? k.slice(0, i)) + k.slice(i)] = site; }
   return { ...full, groups: [...fresh, ...keep].sort((a: Body, b: Body) => b.last - a.last), followers, recentAt: now };
 }
+
+type LiveSession = { s: number; e: number; n?: number };
+/**
+ * Herberekende groep (`full`) samenvoegen met wat live al binnenkwam (`live`). De herberekening is leidend (weet of het een echt
+ * bezoek is), maar loopt een paar minuten achter; live voegt alleen de nieuwste stukjes toe. Voorheen won live zolang die nieuwer
+ * was: wie op een site bleef klikken, zag de rij pas als hij klaar was (17 okt neoseum.com).
+ */
+export function mergeLiveGroup<G extends { last: number; ss?: LiveSession[] }>(full: G, live: G): G {
+  if (full.last >= live.last) return full;
+  const ss = (full.ss ?? []).map((x) => ({ ...x }));
+  for (const x of live.ss ?? []) {
+    if (x.e <= full.last) continue;
+    const y = ss.find((y) => x.s <= y.e && x.e >= y.s); // zelfde sessie: alleen verlengen
+    if (y) y.e = Math.max(y.e, x.e);
+    else ss.push({ ...x, s: Math.max(x.s, full.last) });
+  }
+  return { ...full, last: live.last, ss: ss.sort((a, b) => a.s - b.s) };
+}

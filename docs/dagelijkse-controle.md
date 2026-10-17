@@ -86,6 +86,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    *-netseer-ipaddr-assoc.*.fbcdn.net, scontent-*.xx.fbcdn.net). Daardoor stond Instagram-gebruik als "Facebook" in het overzicht,
    of dubbel (Instagram én Facebook). Een gedeeld adres hoort nu bij de app van het dichtstbijzijnde eigen adres (5 min);
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
+   Geleerd (17 okt): de Facebook-pixel op websites (connect.facebook.net met scontent.xx/star-mini/www.facebook.com in dezelfde
+   seconden) maakte nep-Facebook-rijen en rekte echte rijen op (en gaf vals "scrollen in Facebook" bij ravensburger 11 okt).
+   Telt nu niet meer, behalve als de Facebook-app zelf binnen een minuut actief is (website geopend vanuit Facebook).
+   Geleerd (17 okt): op de pagina won live steeds van de herberekening zolang live nieuwer was; wie op een site bleef klikken,
+   zag de rij pas als hij klaar was (neoseum.com). Nu is de herberekening leidend en voegt live alleen de nieuwste minuten toe.
    Geleerd (17 okt): Waze vraagt tijdens een rit soms 20 min niets eigens op, alleen elke ~1,5 min firebaselogging-pa (Google,
    geblokkeerd). Die melding komt alleen als er een app open is (85 reeksen, 1 's nachts), maar veel apps gebruiken hem; daarom
    telt hij alleen aansluitend op een navigatie-app zonder andere app ertussen. Niet bij spellen (iPad: andere app, Videoland).

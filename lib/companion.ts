@@ -190,3 +190,32 @@ export function instagramShared(ev: { t: number; dev: string; host: string }[]):
   }
   return out;
 }
+
+/**
+ * De Facebook-pixel op websites: connect.facebook.net laadt in dezelfde seconden plaatjes en verbindingen van Facebook
+ * (scontent.xx.fbcdn.net, star-mini.c10r.facebook.com, www.facebook.com). Komt dat binnen 5 s na een gewone website, dan hoort het
+ * bij die website en is het geen Facebook-gebruik (17 okt 20:23: thisiseindhoven.com vanuit Google; de Facebook-rij werd 14 min te lang).
+ * Niet als de Facebook-app zelf binnen een minuut actief is (zie FB_APP).
+ */
+const FB_PIXEL_LOAD = /^connect\.facebook\.net$|^(scontent|static)\.(fallback\.)?xx\.fbcdn\.net$|^star(-mini)?(\.fallback)?\.c10r\.facebook\.com$|^www\.facebook\.com$/;
+// Adressen van de Facebook-app zelf (niet van de pixel): netwerkmeting, chat, verbinding. Komt een website vanuit de Facebook-app
+// (10 okt 15:38: eerst Facebook met chat en netwerkmeting, daarna een advertentie-website), dan blijft het Facebook-gebruik.
+const FB_APP = /-netseer-ipaddr-assoc\.[a-z]+\.fbcdn\.net$|^(dgw|mqtt|chat-e2ee)\.c10r\.facebook\.com$|^(graph-fallback|gateway|edge-mqtt|mobile|payments-graph|chat-e2ee|rupload|lookaside|web)\.facebook\.com$/;
+export function facebookPixel(ev: { t: number; dev: string; host: string; page?: boolean }[]): Set<string> {
+  const out = new Set<string>();
+  const byDev = new Map<string, typeof ev>();
+  for (const e of ev) (byDev.get(e.dev) ?? byDev.set(e.dev, []).get(e.dev)!).push(e);
+  for (const [dev, list] of byDev) {
+    list.sort((a, b) => a.t - b.t);
+    const conn = list.filter((e) => e.host === "connect.facebook.net").map((e) => e.t);
+    const pages = list.filter((e) => e.page).map((e) => e.t);
+    const app = list.filter((e) => FB_APP.test(e.host)).map((e) => e.t); // de Facebook-app zelf is open: dan hoort het er wel bij
+    const near = (ts: number[], a: number, b: number) => ts.some((x) => x >= a && x <= b);
+    for (const e of list) {
+      if (!FB_PIXEL_LOAD.test(e.host)) continue;
+      const c = conn.find((x) => Math.abs(x - e.t) <= 3_000);
+      if (c !== undefined && !near(app, c - 60_000, c + 60_000)) out.add(dev + "|" + e.t + "|" + e.host);
+    }
+  }
+  return out;
+}

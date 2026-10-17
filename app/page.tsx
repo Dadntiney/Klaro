@@ -11,6 +11,7 @@ import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
 import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
+import { mergeLiveGroup } from "@/lib/recent";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
 import { baseDomain } from "@/lib/parse";
@@ -804,7 +805,8 @@ export default function Home() {
           const f = fresh.get(k);
           if (!f) return g;
           // Is de volledige lijst even recent of recenter dan wat we live hebben, dan is die leidend (nieuwe bezoeken, sessies, rode markering).
-          return f.last >= g.last ? { ...f, isNew: f.isNew || g.isNew, flash: g.flash } : { ...g, mm: f.mm, susp: f.susp, cc: f.cc, isNew: f.isNew || g.isNew };
+          // De herberekening is leidend; wat live al nieuwer binnenkwam, komt erachter (lib/recent.ts).
+          return { ...mergeLiveGroup(f, g), isNew: f.isNew || g.isNew, flash: g.flash };
         });
         // Groepen die live gemist zijn, komen er alsnog bij.
         for (const [k, f] of fresh) if (!seenKeys.has(k)) next.push(f);

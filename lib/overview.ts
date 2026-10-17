@@ -1,5 +1,5 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
-import { isPlainSite } from "./system.ts";
+import { isPlainSite, isSystemSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
 import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
@@ -9,7 +9,7 @@ import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
-import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, instagramShared, loadedWith, NAV_SDK } from "./companion.ts";
+import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, facebookPixel, instagramShared, loadedWith, NAV_SDK } from "./companion.ts";
 import { GELEERD, geldig } from "./geleerd.ts";
 import { learnFg } from "./selflearn.ts";
 import { assignPlayback } from "./play.ts";
@@ -286,6 +286,15 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
     return t && /facebook|fbcdn|instagram/.test(host!) ? [{ t, dev: deviceMap[idOf(r)], host: host! }] : [];
   }));
+  // Facebook-pixel op een website: hoort bij die website, geen Facebook-gebruik (lib/companion.ts).
+  const fbPixel = facebookPixel(body.flatMap((r) => {
+    const host = extractHost(r[hostCol] ?? "");
+    const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    if (!t) return [];
+    if (/facebook|fbcdn/.test(host!)) return [{ t, dev: deviceMap[idOf(r)], host: host! }];
+    const c = classify(host!);
+    return c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site) ? [{ t, dev: deviceMap[idOf(r)], host: host!, page: true }] : [];
+  }));
   // Afspeelsignalen zonder eigen app (Conviva) horen bij de tv-app waarmee hun reeks begon, zie lib/play.ts.
   const playOf = new Map<string, string>(); // apparaat|tijdstip -> site van de tv-app
   {
@@ -470,6 +479,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
     if (isQuietHost(host)) continue; // verbinding openhouden: geen bezoek, geen sessie
+    if (t && fbPixel.has(dev + "|" + t + "|" + host)) continue; // Facebook-pixel van de website ervoor: geen Facebook-gebruik
 
     const gkey = `${d}|${dev}|${info.site}`;
     const g = groups.get(gkey);
