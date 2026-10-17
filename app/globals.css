@@ -542,3 +542,7 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 #boot-fail p { margin:6px 0 10px; color:var(--muted); }
 #boot-fail pre { white-space:pre-wrap; word-break:break-all; font-size:11px; background:var(--bg); padding:8px; border-radius:8px; margin:0 0 12px; max-height:180px; overflow:auto; }
 #boot-fail button { width:100%; height:44px; border:0; border-radius:10px; font:inherit; font-weight:600; background:var(--fg); color:var(--bg); }
+/* Laad-ring en live-bolletje staan nu rechts in de kop van de bovenste dag (naast de knopjes). */
+h2 .loadring { margin-left:10px; width:22px; height:22px; }
+h2 .loadring svg { width:22px; height:22px; }
+h2 .livedot { margin:0 2px 0 12px; }

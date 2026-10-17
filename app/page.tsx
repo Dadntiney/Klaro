@@ -141,7 +141,7 @@ function MiniFav({ domain }: { domain: string }) {
  * Bovenaan komen ze live binnen; daaronder alles uit de volledige download: zoeken in alle dagen, verder terugbladeren en
  * naar een dag en tijd springen (zie lib/rawlog.ts). Rood streepje = door NextDNS geblokkeerd; rode regel = Klaro-vangnet.
  */
-function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void }) {
+function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void; status?: React.ReactNode }) {
   const [q, setQ] = useState("");
   const [at, setAt] = useState<number | null>(null); // gesprongen naar dit moment: regels van daarvoor
   const [calOpen, setCalOpen] = useState(false);
@@ -201,6 +201,7 @@ function RawLog({ rows, devName, devIds, device, onClose }: { rows: Event[]; dev
           <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><LogIcon /></button>
           <button className={"dview icon" + (calOpen ? " on" : "")} onClick={() => setCalOpen((v) => !v)} aria-expanded={calOpen} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
         </span>
+        {status}
       </h2>
       {calOpen && (
         <form
@@ -1020,6 +1021,8 @@ export default function Home() {
     rowsSeen.current = full ? { key, counts: rowCounts(rows) } : null;
   }, [days, device, full, beep]);
 
+  // Binnenhalen (ring met percentage) en daarna het live-bolletje: rechts naast de knopjes van de bovenste dag, zodat de chips doorlopen.
+  const liveStatus = !full && !histErr ? <LoadRing start={loadStart.current} /> : <LiveDot />;
   return (
     <main>
       {state === "error" && <p className="err">{error}</p>}
@@ -1068,7 +1071,6 @@ export default function Home() {
                 !<span className="count">{alertCount}</span>
               </button>
             )}
-            {!full && !histErr ? <LoadRing start={loadStart.current} /> : <LiveDot />}
             </div>
           </div>
 
@@ -1080,7 +1082,7 @@ export default function Home() {
             </div>
           )}
 
-          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} />}
+          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, rows: trows, hidden }, di) => {
             if (rawView) return null;
@@ -1119,6 +1121,7 @@ export default function Home() {
                   </button>
                   </span>
                 )}
+                {di === 0 && liveStatus}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {di === 0 && goOpen && (
