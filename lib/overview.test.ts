@@ -294,3 +294,19 @@ test("vaste melding: tot 10 minuten tussen twee meldingen is nog steeds spelen; 
   assert.equal(ss[0].e, T0 + 78 * min);
   assert.ok(!ss.some((x) => x.s < T0 + 78 * min && x.e > T0 + 78 * min));
 });
+
+test("spel-motor (Unity) tijdens een spel hoort bij dat spel; na een andere app of zonder spel ervoor niet", async () => {
+  const min = 60_000;
+  const rows: R[] = [[0, "apps.tutotoons.com", "P4"], [500, "tutopulse.tutotoons.com", "P4"]];
+  for (const t of [2, 4, 9, 14, 19, 24, 29]) rows.push([t * min, "cdp.cloud.unity3d.com", "P4", "blocked"]);
+  rows.push([31 * min, "www.netflix.com", "P4"], [31 * min + 400, "ios.prod.ftl.netflix.com", "P4"]); // andere app geopend
+  rows.push([33 * min, "cdp.cloud.unity3d.com", "P4", "blocked"]); // hoort niet meer bij het spel
+  rows.push([200 * min, "cdp.cloud.unity3d.com", "P4", "blocked"], [205 * min, "cdp.cloud.unity3d.com", "P4", "blocked"]); // geen spel ervoor
+  const o = await overview(rows);
+  const tuto = o.groups.filter((g) => g.site === "tutotoons.com").flatMap((g) => g.ss).sort((a, b) => a.s - b.s);
+  assert.equal(tuto[0].s, T0);
+  assert.equal(tuto[0].e, T0 + 29 * min);
+  assert.ok(!tuto.some((x) => x.e > T0 + 30 * min));
+  const unknown = o.groups.filter((g) => g.site === "unity3d.com").flatMap((g) => g.ss);
+  assert.ok(unknown.some((x) => x.s >= T0 + 200 * min), "zonder spel ervoor blijft het een onbekend spel");
+});

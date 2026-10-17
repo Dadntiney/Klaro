@@ -128,3 +128,24 @@ export function followers(ev: { t: number; dev: string; host: string; site: stri
   }
   return out;
 }
+
+/**
+ * Spel-motor en reclame in spellen (Unity, Amplitude, Singular, ironSource, AppLovin, ...): tijdens het spelen sturen veel
+ * spellen elke 1 à 5 minuten meetgegevens via zo'n algemeen adres (vaak door NextDNS geblokkeerd, maar wel in het logboek), en
+ * verder bijna niets. Zo'n adres hoort bij het spel dat op dat apparaat speelt: aansluitend op echt verkeer van dat spel (hooguit
+ * `keep` na de vorige opvraging) en zolang er tussendoor geen andere app opende. Over alle dagen: pauzes 0-6 min tijdens het
+ * spelen, daarna pas weer 11 min of meer. Zonder bekend spel ervoor blijft het "Spel (naam onbekend)".
+ */
+export const GAME_SDK = /(^|\.)(unity3d\.com|unity\.com|amplitude\.com|singular\.net|supersonicads\.com|applovin\.com|ironsrc\.(com|mobi)|vungle\.com|adcolony\.com|chartboost\.com)$/;
+
+/** `ev`: alles van één apparaat: `game` = adres van een bekend spel (site), `sdk` = adres van een spel-motor, `other` = een andere app. */
+export function assignGameSdk(ev: { t: number; game?: string; sdk?: boolean; other?: boolean }[], keep: number): Map<number, string> {
+  const out = new Map<number, string>();
+  let cur: { site: string; last: number } | null = null;
+  for (const e of [...ev].sort((a, b) => a.t - b.t)) {
+    if (e.game) { cur = { site: e.game, last: e.t }; continue; }
+    if (e.other) { if (cur && e.t - cur.last > 1_500) cur = null; continue; }
+    if (e.sdk && cur && e.t - cur.last <= keep) { out.set(e.t, cur.site); cur.last = e.t; }
+  }
+  return out;
+}

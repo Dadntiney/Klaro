@@ -9,7 +9,7 @@ import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
-import { anchorOf, chainTimes, companionFor, COMPANIONS, followers, loadedWith } from "./companion.ts";
+import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, loadedWith } from "./companion.ts";
 import { GELEERD, geldig } from "./geleerd.ts";
 import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
@@ -294,6 +294,24 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignPlayback(ev)) playOf.set(dev + "|" + t, site);
   }
+  // Spel-motor/reclame-adressen in spellen (Unity, Amplitude, ...) horen bij het spel dat speelt, zie assignGameSdk in lib/companion.ts.
+  const gameOf = new Map<string, string>(); // apparaat|tijdstip -> site van het spel
+  {
+    const byDev = new Map<string, { t: number; game?: string; sdk?: boolean; other?: boolean }[]>();
+    for (const r of body) {
+      const host = extractHost(r[hostCol] ?? "");
+      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+      if (!t) continue;
+      const info = classify(host!);
+      const sdk = GAME_SDK.test(host!);
+      const game = !sdk && info.main && !info.bg && / \(spel\)$/.test(info.name) && info.site !== "unity3d.com" ? info.site : undefined;
+      const other = !sdk && !game && info.main && !info.bg && !info.flag && !isPlainSite(info);
+      if (!sdk && !game && !other) continue;
+      const dev = deviceMap[idOf(r)];
+      (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, game, sdk, other });
+    }
+    for (const [dev, ev] of byDev) for (const [t, site] of assignGameSdk(ev, HEARTBEAT_GAP)) gameOf.set(dev + "|" + t, site);
+  }
   // Sites die altijd met een hulpadres van een andere site meekomen (script van een websitebouwer), zie lib/companion.ts.
   let learnedHelpers: string[] = [];
   const helperSites = (() => {
@@ -367,6 +385,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (comp && compIn.get(dev + "|" + comp.app)?.has(t)) info = classify(comp.app);
     const play = t ? playOf.get(dev + "|" + t) : undefined;
     if (play) info = classify(play);
+    const gsite = t ? gameOf.get(dev + "|" + t) : undefined;
+    if (gsite && GAME_SDK.test(host)) info = classify(gsite);
     const fol = t ? followOf.get(dev + "|" + host) : undefined;
     if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
     const d = t ? dayFmt.format(t) : "onbekend";
