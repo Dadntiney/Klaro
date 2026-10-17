@@ -854,7 +854,27 @@ export default function Home() {
       .catch(() => setDetails((d) => ({ ...d, [rk]: { state: "err" } })));
   };
 
-  const silentNames = useMemo(() => new Set(silent.map((x) => x.name)), [silent]);
+  // Waarschuwingen die de eigenaar als gezien heeft afgevinkt (alleen in deze browser). De sleutel bevat het tijdstip: een nieuw
+  // 18+-bezoek of een nieuwe stilte na gebruik is een nieuwe melding en komt dus gewoon weer terug.
+  const [gezien, setGezien] = useState<Set<string>>(() => new Set());
+  useEffect(() => { try { setGezien(new Set(JSON.parse(localStorage.getItem("klaro-gezien") ?? "[]") as string[])); } catch {} }, []);
+  const silentKey = (x: { name: string; last: number }) => `stil|${x.name}|${x.last}`;
+  const flagKey = (g: Group) => `flag|${g.d}|${g.dev}|${g.site}|${g.last}`;
+  const newExtra = extraAlerts.filter((a) => !gezien.has(a.key));
+  const newSilent = silent.filter((x) => !gezien.has(silentKey(x)));
+  const newFlagged = flagged.filter((g) => !gezien.has(flagKey(g)));
+  const alertCount = newExtra.length + newSilent.length + newFlagged.length;
+  const markSeen = (keys: string[]) => setGezien((prev) => {
+    const next = new Set(prev);
+    for (const k of keys) next.add(k);
+    // Alleen sleutels bewaren die nog bestaan (plus de nieuwe), zodat de lijst niet blijft groeien.
+    const live = new Set([...extraAlerts.map((a) => a.key), ...silent.map(silentKey), ...flagged.map(flagKey)]);
+    const keep = [...next].filter((k) => live.has(k));
+    try { localStorage.setItem("klaro-gezien", JSON.stringify(keep)); } catch {}
+    return new Set(keep);
+  });
+  const silentNames = useMemo(() => new Set(newSilent.map((x) => x.name)), [newSilent]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open && alertCount === 0) setOpen(false); }, [open, alertCount]); // alles afgevinkt: venster dicht
 
   // Samenvatting van vandaag voor het gekozen apparaat (of alle apparaten).
   const summary = useMemo(() => {
@@ -1029,9 +1049,9 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            {flagged.length + silent.length + extraAlerts.length > 0 && (
-              <button className="bang" onClick={() => setOpen(true)} aria-label={`${flagged.length + silent.length + extraAlerts.length} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
-                !<span className="count">{flagged.length + silent.length + extraAlerts.length}</span>
+            {alertCount > 0 && (
+              <button className="bang" onClick={() => setOpen(true)} aria-label={`${alertCount} waarschuwingen bekijken`} title="Waarschuwingen bekijken">
+                !<span className="count">{alertCount}</span>
               </button>
             )}
             {!full && !histErr ? <LoadRing start={loadStart.current} /> : <LiveDot />}
@@ -1313,44 +1333,51 @@ export default function Home() {
               <h3>Waarschuwingen</h3>
               <button className="close" onClick={() => setOpen(false)} aria-label="Sluiten">×</button>
             </div>
-            {extraAlerts.length > 0 && (
+            {alertCount === 0 && <p className="muted">Geen nieuwe waarschuwingen.</p>}
+            {newExtra.length > 0 && (
               <>
                 <div className="dh">Aandacht</div>
-                {extraAlerts.map((a) => (
+                {newExtra.map((a) => (
                   <div className="hit" key={a.key}>
                     <span className="tag amber">{a.tag}</span>
                     <div className="main">
                       <div className="name">{a.title}</div>
                       <div className="sub">{a.sub}</div>
                     </div>
+                    <button className="seen" onClick={() => markSeen([a.key])}>Gezien</button>
                   </div>
                 ))}
               </>
             )}
-            {silent.length > 0 && (
+            {newSilent.length > 0 && (
               <>
                 <div className="dh">Apparaat ongewoon stil</div>
-                {silent.map((x) => (
+                {newSilent.map((x) => (
                   <div className="hit" key={x.name}>
                     <span className="tag amber">Stil</span>
                     <div className="main">
                       <div className="name">{x.name}</div>
                       <div className="sub">Geen verzoeken sinds {timeFmt.format(x.last)} ({dur(Math.round(x.since / 60000))}); normaal ±{dur(Math.max(1, Math.round(x.gap / 60000)))} overdag. Uitgezet, offline, of VPN / mobiel internet?</div>
                     </div>
+                    <button className="seen" onClick={() => markSeen([silentKey(x)])}>Gezien</button>
                   </div>
                 ))}
               </>
             )}
-            {flagged.length > 0 && <p className="muted">Gemarkeerde sites (18+, dating, VPN/proxy, geblokkeerd) in de logs, nieuwste eerst.</p>}
-            {flagged.map((g) => (
+            {newFlagged.length > 0 && <p className="muted">Gemarkeerde sites (18+, dating, VPN/proxy, geblokkeerd) in de logs, nieuwste eerst. Ze blijven altijd rood in de lijst staan.</p>}
+            {newFlagged.map((g) => (
               <div className="hit" key={g.d + g.dev + g.site}>
                 <span className="tag">{g.flag ?? "In de buurt"}</span>
                 <div className="main">
                   <div className="name">{g.name}</div>
                   <div className="sub">{ctx.get(g.d + g.site + g.dev) && <>rond dit bezoek: {ctx.get(g.d + g.site + g.dev)} · </>}{g.dev} · laatst {dayLabel(g.d).toLowerCase()} om {timeFmt.format(g.last)}</div>
                 </div>
+                <button className="seen" onClick={() => markSeen([flagKey(g)])}>Gezien</button>
               </div>
             ))}
+            {alertCount > 1 && (
+              <button className="seen-all" onClick={() => { markSeen([...newExtra.map((a) => a.key), ...newSilent.map(silentKey), ...newFlagged.map(flagKey)]); setOpen(false); }}>Alles gezien</button>
+            )}
           </div>
         </div>
       )}
