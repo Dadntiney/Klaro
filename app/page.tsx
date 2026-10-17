@@ -1045,7 +1045,6 @@ export default function Home() {
               {[...devices.filter((d) => activeNow(d.name)), ...devices.filter((d) => !activeNow(d.name))].map((d) => (
                 <button key={d.name} className={"chip" + (deviceNow === d.name ? " on" : "") + (activeNow(d.name) ? " act" : " idle")} title={activeNow(d.name) ? `Nu in gebruik${activeApp(d.name) ? ": " + activeApp(d.name) : ""}` : "Niet in gebruik"} onClick={() => setDevice(d.name)}>
                   {activeNow(d.name) ? <span className="pulse" aria-hidden /> : silentNames.has(d.name) && "⚠ "}<DevIcon name={d.name} />{d.name}
-                  {activeNow(d.name) && activeApp(d.name) && <span className="chip-app">· {activeApp(d.name)}</span>}
                 </button>
               ))}
             </div>
