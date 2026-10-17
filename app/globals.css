@@ -497,3 +497,8 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .list .item .fav.ph { font-size:13px; }
 .list .item .fav.badge { font-size:10px; }
 .list > div + div:has(.tstart)::before { left:112px; }
+/* Geselecteerd én online: tekst en icoon ook groen (donkergroen op de lichte knop, lichtgroen op de donkere knop). */
+.chip.on.act, .chip.on.act .di { color:#4ade80; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip.on.act, :root:not([data-theme="light"]) .chip.on.act .di { color:#15803d; } }
+:root[data-theme="dark"] .chip.on.act, :root[data-theme="dark"] .chip.on.act .di { color:#15803d; }
+:root[data-theme="light"] .chip.on.act, :root[data-theme="light"] .chip.on.act .di { color:#4ade80; }
