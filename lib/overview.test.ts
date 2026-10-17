@@ -310,3 +310,15 @@ test("spel-motor (Unity) tijdens een spel hoort bij dat spel; na een andere app 
   const unknown = o.groups.filter((g) => g.site === "unity3d.com").flatMap((g) => g.ss);
   assert.ok(unknown.some((x) => x.s >= T0 + 200 * min), "zonder spel ervoor blijft het een onbekend spel");
 });
+
+test("Google: alleen www.google.nl tegelijk met de meetcode van een andere site is geen zoekopdracht; met zoekresultaten wel", async () => {
+  const s = 1_000;
+  const o = await overview([
+    [0, "leukleren.squla.nl", "P5"], [1.5 * s, "www.googletagmanager.com", "P5"], [4.5 * s, "www.google.nl", "P5"], [4.6 * s, "stats.g.doubleclick.net", "P5", "blocked"],
+    // echte zoekopdracht: zoekpagina, resultaten met plaatjes, even later nog een zoekopdracht
+    [600 * s, "www.google.nl", "P5"], [601 * s, "ogads-pa.clients6.google.com", "P5"], [606 * s, "encrypted-tbn0.gstatic.com", "P5"], [620 * s, "www.google.nl", "P5"], [621 * s, "encrypted-tbn1.gstatic.com", "P5"],
+  ]);
+  const g = shown(o, "google.com");
+  assert.equal(g.length, 1);
+  assert.ok(g[0].s >= T0 + 600 * s);
+});

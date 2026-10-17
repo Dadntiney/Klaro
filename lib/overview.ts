@@ -786,6 +786,18 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
   }
 
+  // Google: één moment met alleen www.google.nl/.com en niets van een zoekpagina (resultaten, plaatjes, zoekbalk) is geen
+  // zoekopdracht, maar de meetcode van een andere site (Squla laadt Google Analytics) of een app die opstart. Over alle dagen:
+  // alle 24 zulke losse Google-rijen vielen samen met een app of met meetcode van een andere site, geen enkele met een zoekpagina.
+  for (const [gkey, g] of groups) {
+    if (g.site !== "google.com" || !g.main || g.flag) continue;
+    for (const x of g.ss) {
+      if ((x.n ?? 0) > 1 || x.lg || x.ck) continue;
+      const hs = (siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 1_500 && h.t <= x.e + 1_500);
+      if (hs.length && hs.every((h) => /^www\.google\.[a-z.]+$/.test(h.host))) { delete x.pv; delete x.uz; x.emb = 1; }
+    }
+  }
+
   // Thuis of onderweg (op basis van de IP-adressen waarmee een apparaat verbindt).
   const away = analyzeNetwork(netRows);
 
