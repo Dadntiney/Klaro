@@ -57,3 +57,11 @@ test("download aanvullen: stuurt de server toch alles, dan blijft het zonder dub
   const out = mergeDownload(old, fresh, Date.parse("2026-10-17T08:58:00.000Z"))!.trim().split("\n");
   assert.deepEqual(out.map((l) => l.split("\t")[1]), ["domain", "c.nl", "b.nl", "a.nl", "z.nl"]);
 });
+
+test("download aanvullen: een kapotte regel zonder tijd wordt weggelaten en stopt het aanvullen niet", () => {
+  const old = [H, line("2026-10-17T08:50:00.000Z", "a.nl")].join("\n") + "\n";
+  const since = Date.parse("2026-10-17T08:58:00.000Z");
+  const fresh = [H, line("2026-10-17T09:10:00.000Z", "c.nl"), "7T09:07:00.000Z\tgraph.facebook.com\t", line("2026-10-17T09:05:00.000Z", "b.nl")].join("\n") + "\n";
+  const out = mergeDownload(old, fresh, since)!.trim().split("\n");
+  assert.deepEqual(out.map((l) => l.split("\t")[1]), ["domain", "c.nl", "b.nl", "a.nl"]);
+});

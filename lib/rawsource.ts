@@ -56,7 +56,7 @@ export function mergeDownload(old: string, fresh: string, since: number): string
   while (pos < old.length) {
     const end = old.indexOf("\n", pos);
     const line = old.slice(pos, end < 0 ? old.length : end);
-    if (line && lineT(line) <= since) break;
+    if (line && lineT(line) && lineT(line) <= since) break; // een kapotte regel (geen tijd) is geen grens
     pos = end < 0 ? old.length : end + 1;
   }
   // Stuurt de server toch meer (oude server zonder ?since): alleen de nieuwe regels gebruiken.
@@ -64,11 +64,12 @@ export function mergeDownload(old: string, fresh: string, since: number): string
   while (fpos < fresh.length) {
     const end = fresh.indexOf("\n", fpos);
     const line = fresh.slice(fpos, end < 0 ? fresh.length : end);
-    if (line && lineT(line) <= since) break;
+    if (line && lineT(line) && lineT(line) <= since) break; // een kapotte regel (geen tijd) is geen grens
     fpos = end < 0 ? fresh.length : end + 1;
   }
-  const body = fresh.slice(fh + 1, fpos);
-  return old.slice(0, oh + 1) + body + (body && !body.endsWith("\n") ? "\n" : "") + old.slice(pos);
+  // Alleen hele regels met een geldige tijd bewaren: een afgekapte regel (verbinding even weg) zou anders blijven hangen.
+  const body = fresh.slice(fh + 1, fpos).split("\n").filter((l) => l && lineT(l)).map((l) => l + "\n").join("");
+  return old.slice(0, oh + 1) + body + old.slice(pos);
 }
 
 export function rawSource(base: NextDNSClient & { since?: (since: number, ms: number) => Promise<NDResponse> }) {

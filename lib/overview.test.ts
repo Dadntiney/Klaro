@@ -387,3 +387,12 @@ test("Waze: Firebase-meldingen tijdens de rit horen bij Waze; na een spel of zon
   const toca = o.groups.filter((g) => g.site === "tocaboca.com" && g.dev === "P7").flatMap((g) => g.ss);
   assert.ok(toca.every((x) => x.e - x.s < 2 * min));
 });
+
+test("regel zonder geldige tijd (half overgekomen) telt niet mee: geen 'Datum onbekend'", async () => {
+  const head = "timestamp\tdomain\tstatus\treasons\tdestination_country\tclient_ip\tdevice_id\tdevice_name\tdevice_model";
+  const tsv = [head, `${at(0)}\twww.nu.nl\t\t\t\t10.0.0.1\tP1\tiPhone\t`, "7T20:09:12.123Z\tgraph.facebook.com\t\t\t\t10.0.0.1\tP1\tiPhone\t"].join("\n");
+  const res = { ok: true, status: 200, text: async () => tsv, json: async () => ({}) };
+  const r = await buildOverview({ logs: async () => res, download: async () => res }, { todayOnly: false });
+  const b = r.body as { groups: { d: string; site: string }[] };
+  assert.equal(b.groups.some((g) => g.d === "onbekend"), false);
+});

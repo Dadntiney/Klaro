@@ -202,9 +202,11 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   }
   }
   if (rows.length < 2) return ({ status: 200, body: { groups: [], devices: [], total: 0, insights: { payments: [], trackers: [] } } });
-  const [header, ...body] = rows;
+  const [header, ...allBody] = rows;
   const col = (name: string) => header.findIndex((h) => h.trim().toLowerCase() === name);
   const tCol = col("timestamp");
+  // Een afgekapte regel (half overgekomen bij het aanvullen) heeft geen geldige tijd: weglaten, anders "Datum onbekend".
+  const body = tCol >= 0 ? allBody.filter((r) => !!Date.parse(r[tCol] ?? "")) : allBody;
   const hostCol = col("domain") >= 0 ? col("domain") : (detectColumns(header, body)?.hostCol ?? -1);
   if (hostCol < 0) return ({ status: 502, body: { error: "Geen domeinkolom in de NextDNS-logs gevonden." } });
   // In de browser: eerst bij de eigen server navragen welke adressen op de 18+/dating-lijst staan.

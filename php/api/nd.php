@@ -39,7 +39,9 @@ if (isset($_GET['download'])) {
   // opvragingen (A/AAAA/HTTPS van hetzelfde adres op hetzelfde apparaat binnen 1,5 s) alvast weg. Klaro telt die toch als één
   // (lib/overview.ts doet precies hetzelfde), dus de uitkomst blijft gelijk; het scheelt de helft tot driekwart van het geheugen.
   $slim = PRIV . '/download.tsv';
-  if (!is_file($slim) || filemtime($slim) < filemtime($cache)) slim_csv($cache, $slim . '.tmp') && rename($slim . '.tmp', $slim);
+  // Elk verzoek een eigen tijdelijk bestand: schrijven twee apparaten tegelijk naar hetzelfde bestand, dan raken regels door elkaar
+  // (17 okt: een Facebook-regel zonder tijd, "Datum onbekend").
+  if (!is_file($slim) || filemtime($slim) < filemtime($cache)) { $tmp = $slim . '.' . getmypid() . '.tmp'; slim_csv($cache, $tmp) && rename($tmp, $slim); }
   header('Content-Type: text/tab-separated-values; charset=utf-8');
   if (!ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
   // ?since=<ms>: alleen regels van na dat moment (de telefoon bewaart de rest zelf). Het bestand staat op tijd, nieuwste eerst.
