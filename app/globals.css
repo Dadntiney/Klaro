@@ -519,3 +519,16 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .newtag { background:color-mix(in srgb, #3b82f6 22%, var(--card)); color:#93c5fd; } }
 :root[data-theme="dark"] .newtag { background:color-mix(in srgb, #3b82f6 22%, var(--card)); color:#93c5fd; }
 :root[data-theme="light"] .newtag { background:color-mix(in srgb, #2563eb 12%, var(--card)); color:#1d4ed8; }
+/* Naar dag en tijd: alle velden en de knop precies even hoog (44px), zelfde rand en hoeken; iOS-opmaak uit. */
+.goto { align-items:flex-end; gap:8px; padding:12px 14px 14px; border-radius:14px; }
+.goto label { gap:6px; }
+.goto label span { font-size:11px; letter-spacing:.06em; }
+.goto select, .goto input, .goto button { box-sizing:border-box; height:44px; margin:0; border-radius:10px; line-height:normal; }
+.goto select, .goto input { -webkit-appearance:none; appearance:none; padding:0 12px; border:1px solid var(--line); background-color:var(--bg); font-variant-numeric:tabular-nums; }
+.goto select { padding-right:34px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a7080' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
+.goto input[type="time"] { width:96px; text-align:center; display:flex; align-items:center; justify-content:center; }
+.goto input::-webkit-date-and-time-value { text-align:center; }
+.goto button { flex:none; padding:0 20px; background:var(--fg); color:var(--bg); }
+.goto label:has(input[type="time"]) { flex:none; width:96px; }
+.goto input[type="time"] { width:100%; min-width:0; padding:0 8px; }
+.goto input[type="time"]::-webkit-calendar-picker-indicator { display:none; }
