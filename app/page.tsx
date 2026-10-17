@@ -427,10 +427,10 @@ export default function Home() {
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
   // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet (onthouden per toestel).
   const [rawView, setRawView] = useState(false);
-  useEffect(() => { try { setRawView(localStorage.getItem("klaro-view") === "nextdns"); } catch {} }, []);
+  // Klaro opent altijd in het gewone overzicht; de NextDNS-lijst is een uitstapje (wens eigenaar), dus de keuze wordt niet onthouden.
   // Echt gebruik (tikken, scrollen, typen) aan de server melden: na 60 minuten zonder gebruik logt de server iedereen uit.
   useEffect(() => startActivityReporting(checkLogin), []);
-  const toggleRaw = () => setRawView((v) => { try { localStorage.setItem("klaro-view", v ? "klaro" : "nextdns"); } catch {} return !v; });
+  const toggleRaw = () => setRawView((v) => !v);
   const [rawLog, setRawLog] = useState<Event[]>([]);
   const rawSeen = useRef<Set<string>>(new Set());
   const addRaw = useCallback((evs: Event[]) => {
