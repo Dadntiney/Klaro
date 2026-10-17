@@ -1245,15 +1245,15 @@ export default function Home() {
                         aria-expanded={isOpen}
                       >
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
-                        {g.flag ? <span className="fav badge">{g.flag === "18+" ? "18+" : g.flag === "Dating" ? "♥" : g.flag === "VPN/proxy" ? "VPN" : g.flag === "Geblokkeerd" ? "🚫" : "!"}</span> : <Favicon domain={g.icon} name={g.name} />}
+                        <Favicon domain={g.icon} name={g.name} />
                         <div className="main">
-                          <div className="name">{g.name}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{g.name}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             if (rss.every((x) => x.uz)) parts.push(<span key="u" className="unsure">onzeker</span>);
-                            if (g.flag && g.flag !== "18+" && g.flag !== "Dating") parts.push(<span key="f">{g.flag}{(g.bl ?? 0) > 0 && ` (${g.bl}× geblokkeerd)`}</span>);
+                            if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
                             return <div className="sub meta">{parts.flatMap((x, i) => (i ? [<span key={"s" + i} className="msep">·</span>, x] : [x]))}</div>;

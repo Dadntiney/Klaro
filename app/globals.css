@@ -573,3 +573,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 .item.adult.nowrow { background-color:#dc2626; background-image:linear-gradient(100deg, transparent 20%, rgba(255,255,255,.16) 50%, transparent 80%); }
 .item.adult .tstart, .item.adult .time, .item.adult .time .twhen, .item.adult .tdur, .item.adult .nowtag { color:#fff; }
 .item.adult .tstart { opacity:.85; }
+/* Vangnet: het echte logo blijft staan (op een wit vlakje, leesbaar op rood); het soort staat als wit label achter de naam. */
+.flagtag { display:inline-block; margin-left:8px; padding:0 7px; font-size:11px; line-height:18px; font-weight:700; border-radius:6px; vertical-align:2px; background:#fff; color:#dc2626; }
+.item.adult .fav.ok { background:#fff; padding:2px; box-sizing:border-box; }
+.item.adult .fav.ph { background:#fff; color:#dc2626; }
