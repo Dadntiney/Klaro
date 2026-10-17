@@ -1,7 +1,7 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, NAV_APPS, NAV_GAP, TV_APPS, classify, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
@@ -170,7 +170,7 @@ const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", 
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
 /** `known`: wat een eerdere berekening over alle dagen leerde (widgets, hulpjes, doorverwijs-adressen), voor het snelle herberekenen van alleen de laatste uren. */
-export type Known = { auto?: string[]; helpers?: string[]; followers?: string[]; parts?: string[] };
+export type Known = { auto?: string[]; helpers?: string[]; followers?: string[]; parts?: string[]; heartbeat?: string[] };
 export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number; known?: Known }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const todayOnly = opts.todayOnly;
   const hours = Math.min(24, Math.max(0, Number(opts.hours) || 0));
@@ -315,6 +315,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const followOf = new Map<string, string>(); // apparaat|adres -> site
   let learnedFollowers: string[] = [];
   let partsAll: string[] = []; // sites die (over alle dagen) altijd als onderdeel van een andere pagina meekomen
+  const heartbeat = new Set<string>(); // apparaat|site van apps met een doorverwijs-adres (vaste melding tijdens gebruik)
   const followIn = new Set<string>(); // apparaat|adres|tijdstip dat bij de app hoort
   {
     const ev: Parameters<typeof followers>[0] = [];
@@ -330,6 +331,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     learnedFollowers = [...followOf].map(([k, site]) => k + "|" + site);
     // Eerder geleerd (blijft ook als het logboek is leeggemaakt): apparaat|adres|site.
     for (const k of [...geldig(GELEERD.followers, Date.now()), ...(opts.known?.followers ?? [])]) { const i = k.lastIndexOf("|"); if (!followOf.has(k.slice(0, i))) followOf.set(k.slice(0, i), k.slice(i + 1)); }
+    for (const k of opts.known?.heartbeat ?? []) heartbeat.add(k);
     if (followOf.size) {
       const appT = new Map<string, number[]>(), folT = new Map<string, number[]>();
       for (const e of ev) {
@@ -339,7 +341,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       }
       for (const [k, ts] of folT) {
         const dev = k.slice(0, k.indexOf("|"));
-        for (const t of chainTimes(appT.get(dev + "|" + followOf.get(k)) ?? [], ts, GAP, 0)) followIn.add(k + "|" + t);
+        const own = (appT.get(dev + "|" + followOf.get(k)) ?? []).sort((a, b) => a - b);
+        for (const t of chainTimes(own, ts, HEARTBEAT_GAP, 0)) followIn.add(k + "|" + t);
+        // Een vaste melding (heartbeat): het doorverwijs-adres komt vaak los terug, zonder het eigen adres van de app erbij
+        // (Toca Boca: 608 keer, waarvan 361 los). Een CDN dat alleen samen met de app plaatjes laadt (Hue, Spotify) niet.
+        let alone = 0;
+        for (const t of ts) { let i = own.length - 1; let lo = 0; while (lo < i) { const m = (lo + i) >> 1; if (own[m] < t - 1_000) lo = m + 1; else i = m; } if (!(own[lo] !== undefined && Math.abs(own[lo] - t) <= 1_000)) alone++; }
+        if (!opts.known && alone >= 20 && alone >= 0.5 * ts.length) heartbeat.add(dev + "|" + followOf.get(k));
       }
     }
   }
@@ -465,11 +473,14 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const all = times.get(gkey) ?? [];
     let sessions = allSessions(all);
     // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit (zie NAV_APPS).
-    if (NAV_APPS.has(g.site) && sessions.length > 1) {
+    // Apps met een vaste melding via een doorverwijs-adres (Toca Boca: elke 2 tot 10 minuten): stukjes met hooguit HEARTBEAT_GAP
+    // ertussen zijn één keer spelen.
+    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : heartbeat.has(g.dev + "|" + g.site) ? HEARTBEAT_GAP : 0;
+    if (joinGap && sessions.length > 1) {
       const out: Session[] = [];
       for (const x of [...sessions].sort((a, b) => a.s - b.s)) {
         const l = out[out.length - 1];
-        if (l && x.s - l.e <= NAV_GAP) { l.e = Math.max(l.e, x.e); l.n = (l.n ?? 0) + (x.n ?? 0); } else out.push({ ...x });
+        if (l && x.s - l.e <= joinGap) { l.e = Math.max(l.e, x.e); l.n = (l.n ?? 0) + (x.n ?? 0); } else out.push({ ...x });
       }
       sessions = out.sort((a, b) => b.e - a.e);
     }
@@ -861,6 +872,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     auto: todayOnly ? undefined : auto,
     learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers, followers: learnedFollowers },
     parts: todayOnly ? undefined : partsAll, // voor het snelle herberekenen (lib/recent.ts)
+    heartbeat: todayOnly ? undefined : [...heartbeat],
     followers: Object.fromEntries(followOf), // live: dezelfde doorverwijs-adressen (apparaat|adres -> site) // wat nu uit de logboeken blijkt (scripts/leer.ts legt het vast)
     // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
     partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,

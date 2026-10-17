@@ -137,6 +137,9 @@ export function isEmbedHost(host: string): boolean {
  */
 export const NAV_APPS = new Set(["waze.com"]);
 export const NAV_GAP = 20 * 60_000;
+/** Apps die tijdens gebruik een vaste melding sturen via een doorverwijs-adres (zie followers() in lib/companion.ts): meestal elke
+ * 1 tot 5 minuten, soms tot 10 (over alle dagen bij Toca Boca); langer is een echte pauze. */
+export const HEARTBEAT_GAP = 10 * 60_000;
 export const TV_APPS = new Set(["disneyplus.com", "ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();

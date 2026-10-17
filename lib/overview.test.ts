@@ -278,3 +278,19 @@ test("zelfde merk, andere extensie kort na elkaar (ravensburger.nl en ravensburg
   assert.equal(shown(o, "intertoys.nl").length, 1);
   assert.equal(shown(o, "bol.com").length, 1);
 });
+
+test("vaste melding: tot 10 minuten tussen twee meldingen is nog steeds spelen; een pauze van een kwartier niet", async () => {
+  const min = 60_000;
+  const elb = "event-alb-2.eu-west-1.elb.amazonaws.com";
+  const rows: R[] = [[0, "lifeserver.tocaboca.com", "P3"]];
+  // Eigen adres steeds samen met het Amazon-adres (doorverwijzing), en daartussen het Amazon-adres los, soms pas na 8 minuten.
+  for (const t of [0.5, 10, 20, 30]) rows.push([t * min, "analytics-events.tocaboca.com", "P3"], [t * min + 50, elb, "P3"]);
+  for (const t of [2, 4, 6, 14, 16, 18, 22, 24, 26, 28, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62]) rows.push([t * min, elb, "P3"]);
+  rows.push([70 * min, elb, "P3"], [78 * min, elb, "P3"]); // 8 minuten stil: hoort er nog bij
+  rows.push([93 * min, elb, "P3"]); // 15 minuten stil: een nieuwe keer (of niets)
+  const o = await overview(rows);
+  const ss = o.groups.filter((g) => g.site === "tocaboca.com").flatMap((g) => g.ss).sort((a, b) => a.s - b.s);
+  assert.equal(ss[0].s, T0);
+  assert.equal(ss[0].e, T0 + 78 * min);
+  assert.ok(!ss.some((x) => x.s < T0 + 78 * min && x.e > T0 + 78 * min));
+});

@@ -54,6 +54,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Tabbladen opnieuw geladen: komt Safari/Chrome weer in beeld, dan ververst hij alle open tabbladen tegelijk (zondag 11 okt
    17:09: tien sites in 17 s). Vier of meer sites binnen 20 s die elk maar even laden: geen bezoek (opgelost 17 okt).
    Zelfde merk met een andere extensie kort na elkaar (ravensburger.nl + ravensburger.cloud): één bezoek (opgelost 17 okt).
+   Vaste melding (heartbeat) via een doorverwijs-adres: meestal elke 1-5 min, soms tot 10 min (Toca Boca 17 okt 12:12-12:42);
+   stukjes met hooguit 10 min ertussen zijn één keer spelen (HEARTBEAT_GAP, alleen als het adres vaak los terugkomt).
 
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.

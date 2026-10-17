@@ -2,7 +2,7 @@
 
 import { OPEN_BURST, extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
-import { NAV_APPS, NAV_GAP } from "@/lib/sites";
+import { HEARTBEAT_GAP, NAV_APPS, NAV_GAP } from "@/lib/sites";
 import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
@@ -663,7 +663,7 @@ export default function Home() {
         // Doorverwijs-adres van een app (Toca Boca via een Amazon-adres), net als op de server: alleen aansluitend op die app.
         const fsite = e.host ? followOf.current[e.dev + "|" + e.host] : undefined;
         const app = fsite && next.find((g) => g.d === d && g.dev === e.dev && g.site === fsite);
-        if (app && e.t - app.last <= 5 * 60_000 && e.t >= app.last - 1_500) e = { ...e, site: app.site, name: app.name, icon: app.icon, bg: false, main: true, fg: undefined, res: undefined, cat: app.cat ?? e.cat };
+        if (app && e.t - app.last <= HEARTBEAT_GAP && e.t >= app.last - 1_500) e = { ...e, site: app.site, name: app.name, icon: app.icon, bg: false, main: true, fg: undefined, res: undefined, cat: app.cat ?? e.cat };
         // Afspeelsignalen (Conviva) horen bij de tv-app waarvan de reeks nog loopt, net als op de server (lib/play.ts).
         const tv = e.media && !e.main && isPlainSite(e) ? liveTvApp(next, d, e.dev, e.t) : undefined;
         if (tv) e = { ...e, site: tv.site, name: tv.name, icon: tv.icon, bg: false, main: true, fg: undefined, res: undefined, cat: tv.cat ?? e.cat };
@@ -986,10 +986,12 @@ export default function Home() {
     // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
     const shown = (g: Group): Session[] => {
       let all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
-      // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit, ook live (zelfde regel als lib/overview.ts).
-      if (NAV_APPS.has(g.site) && all.length > 1) {
+      // Navigatie (Waze) en apps met een vaste melding (Toca Boca): stukjes met hooguit NAV_GAP / HEARTBEAT_GAP ertussen zijn één
+      // rit of één keer spelen, ook live (zelfde regel als lib/overview.ts).
+      const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : Object.entries(followOf.current).some(([k, site]) => site === g.site && k.startsWith(g.dev + "|")) ? HEARTBEAT_GAP : 0;
+      if (joinGap && all.length > 1) {
         const m: Session[] = [];
-        for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= NAV_GAP) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }
+        for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }
         all = m.reverse();
       }
       // Gemarkeerde en verdachte regels blijven altijd staan.
