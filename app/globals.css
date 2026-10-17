@@ -577,3 +577,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .flagtag { display:inline-block; margin-left:8px; padding:0 7px; font-size:11px; line-height:18px; font-weight:700; border-radius:6px; vertical-align:2px; background:#fff; color:#dc2626; }
 .item.adult .fav.ok { background:#fff; padding:2px; box-sizing:border-box; }
 .item.adult .fav.ph { background:#fff; color:#dc2626; }
+/* Laden: korte uitleg in plaats van alleen grijze blokjes. */
+.skel-empty { margin:6px 0 18px; font-size:15px; }
+.skel-note { margin:0 0 6px; font-size:13px; }

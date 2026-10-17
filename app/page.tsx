@@ -13,6 +13,7 @@ import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
+import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
 import { baseDomain } from "@/lib/parse";
@@ -495,7 +496,8 @@ export default function Home() {
     const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string>; fgLearned?: Record<string, string[]> }, isFull: boolean) => {
       fullRef.current = true;
       // Bij alleen het laatste stuk: de eerste 15 minuten van dat stuk niet tonen (een bezoek dat eerder begon zou daar te laat lijken te beginnen).
-      setCut(data.partial ? data.partial + 15 * 60_000 : 0);
+      // Begint dat stuk vóór middernacht (net na 0:00), dan is vandaag al compleet: niets meer te wachten voor vandaag.
+      setCut(data.partial && data.partial > amsterdamMidnight(Date.now()) ? data.partial + 15 * 60_000 : 0);
       setGroups(data.groups);
       setDevices(data.devices);
       setTotal(data.total);
@@ -1400,7 +1402,9 @@ export default function Home() {
             );
           })}
           {/* Alleen het laatste uur staat er: de rest van vandaag laadt nog (zelfde glans als het skelet). */}
-          {((cut > 0 && !histErr) || (days.length === 0 && !full && !histErr)) && (
+          {/* Vandaag is binnen maar leeg (net na middernacht): dat zeggen, geen grijze blokjes die op laden lijken. */}
+          {cut === 0 && days.length === 0 && !full && !histErr && <p className="muted skel-empty">Vandaag nog niets gebruikt.</p>}
+          {cut > 0 && !histErr && (
             <div className="list skel-list skel-more" aria-label="Eerder vandaag laden">
               {[58, 44, 66, 50].map((w, i) => (
                 <div key={i} className="item skel-item">
@@ -1414,6 +1418,7 @@ export default function Home() {
           {/* Oudere dagen worden nog geladen: rustige grijze dagkopjes met dezelfde glans als het skelet. */}
           {!full && !histErr && (
             <div className="skel-days" aria-label="Oudere dagen laden">
+              <p className="muted skel-note">Oudere dagen laden…</p>
               {[150, 190, 170].map((w, i) => <div key={i} className="skel-day"><span className="sk" style={{ width: w, height: 14 }} /><span className="sk" style={{ width: 14, height: 14 }} /></div>)}
             </div>
           )}
