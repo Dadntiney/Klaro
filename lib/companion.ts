@@ -149,3 +149,37 @@ export function assignGameSdk(ev: { t: number; game?: string; sdk?: boolean; oth
   }
   return out;
 }
+
+/**
+ * Meta-apps delen adressen: de Instagram-app gebruikt ook graph/gateway/edge-mqtt/star.c10r.facebook.com, plaatjes van
+ * scontent-*.xx.fbcdn.net en de netwerkmeting (*-netseer-ipaddr-assoc.*.fbcdn.net). Zonder deze regel werd Instagram-gebruik als
+ * "Facebook" getoond (17 okt 13:42: vier Instagram-foto's, maar de rij heette Facebook). Een gedeeld adres hoort bij de app
+ * waarvan het dichtstbijzijnde eigen adres komt (binnen 5 min, op hetzelfde apparaat). Eigen Facebook-adressen zijn alleen die
+ * Instagram nooit gebruikt (gemeten over alle dagen): lookaside, rupload, chat-e2ee, ep2, web, en video-/static-/external-*.
+ * Geen eigen adres in de buurt, of even dichtbij: blijft Facebook (zoals het was).
+ */
+export const IG_OWN = /(^|\.)instagram\.com$|(^|\.)cdninstagram\.com$|^dgw-ig\.c10r\.facebook\.com$/;
+export const FB_OWN = /^(lookaside|rupload|web|mobile|mbasic|touch|chat-e2ee|ep2|payments-graph)\.(c10r\.)?facebook\.com$|^(video|static|external)-[a-z0-9-]+\.xx\.fbcdn\.net$/;
+const META_SHARED = /\.facebook\.com$|-netseer-ipaddr-assoc\.[a-z]+\.fbcdn\.net$|^(scontent|static)[^.]*\.(fallback\.)?xx\.fbcdn\.net$/;
+export const META_WINDOW = 300_000;
+
+/** Sleutels `apparaat|tijd|adres` van gedeelde Meta-adressen die bij Instagram horen. `ev` per apparaat, gesorteerd of niet. */
+export function instagramShared(ev: { t: number; dev: string; host: string }[]): Set<string> {
+  const out = new Set<string>();
+  const byDev = new Map<string, { t: number; host: string }[]>();
+  for (const e of ev) if (IG_OWN.test(e.host) || FB_OWN.test(e.host) || META_SHARED.test(e.host)) (byDev.get(e.dev) ?? byDev.set(e.dev, []).get(e.dev)!).push(e);
+  for (const [dev, list] of byDev) {
+    list.sort((a, b) => a.t - b.t);
+    const ig = list.filter((e) => IG_OWN.test(e.host)).map((e) => e.t);
+    const fb = list.filter((e) => !IG_OWN.test(e.host) && FB_OWN.test(e.host)).map((e) => e.t);
+    const dist = (ts: number[], t: number) => { let lo = 0, hi = ts.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ts[m] < t) lo = m + 1; else hi = m; }
+      return Math.min(lo < ts.length ? ts[lo] - t : Infinity, lo > 0 ? t - ts[lo - 1] : Infinity); };
+    for (const e of list) {
+      if (/^dgw-ig\./.test(e.host)) { out.add(dev + "|" + e.t + "|" + e.host); continue; }
+      if (IG_OWN.test(e.host) || FB_OWN.test(e.host)) continue;
+      const di = dist(ig, e.t);
+      if (di <= META_WINDOW && di < dist(fb, e.t)) out.add(dev + "|" + e.t + "|" + e.host);
+    }
+  }
+  return out;
+}

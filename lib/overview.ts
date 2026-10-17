@@ -9,7 +9,7 @@ import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
-import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, loadedWith } from "./companion.ts";
+import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, instagramShared, loadedWith } from "./companion.ts";
 import { GELEERD, geldig } from "./geleerd.ts";
 import { learnFg } from "./selflearn.ts";
 import { assignPlayback } from "./play.ts";
@@ -278,6 +278,12 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const c = COMPANIONS.find((x) => x.app === k.slice(k.lastIndexOf("|") + 1))!;
     if (e.a.length) compIn.set(k, chainTimes(e.a, e.h, c.keep, c.lead));
   }
+  // Gedeelde Meta-adressen (graph.facebook.com, netwerkmeting) die bij de Instagram-app horen, zie lib/companion.ts.
+  const igShared = instagramShared(body.flatMap((r) => {
+    const host = extractHost(r[hostCol] ?? "");
+    const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    return t && /facebook|fbcdn|instagram/.test(host!) ? [{ t, dev: deviceMap[idOf(r)], host: host! }] : [];
+  }));
   // Afspeelsignalen zonder eigen app (Conviva) horen bij de tv-app waarmee hun reeks begon, zie lib/play.ts.
   const playOf = new Map<string, string>(); // apparaat|tijdstip -> site van de tv-app
   {
@@ -417,6 +423,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (gsite && GAME_SDK.test(host)) info = classify(gsite);
     const fol = t ? followOf.get(dev + "|" + host) : undefined;
     if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
+    if (t && igShared.has(dev + "|" + t + "|" + host)) info = classify("instagram.com");
     const d = t ? dayFmt.format(t) : "onbekend";
 
     // Door NextDNS geblokkeerd? Een geblokkeerde poging naar porno/dating is altijd belangrijk, ook als het adres niet op mijn lijst staat.
@@ -811,6 +818,18 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const a = l.find((y) => y.g.site !== b.g.site && brand(y.g.site) === brand(b.g.site) && brand(b.g.site).length >= 4 && y.x.s <= b.x.s && b.x.s - y.x.s <= 30_000);
         if (a) { delete b.x.pv; delete b.x.ck; delete b.x.uz; b.x.emb = 1; }
       }
+    }
+  }
+
+  // App gestart, maar geen inhoud gezien: Instagram vraagt bij het openen www.instagram.com op. Gemeten over alle dagen: 85 keer,
+  // nooit 's nachts (ook niet bij de nachtelijke achtergrond-starts met test-gateway/i.instagram). Vaak laadt er daarna geen foto
+  // (uit het geheugen getoond, of meteen weer weg), dus geen bewijs van kijken: tonen als onzeker (17 okt 14:50, Shazam → Instagram).
+  for (const g of groups.values()) {
+    if (g.site !== "instagram.com") continue;
+    const hs = siteHosts.get(g.d + "|" + g.dev + "|" + g.site) ?? [];
+    for (const x of g.ss) {
+      if (isHuman(x) || x.emb || x.res || x.rf || x.rl) continue;
+      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s && y.t <= x.e)) { x.ao = 1; x.uz = 1; }
     }
   }
 

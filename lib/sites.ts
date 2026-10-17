@@ -92,7 +92,7 @@ export const FG_RULES: Record<string, RegExp> = {
   // netseer-ipaddr-assoc: netwerkmeting die de Facebook/Instagram-app alleen doet terwijl hij open staat (elke paar minuten);
   // tijdens scrollen worden foto's vaak niet opnieuw opgezocht, dus dit is dan het enige teken van gebruik. 's Nachts: nooit.
   "facebook.com": /^(scontent|video|static|external|lookaside)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$|^(m|web|touch|mbasic)\.facebook\.com$|-netseer-ipaddr-assoc\.[a-z]+\.fbcdn\.net$/,
-  "instagram.com": /(^|\.)cdninstagram\.com$|^(scontent|instagram|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$/,
+  "instagram.com": /(^|\.)cdninstagram\.com$|^(scontent|instagram|video)[^.]*\.([a-z0-9-]+\.)*fbcdn\.net$|-netseer-ipaddr-assoc\.[a-z]+\.fbcdn\.net$/, // netseer: alleen als die bij Instagram hoort (lib/companion.ts)
   "whatsapp.com": /^(pps|static|mmg|media[^.]*|web)\.(cdn\.)?whatsapp\.(net|com)$|^graph\.whatsapp\.com$/,
   "tiktok.com": /tiktokcdn(-[a-z]+)?\.com$|(^|\.)ibyteimg\.com$/,
   // Google: alleen een echte zoekpagina (de Google-balk bovenaan, google.nl, afbeeldingen/lens); Foto's, Gmail en inlog-synchronisatie niet.

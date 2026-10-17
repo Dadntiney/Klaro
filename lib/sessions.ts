@@ -17,6 +17,7 @@ export interface Session {
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   lg?: 1; // inlog- of bankierpagina geopend (bankieren.*, mijn.*): altijd een bewust bezoek
   pv?: 1;
+  ao?: 1; // app gestart (eigen startadres), maar geen inhoud gezien: tonen als onzeker (zie lib/overview.ts)
   uz?: 1; // onzeker: één los adres terwijl in een social-app gescrold werd (advertentie óf echt geopend) // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
   ml?: 1;
   ck?: 1; // via een tik op een link in een mail naar de site gegaan: een echt bezoek (niet als mail zien) // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
@@ -141,6 +142,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
 export function isHuman(x: Session): boolean {
   if (x.emb || x.res || x.rf || x.rl) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
+  if (x.ao) return true; // app gestart zonder zichtbare inhoud: wel tonen, maar als onzeker (x.uz)
   // App met een inhoud-regel (Google, Facebook, ...) en niets van die inhoud geladen: één los adres is dan geen bezoek, ook niet als
   // losse pagina (Google: een spel of app vraagt bij het opstarten www.google.com op; een echte zoekopdracht laadt ook resultaten).
   if (x.f === 0 && x.pv && !x.lg && !x.ck && (x.n ?? 0) <= 1) return false;

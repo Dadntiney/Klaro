@@ -82,6 +82,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    achtergrond, ook als daarna echte app-adressen komen. Zo bleef Shazam onzichtbaar en zag ook de controle het niet.
    Controle 5b telt daarom per adres: onbekende app die los opent (2+ eigen adressen tegelijk, geen website vlak ervoor).
    Shazam is nu een app; beacon.shazam.com (dag en nacht) telt niet mee.
+   Geleerd (17 okt): Instagram gebruikt veel Facebook-adressen (graph/gateway/edge-mqtt/star.c10r.facebook.com, de netwerkmeting
+   *-netseer-ipaddr-assoc.*.fbcdn.net, scontent-*.xx.fbcdn.net). Daardoor stond Instagram-gebruik als "Facebook" in het overzicht,
+   of dubbel (Instagram én Facebook). Een gedeeld adres hoort nu bij de app van het dichtstbijzijnde eigen adres (5 min);
+   eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
+   Instagram gestart (www.instagram.com, nooit 's nachts) zonder foto's: onzeker tonen. Bij de ontgrendel-golf (WhatsApp 07:24)
+   telde ik eerder Facebook en Instagram als twee apps en www.google.com als Google; dat laatste vraagt WhatsApp zelf op.
 
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.
@@ -90,8 +96,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    het moment dat NPO begon. 1 van 434 momenten; nagaan of dit vaker gebeurt bij het wisselen van app.
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
-   Instagram: www.instagram.com komt overdag vaak (80x) zonder foto's; nooit 's nachts, maar Instagram is 's nachts ook
-   bijna nooit actief (7 nachten). Laten wachten op zelf leren; pas tonen (eventueel als onzeker) met meer bewijs.
+   Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
 
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.

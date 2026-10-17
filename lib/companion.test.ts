@@ -45,3 +45,19 @@ test("loadedWith: alleen sites die elke keer (3 keer, 2 dagen) na hetzelfde hulp
   assert.deepEqual([...loadedWith(ev)], ["script.github.io"]);
   assert.equal(loadedWith(ev.filter((e) => e.t < 2 * day)).size, 0); // maar 2 keer: te weinig bewijs
 });
+
+test("gedeelde Meta-adressen: bij Instagram als het dichtstbijzijnde eigen adres van Instagram is, anders Facebook", async () => {
+  const { instagramShared } = await import("./companion.ts");
+  const ev = [
+    { t: 0, dev: "A", host: "i.instagram.com" }, { t: 1_000, dev: "A", host: "graph.facebook.com" }, { t: 2_000, dev: "A", host: "dgw-ig.c10r.facebook.com" },
+    { t: 1_000_000, dev: "A", host: "lookaside.facebook.com" }, { t: 1_010_000, dev: "A", host: "graph.facebook.com" },
+    { t: 1_000, dev: "B", host: "graph.facebook.com" }, // ander apparaat: geen Instagram in de buurt
+    { t: 5_000_000, dev: "A", host: "graph.facebook.com" }, // niets in de buurt: blijft Facebook
+  ];
+  const s = instagramShared(ev);
+  assert.ok(s.has("A|1000|graph.facebook.com"));
+  assert.ok(s.has("A|2000|dgw-ig.c10r.facebook.com"));
+  assert.ok(!s.has("A|1010000|graph.facebook.com"));
+  assert.ok(!s.has("B|1000|graph.facebook.com"));
+  assert.ok(!s.has("A|5000000|graph.facebook.com"));
+});

@@ -326,7 +326,8 @@ test("Google: alleen www.google.nl tegelijk met de meetcode van een andere site 
 test("telefoon ontgrendeld: veel apps verversen tegelijk; een korte app-rij daarin is onzeker, een volledige app-start niet", async () => {
   const s = 1_000;
   const o = await overview([
-    [0, "i.instagram.com", "P6"], [0, "gateway.facebook.com", "P6"], [0.1 * s, "www.google.com", "P6"],
+    // drie verschillende apps (gateway.facebook.com hoort bij Instagram, www.google.com vraagt WhatsApp zelf op)
+    [0, "i.instagram.com", "P6"], [0, "gateway.facebook.com", "P6"], [0.1 * s, "www.google.com", "P6"], [0.2 * s, "api.buienradar.nl", "P6"],
     [2.5 * s, "graph.whatsapp.com", "P6"], [2.6 * s, "static.whatsapp.net", "P6"], [5 * s, "mmx-ds.cdn.whatsapp.net", "P6"],
     // later: Vinted echt geopend (veel eigen adressen), met meetmodules van Facebook en een reclamenetwerk erbij
     [600 * s, "api.vinted.com", "P6"], [600.2 * s, "www.vinted.com", "P6"], [600.4 * s, "flags.svc.vinted.com", "P6"], [601 * s, "images1.vinted.net", "P6"],
@@ -337,4 +338,36 @@ test("telefoon ontgrendeld: veel apps verversen tegelijk; een korte app-rij daar
   const vin = shown(o, "vinted.com");
   assert.equal(vin.length, 1);
   assert.notEqual((vin[0] as { uz?: 1 }).uz, 1);
+});
+
+test("Instagram gebruikt met gedeelde Meta-adressen (netwerkmeting, graph.facebook.com): de rij heet Instagram, niet Facebook", async () => {
+  const ns = "5d33d294-f526-4fe5-af28-cadb473de3bc-netseer-ipaddr-assoc.xz.fbcdn.net";
+  const o = await overview([
+    [0, "i.instagram.com"], [100, "gateway.facebook.com"], [600, "scontent-lhr11-1.cdninstagram.com"], [700, "graph.facebook.com"],
+    [800, "www.facebook.com"], [1_200, "edge-mqtt.facebook.com"], [6_000, ns], [8_000, ns.replace("5d33", "5066")], [11_000, "graph.instagram.com"],
+  ]);
+  assert.equal(shown(o, "instagram.com").length, 1);
+  assert.equal(shown(o, "facebook.com").length, 0);
+});
+
+test("geen vals Instagram: echt Facebook (chat, lookaside, eigen foto-servers) blijft Facebook, ook met Instagram ervoor", async () => {
+  const ns = "11111111-2222-3333-4444-555555555555-netseer-ipaddr-assoc.xz.fbcdn.net";
+  const o = await overview([
+    [0, "instagram.c10r.instagram.com"], // Instagram op de achtergrond, 4 min eerder
+    [240_000, "lookaside.facebook.com"], [240_300, "chat-e2ee.facebook.com"], [240_500, "external-ams2-1.xx.fbcdn.net"],
+    [240_600, "static-ams2-1.xx.fbcdn.net"], [243_000, ns], [250_000, "scontent-ams2-1.xx.fbcdn.net"], [260_000, ns.replace("1111", "9999")],
+  ]);
+  assert.equal(shown(o, "facebook.com").length, 1);
+  assert.equal(shown(o, "instagram.com").length, 0);
+});
+
+test("Instagram gestart (www.instagram.com) zonder foto's: tonen als onzeker; alleen achtergrondverkeer niet", async () => {
+  const o = await overview([
+    [0, "www.instagram.com"], [300, "i.instagram.com"], [400, "gateway.instagram.com"], [500, "test-gateway.instagram.com"], [11_000, "graph.instagram.com"],
+    [3_600_000, "i.instagram.com"], [3_600_300, "gateway.instagram.com"], [3_600_400, "test-gateway.instagram.com"], [3_610_000, "graph.instagram.com"],
+  ]);
+  const ig = shown(o, "instagram.com") as { uz?: 1; ao?: 1 }[];
+  assert.equal(ig.length, 1);
+  assert.equal(ig[0].uz, 1);
+  assert.equal(ig[0].ao, 1);
 });
