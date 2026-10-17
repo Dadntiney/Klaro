@@ -200,8 +200,8 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
         <span className="dpair">
           <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><LogIcon /></button>
           <button className={"dview icon" + (calOpen ? " on" : "")} onClick={() => setCalOpen((v) => !v)} aria-expanded={calOpen} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
+          <span className="dstat">{status}</span>
         </span>
-        {status}
       </h2>
       {calOpen && (
         <form
@@ -1119,9 +1119,9 @@ export default function Home() {
                   >
                     <CalendarIcon />
                   </button>
+                  <span className="dstat">{liveStatus}</span>
                   </span>
                 )}
-                {di === 0 && liveStatus}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {di === 0 && goOpen && (

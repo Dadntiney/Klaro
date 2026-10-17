@@ -546,3 +546,7 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 h2 .loadring { margin-left:10px; width:22px; height:22px; }
 h2 .loadring svg { width:22px; height:22px; }
 h2 .livedot { margin:0 2px 0 12px; }
+/* Laad-ring / live-bolletje als derde vakje in het ovaal, even breed als de knopjes. */
+.dpair .dstat { width:32px; height:28px; display:inline-flex; align-items:center; justify-content:center; }
+.dpair .dstat .loadring, .dpair .dstat .livedot { margin:0; }
+.dpair .dstat .loadring, .dpair .dstat .loadring svg { width:20px; height:20px; }
