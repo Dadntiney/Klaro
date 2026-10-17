@@ -68,6 +68,8 @@ const CASES: Case[] = [
   { day: "2026-10-14", dev: "iPad", site: "tutotoons.com", at: "17:58", until: "18:37", want: true, why: "TutoTOONS gespeeld: meetgegevens van Unity tussendoor" },
   { day: "2026-10-17", dev: "iPad", site: "google.com", at: "12:49", want: false, why: "TutoTOONS start op en vraagt www.google.com op (advertentiemodule), geen zoekopdracht" },
   { day: "2026-10-17", dev: "iPad", site: "google.com", at: "09:37", want: false, why: "Squla laadt Google-meetcode (www.google.nl), geen zoekopdracht" },
+  { day: "2026-10-17", dev: "iPhone", site: "whatsapp.com", at: "07:24", want: "onzeker", why: "telefoon ontgrendeld: vijf apps verversen in dezelfde seconde" },
+  { day: "2026-10-17", dev: "iPhone", site: "vinted.com", at: "08:59", want: true, why: "Vinted volledig opgestart (met meetmodules van andere diensten)" },
   { day: "2026-10-16", dev: "iPad", site: "budgestudios.ca", at: "06:45", until: "07:01", want: true, why: "Budge-spel gespeeld: meetgegevens van Unity/Amplitude" },
   { day: "2026-10-11", dev: "iPhone", site: "trivago.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "allcamps.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },

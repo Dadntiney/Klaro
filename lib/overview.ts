@@ -786,6 +786,25 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
   }
 
+  const SDK_IN_APP = /^(star|star-mini)(\.fallback)?\.c10r\.facebook\.com$|^graph\.facebook\.com$|^connect\.facebook\.net$|^ep\d\.facebook\.com$/;
+  // Telefoon wordt ontgrendeld of komt op wifi: veel apps verversen in dezelfde seconden (Instagram, Facebook, WhatsApp, widgets).
+  // Een korte app-rij (hooguit 3 momenten, < 1 min) die begint in dezelfde 3 s als minstens 2 andere apps die zelf niet echt
+  // gebruikt werden: of die app ook echt geopend is, ziet DNS niet. Tonen als onzeker, niet als feit (17 okt 07:24 WhatsApp).
+  {
+    const named = [...groups.values()].filter((g) => g.main && !g.bg && !g.flag && !isPlainSite(g));
+    for (const g of named) {
+      for (const x of g.ss) {
+        if (!isHuman(x) || (x.n ?? 0) > 3 || x.e - x.s >= 60_000 || x.lg) continue;
+        // Andere apps die in dezelfde 3 s zelf iets opvragen. Meetmodules die ín een app zitten (de Facebook-module, reclame- en
+        // spelnetwerken) tellen niet: Vinted die opstart vraagt ook star.c10r.facebook.com en applovin op.
+        const wake = named.filter((h) => h !== g && h.dev === g.dev && (siteHosts.get(h.d + "|" + h.dev + "|" + h.site) ?? []).some((y) => Math.abs(y.t - x.s) <= 3_000 && !GAME_SDK.test(y.host) && !SDK_IN_APP.test(y.host)));
+        if (wake.length < 2) continue;
+        const used = wake.some((h) => h.ss.some((y) => isHuman(y) && y.s <= x.s + 60_000 && y.e >= x.s - 60_000));
+        if (!used) x.uz = 1;
+      }
+    }
+  }
+
   // Google: één moment met alleen www.google.nl/.com en niets van een zoekpagina (resultaten, plaatjes, zoekbalk) is geen
   // zoekopdracht, maar de meetcode van een andere site (Squla laadt Google Analytics) of een app die opstart. Over alle dagen:
   // alle 24 zulke losse Google-rijen vielen samen met een app of met meetcode van een andere site, geen enkele met een zoekpagina.

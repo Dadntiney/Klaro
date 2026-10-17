@@ -322,3 +322,19 @@ test("Google: alleen www.google.nl tegelijk met de meetcode van een andere site 
   assert.equal(g.length, 1);
   assert.ok(g[0].s >= T0 + 600 * s);
 });
+
+test("telefoon ontgrendeld: veel apps verversen tegelijk; een korte app-rij daarin is onzeker, een volledige app-start niet", async () => {
+  const s = 1_000;
+  const o = await overview([
+    [0, "i.instagram.com", "P6"], [0, "gateway.facebook.com", "P6"], [0.1 * s, "www.google.com", "P6"],
+    [2.5 * s, "graph.whatsapp.com", "P6"], [2.6 * s, "static.whatsapp.net", "P6"], [5 * s, "mmx-ds.cdn.whatsapp.net", "P6"],
+    // later: Vinted echt geopend (veel eigen adressen), met meetmodules van Facebook en een reclamenetwerk erbij
+    [600 * s, "api.vinted.com", "P6"], [600.2 * s, "www.vinted.com", "P6"], [600.4 * s, "flags.svc.vinted.com", "P6"], [601 * s, "images1.vinted.net", "P6"],
+    [600.1 * s, "star.c10r.facebook.com", "P6"], [602 * s, "ms.applovin.com", "P6", "blocked"], [610 * s, "logs-ingress.svc.vinted.com", "P6"],
+  ]);
+  const wa = o.groups.filter((g) => g.site === "whatsapp.com").flatMap((g) => g.ss).filter((x) => isHuman(x as never));
+  for (const x of wa) assert.equal((x as { uz?: 1 }).uz, 1);
+  const vin = shown(o, "vinted.com");
+  assert.equal(vin.length, 1);
+  assert.notEqual((vin[0] as { uz?: 1 }).uz, 1);
+});
