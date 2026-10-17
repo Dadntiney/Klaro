@@ -63,6 +63,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Ook één moment met alleen www.google.nl/.com (zonder zoekpagina) tegelijk met Google-meetcode van een andere site (Squla): geen
    zoekopdracht; over alle dagen 6 keer, nooit met een zoekpagina (opgelost 17 okt).
 
+   Rij voor rij (controle.ts, sectie 11) en na ELKE wijziging: het hele overzicht van vandaag naast het ruwe logboek leggen
+   (niet alleen de aangepaste rij). Rijen die tegelijk met een app beginnen of als één moment midden in een app vallen, zijn
+   vaak iets wat die app laadt (Google-advertentiemodule, meetcode). De eigenaar mag deze fouten niet eerder zien dan ik.
+
    Versnipperd gebruik (controle.ts, sectie 10): apps waarvan het gebruik in 3+ stukjes valt met 5-15 min ertussen. Zo zagen
    de gemiste Toca Boca-speelbeurt en de Waze-rit eruit. Altijd eerst de verdeling van de pauzes over ALLE dagen meten (kleinste,
    gewone en grootste pauze), nooit een grens kiezen uit één voorbeeld.

@@ -11,6 +11,7 @@
  *   8. Veel korte rijen van één site op één dag.
  *   9. Apps die misschien geopend zijn maar niet getoond (veel adressen van de app binnen 5 s).
  *  10. Versnipperd gebruik: 3+ stukjes op een dag met telkens 5-15 min ertussen (doorlopend gebruik waarbij DNS stil is?).
+ *  11. Rij voor rij: getoonde rijen die tegelijk met een app beginnen of als één moment midden in een app vallen.
  * Met * gemarkeerd: de laatste 3 dagen (daar heeft nog niemand naar gekeken).
  * Alles wat hier verschijnt: nalopen in de ruwe regels, en alleen algemeen oplossen (met doorrekenen en tests).
  * Gebruik: KLARO_PW=... node --experimental-strip-types scripts/controle.ts [--bestand download.tsv] [--uren 24]
@@ -171,6 +172,24 @@ for (const g of ov.groups) {
   flush();
 }
 section("Versnipperd gebruik: stukjes met 5-15 min ertussen (één doorlopend gebruik?)", pieces.sort().reverse().slice(0, 30), "Niets.");
+
+// 11. Rij voor rij (zoals de eigenaar kijkt): elke getoonde rij die begint in dezelfde 3 s als een app op hetzelfde apparaat
+// (dan is het vaak iets wat die app laadt: Google-advertentiemodule bij een spel, meetcode bij Squla), of die als bezoek binnen
+// een andere doorlopende app-sessie valt zonder eigen vervolg (één moment). Nalopen in de ruwe regels; algemeen oplossen.
+const rowChecks: string[] = [];
+const named = (g: LiveGroup) => g.main && !g.bg && !g.flag && !isPlainSite(g as never);
+for (const g of ov.groups) {
+  if (!g.main || g.bg || g.flag || ALWAYS_SHOW.has(g.site)) continue;
+  for (const x of g.ss) {
+    if (!isHuman(x) || x.uz) continue; // al als onzeker getoond (advertentie in een social-app of echt geopend)
+    const others = ov.groups.filter((h) => h.dev === g.dev && h.site !== g.site && named(h));
+    const sameStart = others.find((h) => h.ss.some((y) => isHuman(y) && Math.abs(y.s - x.s) <= 3_000));
+    const inside = (x.n ?? 0) <= 1 && others.find((h) => h.ss.some((y) => isHuman(y) && y.s < x.s - 3_000 && y.e > x.e + 60_000));
+    if (sameStart) rowChecks.push(`${recent.has(g.d) ? "* " : "  "}${hm(x.s)} ${g.dev} ${g.site}  begint tegelijk met ${sameStart.name}`);
+    else if (inside) rowChecks.push(`${recent.has(g.d) ? "* " : "  "}${hm(x.s)} ${g.dev} ${g.site}  één moment midden in ${inside.name}`);
+  }
+}
+section("Rij voor rij: begint tegelijk met een app, of één moment midden in een app", rowChecks.sort().reverse().slice(0, 40), "Niets.");
 
 // 9. App geopend maar niet getoond? Veel verschillende adressen van een app binnen 5 s (zo opent een app), zonder zichtbare rij.
 const missed: string[] = [];

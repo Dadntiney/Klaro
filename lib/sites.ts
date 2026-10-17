@@ -166,7 +166,7 @@ const BACKGROUND = new Set([
   // reclame-, betaal-, chat- en mailwidgets die in andermans site zitten
   "dpgmedia.net", "stripe.network", "omnidesk.io", "belco.io", "vidyard.com", "cm.com", "editorify.net", "ccvshopserver.nl", "mailplus.nl", "laposta.nl",
   // meet- en slimme-dns-diensten die alleen meekomen met een app
-  "swrve.com", "ankersmartdns.com",
+  "swrve.com", "ankersmartdns.com", "fastly-insights.com", "prodregistryv2.org", // meetbaken van Fastly op websites; register-adres dat met apps meekomt
   // inlogdiensten: komen mee bij elke app die inlogt (Outlook, Teams, Office), geen bezoek aan een site
   "microsoftonline.com", "msauth.net", "msftauth.net", "cloud.microsoft", "microsoftpersonalcontent.com", "okta.com", "oktapreview.com", "auth0.com", "onelogin.com",
 ]);

@@ -376,3 +376,8 @@ test("cursusportaal en ingebouwde onderdelen: academy. is een pagina, embed. en 
   assert.equal(classify("www.boxoffice.nl").bg, false);
   assert.equal(classify("www.edgenet.nl").bg, false);
 });
+
+test("meetbakens zonder eigen pagina (fastly-insights, prodregistryv2) zijn achtergrond; een gewone site niet", () => {
+  for (const h of ["www.fastly-insights.com", "prodregistryv2.org"]) assert.equal(classify(h).bg, true, h);
+  assert.equal(classify("www.werkenbijbevolkingsonderzoek.nl").bg, false);
+});
