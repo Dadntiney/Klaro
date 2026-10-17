@@ -209,12 +209,14 @@ export function facebookPixel(ev: { t: number; dev: string; host: string; page?:
     list.sort((a, b) => a.t - b.t);
     const conn = list.filter((e) => e.host === "connect.facebook.net").map((e) => e.t);
     const pages = list.filter((e) => e.page).map((e) => e.t);
-    const app = list.filter((e) => FB_APP.test(e.host)).map((e) => e.t); // de Facebook-app zelf is open: dan hoort het er wel bij
+    const app = list.filter((e) => FB_APP.test(e.host) || IG_OWN.test(e.host)).map((e) => e.t); // Facebook- of Instagram-app zelf is open: dan hoort het er wel bij
     const near = (ts: number[], a: number, b: number) => ts.some((x) => x >= a && x <= b);
     for (const e of list) {
       if (!FB_PIXEL_LOAD.test(e.host)) continue;
       const c = conn.find((x) => Math.abs(x - e.t) <= 3_000);
-      if (c !== undefined && !near(app, c - 60_000, c + 60_000)) out.add(dev + "|" + e.t + "|" + e.host);
+      // Of zonder connect.facebook.net (zat nog in het geheugen van de browser): vlak na het openen van een website (17 okt neoseum.com).
+      const anchor = c ?? (e.host !== "connect.facebook.net" && near(pages, e.t - 3_000, e.t) ? e.t : undefined);
+      if (anchor !== undefined && !near(app, anchor - 60_000, anchor + 60_000)) out.add(dev + "|" + e.t + "|" + e.host);
     }
   }
   return out;
