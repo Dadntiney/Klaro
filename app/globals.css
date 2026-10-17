@@ -557,3 +557,13 @@ h2 .livedot { margin:0 2px 0 12px; }
 .livedot.slow { background:#ff9f0a; }
 .livedot.fail { background:#ff453a; cursor:pointer; }
 @media (prefers-reduced-motion: reduce) { .livedot.blink { animation:none; } }
+/* Live-icoon (lijnstijl, past bij de knopjes): grijs; boogjes lichten even na elkaar op bij nieuwe regels; oranje/rood bij problemen. */
+.livedot, .livedot.ok, .livedot.slow, .livedot.fail { width:auto; height:auto; background:none; border:0; border-radius:0; display:inline-flex; align-items:center; justify-content:center; color:var(--muted); animation:none; box-shadow:none; }
+.livedot svg { display:block; }
+.livedot.blink { animation:none; }
+.livedot.blink .w1 { animation:livewave 1.1s ease-out 1; }
+.livedot.blink .w2 { animation:livewave 1.1s ease-out .18s 1; }
+@keyframes livewave { 0% { stroke:var(--muted); } 30% { stroke:var(--fg); } 100% { stroke:var(--muted); } }
+.livedot.slow { color:#ff9f0a; }
+.livedot.fail { color:#ff453a; cursor:pointer; }
+@media (prefers-reduced-motion: reduce) { .livedot.blink .w1, .livedot.blink .w2 { animation:none; } }
