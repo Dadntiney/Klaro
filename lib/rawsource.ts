@@ -43,11 +43,14 @@ async function save(v: Saved): Promise<void> {
 /** Tijdstip van een regel (eerste kolom), 0 als het niet lukt. */
 const lineT = (line: string) => Date.parse(line.slice(0, line.indexOf("\t"))) || 0;
 
-/** Nieuwe regels (nieuwste eerst, met kop) vóór de bewaarde regels die ouder zijn dan `since` zetten. */
-export function mergeDownload(old: string, fresh: string, since: number): string {
+/**
+ * Nieuwe regels (nieuwste eerst, met kop) vóór de bewaarde regels die ouder zijn dan `since` zetten. `null` als de kolommen
+ * anders zijn (Klaro bewaart sinds een update meer of andere gegevens): dan moet alles opnieuw.
+ */
+export function mergeDownload(old: string, fresh: string, since: number): string | null {
   const oh = old.indexOf("\n");
   const fh = fresh.indexOf("\n");
-  if (oh < 0 || fh < 0 || old.slice(0, oh) !== fresh.slice(0, fh)) return fresh; // andere kolommen: alleen het nieuwe
+  if (oh < 0 || fh < 0 || old.slice(0, oh) !== fresh.slice(0, fh)) return null; // andere kolommen: alles opnieuw ophalen
   // Eerste bewaarde regel die niet nieuwer is dan `since` (een paar regels kunnen net door elkaar staan: die vallen dubbel weg).
   let pos = oh + 1;
   while (pos < old.length) {
@@ -84,8 +87,9 @@ export function rawSource(base: NextDNSClient & { since?: (since: number, ms: nu
       try {
         const since = newest - OVERLAP;
         const r = await base.since(since, ms);
-        if (r.ok) {
-          text = mergeDownload(text, await r.text(), since);
+        const merged = r.ok ? mergeDownload(text, await r.text(), since) : null;
+        if (merged !== null) {
+          text = merged;
           at = Date.now(); rows = null;
           void save({ text, fullAt });
           return asResponse(text);

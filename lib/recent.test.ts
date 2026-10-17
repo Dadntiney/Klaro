@@ -10,14 +10,14 @@ test("download aanvullen: nieuwe regels bovenaan, bewaarde regels vanaf het over
   const old = [H, line("2026-10-17T09:05:00.000Z", "b.nl"), line("2026-10-17T09:00:00.000Z", "a.nl"), line("2026-10-16T20:00:00.000Z", "z.nl")].join("\n") + "\n";
   const since = Date.parse("2026-10-17T08:58:00.000Z");
   const fresh = [H, line("2026-10-17T09:10:00.000Z", "c.nl"), line("2026-10-17T09:05:00.000Z", "b.nl"), line("2026-10-17T09:00:00.000Z", "a.nl")].join("\n") + "\n";
-  const out = mergeDownload(old, fresh, since).trim().split("\n");
+  const out = mergeDownload(old, fresh, since)!.trim().split("\n");
   assert.deepEqual(out.map((l) => l.split("\t")[1]), ["domain", "c.nl", "b.nl", "a.nl", "z.nl"]);
 });
 
-test("download aanvullen: andere kolommen bij NextDNS = alleen het nieuwe gebruiken", () => {
+test("download aanvullen: andere kolommen (Klaro bewaart meer na een update) = alles opnieuw ophalen", () => {
   const old = [H, line("2026-10-17T09:00:00.000Z", "a.nl")].join("\n") + "\n";
   const fresh = ["timestamp\tdomain\tstatus\textra", "2026-10-17T09:10:00.000Z\tc.nl\t\t"].join("\n") + "\n";
-  assert.equal(mergeDownload(old, fresh, 0), fresh);
+  assert.equal(mergeDownload(old, fresh, 0), null);
 });
 
 test("snel herberekenen: vandaag komt uit de verse berekening (labels via het apparaat-id), oudere dagen en 'Nieuw' uit het volledige overzicht", () => {
@@ -54,6 +54,6 @@ test("download aanvullen: stuurt de server toch alles, dan blijft het zonder dub
   const rows = [line("2026-10-17T09:05:00.000Z", "b.nl"), line("2026-10-17T09:00:00.000Z", "a.nl"), line("2026-10-16T20:00:00.000Z", "z.nl")];
   const old = [H, ...rows].join("\n") + "\n";
   const fresh = [H, line("2026-10-17T09:10:00.000Z", "c.nl"), ...rows].join("\n") + "\n";
-  const out = mergeDownload(old, fresh, Date.parse("2026-10-17T08:58:00.000Z")).trim().split("\n");
+  const out = mergeDownload(old, fresh, Date.parse("2026-10-17T08:58:00.000Z"))!.trim().split("\n");
   assert.deepEqual(out.map((l) => l.split("\t")[1]), ["domain", "c.nl", "b.nl", "a.nl", "z.nl"]);
 });
