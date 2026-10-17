@@ -12,6 +12,7 @@ import { isNow, liveTvApp } from "@/lib/play";
 import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
+import { wipeLocal } from "@/lib/wipe";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
 import { baseDomain } from "@/lib/parse";
@@ -1418,7 +1419,15 @@ export default function Home() {
           )}
           {histErr && <p className="muted skel-err">{cut > 0 ? "Eerder vandaag en oudere dagen laden lukt nu even niet." : "Oudere dagen laden lukt nu even niet; vandaag is wel compleet."}</p>}
           {/* Uitloggen: na 60 minuten zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
-          <form className="logout" method="post" action="/api/logout.php">
+          <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
+            // Eerst de bewaarde kopie van het logboek op dit toestel weghalen (lib/wipe.ts), dan pas uitloggen. De gekozen knop
+            // (dit toestel of overal) gaat als verborgen veld mee, want submit() neemt de knop zelf niet mee.
+            e.preventDefault();
+            const f = e.currentTarget;
+            const b = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+            if (b?.name) { const h = document.createElement("input"); h.type = "hidden"; h.name = b.name; h.value = b.value; f.appendChild(h); }
+            void wipeLocal().finally(() => f.submit());
+          }}>
             <button type="submit">Uitloggen</button>
             <span aria-hidden>·</span>
             <button type="submit" name="alle" value="1">Overal uitloggen</button>
