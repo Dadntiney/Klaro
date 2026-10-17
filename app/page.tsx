@@ -539,6 +539,7 @@ export default function Home() {
         apply(data, true);
       })
       .catch((e: Error) => {
+        lastFull.current = 0; // bij de eerstvolgende verversing (binnen een minuut) alle dagen opnieuw proberen
         fullErr = e.message || "Ophalen mislukt";
         settle();
       });
@@ -783,12 +784,16 @@ export default function Home() {
       setInsights(data.insights ?? null);
       // Nieuwe apparaten van na het laden ook benoemen; bestaande namen blijven gelijk (anders wisselen regels van apparaat).
       if (data.deviceMap) deviceMap.current = { ...data.deviceMap, ...deviceMap.current };
-      setDevices((prev) =>
-        prev.map((p) => {
+      setDevices((prev) => [
+        ...prev.map((p) => {
           const f = (data.devices as Device[]).find((x) => x.name === p.name);
           return f ? { ...p, first: f.first, away: f.away, sleep: f.sleep, dm: f.dm, threats: f.threats, avg: f.avg, gap: f.gap, days: f.days } : p;
-        })
-      );
+        }),
+        // Apparaten die vandaag nog niets deden (MacBook van eergisteren) komen er ook bij, ook als het eerste laden van alle dagen mislukte.
+        ...(data.devices as Device[]).filter((f) => !prev.some((p) => p.name === f.name)),
+      ]);
+      // Alle dagen zijn nu alsnog binnen: de melding "oudere dagen laden lukt niet" mag weg.
+      if (!recent) { setHistErr(false); setFull(true); }
       const fresh = new Map<string, Group>();
       for (const g of data.groups as Group[]) fresh.set(g.d + "|" + g.dev + "|" + g.site, g);
       setGroups((prev) => {
