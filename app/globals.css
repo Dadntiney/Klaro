@@ -532,3 +532,8 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .goto label:has(input[type="time"]) { flex:none; width:96px; }
 .goto input[type="time"] { width:100%; min-width:0; padding:0 8px; }
 .goto input[type="time"]::-webkit-calendar-picker-indicator { display:none; }
+/* Weergave-knopjes (logboek, terug naar een moment): twee ronde icoontjes in één rustig grijs vakje; wat aan staat is gevuld, net als de gekozen chip. */
+.dpair { gap:2px; padding:2px; }
+.dpair .dview.icon { width:32px; height:28px; padding:0; justify-content:center; border:0; border-radius:99px; color:var(--muted); background:transparent; }
+.dpair .dview.icon svg { opacity:1; }
+.dpair .dview.icon.on, .dpair .dview.icon.on:hover { background:var(--fg); color:var(--bg); border:0; }
