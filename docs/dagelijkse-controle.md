@@ -51,6 +51,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    adres naar doorverwijst; dat cloud-adres staat vaker in het logboek dan het eigen adres. Toca Boca meldt zo elke 2 à 2,5 min
    tijdens het spelen. Klaro herkent zo'n koppeling zelf (followers() in lib/companion.ts, vastgelegd in lib/geleerd.ts) en telt
    het cloud-adres mee zolang het aansluit op de app (opgelost 17 okt; ook Budge, Spotify, NPO, Videoland, Disney+, Buienradar).
+   Tabbladen opnieuw geladen: komt Safari/Chrome weer in beeld, dan ververst hij alle open tabbladen tegelijk (zondag 11 okt
+   17:09: tien sites in 17 s). Vier of meer sites binnen 20 s die elk maar even laden: geen bezoek (opgelost 17 okt).
+   Zelfde merk met een andere extensie kort na elkaar (ravensburger.nl + ravensburger.cloud): één bezoek (opgelost 17 okt).
 
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.

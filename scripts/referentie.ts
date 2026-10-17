@@ -64,6 +64,11 @@ const CASES: Case[] = [
   { day: "2026-10-17", dev: "iPhone", site: "waze.com", at: "09:50", until: "10:22", want: true, why: "rit met Waze: kaartstukjes maar af en toe, één rit" },
   { day: "2026-10-17", dev: "Apple TV", site: "youtube.com", at: "01:49", want: true, why: "YouTube gekeken: kijkmeldingen aan www.youtube.com" },
   { day: "2026-10-17", dev: "iPad", site: "tocaboca.com", at: "10:43", until: "11:00", want: true, why: "Toca Boca gespeeld: meldingen via een Amazon-adres (doorverwijzing)" },
+  { day: "2026-10-11", dev: "iPhone", site: "trivago.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
+  { day: "2026-10-11", dev: "iPhone", site: "allcamps.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
+  { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: "onzeker", why: "winkel geopend tijdens scrollen (advertentie of echt)" },
+  { day: "2026-10-11", dev: "iPhone", site: "ravensburger.cloud", at: "16:01", want: false, why: "onderdeel van ravensburger.nl (zelfde merk)" },
+  { day: "2026-10-11", dev: "iPhone", site: "nu.nl", at: "10:53", want: true, why: "link uit X geopend" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);

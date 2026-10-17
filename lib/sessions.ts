@@ -12,6 +12,7 @@ export interface Session {
   os?: 1; // live: volledige opstart gezien (telt één keer als extra inhoud-adres, net als bij de volledige berekening)
   lmt?: number; // tijdstip van het laatste beeld/geluid-moment (live tellen)
   emb?: 1;
+  rl?: 1; // tabblad dat Safari/Chrome opnieuw laadde (veel sites in een paar seconden tegelijk, elk maar even): geen bezoek
   rf?: 1; // een widget of open tabblad dat zichzelf ververst (zelfde site die dag vaak los): geen bezoek
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   lg?: 1; // inlog- of bankierpagina geopend (bankieren.*, mijn.*): altijd een bewust bezoek
@@ -138,7 +139,7 @@ export function extendAll(ss: Session[], t: number): Session[] {
  * Sessies zonder telling (oudere gegevens) tellen mee.
  */
 export function isHuman(x: Session): boolean {
-  if (x.emb || x.res || x.rf) return false;
+  if (x.emb || x.res || x.rf || x.rl) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
   if (x.lg || x.pv || x.ck) return true; // inlogpagina, losse pagina, of via een klik (mail-link of zoekresultaat) geopend // één pagina op de site zelf geopend
   if (x.f !== undefined) return x.f >= 2 || (x.m ?? 0) >= 2; // app met achtergrondverkeer: alleen als er echt inhoud laadde

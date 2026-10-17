@@ -722,6 +722,32 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
   }
 
+  // Tabbladen opnieuw geladen: komt de browser weer in beeld, dan ververst hij alle open tabbladen tegelijk. Vier of meer
+  // verschillende websites die binnen 20 s beginnen: wie daarvan maar even (hooguit 2 momenten, 5 s) iets laadde, is zo'n
+  // tabblad en geen bezoek. Een site waar daarna echt verder gekeken wordt, blijft staan. (Zondag 11 okt 17:09: tien sites in 17 s.)
+  // Zelfde merk, andere extensie (ravensburger.nl en ravensburger.cloud) kort na elkaar: onderdeel van de eerste, één bezoek.
+  {
+    const byDev = new Map<string, { g: Group; x: Session }[]>();
+    for (const [, g] of groups) {
+      if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g)) continue;
+      for (const x of g.ss) if (isHuman(x) && !x.lg) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push({ g, x });
+    }
+    const brand = (site: string) => site.split(".")[0];
+    for (const [, l] of byDev) {
+      l.sort((a, b) => a.x.s - b.x.s);
+      for (const a of l) {
+        const win = l.filter((b) => b.x.s >= a.x.s && b.x.s - a.x.s <= 20_000);
+        if (new Set(win.map((b) => b.g.site)).size < 4) continue;
+        for (const b of win) if ((b.x.n ?? 0) <= 2 && b.x.e - b.x.s <= 5_000) b.x.rl = 1;
+      }
+      for (const b of l) {
+        if (b.x.e - b.x.s > 60_000) continue;
+        const a = l.find((y) => y.g.site !== b.g.site && brand(y.g.site) === brand(b.g.site) && brand(b.g.site).length >= 4 && y.x.s <= b.x.s && b.x.s - y.x.s <= 30_000);
+        if (a) { delete b.x.pv; delete b.x.ck; delete b.x.uz; b.x.emb = 1; }
+      }
+    }
+  }
+
   // Thuis of onderweg (op basis van de IP-adressen waarmee een apparaat verbindt).
   const away = analyzeNetwork(netRows);
 

@@ -253,3 +253,28 @@ test("doorverwijs-adres: Toca Boca meldt tijdens het spelen via een Amazon-adres
   assert.ok(!toca.some((x) => x.e >= T0 + 80 * min), "een melding lang na het spelen hoort er niet bij");
   assert.ok(!o.groups.some((g) => g.site === "tocaboca.com" && g.ss.some((x) => x.s >= T0 + 25 * min)));
 });
+
+test("tabbladen opnieuw geladen: vier sites binnen 20 s die elk maar even laden zijn geen bezoek; een site waar je verder kijkt wel", async () => {
+  const s = 1_000;
+  const o = await overview([
+    [0, "www.trivago.nl"], [1 * s, "www.tui.nl"], [10 * s, "www.lijstje.nl"], [11 * s, "www.allcamps.nl"],
+    [12 * s, "www.bol.com"], [40 * s, "www.bol.com"], [90 * s, "www.bol.com"], // daarna echt verder gekeken
+    [600 * s, "www.tui.nl"], [640 * s, "www.tui.nl"], // later los geopend: wel een bezoek
+  ]);
+  for (const site of ["trivago.nl", "allcamps.nl", "lijstje.nl"]) assert.equal(shown(o, site).length, 0, site);
+  assert.equal(shown(o, "bol.com").length, 1);
+  assert.equal(shown(o, "tui.nl").length, 1);
+  assert.ok(shown(o, "tui.nl")[0].s >= T0 + 600 * s);
+});
+
+test("zelfde merk, andere extensie kort na elkaar (ravensburger.nl en ravensburger.cloud): één bezoek; twee losse sites niet", async () => {
+  const s = 1_000;
+  const o = await overview([
+    [0, "www.ravensburger.nl"], [5 * s, "ravensburger.cloud"],
+    [200 * s, "www.intertoys.nl"], [205 * s, "www.bol.com"],
+  ]);
+  assert.equal(shown(o, "ravensburger.nl").length, 1);
+  assert.equal(shown(o, "ravensburger.cloud").length, 0);
+  assert.equal(shown(o, "intertoys.nl").length, 1);
+  assert.equal(shown(o, "bol.com").length, 1);
+});
