@@ -15,15 +15,15 @@ export const GELEERD: {
   helpers: Geleerd[];
 } = {
   auto: [
-    { k: "Apple TV|google.com", laatst: "2026-10-16" },
-    { k: "iPhone|google.com", laatst: "2026-10-16" },
-    { k: "iPhone|onsoranje26.nl", laatst: "2026-10-16" },
-    { k: "iPhone|voetbalkrant.com", laatst: "2026-10-16" },
-    { k: "MacBook|canva.com", laatst: "2026-10-16" },
+    { k: "Apple TV|google.com", laatst: "2026-10-17" },
+    { k: "iPhone|google.com", laatst: "2026-10-17" },
+    { k: "iPhone|onsoranje26.nl", laatst: "2026-10-17" },
+    { k: "iPhone|voetbalkrant.com", laatst: "2026-10-17" },
+    { k: "MacBook|canva.com", laatst: "2026-10-17" },
   ],
   helpers: [
-    { k: "clouding17.com", laatst: "2026-10-16" },
-    { k: "sugar-b.com", laatst: "2026-10-16" },
+    { k: "clouding17.com", laatst: "2026-10-17" },
+    { k: "sugar-b.com", laatst: "2026-10-17" },
   ],
 };
 
