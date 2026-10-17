@@ -508,3 +508,14 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .seen-all { display:block; width:100%; margin-top:14px; font:inherit; font-size:15px; font-weight:600; padding:11px; border-radius:12px; border:0; background:var(--fg); color:var(--bg); cursor:pointer; }
 /* Groen bolletje in de chip: stil, zonder animatie. */
 .chip .pulse::after { display:none; animation:none; }
+/* Nu bezig: altijd al een lichte groene ondergrond, de zweem trekt daar iets duidelijker overheen. */
+.item.nowrow {
+  background-color:color-mix(in srgb, #22c55e 7%, var(--card));
+  background-image:linear-gradient(100deg, transparent 20%, color-mix(in srgb, #22c55e 16%, transparent) 50%, transparent 80%);
+  animation-duration:3.5s;
+}
+/* Nieuw: rustig blauw labeltje (lichte achtergrond, blauwe tekst) in plaats van een fel vol blok. */
+.newtag, .list .newtag { display:inline-block; margin-left:8px !important; padding:0 7px !important; font-size:11px !important; line-height:18px; font-weight:600; letter-spacing:0; border-radius:6px; vertical-align:2px; background:color-mix(in srgb, #2563eb 12%, var(--card)); color:#1d4ed8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .newtag { background:color-mix(in srgb, #3b82f6 22%, var(--card)); color:#93c5fd; } }
+:root[data-theme="dark"] .newtag { background:color-mix(in srgb, #3b82f6 22%, var(--card)); color:#93c5fd; }
+:root[data-theme="light"] .newtag { background:color-mix(in srgb, #2563eb 12%, var(--card)); color:#1d4ed8; }
