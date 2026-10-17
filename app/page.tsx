@@ -431,6 +431,7 @@ export default function Home() {
   const [cut, setCut] = useState(0);
   const finishing = useRef(false);
 
+  useEffect(() => { (window as unknown as { __klaroUp?: boolean }).__klaroUp = true; }, []); // zie het vangnet in app/layout.tsx
   useEffect(() => {
     const t0 = Date.now();
     const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[] }, isFull: boolean) => {
