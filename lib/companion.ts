@@ -76,3 +76,55 @@ export function loadedWith(ev: { t: number; dev: string; host: string; site: str
   }
   return new Set([...st].filter(([, s]) => s.m >= 3 && s.days.size >= 2 && s.with!.size > 0).map(([site]) => site));
 }
+
+/**
+ * Doorverwijs-adressen: een algemeen cloud-adres (bijv. een Amazon-loadbalancer) waar een adres van een app naar doorverwijst.
+ * NextDNS logt dan beide, maar het cloud-adres verloopt sneller: tussendoor staat alleen het cloud-adres in het logboek. Toca Boca
+ * meldt zo tijdens het spelen elke 2 à 2,5 minuut iets via een Amazon-adres, terwijl het eigen adres maar elke 7,5 minuut verschijnt.
+ * Kenmerk van zo'n doorverwijzing: telkens als het eigen adres van de app wordt opgevraagd (minstens 3 keer), staat het cloud-adres
+ * er binnen 1 s bij (90% of meer), het cloud-adres is een adres van een cloud-netwerk (INFRA) en het komt (bijna) nooit samen met
+ * een adres van een andere app voor. Algemene adressen
+ * van Apple, Google of een CDN die met alles meekomen vallen zo af.
+ * `ev`: per apparaat; `app` = eigen adres van een herkende app (met eigen naam, geen losse website), `cloud` = algemeen adres zonder
+ * eigen herkenning.
+ * Geeft per "apparaat|cloud-adres" de site waar het bij hoort.
+ */
+/** Adressen van cloud-netwerken waar een app naar doorverwijst (loadbalancer, CDN); meetdiensten als Sentry of Braze horen er niet bij. */
+export const INFRA = /\.(elb\.amazonaws\.com|cloudfront\.net|akamai\.net|akamaiedge\.net|edgekey\.net|edgesuite\.net|fastly\.net|azurefd\.net|azureedge\.net|trafficmanager\.net|cdn\.cloudflare\.net)$/;
+
+export function followers(ev: { t: number; dev: string; host: string; site: string; app?: boolean; cloud?: boolean }[]): Map<string, string> {
+  const byDev = new Map<string, typeof ev>();
+  for (const e of ev) if (e.app || (e.cloud && INFRA.test(e.host))) (byDev.get(e.dev) ?? byDev.set(e.dev, []).get(e.dev)!).push(e);
+  const out = new Map<string, string>();
+  for (const [dev, list] of byDev) {
+    list.sort((a, b) => a.t - b.t);
+    const near = (i: number, ms: number) => { const r: typeof list = []; for (let j = i - 1; j >= 0 && list[j].t >= list[i].t - ms; j--) r.push(list[j]); for (let j = i + 1; j < list.length && list[j].t <= list[i].t + ms; j++) r.push(list[j]); return r; };
+    // Per eigen app-adres: hoe vaak opgevraagd, en hoe vaak stond elk cloud-adres er binnen 1 s bij.
+    const own = new Map<string, { site: string; n: number; last: number; with: Map<string, number> }>();
+    // Per cloud-adres: hoe vaak het (binnen 1 s) samen met elke app voorkwam.
+    const cloudWith = new Map<string, Map<string, number>>();
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i];
+      if (e.app) {
+        const o = own.get(e.host) ?? own.set(e.host, { site: e.site, n: 0, last: -Infinity, with: new Map() }).get(e.host)!;
+        if (e.t - o.last <= 1_500) continue; // zelfde moment
+        o.last = e.t;
+        o.n++;
+        for (const h of new Set(near(i, 1_000).filter((x) => x.cloud).map((x) => x.host))) o.with.set(h, (o.with.get(h) ?? 0) + 1);
+      } else if (e.cloud) {
+        const w = cloudWith.get(e.host) ?? cloudWith.set(e.host, new Map()).get(e.host)!;
+        for (const site of new Set(near(i, 1_000).filter((x) => x.app).map((x) => x.site))) w.set(site, (w.get(site) ?? 0) + 1);
+      }
+    }
+    for (const [, o] of own) {
+      if (o.n < 3) continue;
+      for (const [h, n] of o.with) {
+        if (n < 0.9 * o.n) continue;
+        const w = cloudWith.get(h) ?? new Map<string, number>();
+        const all = [...w.values()].reduce((a, b) => a + b, 0);
+        if ((w.get(o.site) ?? 0) >= 0.9 * all) out.set(dev + "|" + h, o.site);
+      }
+    }
+  }
+  return out;
+}

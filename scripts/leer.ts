@@ -21,9 +21,10 @@ const merge = (old: Geleerd[], now: string[]) => {
 };
 const a = merge(GELEERD.auto, d.learned.auto ?? []);
 const h = merge(GELEERD.helpers, d.learned.helpers ?? []);
+const f = merge(GELEERD.followers ?? [], d.learned.followers ?? []);
 const fmt = (xs: Geleerd[]) => (xs.length ? "\n" + xs.map((x) => `    { k: ${JSON.stringify(x.k)}, laatst: "${x.laatst}" },`).join("\n") + "\n  " : "");
 const file = "lib/geleerd.ts";
 let src = fs.readFileSync(file, "utf8");
-src = src.replace(/  auto: \[[\s\S]*?\],\n  helpers: \[[\s\S]*?\],\n\};/, `  auto: [${fmt(a.out)}],\n  helpers: [${fmt(h.out)}],\n};`);
+src = src.replace(/  auto: \[[\s\S]*?\],\n  helpers: \[[\s\S]*?\],\n  followers: \[[\s\S]*?\],\n\};/, `  auto: [${fmt(a.out)}],\n  helpers: [${fmt(h.out)}],\n  followers: [${fmt(f.out)}],\n};`);
 fs.writeFileSync(file, src);
-console.log(`Geleerd vastgelegd (${day}): widgets/tabbladen ${a.out.length} (+${a.added}, -${a.removed}), vaste hulpjes ${h.out.length} (+${h.added}, -${h.removed}).`);
+console.log(`Geleerd vastgelegd (${day}): widgets/tabbladen ${a.out.length} (+${a.added}, -${a.removed}), vaste hulpjes ${h.out.length} (+${h.added}, -${h.removed}), doorverwijs-adressen ${f.out.length} (+${f.added}, -${f.removed}).`);

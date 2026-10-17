@@ -47,6 +47,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    (samen met conn-check.icg-in.com), geen VPN. analytics.tiktok.com (geblokkeerd) op websites: TikTok-teller, geen TikTok.
    Waze: onderweg komen kaartstukjes maar elke 4 tot 17 minuten; stukjes met hooguit 20 minuten ertussen zijn één rit (NAV_APPS,
    opgelost 17 okt). Op de achtergrond vraagt Waze niets op.
+   Doorverwijs-adressen: veel apps praten via een cloud-adres (Amazon-loadbalancer, CloudFront, Akamai, Fastly) waar hun eigen
+   adres naar doorverwijst; dat cloud-adres staat vaker in het logboek dan het eigen adres. Toca Boca meldt zo elke 2 à 2,5 min
+   tijdens het spelen. Klaro herkent zo'n koppeling zelf (followers() in lib/companion.ts, vastgelegd in lib/geleerd.ts) en telt
+   het cloud-adres mee zolang het aansluit op de app (opgelost 17 okt; ook Budge, Spotify, NPO, Videoland, Disney+, Buienradar).
 
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.

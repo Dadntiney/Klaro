@@ -9,7 +9,7 @@ import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
-import { anchorOf, chainTimes, companionFor, COMPANIONS, loadedWith } from "./companion.ts";
+import { anchorOf, chainTimes, companionFor, COMPANIONS, followers, loadedWith } from "./companion.ts";
 import { GELEERD, geldig } from "./geleerd.ts";
 import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
@@ -307,6 +307,38 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     learnedHelpers = [...loadedWith(ev)];
     return new Set([...learnedHelpers, ...geldig(GELEERD.helpers, Date.now())]);
   })();
+  // Doorverwijs-adressen (een cloud-adres waar een app naar doorverwijst) horen bij die app, in een keten vanaf echt verkeer
+  // van de app (hooguit GAP ertussen), zie followers() in lib/companion.ts.
+  const followOf = new Map<string, string>(); // apparaat|adres -> site
+  let learnedFollowers: string[] = [];
+  const followIn = new Set<string>(); // apparaat|adres|tijdstip dat bij de app hoort
+  {
+    const ev: Parameters<typeof followers>[0] = [];
+    for (const r of body) {
+      const host = extractHost(r[hostCol] ?? "");
+      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+      if (!t) continue;
+      const info = classify(host!);
+      if (info.flag) continue;
+      ev.push({ t, dev: deviceMap[idOf(r)], host: host!, site: info.site, app: info.main && !info.bg && !isPlainSite(info), cloud: info.bg || !info.main });
+    }
+    for (const [k, site] of followers(ev)) followOf.set(k, site);
+    learnedFollowers = [...followOf].map(([k, site]) => k + "|" + site);
+    // Eerder geleerd (blijft ook als het logboek is leeggemaakt): apparaat|adres|site.
+    for (const k of geldig(GELEERD.followers, Date.now())) { const i = k.lastIndexOf("|"); if (!followOf.has(k.slice(0, i))) followOf.set(k.slice(0, i), k.slice(i + 1)); }
+    if (followOf.size) {
+      const appT = new Map<string, number[]>(), folT = new Map<string, number[]>();
+      for (const e of ev) {
+        if (e.app) (appT.get(e.dev + "|" + e.site) ?? appT.set(e.dev + "|" + e.site, []).get(e.dev + "|" + e.site)!).push(e.t);
+        const site = followOf.get(e.dev + "|" + e.host);
+        if (site) (folT.get(e.dev + "|" + e.host) ?? folT.set(e.dev + "|" + e.host, []).get(e.dev + "|" + e.host)!).push(e.t);
+      }
+      for (const [k, ts] of folT) {
+        const dev = k.slice(0, k.indexOf("|"));
+        for (const t of chainTimes(appT.get(dev + "|" + followOf.get(k)) ?? [], ts, GAP, 0)) followIn.add(k + "|" + t);
+      }
+    }
+  }
   for (const r of body) {
     const host = extractHost(r[hostCol] ?? "");
     if (!host) continue;
@@ -323,6 +355,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (comp && compIn.get(dev + "|" + comp.app)?.has(t)) info = classify(comp.app);
     const play = t ? playOf.get(dev + "|" + t) : undefined;
     if (play) info = classify(play);
+    const fol = t ? followOf.get(dev + "|" + host) : undefined;
+    if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
     const d = t ? dayFmt.format(t) : "onbekend";
 
     // Door NextDNS geblokkeerd? Een geblokkeerde poging naar porno/dating is altijd belangrijk, ook als het adres niet op mijn lijst staat.
@@ -792,7 +826,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     deviceMap, // id -> label; bevat nooit de echte naam
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     auto: todayOnly ? undefined : auto,
-    learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers }, // wat nu uit de logboeken blijkt (scripts/leer.ts legt het vast)
+    learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers, followers: learnedFollowers },
+    followers: Object.fromEntries(followOf), // live: dezelfde doorverwijs-adressen (apparaat|adres -> site) // wat nu uit de logboeken blijkt (scripts/leer.ts legt het vast)
     // Alleen het laatste stuk van vandaag opgehaald: vanaf dit moment klopt het, daarvoor komt nog.
     partial: !todayOnly ? undefined : cutAt ? Math.max(cutAt, hours > 0 ? windowStart(hours) : 0) : hours > 0 && windowStart(hours) > windowStart(0) + 60_000 ? windowStart(hours) : undefined,
     meta: { columns: header, statuses: Object.fromEntries(statuses), reasons: [...reasonSamples] }, // om de kolommen te controleren

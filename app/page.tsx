@@ -445,6 +445,7 @@ export default function Home() {
   const loadStart = useRef(Date.now()); // begin van het laden (voor het percentage rechtsboven)
   const [live, setLive] = useState<"ok" | "fail">("ok");
   const [liveError, setLiveError] = useState("");
+  const followOf = useRef<Record<string, string>>({}); // apparaat|adres -> app (doorverwijs-adressen, van de server)
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
   const devName = useCallback((id: string) => deviceMap.current[id] ?? id, []);
@@ -463,7 +464,7 @@ export default function Home() {
   useEffect(() => { (window as unknown as { __klaroUp?: boolean }).__klaroUp = true; }, []); // zie het vangnet in app/layout.tsx
   useEffect(() => {
     const t0 = Date.now();
-    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[] }, isFull: boolean) => {
+    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string> }, isFull: boolean) => {
       fullRef.current = true;
       // Bij alleen het laatste stuk: de eerste 15 minuten van dat stuk niet tonen (een bezoek dat eerder begon zou daar te laat lijken te beginnen).
       setCut(data.partial ? data.partial + 15 * 60_000 : 0);
@@ -471,6 +472,7 @@ export default function Home() {
       setDevices(data.devices);
       setTotal(data.total);
       deviceMap.current = data.deviceMap ?? {};
+      if (data.followers) followOf.current = data.followers;
       setInsights(data.insights ?? null);
       lastSeen.current = Math.max(0, ...data.groups.map((g) => g.last));
       setUpdated(new Date());
@@ -657,6 +659,10 @@ export default function Home() {
         const comp = e.host ? companionFor(e.host) : undefined;
         const game = comp && next.find((g) => g.d === d && g.dev === e.dev && g.site === comp.app);
         if (comp && game && e.t - game.last <= comp.keep && e.t >= game.last - 1_500) e = { ...e, site: game.site, name: game.name, icon: game.icon, bg: false, main: true, fg: undefined, res: undefined, cat: game.cat ?? e.cat };
+        // Doorverwijs-adres van een app (Toca Boca via een Amazon-adres), net als op de server: alleen aansluitend op die app.
+        const fsite = e.host ? followOf.current[e.dev + "|" + e.host] : undefined;
+        const app = fsite && next.find((g) => g.d === d && g.dev === e.dev && g.site === fsite);
+        if (app && e.t - app.last <= 5 * 60_000 && e.t >= app.last - 1_500) e = { ...e, site: app.site, name: app.name, icon: app.icon, bg: false, main: true, fg: undefined, res: undefined, cat: app.cat ?? e.cat };
         // Afspeelsignalen (Conviva) horen bij de tv-app waarvan de reeks nog loopt, net als op de server (lib/play.ts).
         const tv = e.media && !e.main && isPlainSite(e) ? liveTvApp(next, d, e.dev, e.t) : undefined;
         if (tv) e = { ...e, site: tv.site, name: tv.name, icon: tv.icon, bg: false, main: true, fg: undefined, res: undefined, cat: tv.cat ?? e.cat };

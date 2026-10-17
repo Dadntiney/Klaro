@@ -235,3 +235,21 @@ test("Waze: onderweg komen kaartstukjes maar af en toe; stukjes met hooguit 20 m
   assert.equal(ss.length, 2);
   assert.equal(ss[0].e - ss[0].s, 32 * min);
 });
+
+test("doorverwijs-adres: Toca Boca meldt tijdens het spelen via een Amazon-adres; dat telt als spelen, een algemeen CDN-adres niet", async () => {
+  const min = 60_000;
+  const elb = "event-alb-1.eu-west-1.elb.amazonaws.com";
+  const rows: R[] = [[0, "lifeserver.tocaboca.com", "P2"], [500, "analytics.tocaboca.com", "P2"]];
+  // Eigen adres elke 7,5 minuut (steeds samen met het Amazon-adres), het Amazon-adres zelf elke 2,5 minuut.
+  for (let t = 0; t <= 15 * min; t += 7.5 * min) rows.push([t + 40_000, "analytics-events.tocaboca.com", "P2"], [t + 40_050, elb, "P2"]);
+  for (let t = 3 * min; t <= 17 * min; t += 2.5 * min) rows.push([t, elb, "P2"]);
+  // Een algemeen CDN-adres dat met allerlei apps meekomt, en een Amazon-adres dat lang na het spelen opduikt.
+  rows.push([1 * min, "c.sni.global.fastly.net", "P2"], [1 * min + 100, "c.sni.global.fastly.net", "P2"], [90 * min, elb, "P2"]);
+  for (const [i, h] of ["www.netflix.com", "open.spotify.com", "www.npo.nl"].entries()) rows.push([(30 + i * 10) * min, h, "P2"], [(30 + i * 10) * min + 200, "c.sni.global.fastly.net", "P2"]);
+  const o = await overview(rows);
+  const toca = o.groups.filter((g) => g.site === "tocaboca.com" && g.dev !== "").flatMap((g) => g.ss).sort((a, b) => a.s - b.s);
+  assert.equal(toca[0].s, T0);
+  assert.ok(toca[0].e >= T0 + 15 * min, "spelen loopt door tot de laatste melding");
+  assert.ok(!toca.some((x) => x.e >= T0 + 80 * min), "een melding lang na het spelen hoort er niet bij");
+  assert.ok(!o.groups.some((g) => g.site === "tocaboca.com" && g.ss.some((x) => x.s >= T0 + 25 * min)));
+});
