@@ -569,3 +569,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 @media (prefers-reduced-motion: reduce) { .livedot.blink .w1, .livedot.blink .w2 { animation:none; } }
 /* Korte bezoeken (minder dan een minuut): rechts een rustig grijs "kort", zodat elke rij dezelfde opbouw heeft. */
 .time .tdur.kort { font-size:14px; font-weight:400; color:var(--muted); }
+/* Vangnet-rij (rood) blijft rood, ook als hij nu bezig is; alle tekst wit zodat hij leesbaar blijft. */
+.item.adult.nowrow { background-color:#dc2626; background-image:linear-gradient(100deg, transparent 20%, rgba(255,255,255,.16) 50%, transparent 80%); }
+.item.adult .tstart, .item.adult .time, .item.adult .time .twhen, .item.adult .tdur, .item.adult .nowtag { color:#fff; }
+.item.adult .tstart { opacity:.85; }
