@@ -425,7 +425,7 @@ export default function Home() {
   const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
   const [showOther, setShowOther] = useState<Set<string>>(new Set());
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
-  // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet (onthouden per toestel).
+  // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet.
   const [rawView, setRawView] = useState(false);
   // Klaro opent altijd in het gewone overzicht; de NextDNS-lijst is een uitstapje (wens eigenaar), dus de keuze wordt niet onthouden.
   // Echt gebruik (tikken, scrollen, typen) aan de server melden: na 60 minuten zonder gebruik logt de server iedereen uit.
