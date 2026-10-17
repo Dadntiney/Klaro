@@ -321,19 +321,37 @@ function LoadRing({ start }: { start: number }) {
   );
 }
 
+/**
+ * Live-teken: een klein stil grijs bolletje (groen is voor "toestel online"). Knippert één keer zacht als er nieuwe regels
+ * binnenkomen; oranje als het ophalen even niet lukt of traag is; rood als het een tijd niet lukt (tikken = opnieuw proberen).
+ */
 function LiveDot() {
-  const [last, setLast] = useState<{ ok: boolean; at: number }>({ ok: true, at: Date.now() });
+  const [last, setLast] = useState({ at: Date.now(), fails: 0 });
+  const [blink, setBlink] = useState(0);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const on = (e: globalThis.Event) => setLast({ ok: (e as CustomEvent<boolean>).detail, at: Date.now() });
+    const on = (e: globalThis.Event) => {
+      const d = (e as CustomEvent<{ ok: boolean; n?: number }>).detail;
+      if (d.ok) { setLast({ at: Date.now(), fails: 0 }); if (d.n) setBlink((b) => b + 1); }
+      else setLast((l) => ({ ...l, fails: l.fails + 1 }));
+    };
     window.addEventListener("klaro-beat", on);
     const id = setInterval(() => setNow(Date.now()), 2000);
     return () => { window.removeEventListener("klaro-beat", on); clearInterval(id); };
   }, []);
-  const stale = now - last.at > 10_000;
-  const kind = !last.ok ? "fail" : stale ? "slow" : "ok";
-  const label = kind === "ok" ? "Live: werkt" : kind === "slow" ? "Live: even geen antwoord" : "Live: lukt nu niet";
-  return <span className={"livedot " + kind} role="status" aria-label={label} title={label} />;
+  const quiet = now - last.at;
+  const kind = last.fails >= 3 || quiet > 30_000 ? "fail" : last.fails > 0 || quiet > 10_000 ? "slow" : "ok";
+  const label = kind === "ok" ? "Live: werkt" : kind === "slow" ? "Live: even geen antwoord" : "Live: lukt nu niet (tik om opnieuw te proberen)";
+  return (
+    <span
+      key={kind === "ok" ? blink : kind}
+      className={"livedot " + kind + (kind === "ok" && blink ? " blink" : "")}
+      role={kind === "fail" ? "button" : "status"}
+      aria-label={label}
+      title={label}
+      onClick={kind === "fail" ? () => window.dispatchEvent(new Event("klaro-retry")) : undefined}
+    />
+  );
 }
 
 /** Andere adressen van hetzelfde apparaat rond (±30 s) dit bezoek, rode eerst. */
@@ -681,13 +699,14 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error ?? "Live mislukt");
       setLive("ok");
       applyEvents(data.events as Event[]);
-      window.dispatchEvent(new CustomEvent("klaro-beat", { detail: true }));
+      window.dispatchEvent(new CustomEvent("klaro-beat", { detail: { ok: true, n: (data.events ?? []).length } }));
     } catch (e) {
       setLive("fail");
       setLiveError((e as Error).name === "TimeoutError" ? "NextDNS reageert even niet." : (e as Error).message);
-      window.dispatchEvent(new CustomEvent("klaro-beat", { detail: false }));
+      window.dispatchEvent(new CustomEvent("klaro-beat", { detail: { ok: false } }));
     }
   }, [applyEvents]);
+  useEffect(() => { const on = () => { void poll(); }; window.addEventListener("klaro-retry", on); return () => window.removeEventListener("klaro-retry", on); }, [poll]);
 
   const liveFailedRef = useRef(false);
   useEffect(() => { liveFailedRef.current = live === "fail"; }, [live]);

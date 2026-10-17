@@ -550,3 +550,10 @@ h2 .livedot { margin:0 2px 0 12px; }
 .dpair .dstat { width:32px; height:28px; display:inline-flex; align-items:center; justify-content:center; }
 .dpair .dstat .loadring, .dpair .dstat .livedot { margin:0; }
 .dpair .dstat .loadring, .dpair .dstat .loadring svg { width:20px; height:20px; }
+/* Live-bolletje: stil en grijs; één zachte knipper bij nieuwe regels; oranje = even geen antwoord; rood = lukt niet (tikbaar). */
+.livedot, .livedot.ok, .livedot.slow, .livedot.fail { width:8px; height:8px; border:0; border-radius:50%; animation:none; background:color-mix(in srgb, var(--muted) 55%, transparent); }
+.livedot.blink { animation:liveblink .9s ease-out 1; }
+@keyframes liveblink { 0% { background:var(--fg); box-shadow:0 0 0 0 color-mix(in srgb, var(--fg) 35%, transparent); } 100% { background:color-mix(in srgb, var(--muted) 55%, transparent); box-shadow:0 0 0 6px transparent; } }
+.livedot.slow { background:#ff9f0a; }
+.livedot.fail { background:#ff453a; cursor:pointer; }
+@media (prefers-reduced-motion: reduce) { .livedot.blink { animation:none; } }
