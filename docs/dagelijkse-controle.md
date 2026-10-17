@@ -65,6 +65,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Telefoon ontgrendeld/op wifi: veel apps verversen in dezelfde seconden. Een korte app-rij die dan begint (2+ andere apps,
    die zelf niet gebruikt worden; meetmodules in een app tellen niet) is onzeker, geen feit (17 okt 07:24 WhatsApp).
 
+   Zelf leren (controle.ts, sectie 12; lib/selflearn.ts): Klaro leert elke berekening zelf welke adressen bewijzen dat een app
+   echt open is (zeker gebruik = link uit de app of bekende inhoud; zeker achtergrond = nacht zonder ander gebruik). Elke dag
+   nalopen wat nieuw geleerd is (doorrekenen over de hele CSV) en wat nog wacht; leer.ts legt het vast in lib/geleerd.ts.
+   Vangnet: elke dag nagaan of nieuwe dating-, 18+- en VPN-apps (ook hun app-adressen, niet alleen de website) herkend worden.
+
    Rij voor rij (controle.ts, sectie 11) en na ELKE wijziging: het hele overzicht van vandaag naast het ruwe logboek leggen
    (niet alleen de aangepaste rij). Rijen die tegelijk met een app beginnen of als één moment midden in een app vallen, zijn
    vaak iets wat die app laadt (Google-advertentiemodule, meetcode). De eigenaar mag deze fouten niet eerder zien dan ik.

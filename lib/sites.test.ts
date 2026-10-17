@@ -381,3 +381,9 @@ test("meetbakens zonder eigen pagina (fastly-insights, prodregistryv2) zijn acht
   for (const h of ["www.fastly-insights.com", "prodregistryv2.org"]) assert.equal(classify(h).bg, true, h);
   assert.equal(classify("www.werkenbijbevolkingsonderzoek.nl").bg, false);
 });
+
+test("vangnet: dating-app Raya en Cloudflare WARP (gratis VPN-app) worden herkend; Cloudflare zelf en Reddit niet", () => {
+  for (const h of ["app.raya.co", "api.rayatheapp.com"]) assert.equal(classify(h).flag, "Dating", h);
+  assert.equal(classify("warp.cloudflare.com").flag, "VPN/proxy");
+  for (const h of ["www.cloudflare.com", "dash.cloudflare.com", "www.reddit.com"]) assert.equal(classify(h).flag, undefined, h);
+});

@@ -2,7 +2,7 @@
 
 import { OPEN_BURST, extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
-import { HEARTBEAT_GAP, NAV_APPS, NAV_GAP } from "@/lib/sites";
+import { HEARTBEAT_GAP, NAV_APPS, NAV_GAP, setLearnedFg } from "@/lib/sites";
 import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
@@ -465,7 +465,7 @@ export default function Home() {
   useEffect(() => { (window as unknown as { __klaroUp?: boolean }).__klaroUp = true; }, []); // zie het vangnet in app/layout.tsx
   useEffect(() => {
     const t0 = Date.now();
-    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string> }, isFull: boolean) => {
+    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string>; fgLearned?: Record<string, string[]> }, isFull: boolean) => {
       fullRef.current = true;
       // Bij alleen het laatste stuk: de eerste 15 minuten van dat stuk niet tonen (een bezoek dat eerder begon zou daar te laat lijken te beginnen).
       setCut(data.partial ? data.partial + 15 * 60_000 : 0);
@@ -474,6 +474,8 @@ export default function Home() {
       setTotal(data.total);
       deviceMap.current = data.deviceMap ?? {};
       if (data.followers) followOf.current = data.followers;
+      // Zelf geleerde bewijs-adressen ook live gebruiken (lib/selflearn.ts).
+      if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned).map(([k, v]) => [k, new Set(v)])));
       setInsights(data.insights ?? null);
       lastSeen.current = Math.max(0, ...data.groups.map((g) => g.last));
       setUpdated(new Date());
@@ -776,6 +778,7 @@ export default function Home() {
       if (!res.ok) return;
       if (!recent) lastFull.current = Date.now();
       if (data.followers) followOf.current = data.followers;
+      if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned as Record<string, string[]>).map(([k, v]) => [k, new Set(v)])));
       setInsights(data.insights ?? null);
       // Nieuwe apparaten van na het laden ook benoemen; bestaande namen blijven gelijk (anders wisselen regels van apparaat).
       if (data.deviceMap) deviceMap.current = { ...data.deviceMap, ...deviceMap.current };

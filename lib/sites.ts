@@ -109,9 +109,15 @@ export const FG_RULES: Record<string, RegExp> = {
 export const KEEP_ALIVE: Record<string, RegExp> = { "youtube.com": /^(www\.)?youtube\.com$/ };
 export function isKeepAlive(site: string, host: string): boolean { return !!KEEP_ALIVE[site]?.test(host); }
 /** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */
+/** Zelf geleerde bewijs-adressen per app (lib/selflearn.ts), naast de vaste FG_RULES. Adres met "*" = een willekeurig id-deel. */
+const learnedFg = new Map<string, Set<string>>();
+export function setLearnedFg(m: Map<string, Set<string>>) { learnedFg.clear(); for (const [k, v] of m) learnedFg.set(k, new Set(v)); }
 export function fgHit(site: string, host: string): boolean | undefined {
   const r = FG_RULES[site];
-  return r ? r.test(host) : undefined;
+  if (!r) return undefined;
+  if (r.test(host)) return true;
+  const l = learnedFg.get(site);
+  return !!l && (l.has(host) || l.has(host.replace(/^[0-9a-f-]{36}(?=-)/, "*")));
 }
 
 /**
@@ -261,7 +267,7 @@ const DATING_DOMAINS = new Set([
   "sugardaddy.com", "seekingarrangement.com", "whatsyourprice.com", "luxy.com", "thecoffeemeetsbagel.com", "clover.co",
   "pairs.lv", "omiai-jp.com", "tapple.me", "paktor.com", "hello.talk", "mamba.ru", "badoo.com", "lovoo.com",
   // vrienden-/chat-apps met vreemden (veel gebruikt door tieners, ook voor daten)
-  "wink.app", "getwizz.com", "wizz.chat", "azarlive.com", "holla.world", "inner-circle.co", "hoop.photo", "monkey.cool", "chatrandom.com",
+  "wink.app", "getwizz.com", "wizz.chat", "azarlive.com", "holla.world", "inner-circle.co", "raya.co", "rayatheapp.com", "hoop.photo", "monkey.cool", "chatrandom.com",
   "camsurf.com", "shagle.com", "joingy.com", "chatspin.com", "bazoocam.org", "tinychat.com", "emeraldchat.com", "chathub.cam", "uhmegle.com",
 ]);
 
@@ -319,7 +325,7 @@ const VPN_DOMAINS = new Set([
   "tunnelbear.com", "windscribe.com", "mullvad.net", "hide.me", "hotspotshield.com", "ipvanish.com", "torguard.net", "vyprvpn.com", "atlasvpn.com", "hola.org",
   "psiphon.ca", "getlantern.org", "lantern.io", "torproject.org", "ultrasurf.us", "vpnunlimited.com", "keepsolid.com", "betternet.co", "turbovpn.com", "vpnbook.com",
   "proxysite.com", "hidemyass.com", "hma.com", "croxyproxy.com", "kproxy.com", "hidester.com", "vpn.net", "zenmate.com", "purevpn.com", "ivacy.com", "x-vpn.com",
-  "cloudflareclient.com", "warp.plus", "speedify.com", "urban-vpn.com", "ghostery.com", "opera-proxy.net", "browsec.com", "veepn.com", "planetvpn.com", "snapvpn.com",
+  "cloudflareclient.com", "warp.plus", "warp.cloudflare.com", "speedify.com", "urban-vpn.com", "ghostery.com", "opera-proxy.net", "browsec.com", "veepn.com", "planetvpn.com", "snapvpn.com",
   // DNS-over-HTTPS / eigen DNS-diensten: wie die gebruikt, omzeilt NextDNS
   "vpn-api.proton.me", "psiphon3.com", "tor2web.org", "onion.ws", "onion.ly", "onion.pet",
   "dns.google", "dns.quad9.net", "controld.com", "dns0.eu", "one.one.one.one", "adguard-dns.io", "libredns.gr", "doh.mullvad.net", "dns.sb", "alidns.com", "doh.pub", "doh.opendns.com", "cloudflare-dns.com", "dns.adguard.com", "dns.adguard-dns.com", "dnsforge.de", "doh.dns.sb", "mullvad-dns.net",

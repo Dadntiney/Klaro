@@ -1,7 +1,7 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
@@ -11,6 +11,7 @@ import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
 import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, loadedWith } from "./companion.ts";
 import { GELEERD, geldig } from "./geleerd.ts";
+import { learnFg } from "./selflearn.ts";
 import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
 import { prepareLists } from "./adultlist.ts";
@@ -170,7 +171,7 @@ const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", 
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
 /** `known`: wat een eerdere berekening over alle dagen leerde (widgets, hulpjes, doorverwijs-adressen), voor het snelle herberekenen van alleen de laatste uren. */
-export type Known = { auto?: string[]; helpers?: string[]; followers?: string[]; parts?: string[]; heartbeat?: string[] };
+export type Known = { auto?: string[]; helpers?: string[]; followers?: string[]; parts?: string[]; heartbeat?: string[]; fg?: string[] };
 export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number; known?: Known }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const todayOnly = opts.todayOnly;
   const hours = Math.min(24, Math.max(0, Number(opts.hours) || 0));
@@ -293,6 +294,33 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, host: host!, site: app ? info.site : undefined });
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignPlayback(ev)) playOf.set(dev + "|" + t, site);
+  }
+  // Zelf geleerde bewijs-adressen van apps met achtergrondverkeer (lib/selflearn.ts): over alle dagen, plus eerder geleerd.
+  let learnedFgList: string[] = [];
+  let fgLearnedAll: Record<string, string[]> = {}; // site -> geleerde bewijs-adressen (ook voor live)
+  {
+    setLearnedFg(new Map());
+    const learned = new Map<string, Set<string>>();
+    if (!opts.known) {
+      const ev: Parameters<typeof learnFg>[0] = [];
+      for (const r of body) {
+        const host = extractHost(r[hostCol] ?? "");
+        const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+        if (!t) continue;
+        const blocked = (statusCol >= 0 ? r[statusCol] ?? "" : "").trim().toLowerCase() === "blocked";
+        if (blocked) continue;
+        const info = classify(host!);
+        const app = !!FG_RULES[info.site];
+        const page = !app && info.main && !info.bg && !info.flag && isPlainSite(info) && !SEARCH.has(info.site);
+        if (!app && !page) continue;
+        ev.push({ t, dev: deviceMap[idOf(r)], host: host!, site: info.site, app, known: app && FG_RULES[info.site].test(host!), page });
+      }
+      for (const [site, hs] of learnFg(ev)) learned.set(site, hs);
+      learnedFgList = [...learned].flatMap(([site, hs]) => [...hs].map((h) => site + "|" + h));
+    }
+    for (const k of [...geldig(GELEERD.fg ?? [], Date.now()), ...(opts.known?.fg ?? [])]) { const i = k.indexOf("|"); (learned.get(k.slice(0, i)) ?? learned.set(k.slice(0, i), new Set()).get(k.slice(0, i))!).add(k.slice(i + 1)); }
+    setLearnedFg(learned);
+    fgLearnedAll = Object.fromEntries([...learned].map(([k, v]) => [k, [...v]]));
   }
   // Spel-motor/reclame-adressen in spellen (Unity, Amplitude, ...) horen bij het spel dat speelt, zie assignGameSdk in lib/companion.ts.
   const gameOf = new Map<string, string>(); // apparaat|tijdstip -> site van het spel
@@ -921,7 +949,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     deviceMap, // id -> label; bevat nooit de echte naam
     insights: { payments: payments.slice(0, 60), trackers, since: Number.isFinite(minT) ? minT : 0, until: maxT },
     auto: todayOnly ? undefined : auto,
-    learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers, followers: learnedFollowers },
+    learned: todayOnly ? undefined : { auto: autoNow, helpers: learnedHelpers, followers: learnedFollowers, fg: learnedFgList },
+    fgLearned: fgLearnedAll, // live: dezelfde geleerde bewijs-adressen
     parts: todayOnly ? undefined : partsAll, // voor het snelle herberekenen (lib/recent.ts)
     heartbeat: todayOnly ? undefined : [...heartbeat],
     followers: Object.fromEntries(followOf), // live: dezelfde doorverwijs-adressen (apparaat|adres -> site) // wat nu uit de logboeken blijkt (scripts/leer.ts legt het vast)

@@ -14,7 +14,7 @@ export const recentFrom = (now: number) => amsterdamMidnight(now) - 12 * 3_600_0
 
 /** Wat het volledige overzicht leerde, met de apparaatlabels vertaald naar die van de snelle berekening (via het apparaat-id). */
 export function knownFrom(full: Body): Known {
-  return { auto: full.auto ?? [], helpers: full.learned?.helpers ?? [], followers: Object.entries(full.followers ?? {}).map(([k, site]) => k + "|" + site), parts: full.parts ?? [], heartbeat: full.heartbeat ?? [] };
+  return { auto: full.auto ?? [], helpers: full.learned?.helpers ?? [], followers: Object.entries(full.followers ?? {}).map(([k, site]) => k + "|" + site), parts: full.parts ?? [], heartbeat: full.heartbeat ?? [], fg: Object.entries(full.fgLearned ?? {}).flatMap(([site, hs]) => (hs as string[]).map((h) => site + "|" + h)) };
 }
 
 export function mergeRecent(full: Body, recent: Body, now: number): Body {

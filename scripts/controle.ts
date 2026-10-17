@@ -12,6 +12,7 @@
  *   9. Apps die misschien geopend zijn maar niet getoond (veel adressen van de app binnen 5 s).
  *  10. Versnipperd gebruik: 3+ stukjes op een dag met telkens 5-15 min ertussen (doorlopend gebruik waarbij DNS stil is?).
  *  11. Rij voor rij: getoonde rijen die tegelijk met een app beginnen of als één moment midden in een app vallen.
+ *  12. Zelf leren: per app hoeveel zekere voorbeelden er zijn en welke bewijs-adressen geleerd zijn of nog wachten.
  * Met * gemarkeerd: de laatste 3 dagen (daar heeft nog niemand naar gekeken).
  * Alles wat hier verschijnt: nalopen in de ruwe regels, en alleen algemeen oplossen (met doorrekenen en tests).
  * Gebruik: KLARO_PW=... node --experimental-strip-types scripts/controle.ts [--bestand download.tsv] [--uren 24]
@@ -19,7 +20,8 @@
  */
 import fs from "node:fs";
 import { buildOverview } from "../lib/overview.ts";
-import { classify, isMainHost, isNeverFlag } from "../lib/sites.ts";
+import { FG_RULES, classify, isMainHost, isNeverFlag } from "../lib/sites.ts";
+import { LEARN, learnStats, type LearnEvent } from "../lib/selflearn.ts";
 import { baseDomain } from "../lib/parse.ts";
 import { inAdultList, inDatingList } from "../lib/adultlist.ts";
 import { isPlainSite, isSystemSite } from "../lib/system.ts";
@@ -190,6 +192,24 @@ for (const g of ov.groups) {
   }
 }
 section("Rij voor rij: begint tegelijk met een app, of één moment midden in een app", rowChecks.sort().reverse().slice(0, 40), "Niets.");
+
+// 12. Zelf leren (lib/selflearn.ts): per app met achtergrondverkeer hoeveel zekere voorbeelden er zijn (gebruik / nacht), wat
+// geleerd is als bewijs dat de app open is, en wat nog op genoeg nachtvoorbeelden wacht. Groeit vanzelf met elke dag.
+{
+  const ev: LearnEvent[] = [];
+  for (const r of rows) {
+    if (r.blocked) continue;
+    const c = classify(r.h);
+    const app = !!FG_RULES[c.site];
+    const page = !app && c.main && !c.bg && !c.flag && isPlainSite(c) && !SEARCH.has(c.site);
+    if (app || page) ev.push({ t: r.t, dev: r.id, host: r.h, site: c.site, app, known: app && FG_RULES[c.site].test(r.h), page });
+  }
+  const out: string[] = [];
+  for (const [site, s] of [...learnStats(ev)].sort((a, b) => b[1].pos - a[1].pos)) {
+    out.push(`${site}: gebruik ${s.pos}/${LEARN.pos}, nacht ${s.night}/${LEARN.night}${s.ready ? "" : " (nog niet genoeg)"}${s.learned.length ? `; geleerd: ${s.learned.join(", ")}` : ""}${s.waiting.length ? `; wacht: ${s.waiting.slice(0, 6).join(", ")}` : ""}`);
+  }
+  section("Zelf leren: bewijs dat een app open is (groeit elke dag)", out, "Nog niets te leren.");
+}
 
 // 9. App geopend maar niet getoond? Veel verschillende adressen van een app binnen 5 s (zo opent een app), zonder zichtbare rij.
 const missed: string[] = [];

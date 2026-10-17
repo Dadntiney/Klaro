@@ -15,6 +15,8 @@ export const GELEERD: {
   helpers: Geleerd[];
   /** apparaat|cloud-adres|site: doorverwijs-adres van een app (zie followers() in lib/companion.ts) */
   followers: Geleerd[];
+  /** site|adres: zelf geleerd bewijs dat een app echt open is (zie lib/selflearn.ts) */
+  fg?: Geleerd[];
 } = {
   auto: [
     { k: "Apple TV|google.com", laatst: "2026-10-17" },
