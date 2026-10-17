@@ -57,6 +57,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Vaste melding (heartbeat) via een doorverwijs-adres: meestal elke 1-5 min, soms tot 10 min (Toca Boca 17 okt 12:12-12:42);
    stukjes met hooguit 10 min ertussen zijn één keer spelen (HEARTBEAT_GAP, alleen als het adres vaak los terugkomt).
 
+   Versnipperd gebruik (controle.ts, sectie 10): apps waarvan het gebruik in 3+ stukjes valt met 5-15 min ertussen. Zo zagen
+   de gemiste Toca Boca-speelbeurt en de Waze-rit eruit. Altijd eerst de verdeling van de pauzes over ALLE dagen meten (kleinste,
+   gewone en grootste pauze), nooit een grens kiezen uit één voorbeeld.
+
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.
    Uitzoeken over alle dagen of die altijd en alleen bij kijken voorkomen; dan als beeld laten tellen (net als bij Netflix).

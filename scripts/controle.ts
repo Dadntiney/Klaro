@@ -10,6 +10,7 @@
  *   7. Ritme: een site die kort en regelmatig terugkomt (open tabblad, widget).
  *   8. Veel korte rijen van één site op één dag.
  *   9. Apps die misschien geopend zijn maar niet getoond (veel adressen van de app binnen 5 s).
+ *  10. Versnipperd gebruik: 3+ stukjes op een dag met telkens 5-15 min ertussen (doorlopend gebruik waarbij DNS stil is?).
  * Met * gemarkeerd: de laatste 3 dagen (daar heeft nog niemand naar gekeken).
  * Alles wat hier verschijnt: nalopen in de ruwe regels, en alleen algemeen oplossen (met doorrekenen en tests).
  * Gebruik: KLARO_PW=... node --experimental-strip-types scripts/controle.ts [--bestand download.tsv] [--uren 24]
@@ -143,6 +144,33 @@ for (const g of ov.groups) {
   if (xs.length >= 5) shorts.push(`${recent.has(g.d) ? "* " : "  "}${g.d} ${g.dev} ${g.site}  ${xs.length} korte rijen (${xs.map((x) => hm(x.s).slice(-5)).slice(0, 6).join(", ")}${xs.length > 6 ? ", ..." : ""})`);
 }
 section("Veel korte rijen op één dag (nalopen)", shorts.sort().reverse().slice(0, 30), "Niets.");
+
+// 10. Versnipperd gebruik: een app of site waarvan het gebruik op één dag in 3 of meer stukjes valt met telkens 5 tot 15 minuten
+// ertussen (ook verborgen stukjes). Zo zag een speelbeurt van Toca Boca eruit (meldingen soms 6-8 min uit elkaar) en een rit met
+// Waze (kaartstukjes elke 4-17 min). Nalopen: is het één doorlopend gebruik waarvan DNS tussendoor stil is? Meet dan de
+// verdeling van de pauzes over ALLE dagen voordat je een grens kiest.
+const pieces: string[] = [];
+const autoSet = new Set(ov.auto ?? []);
+for (const g of ov.groups) {
+  // (Tv's niet: daar voegt de lijst stukjes met minder dan 15 min ertussen al samen.)
+  if (!g.main || g.bg || g.flag || isTv(g.dev) || ALWAYS_SHOW.has(g.site) || autoSet.has(g.dev + "|" + g.site) || /^(whatsapp|telegram|signal|messenger|snapchat)\./.test(g.site)) continue;
+  const xs = [...(g.ss ?? [])].sort((a, b) => a.s - b.s);
+  let run: Session[] = [];
+  const flush = () => {
+    if (run.length >= 3 && run.some((x) => !isHuman(x))) {
+      const gaps = run.slice(1).map((x, i) => Math.round((x.s - run[i].e) / 60_000));
+      pieces.push(`${recent.has(g.d) ? "* " : "  "}${g.d} ${g.dev} ${g.site}  ${run.length} stukjes ${hm(run[0].s).slice(-5)}-${hm(run[run.length - 1].e).slice(-5)}, pauzes ${gaps.join(", ")} min, ${run.filter((x) => !isHuman(x)).length} verborgen`);
+    }
+    run = [];
+  };
+  for (const x of xs) {
+    const prev = run[run.length - 1];
+    if (prev && x.s - prev.e >= 5 * 60_000 && x.s - prev.e <= 15 * 60_000) run.push(x);
+    else { flush(); run = [x]; }
+  }
+  flush();
+}
+section("Versnipperd gebruik: stukjes met 5-15 min ertussen (één doorlopend gebruik?)", pieces.sort().reverse().slice(0, 30), "Niets.");
 
 // 9. App geopend maar niet getoond? Veel verschillende adressen van een app binnen 5 s (zo opent een app), zonder zichtbare rij.
 const missed: string[] = [];
