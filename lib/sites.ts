@@ -101,6 +101,13 @@ export const FG_RULES: Record<string, RegExp> = {
   // Pinterest: alleen foto's/video's (pinimg) bewijzen dat de app open is; de Pinterest-teller op webwinkels (ct., trk.) niet.
   "pinterest.com": /^(i|v[0-9]*)\.pinimg\.com$|^(i|v)[-.]pinimg/, // niet s.pinimg.com: dat is het Pinterest-script op webwinkels
 };
+/**
+ * Kijkmeldingen: tijdens het afspelen meldt de speler de kijktijd aan de site zelf (YouTube: www.youtube.com, elke paar minuten
+ * zodra het adres verlopen is). De video zelf komt dan vaak over een al open verbinding, zonder nieuwe opvragingen. Zo'n melding
+ * telt alleen als hij aansluit op echte inhoud (hooguit 5 minuten na de vorige); een losse melding start nooit gebruik.
+ */
+export const KEEP_ALIVE: Record<string, RegExp> = { "youtube.com": /^(www\.)?youtube\.com$/ };
+export function isKeepAlive(site: string, host: string): boolean { return !!KEEP_ALIVE[site]?.test(host); }
 /** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */
 export function fgHit(site: string, host: string): boolean | undefined {
   const r = FG_RULES[site];

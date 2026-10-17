@@ -1,6 +1,6 @@
 import { isClickHost, isEspHost, isMailClientHost } from "./mail.ts";
 import { extractHost } from "./parse.ts";
-import { classify, fgHit, isPlaying, isResourceHost, isQuietHost, payKind } from "./sites.ts";
+import { classify, fgHit, isKeepAlive, isPlaying, isResourceHost, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType } from "./names.ts";
 import { categoryOf } from "./categories.ts";
 
@@ -22,6 +22,7 @@ export interface LiveEvent {
   media?: boolean; // beeld/geluid-verkeer (video of muziek)
   quiet?: boolean; // verbinding openhouden: geen bezoek
   fg?: boolean; // bij apps met achtergrondverkeer: true = inhoud geladen, false = alleen achtergrond
+  ka?: boolean; // kijkmelding (zie KEEP_ALIVE): telt als inhoud als hij aansluit op echte inhoud
   res?: boolean; // los onderdeel (teller, plaatje, advertentie)
   esp?: boolean; // mailbedrijf (nieuwsbrief geopend)
   ck?: boolean; // klikteller van een mailbedrijf (op een link in een mail getikt)
@@ -46,5 +47,5 @@ export function toEvent(e: Record<string, unknown>): LiveEvent | null {
     .toLowerCase();
   const why = blocked ? (Array.isArray(e.reasons) ? e.reasons : []).map((r) => String((r as { name?: string }).name || (r as { id?: string }).id || "")).filter(Boolean).join(", ") || undefined : undefined;
   if (blocked && /porn|adult|sex|dating|erotic/.test(reasons) && !info.flag) info = { ...info, bg: false, main: true, flag: "Geblokkeerd" };
-  return { t, host, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, why, media: isPlaying(host, blocked), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), res: isResourceHost(host) || undefined, esp: isEspHost(host) || undefined, ck: (!blocked && isClickHost(host)) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
+  return { t, host, devId, type, site: info.site, name: info.name, icon: info.icon, bg: info.bg, adult: info.adult, main: info.main, flag: info.flag, cat: categoryOf(info.site), blocked, why, media: isPlaying(host, blocked), quiet: isQuietHost(host), fg: fgHit(info.site, host) === undefined ? undefined : !blocked && !!fgHit(info.site, host), ka: (!blocked && isKeepAlive(info.site, host)) || undefined, res: isResourceHost(host) || undefined, esp: isEspHost(host) || undefined, ck: (!blocked && isClickHost(host)) || undefined, mc: isMailClientHost(host) || undefined, pay: !blocked ? payKind(host) ?? undefined : undefined };
 }

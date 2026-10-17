@@ -84,11 +84,13 @@ function openStart(x: Session, host: string, t: number) {
  * `fg`: alleen bij apps met achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): true = inhoud geladen, false = achtergrond.
  * Achtergrondverkeer telt dan wel als verzoek, maar verlengt de gebruiksduur niet.
  */
-export function extendSessions(ss: Session[], t: number, media = false, fg?: boolean, res?: boolean, host?: string): Session[] {
+export function extendSessions(ss: Session[], t: number, media = false, fg?: boolean, res?: boolean, host?: string, keep = false): Session[] {
   const next = ss.map((x) => ({ ...x }));
   const i = next.findIndex((x) => t >= x.s - GAP && t <= x.e + GAP);
   if (i >= 0) {
     const x = next[i];
+    // Kijkmelding (zie KEEP_ALIVE in lib/sites.ts): telt als inhoud als er al echte inhoud was, en niet binnen 30 s daarvan.
+    if (keep && fg === false && ((x.f ?? 0) > 0 || (x.m ?? 0) > 0) && t >= x.e && t - (x.lf ?? 0) > 30_000) fg = true;
     const prevE = x.e;
     if (fg === undefined || fg || media) {
       if (fg !== undefined && !(x.f ?? 0) && !(x.m ?? 0)) { x.s = t; x.e = t; } // eerste echte inhoud: daar begint het gebruik

@@ -127,3 +127,21 @@ test("live WhatsApp: de volledige opstart (kale naam, api., g., static.) telt me
   const bericht = feed([[0, "api.whatsapp.net", false], [500, "g.whatsapp.net", false], [1_000, "static.whatsapp.net", true], [60_000, "whatsapp.com", false]]);
   assert.equal(isHuman(bericht[0]), false);
 });
+
+test("kijkmelding van YouTube rekt het kijken op, maar start nooit zelf gebruik", () => {
+  const t = Date.parse("2026-10-17T01:49:22Z");
+  let ss = extendSessions([], t, false, true); // plaatje: inhoud
+  ss = extendSessions(ss, t + 180_000, false, false, undefined, undefined, true); // www.youtube.com: kijktijd gemeld
+  ss = extendSessions(ss, t + 266_000, false, false, undefined, undefined, true);
+  assert.equal(ss[0].e, t + 266_000);
+  assert.equal(ss[0].f, 3);
+  // Een losse melding zonder inhoud ervoor: geen gebruik.
+  let los = extendSessions([], t, false, false, undefined, undefined, true);
+  los = extendSessions(los, t + 120_000, false, false, undefined, undefined, true);
+  assert.equal(los[0].f, 0);
+  assert.equal(los[0].e, t);
+  // Vlak na de inhoud (pagina laadt, of een ingebouwde video): telt niet extra.
+  let pagina = extendSessions([], t, false, true);
+  pagina = extendSessions(pagina, t + 3_000, false, false, undefined, undefined, true);
+  assert.equal(pagina[0].f, 1);
+});

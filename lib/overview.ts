@@ -1,9 +1,9 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, TV_APPS, classify, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { FG_RULES, TV_APPS, classify, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
-import { MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
+import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
 import { gapP95 } from "./devstats.ts";
 import { suspicion } from "./suspect.ts";
@@ -432,6 +432,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     // alleen van de eerste tot de laatste keer inhoud; verversen op de achtergrond rekt de duur dan niet op.
     if (FG_RULES[g.site]) {
       const real = [...(fgTimes.get(gkey) ?? []), ...(mediaTimes.get(gkey) ?? [])];
+      // Kijkmeldingen (zie KEEP_ALIVE) die aansluiten op echte inhoud: tellen als inhoud.
+      // Niet binnen 30 s van de inhoud zelf: dat is gewoon het laden van de pagina (of een ingebouwde video op een andere site).
+      const keep = (siteHosts.get(gkey) ?? []).filter((h) => isKeepAlive(g.site, h.host) && !real.some((t) => Math.abs(t - h.t) <= 30_000)).map((h) => h.t);
+      if (keep.length && real.length) { const ch = chainTimes(real, keep, GAP, 0); real.push(...ch); (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(...ch); }
       for (const x of sessions) {
         const inX = real.filter((t) => t >= x.s && t <= x.e);
         // Inhoud-momenten, of het aantal verschillende inhoud-adressen als dat meer is: een app die opent haalt in één

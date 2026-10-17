@@ -209,3 +209,17 @@ test("Netflix op een tablet: elk uur even wakker op de achtergrond (zonder beeld
   assert.equal(vis.length, 1);
   assert.equal(vis[0].s, T0 + 200 * min);
 });
+
+test("YouTube op de Apple TV: kijkmeldingen aan www.youtube.com rekken het kijken op; een ingebouwde video op een site niet", async () => {
+  const s = 1_000;
+  const o = await overview([
+    [-29 * s, "www.youtube.com", "TV1"], [0, "i.ytimg.com", "TV1"], [4 * s, "googleads.g.doubleclick.net", "TV1", "blocked"],
+    [182 * s, "www.youtube.com", "TV1"], [266 * s, "www.youtube.com", "TV1"], // video speelt over een open verbinding
+    // Ingebouwde video op een site (iPhone): www + plaatje + bare youtube.com binnen een paar seconden: geen bezoek.
+    [3_600 * s, "www.youtube.com"], [3_600.2 * s, "i.ytimg.com"], [3_601 * s, "rr5---sn-x.googlevideo.com"], [3_603 * s, "youtube.com"],
+  ]);
+  const tv = shown(o, "youtube.com").filter((x) => x.s < T0 + 1_000 * s);
+  assert.equal(tv.length, 1);
+  assert.equal(tv[0].e, T0 + 266 * s);
+  assert.equal(shown(o, "youtube.com").filter((x) => x.s > T0 + 1_000 * s).length, 0);
+});

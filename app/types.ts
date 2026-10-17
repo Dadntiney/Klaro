@@ -44,6 +44,7 @@ export interface Event {
   media?: boolean;
   quiet?: boolean;
   fg?: boolean;
+  ka?: boolean; // kijkmelding (zie KEEP_ALIVE in lib/sites.ts)
   res?: boolean;
   esp?: boolean;
   ck?: boolean;
