@@ -465,6 +465,30 @@ export default function Home() {
   const finishing = useRef(false);
 
   useEffect(() => { (window as unknown as { __klaroUp?: boolean }).__klaroUp = true; }, []); // zie het vangnet in app/layout.tsx
+  // Nieuwe versie live gezet? Dan vanzelf herladen, zodat altijd de nieuwste regels rekenen: bij terugkomen op de pagina, of elke
+  // 5 minuten als er even niets aangeraakt is (niet midden in het lezen). Herkend aan scriptbestanden die deze pagina nog niet kent.
+  useEffect(() => {
+    let touched = Date.now();
+    const touch = () => { touched = Date.now(); };
+    const check = async (returning: boolean) => {
+      if (document.visibilityState !== "visible" || (!returning && Date.now() - touched < 120_000)) return;
+      try {
+        const html = await (await fetch("/", { cache: "no-store", credentials: "same-origin" })).text();
+        const have = new Set([...document.querySelectorAll("script[src]")].map((x) => new URL((x as HTMLScriptElement).src).pathname));
+        const want = [...html.matchAll(/<script src="(\/_next\/static\/[^"]+)"/g)].map((m) => m[1]);
+        if (want.length && want.some((src) => !have.has(src))) location.reload();
+      } catch { /* offline of niet ingelogd: later opnieuw */ }
+    };
+    const onVis = () => void check(true);
+    const id = setInterval(() => void check(false), 300_000);
+    document.addEventListener("visibilitychange", onVis);
+    for (const ev of ["pointerdown", "scroll", "keydown"]) window.addEventListener(ev, touch, { passive: true });
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+      for (const ev of ["pointerdown", "scroll", "keydown"]) window.removeEventListener(ev, touch);
+    };
+  }, []);
   useEffect(() => {
     const t0 = Date.now();
     const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string>; fgLearned?: Record<string, string[]> }, isFull: boolean) => {
