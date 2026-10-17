@@ -2,6 +2,7 @@
 
 import { OPEN_BURST, extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
+import { NAV_APPS, NAV_GAP } from "@/lib/sites";
 import { isPlainSite, isSystemSite } from "@/lib/system";
 import { isMailSession } from "@/lib/mail";
 import { isSilent } from "@/lib/devstats";
@@ -974,7 +975,13 @@ export default function Home() {
     }
     // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
     const shown = (g: Group): Session[] => {
-      const all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+      let all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
+      // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit, ook live (zelfde regel als lib/overview.ts).
+      if (NAV_APPS.has(g.site) && all.length > 1) {
+        const m: Session[] = [];
+        for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= NAV_GAP) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }
+        all = m.reverse();
+      }
       // Gemarkeerde en verdachte regels blijven altijd staan.
       const ss = all.filter((x) => (!cut || x.s >= cut) && (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
       if (!isTv(g.dev) || ss.length < 2) return ss;

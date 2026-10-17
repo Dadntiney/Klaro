@@ -1,7 +1,7 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite } from "./system.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, TV_APPS, classify, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { FG_RULES, NAV_APPS, NAV_GAP, TV_APPS, classify, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
@@ -425,7 +425,16 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   };
   for (const [gkey, g] of groups) {
     const all = times.get(gkey) ?? [];
-    const sessions = allSessions(all);
+    let sessions = allSessions(all);
+    // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit (zie NAV_APPS).
+    if (NAV_APPS.has(g.site) && sessions.length > 1) {
+      const out: Session[] = [];
+      for (const x of [...sessions].sort((a, b) => a.s - b.s)) {
+        const l = out[out.length - 1];
+        if (l && x.s - l.e <= NAV_GAP) { l.e = Math.max(l.e, x.e); l.n = (l.n ?? 0) + (x.n ?? 0); } else out.push({ ...x });
+      }
+      sessions = out.sort((a, b) => b.e - a.e);
+    }
     // Tellen in momenten per site: alles van dezelfde site binnen 1,5 s (www + plaatjes + script) is één moment.
     for (const x of sessions) x.n = moments(all.filter((t) => t >= x.s && t <= x.e));
     // Apps met veel achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): tel hoe vaak er echt inhoud laadde, en meet de duur

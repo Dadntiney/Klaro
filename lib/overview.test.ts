@@ -223,3 +223,15 @@ test("YouTube op de Apple TV: kijkmeldingen aan www.youtube.com rekken het kijke
   assert.equal(tv[0].e, T0 + 266 * s);
   assert.equal(shown(o, "youtube.com").filter((x) => x.s > T0 + 1_000 * s).length, 0);
 });
+
+test("Waze: onderweg komen kaartstukjes maar af en toe; stukjes met hooguit 20 minuten ertussen zijn één rit, een rit later niet", async () => {
+  const min = 60_000;
+  const burst = (t: number): R[] => ["cresg.waze.com", "sdk.waze.com", "rt-xlb-row.waze.com", "ctilesgcs-row.waze.com", "wig-row.waze.com", "dexter.waze.com"].map((h, i) => [t + i * 300, h]);
+  const o = await overview([
+    ...burst(0), [2 * min, "cres.waze.com"], [11 * min, "ctilesgcs-row.waze.com"], [11 * min + 800, "dexter.waze.com"], [15 * min, "renderer-row.waze.com"], [32 * min, "rt-xlb-row.waze.com"],
+    ...burst(80 * min), // later opnieuw geopend: een nieuwe rit
+  ]);
+  const ss = o.groups.filter((g) => g.site === "waze.com").flatMap((g) => g.ss).sort((a, b) => a.s - b.s);
+  assert.equal(ss.length, 2);
+  assert.equal(ss[0].e - ss[0].s, 32 * min);
+});

@@ -130,6 +130,13 @@ export function isEmbedHost(host: string): boolean {
   return EMBED.test(host);
 }
 
+/**
+ * Navigatie: onderweg haalt de app alleen af en toe nieuwe kaartstukjes en route-updates op (Waze: elke 4 tot 17 minuten), de
+ * rest van de rit is het stil. Stukjes van zo'n app met hooguit NAV_GAP ertussen zijn één rit. Op de achtergrond vraagt Waze
+ * niets op (over alle dagen: elk los stukje ligt binnen 17 minuten van het openen van de app).
+ */
+export const NAV_APPS = new Set(["waze.com"]);
+export const NAV_GAP = 20 * 60_000;
 export const TV_APPS = new Set(["disneyplus.com", "ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();

@@ -61,6 +61,8 @@ const CASES: Case[] = [
   { day: "2026-10-16", dev: "iPhone", site: "bodygraphchart.com", at: "*", want: false, why: "ingebouwde tool (embed.) in het cursusportaal" },
   { day: "2026-10-16", dev: "iPhone", site: "weeztix.com", at: "11:50", want: true, why: "ticketshop geopend vanaf de evenementensite" },
   { day: "2026-10-11", dev: "iPhone", site: "vkmag.com", at: "19:59", want: true, why: "site zelf geopend (eigen embed. hoort erbij)" },
+  { day: "2026-10-17", dev: "iPhone", site: "waze.com", at: "09:50", until: "10:22", want: true, why: "rit met Waze: kaartstukjes maar af en toe, één rit" },
+  { day: "2026-10-17", dev: "Apple TV", site: "youtube.com", at: "01:49", want: true, why: "YouTube gekeken: kijkmeldingen aan www.youtube.com" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);

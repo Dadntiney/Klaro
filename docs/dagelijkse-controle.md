@@ -45,6 +45,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    www.youtube.com is te zien. Telt als kijken als hij aansluit op echte inhoud (KEEP_ALIVE, opgelost 17 okt).
    Een adres met "vpn" van Amazon (k8s-sdkvpnde-...elb.amazonaws.com) vlak na Vinted: VPN-controle van de app zelf
    (samen met conn-check.icg-in.com), geen VPN. analytics.tiktok.com (geblokkeerd) op websites: TikTok-teller, geen TikTok.
+   Waze: onderweg komen kaartstukjes maar elke 4 tot 17 minuten; stukjes met hooguit 20 minuten ertussen zijn één rit (NAV_APPS,
+   opgelost 17 okt). Op de achtergrond vraagt Waze niets op.
 
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.
