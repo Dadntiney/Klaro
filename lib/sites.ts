@@ -9,6 +9,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Netflix", icon: "netflix.com", domains: ["netflix.com", "nflxvideo.net", "nflximg.net", "nflxext.com", "nflxso.net"] },
   { name: "Roblox", icon: "roblox.com", domains: ["roblox.com", "rbxcdn.com", "robloxlabs.com"] },
   { name: "Spotify", icon: "spotify.com", domains: ["spotify.com", "scdn.co", "spotifycdn.com"] },
+  { name: "Shazam", icon: "shazam.com", domains: ["shazam.com", "shazamcloud.com"] }, // beacon.* elke paar minuten op de achtergrond; config/amp = app geopend
   { name: "TikTok", icon: "tiktok.com", domains: ["tiktok.com", "tiktokcdn.com", "tiktokv.com", "tiktokcdn-eu.com", "musical.ly", "byteoversea.com", "ibytedtos.com", "ibyteimg.com"] },
   { name: "Instagram", icon: "instagram.com", domains: ["instagram.com", "cdninstagram.com"] },
   { name: "Facebook", icon: "facebook.com", domains: ["facebook.com", "fbcdn.net", "facebook.net", "fb.com"] },
@@ -196,6 +197,7 @@ const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|wh
 
 const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com",
   "devices.a2z.com", // apparaat-statistieken van Amazon (Minerva): ook als de app op de achtergrond ververst
+  "beacon.shazam.com", // Shazam meldt zich dag en nacht elke paar minuten, ook als de app dicht is
   // bestanden van cursusplatform Thinkific in de eigen cursus-site (academy.merk.nl): die site is het bezoek, niet Thinkific
   "cdn.thinkific.com", "assets.thinkific.com", "cdn-internal.thinkific.com", "cdn-themes.thinkific.com"];
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
@@ -450,7 +452,7 @@ export function isPlaying(host: string, blocked: boolean): boolean {
  * Adressen die een app alleen gebruikt om de verbinding open te houden (bijvoorbeeld de pushverbinding van de eufy-camera-app).
  * Die zeggen niets over gebruik en tellen daarom niet als bezoek of sessie.
  */
-const QUIET = [/(^|\.)app-push-[a-z0-9-]*\.eufy\.com$/, /^megaeufy-[a-z0-9-]*\.[a-z0-9-]+\.elb\.amazonaws\.com$/];
+const QUIET = [/(^|\.)app-push-[a-z0-9-]*\.eufy\.com$/, /^megaeufy-[a-z0-9-]*\.[a-z0-9-]+\.elb\.amazonaws\.com$/, /^beacon\.shazam\.com$/];
 export function isQuietHost(host: string): boolean {
   return QUIET.some((re) => re.test(host));
 }

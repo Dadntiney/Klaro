@@ -76,6 +76,8 @@ const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: "onzeker", why: "winkel geopend tijdens scrollen (advertentie of echt)" },
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.cloud", at: "16:01", want: false, why: "onderdeel van ravensburger.nl (zelfde merk)" },
   { day: "2026-10-11", dev: "iPhone", site: "nu.nl", at: "10:53", want: true, why: "link uit X geopend" },
+  { day: "2026-10-17", dev: "iPhone", site: "shazam.com", at: "14:49", want: true, why: "Shazam geopend (nummer herkend, daarna door naar Spotify)" },
+  { day: "2026-10-16", dev: "iPhone", site: "shazam.com", at: "*", want: false, why: "alleen achtergrondmeldingen (beacon) van Shazam, dag en nacht" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);

@@ -78,11 +78,20 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    de gemiste Toca Boca-speelbeurt en de Waze-rit eruit. Altijd eerst de verdeling van de pauzes over ALLE dagen meten (kleinste,
    gewone en grootste pauze), nooit een grens kiezen uit één voorbeeld.
 
+   Geleerd (17 okt): een groep die met een achtergrondadres begint (beacon.shazam.com), heet in het overzicht helemaal
+   achtergrond, ook als daarna echte app-adressen komen. Zo bleef Shazam onzichtbaar en zag ook de controle het niet.
+   Controle 5b telt daarom per adres: onbekende app die los opent (2+ eigen adressen tegelijk, geen website vlak ervoor).
+   Shazam is nu een app; beacon.shazam.com (dag en nacht) telt niet mee.
+
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.
    Uitzoeken over alle dagen of die altijd en alleen bij kijken voorkomen; dan als beeld laten tellen (net als bij Netflix).
    Chip en rij: op 17 okt 08:59 (iPad) was de chip groen (spel-verkeer van Unity) terwijl er geen rij "nu" was, precies op
    het moment dat NPO begon. 1 van 434 momenten; nagaan of dit vaker gebeurt bij het wisselen van app.
+   eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
+   of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
+   Instagram: www.instagram.com komt overdag vaak (80x) zonder foto's; nooit 's nachts, maar Instagram is 's nachts ook
+   bijna nooit actief (7 nachten). Laten wachten op zelf leren; pas tonen (eventueel als onzeker) met meer bewijs.
 
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.

@@ -5,7 +5,7 @@
  *   2. Door NextDNS als gevaarlijk geblokkeerd.
  *   3. Achtergrond-adressen die op een echte site lijken en vaak los voorkomen (misschien ten onrechte achtergrond).
  *   4. Getoonde sites die elke keer binnen 5 s na een andere pagina opduiken (misschien een onderdeel van die pagina).
- *   5. Onbekende adressen met veel verkeer (misschien een app die we nog niet kennen, zoals een spel).
+ *   5. Onbekende adressen met veel verkeer (misschien een app die we nog niet kennen, zoals een spel); 5b: onbekende app die los opent.
  *   6. Chip en rij nagespeeld: elke 10 minuten van het laatste etmaal, alleen met de gegevens tot dat moment.
  *   7. Ritme: een site die kort en regelmatig terugkomt (open tabblad, widget).
  *   8. Veel korte rijen van één site op één dag.
@@ -120,6 +120,34 @@ for (const g of ov.groups) {
 }
 section("Onbekend met veel verkeer (een app die we nog niet kennen?)", [...unk].filter(([, a]) => a.n >= 20).sort((p, q) => q[1].n - p[1].n).slice(0, 15).map(([s, a]) => `${s}  ${a.n}x op ${a.days.size} dagen, ${[...a.devs].join("+")}`),
   "Niets opvallends.");
+
+// 5b. Onbekende app die los opent: 2+ eigen adressen binnen 3 s, zonder een website of app vlak ervoor (5 s). Zo opent een app die
+// we niet kennen (Shazam vóór 17 okt). Per adres bekeken, niet per groep: een groep die met een achtergrondadres begint, heet in
+// het overzicht helemaal achtergrond, ook als er later app-adressen komen.
+const reallyShown = new Set(ov.groups.filter((g) => !g.bg && g.main && g.ss.some((x) => isHuman(x))).map((g) => g.site));
+const unkEv = new Map<string, { t: number; h: string }[]>();
+for (const r of rows) {
+  if (r.blocked) continue;
+  const c = classify(r.h);
+  if (c.bg || c.flag || isSystemSite(c.site) || LOCAL.test(c.site)) continue;
+  if (!c.main && c.name === c.site && !reallyShown.has(c.site)) { const k = r.id + "|" + c.site; (unkEv.get(k) ?? unkEv.set(k, []).get(k)!).push({ t: r.t, h: r.h }); }
+}
+const loose = new Map<string, { n: number; last: number; hs: Set<string> }>();
+for (const [k, ev] of unkEv) {
+  const [id, site] = k.split("|"); const vt = visT.get(id) ?? [];
+  for (let i = 0; i < ev.length; ) {
+    let j = i; const hs = new Set<string>();
+    while (j < ev.length && ev[j].t - ev[i].t <= 3_000) hs.add(ev[j++].h);
+    const t = ev[i].t;
+    if (hs.size >= 2 && !vt.some((v) => v >= t - 5_000 && v <= t + 2_000)) { // ingesloten onderdelen komen vlak na/met de pagina
+      const key = label(id) + " " + site; const a = loose.get(key) ?? { n: 0, last: 0, hs: new Set() };
+      a.n++; a.last = Math.max(a.last, t); hs.forEach((h) => a.hs.add(h)); loose.set(key, a);
+    }
+    i = j;
+  }
+}
+section("Onbekende app die los opent (2+ eigen adressen tegelijk, geen website vlak ervoor)", [...loose].filter(([, a]) => a.n >= 2).sort((p, q) => q[1].last - p[1].last).slice(0, 25)
+  .map(([k, a]) => `${[...days].sort().slice(-3).includes(new Date(a.last).toISOString().slice(0, 10)) ? "* " : "  "}${k}  ${a.n}x, laatst ${hm(a.last)}: ${[...a.hs].slice(0, 4).join(" ")}`), "Niets.");
 
 // 7-9. Patronen in wat getoond wordt (zelf leren van de dagen, zonder dat iemand schermafbeeldingen hoeft na te kijken).
 const shownSs = (g: (typeof ov.groups)[number]) => g.ss.filter((x) => isHuman(x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site)));

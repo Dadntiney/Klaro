@@ -167,6 +167,17 @@ test("verbinding openhouden (eufy push) telt niet als bezoek", async () => {
   assert.equal(isQuietHost("app-devicemanage-eu-pr.eufy.com"), false);
 });
 
+test("Shazam is een app; de achtergrondmelding (beacon) telt niet", async () => {
+  const { isQuietHost } = await import("./sites.ts");
+  for (const h of ["config.shazam.com", "amp.shazam.com", "cdn.shazam.com"]) {
+    assert.equal(classify(h).name, "Shazam", h);
+    assert.equal(!classify(h).bg && classify(h).main, true, h);
+    assert.equal(isQuietHost(h), false, h);
+  }
+  assert.equal(isQuietHost("beacon.shazam.com"), true);
+  assert.equal(classify("beacon.shazam.com").bg, true);
+});
+
 test("Buienradar, Waze en ChatGPT (openai.com) zijn apps; swrve is achtergrond", () => {
   for (const [h, n] of [["api.buienradar.nl", "Buienradar"], ["gadgets.buienradar.nl", "Buienradar"], ["rtr.waze.com", "Waze"], ["api.openai.com", "ChatGPT"]] as const) {
     const c = classify(h);
