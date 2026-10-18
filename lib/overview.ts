@@ -973,6 +973,14 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   if (auto.length) {
     const set = new Set(auto);
     for (const g of groups.values()) if (set.has(g.dev + "|" + g.site)) for (const x of g.ss) delete x.pv;
+    // Een verversing die toevallig vlak na een zoekopdracht valt, is geen getikt zoekresultaat: alleen de kale naam en www.
+    // (18 okt 09:19: onsoranje26.nl en voetbalkrant.com verversen zich ~15 keer per dag samen; 4 keer leek het een klik).
+    for (const g of groups.values()) {
+      if (!set.has(g.dev + "|" + g.site)) continue;
+      const hs = siteHosts.get(g.d + "|" + g.dev + "|" + g.site) ?? [];
+      const bare = (h: string) => h === g.site || h === "www." + g.site;
+      for (const x of g.ss) if (x.ck && !x.lg && hs.filter((y) => y.t >= x.s - MOMENT && y.t <= x.e + MOMENT).every((y) => bare(y.host))) { delete x.ck; x.rf = 1; }
+    }
     for (const { key, x } of refreshLike) if (set.has(key)) x.rf = 1;
   }
   const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);

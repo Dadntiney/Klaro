@@ -88,6 +88,9 @@ const CASES: Case[] = [
   { day: "2026-10-17", dev: "iPhone", site: "neoseum.com", at: "20:24", want: true, why: "echt bezocht (eigenaar bevestigt); de Facebook-pixel van de site maakte hem eerder onzeker" },
   { day: "2026-10-18", dev: "iPhone", site: "chatgpt.com", at: "07:21", want: false, why: "advertentie-teller van OpenAI (bzr.) op een webwinkel" },
   { day: "2026-10-18", dev: "iPhone", site: "getdrezzed.nl", at: "07:21", want: true, why: "geopend vanuit Google" },
+  { day: "2026-10-18", dev: "iPhone", site: "meditopia.com", at: "08:56", want: true, why: "meditatie-app geopend (eigen server en beelden)" },
+  { day: "2026-10-18", dev: "iPhone", site: "voetbalkrant.com", at: "09:19", want: false, why: "ververst zichzelf (samen met onsoranje26.nl), viel toevallig na een zoekopdracht" },
+  { day: "2026-10-18", dev: "iPhone", site: "onsoranje26.nl", at: "09:19", want: false, why: "ververst zichzelf (samen met voetbalkrant.com)" },
   { day: "2026-10-10", dev: "iPhone", site: "facebook.com", at: "15:38", want: true, why: "Facebook-app open (chat, netwerkmeting), daarna een website vanuit Facebook" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));

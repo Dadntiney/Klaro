@@ -403,3 +403,7 @@ test("advertentie-teller van OpenAI op een webwinkel is geen ChatGPT-gebruik; de
   for (const h of ["bzr.openai.com", "bzrcdn.openai.com"]) assert.equal(classify(h).bg, true, h);
   for (const h of ["ios.chat.openai.com", "ws.chatgpt.com", "chatgpt.com"]) assert.equal(!classify(h).bg && classify(h).main, true, h);
 });
+
+test("Meditopia (meditatie-app) is een app", () => {
+  for (const h of ["api.meditopia.com", "media.meditopia.com", "images.meditationapp.co"]) { assert.equal(classify(h).name, "Meditopia", h); assert.equal(classify(h).main && !classify(h).bg, true, h); }
+});

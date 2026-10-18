@@ -10,6 +10,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Roblox", icon: "roblox.com", domains: ["roblox.com", "rbxcdn.com", "robloxlabs.com"] },
   { name: "Spotify", icon: "spotify.com", domains: ["spotify.com", "scdn.co", "spotifycdn.com"] },
   { name: "Shazam", icon: "shazam.com", domains: ["shazam.com", "shazamcloud.com"] }, // beacon.* elke paar minuten op de achtergrond; config/amp = app geopend
+  { name: "Meditopia", icon: "meditopia.com", domains: ["meditopia.com", "meditationapp.co"] }, // meditatie-app (18 okt gevonden met controle 5b)
   { name: "TikTok", icon: "tiktok.com", domains: ["tiktok.com", "tiktokcdn.com", "tiktokv.com", "tiktokcdn-eu.com", "musical.ly", "byteoversea.com", "ibytedtos.com", "ibyteimg.com"] },
   { name: "Instagram", icon: "instagram.com", domains: ["instagram.com", "cdninstagram.com"] },
   { name: "Facebook", icon: "facebook.com", domains: ["facebook.com", "fbcdn.net", "facebook.net", "fb.com"] },
