@@ -2,6 +2,10 @@
 
 Automatisch bijgehouden door scripts/update-lists.ts (nieuwste bovenaan). Terugdraaien: git revert van die commit.
 
+## 2026-10-18
+- adult: 976191 → 976394 (+203). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 92403; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 1-8toto.mom, 16domino228.site, 18-toto.mom, 24element.online, 31vaktipornoturkce.cfd, ...
+- dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
+
 ## 2026-10-17
 - adult: 976096 → 976191 (+95). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 92374; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 11xxx.xyz, 5201sex.lol, 91porn.rocks, adultplace.top, adultwebcams.blog, ...
 - dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
