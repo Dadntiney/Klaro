@@ -72,6 +72,7 @@ const CASES: Case[] = [
   { day: "2026-10-17", dev: "iPhone", site: "whatsapp.com", at: "07:24", want: false, why: "binnenkomend bericht met foto (g. → static./media. → api., zonder whatsapp.com), eerste van de ochtend" },
   { day: "2026-10-18", dev: "iPhone", site: "whatsapp.com", at: "07:15", want: false, why: "binnenkomend bericht met foto, geen openen (eigenaar)" },
   { day: "2026-10-18", dev: "iPhone", site: "whatsapp.com", at: "10:06", want: true, why: "WhatsApp geopend (whatsapp.com + graph + static), na het lezen van mail" },
+  { day: "2026-10-18", dev: "iPhone", site: "whatsapp.com", at: "10:22", want: true, why: "eigenaar zat op WhatsApp: chat.cdn → whatsapp.com → mmx-ds, zonder foto's" },
   { day: "2026-10-17", dev: "iPhone", site: "vinted.com", at: "08:59", want: true, why: "Vinted volledig opgestart (met meetmodules van andere diensten)" },
   { day: "2026-10-16", dev: "iPad", site: "budgestudios.ca", at: "06:45", until: "07:01", want: true, why: "Budge-spel gespeeld: meetgegevens van Unity/Amplitude" },
   { day: "2026-10-11", dev: "iPhone", site: "trivago.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },

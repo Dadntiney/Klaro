@@ -581,7 +581,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // De volledige opstart van de app (zie OPEN_START) telt ook als inhoud-adres: graph. ligt dan soms nog in het geheugen.
         if (sh.some((h) => OPEN_START.every((re) => sh.some((o) => re.test(o.host) && Math.abs(o.t - h.t) <= 5_000)))) fgSet.add("(opstart)");
         const fgHosts = fgSet.size;
-        x.f = Math.max(moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e)), fgHosts);
+        // De kale naam (whatsapp.com) = de app gaat open; komt nooit bij een binnenkomend bericht (18 okt, bevestigd door de eigenaar
+        // terwijl hij WhatsApp gebruikte: chat.cdn → whatsapp.com → mmx-ds, zonder foto's). Telt dan als zeker gebruik.
+        x.f = Math.max(moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e)), fgHosts, opened ? 2 : 0);
         if (inX.length) { x.s = inX.reduce((a, b) => Math.min(a, b)); x.e = inX.reduce((a, b) => Math.max(a, b)); }
         if (!keepCounts && isHuman(x)) for (const t of [...keepCh].sort((a, b) => a - b)) if (t > x.e && t <= x.e + GAP) x.e = t;
         // Op een tv telt kijken vanaf het afspelen (met 2 minuten om iets te kiezen), niet vanaf het beginscherm dat open stond.

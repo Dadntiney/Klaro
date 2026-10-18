@@ -159,3 +159,11 @@ test("Google: alleen www.google.com zonder zoekresultaten (een app die opstart) 
   assert.equal(isHuman({ s: 1, e: 1, n: 1, f: 1, pv: 1 } as Session), true);
   assert.equal(isHuman({ s: 1, e: 1, n: 1, f: 0, pv: 1, lg: 1 } as Session), true); // inloggen blijft een bezoek
 });
+
+test("live: WhatsApp openen (kale naam) telt meteen als gebruik, ook zonder foto's", () => {
+  const t = 2_000_000_000;
+  let ss = extendSessions([], t, false, false, undefined, "chat.cdn.whatsapp.net");
+  ss = extendSessions(ss, t + 400, false, false, undefined, "whatsapp.com");
+  ss = extendSessions(ss, t + 1_000, false, false, undefined, "mmx-ds.cdn.whatsapp.net");
+  assert.equal(isHuman(ss[0]), true);
+});

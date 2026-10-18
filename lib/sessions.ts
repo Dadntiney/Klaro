@@ -67,9 +67,9 @@ export function totalMinutes(times: number[]): number {
 }
 
 // Apps waarbij openen in één moment meerdere inhoud-adressen tegelijk ophaalt (WhatsApp: graph + static bij openen en
-// versturen). Alleen hier telt elk ander adres als extra teken van gebruik, en alleen als de kale naam (whatsapp.com) erbij is:
-// een binnenkomend bericht met foto haalt ook static. + media. tegelijk op (g. → static./media. → api.), maar nooit de kale naam
-// (18 okt, 20 keer onterecht als openen). Bij Facebook/Instagram/YouTube doet achtergrondverversen dit ook: daar niet.
+// versturen). De kale naam (whatsapp.com) zelf betekent: de app ging open (18 okt, bevestigd door de eigenaar). Zonder de kale naam
+// is het een binnenkomend bericht, ook met foto (g. → static./media. → api.): dan tellen meerdere plaatjesadressen niet als openen.
+// Bij Facebook/Instagram/YouTube doet achtergrondverversen dit ook: daar niet.
 export const OPEN_BURST = new Set(["whatsapp.com"]);
 /**
  * WhatsApp opent met dit rijtje binnen 5 seconden: de kale naam, de server voor het account (api.), de chatverbinding (g.) en
@@ -112,7 +112,7 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
     // Twee verschillende inhoud-adressen in één moment (app opent: instellingen + plaatjes) telt ook als twee.
     // Verschillende inhoud-adressen tellen alleen als de app zelf opstartte (kale naam gezien, zie OPEN_BURST): een binnenkomend
     // bericht met foto haalt ook static. en media. tegelijk op.
-    if (host && OPEN_BURST.has(host)) x.bn = 1;
+    if (host && OPEN_BURST.has(host)) { x.bn = 1; x.f = Math.max(x.f ?? 0, 2); } // kale naam = de app ging open
     if (fg && (!(x.lf && Math.abs(t - x.lf) <= MOMENT) || (host && x.bn && x.lfh && host !== x.lfh))) x.f = (x.f ?? 0) + 1;
     if (fg) { x.lf = t; if (host) x.lfh = host; }
     if (res === false) delete x.res; // iets van de site zelf erbij: wel een bezoek
@@ -120,7 +120,7 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
     return next.sort((a, b) => b.e - a.e);
   }
   const fresh: Session = { s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t, ...(host ? { lfh: host } : {}) } : {}) } : {}), ...(res ? { res: 1 as const } : {}) };
-  if (host && OPEN_BURST.has(host)) fresh.bn = 1;
+  if (host && OPEN_BURST.has(host)) { fresh.bn = 1; fresh.f = Math.max(fresh.f ?? 0, 2); }
   if (host) openStart(fresh, host, t);
   return [fresh, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }

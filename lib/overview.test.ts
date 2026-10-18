@@ -181,9 +181,11 @@ test("geen vals WhatsApp: een binnenkomend bericht (api. + g. + plaatje, of zond
     [0, "api.whatsapp.net"], [500, "g.whatsapp.net"], [900, "mmx-ds.cdn.whatsapp.net"],
     [600_000, "static.whatsapp.net"], [600_300, "mmx-ds.cdn.whatsapp.net"],
     [1_200_000, "api.whatsapp.net"], [1_200_400, "g.whatsapp.net"], [1_201_000, "static.whatsapp.net"],
-    [1_800_000, "whatsapp.com"], [1_800_500, "api.whatsapp.net"], [1_801_000, "chat.cdn.whatsapp.net"],
   ]);
   assert.equal(shown(o, "whatsapp.com").length, 0);
+  // Met de kale naam (whatsapp.com) is het wel openen (18 okt, bevestigd door de eigenaar: chat.cdn → whatsapp.com → mmx-ds).
+  const open = await overview([[0, "chat.cdn.whatsapp.net"], [400, "whatsapp.com"], [1_000, "mmx-ds.cdn.whatsapp.net"]]);
+  assert.equal(shown(open, "whatsapp.com").length, 1);
 });
 
 test("open tabblad (Canva): elke paar minuten alleen www. en een meetadres is geen gebruik; het openen zelf wel", async () => {
@@ -434,13 +436,13 @@ test("Meditopia die alleen even start (paar seconden) staat er als onzeker; éé
   assert.equal(shownMed[0].uz, 1);
 });
 
-test("WhatsApp: opnieuw de kale naam vlak na een zeker geopende sessie verlengt die; maakt zelf geen nieuwe rij", async () => {
+test("WhatsApp: opnieuw de kale naam vlak na een geopende sessie verlengt die; een bericht zonder kale naam maakt geen rij", async () => {
   const min = 60_000;
   const o = await overview([
     [0, "whatsapp.com"], [100, "g.whatsapp.net"], [300, "static.whatsapp.net"], [600, "graph.whatsapp.com"], [2_000, "api.whatsapp.net"],
     [100_000, "chat.cdn.whatsapp.net"], [100_300, "whatsapp.com"], [100_600, "mmx-ds.cdn.whatsapp.net"],
-    // een uur later: alleen chatverbinding + kale naam + één plaatje: geen eigen rij
-    [60 * min, "chat.cdn.whatsapp.net"], [60 * min + 300, "whatsapp.com"], [60 * min + 2_000, "mmx-ds.cdn.whatsapp.net"],
+    // een uur later: alleen chatverbinding + media, zonder kale naam (binnenkomend bericht): geen eigen rij
+    [60 * min, "chat.cdn.whatsapp.net"], [60 * min + 2_000, "mmx-ds.cdn.whatsapp.net"],
   ]);
   const ss = shown(o, "whatsapp.com").sort((a, b) => a.s - b.s);
   assert.equal(ss.length, 1);
