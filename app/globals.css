@@ -609,4 +609,4 @@ h2 .livedot { margin:0 2px 0 12px; }
 /* Bovenste dagdeel-label op de bovenrand van de lijst, als rustig labeltje half op grijs, half op wit. */
 .partcap { position:relative; height:0; margin-top:8px; z-index:1; display:flex; justify-content:center; }
 .partcap span { position:absolute; top:0; transform:translateY(-50%); display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border:1px solid var(--line); border-radius:99px; background:var(--card); color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; }
-.list.capped { padding-top:8px; }
+.list.capped > div:first-child > .item { border-top:8px solid transparent; background-origin:border-box; } /* ruimte onder het labeltje, in de kleur van de bovenste regel (bijv. groen bij "nu") */
