@@ -31,3 +31,17 @@ test("zelf leren: met te weinig nachtvoorbeelden wordt nog niets geleerd (wacht)
   assert.deepEqual(s.learned, []);
   assert.deepEqual(s.waiting, ["dgw.app.com"]);
 });
+
+test("zelf leren: adressen die websites meeladen (Facebook-pixel) worden nooit bewijs", async () => {
+  const { learnStats } = await import("./selflearn.ts");
+  const ev: { t: number; dev: string; host: string; site: string; app?: boolean; page?: boolean }[] = [];
+  const day = 86_400_000;
+  for (let i = 0; i < 40; i++) {
+    const t = Date.parse("2026-10-01T10:00:00Z") + i * day;
+    ev.push({ t, dev: "A", host: "connect.facebook.net", site: "facebook.com", app: true }, { t: t + 5_000, dev: "A", host: "www.voorbeeld.nl", site: "voorbeeld.nl", page: true });
+  }
+  for (let i = 0; i < 25; i++) ev.push({ t: Date.parse("2026-10-01T01:30:00Z") + i * day, dev: "A", host: "graph.facebook.com", site: "facebook.com", app: true });
+  const s = learnStats(ev as never).get("facebook.com")!;
+  assert.equal(s.learned.includes("connect.facebook.net"), false);
+  assert.equal(s.waiting.includes("connect.facebook.net"), false);
+});

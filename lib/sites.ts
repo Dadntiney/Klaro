@@ -198,6 +198,7 @@ const APEX_NOISE = /^(google|apple|icloud|microsoft|amazon|facebook|instagram|wh
 const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitter.com", "syndication.twitter.com", "platform.twitter.com", "alb.reddit.com", "events.reddit.com", "events.redditmedia.com", "pixel-config.reddit.com",
   "devices.a2z.com", // apparaat-statistieken van Amazon (Minerva): ook als de app op de achtergrond ververst
   "beacon.shazam.com", // Shazam meldt zich dag en nacht elke paar minuten, ook als de app dicht is
+  "bzr.openai.com", "bzrcdn.openai.com", // advertentie-teller van OpenAI op webwinkels (ook in de ChatGPT-app, maar daar komen altijd eigen adressen mee)
   // bestanden van cursusplatform Thinkific in de eigen cursus-site (academy.merk.nl): die site is het bezoek, niet Thinkific
   "cdn.thinkific.com", "assets.thinkific.com", "cdn-internal.thinkific.com", "cdn-themes.thinkific.com"];
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites

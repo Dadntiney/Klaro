@@ -86,6 +86,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    *-netseer-ipaddr-assoc.*.fbcdn.net, scontent-*.xx.fbcdn.net). Daardoor stond Instagram-gebruik als "Facebook" in het overzicht,
    of dubbel (Instagram én Facebook). Een gedeeld adres hoort nu bij de app van het dichtstbijzijnde eigen adres (5 min);
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
+   Geleerd (18 okt): bzr.openai.com / bzrcdn.openai.com is een advertentie-teller van OpenAI op webwinkels (gaf een nep-ChatGPT-rij);
+   staat nu op achtergrond. Zelf leren slaat adressen over die websites meeladen (pixels/tags), want die lijken anders bewijs.
+   "sdkvpn…elb.amazonaws.com" met conn-check.icg-in.com is de VPN-controle van de Vinted-website (DataDome), geen VPN.
    Geleerd (17 okt): de Facebook-pixel op websites (connect.facebook.net met scontent.xx/star-mini/www.facebook.com in dezelfde
    seconden) maakte nep-Facebook-rijen en rekte echte rijen op (en gaf vals "scrollen in Facebook" bij ravensburger 11 okt).
    Telt nu niet meer, behalve als de Facebook-app zelf binnen een minuut actief is (website geopend vanuit Facebook).
@@ -102,6 +105,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Uitzoeken over alle dagen of die altijd en alleen bij kijken voorkomen; dan als beeld laten tellen (net als bij Netflix).
    Chip en rij: op 17 okt 08:59 (iPad) was de chip groen (spel-verkeer van Unity) terwijl er geen rij "nu" was, precies op
    het moment dat NPO begon. 1 van 434 momenten; nagaan of dit vaker gebeurt bij het wisselen van app.
+   18 okt: 2 keer "chip uit, rij nu" bij Netflix op de Apple TV (17-10 20:33, 18-10 07:13): rij en chip gebruiken voor tv-apps
+   een andere grens voor "nu"; uitzoeken welke klopt met de pauzes tussen Netflix-meldingen (vaak 5-6 min).
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.

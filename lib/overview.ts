@@ -844,7 +844,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const hs = siteHosts.get(g.d + "|" + g.dev + "|" + g.site) ?? [];
     for (const x of g.ss) {
       if (isHuman(x) || x.emb || x.res || x.rf || x.rl) continue;
-      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s && y.t <= x.e)) { x.ao = 1; x.uz = 1; }
+      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) { x.ao = 1; x.uz = 1; }
     }
   }
 

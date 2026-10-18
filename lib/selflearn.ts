@@ -10,6 +10,9 @@
  */
 export const LEARN = { night: 20, pos: 30, hits: 10, rate: 0.15 };
 const NO_LEARN = new Set(["google.com", "bing.com"]);
+// Adressen die websites zelf meeladen (Facebook-pixel, Pinterest-tag, OpenAI-teller): die staan altijd vlak bij een website en
+// lijken daardoor bewijs, maar zeggen niets over de app (18 okt: connect.facebook.net wachtte op leren).
+const WEB_EMBED = /^connect\.facebook\.net$|^(scontent|static)\.(fallback\.)?xx\.fbcdn\.net$|^star-mini(\.fallback)?\.c10r\.facebook\.com$|^www\.facebook\.com$|^(ct|s|assets|widgets)\.pinterest\.com$|^s\.pinimg\.com$|^www\.pinterest\.[a-z.]+$|^bzr(cdn)?\.openai\.com$/;
 
 export type LearnEvent = { t: number; dev: string; host: string; site: string; app?: boolean; known?: boolean; page?: boolean };
 
@@ -57,7 +60,7 @@ export function learnStats(ev: LearnEvent[], th = LEARN): Map<string, LearnStat>
       const m = open.get(e.site);
       if (m && e.t - m.t > 60_000) close(e.site);
       const cur = open.get(e.site) ?? open.set(e.site, { t: e.t, hosts: new Set(), known: false, knownHosts: new Set() }).get(e.site)!;
-      cur.hosts.add(e.host.replace(/^[0-9a-f-]{36}(?=-)/, "*"));
+      if (!WEB_EMBED.test(e.host)) cur.hosts.add(e.host.replace(/^[0-9a-f-]{36}(?=-)/, "*"));
       if (e.known) { cur.known = true; cur.knownHosts.add(e.host); }
     }
     for (const site of [...open.keys()]) close(site);

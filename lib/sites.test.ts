@@ -398,3 +398,8 @@ test("vangnet: dating-app Raya en Cloudflare WARP (gratis VPN-app) worden herken
   assert.equal(classify("warp.cloudflare.com").flag, "VPN/proxy");
   for (const h of ["www.cloudflare.com", "dash.cloudflare.com", "www.reddit.com"]) assert.equal(classify(h).flag, undefined, h);
 });
+
+test("advertentie-teller van OpenAI op een webwinkel is geen ChatGPT-gebruik; de ChatGPT-app zelf wel", () => {
+  for (const h of ["bzr.openai.com", "bzrcdn.openai.com"]) assert.equal(classify(h).bg, true, h);
+  for (const h of ["ios.chat.openai.com", "ws.chatgpt.com", "chatgpt.com"]) assert.equal(!classify(h).bg && classify(h).main, true, h);
+});

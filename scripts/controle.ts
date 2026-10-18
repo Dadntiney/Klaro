@@ -22,6 +22,7 @@ import fs from "node:fs";
 import { buildOverview } from "../lib/overview.ts";
 import { FG_RULES, classify, isMainHost, isNeverFlag } from "../lib/sites.ts";
 import { LEARN, learnStats, type LearnEvent } from "../lib/selflearn.ts";
+import { FB_OWN } from "../lib/companion.ts";
 import { baseDomain } from "../lib/parse.ts";
 import { inAdultList, inDatingList } from "../lib/adultlist.ts";
 import { isPlainSite, isSystemSite } from "../lib/system.ts";
@@ -242,7 +243,8 @@ section("Rij voor rij: begint tegelijk met een app, of één moment midden in ee
 // 9. App geopend maar niet getoond? Veel verschillende adressen van een app binnen 5 s (zo opent een app), zonder zichtbare rij.
 const missed: string[] = [];
 const byDevApp = new Map<string, { t: number; h: string }[]>();
-for (const r of rows) { const c = classify(r.h); if (!c.main || c.bg || c.flag || isPlainSite(c) || r.blocked) continue; const k = label(r.id) + "|" + c.site; (byDevApp.get(k) ?? byDevApp.set(k, []).get(k)!).push({ t: r.t, h: r.h }); }
+// Facebook: alleen eigen Facebook-adressen tellen; de gedeelde (graph, gateway, star, dgw, netwerkmeting) gebruikt Instagram ook.
+for (const r of rows) { const c = classify(r.h); if (!c.main || c.bg || c.flag || isPlainSite(c) || r.blocked || (c.site === "facebook.com" && !FB_OWN.test(r.h))) continue; const k = label(r.id) + "|" + c.site; (byDevApp.get(k) ?? byDevApp.set(k, []).get(k)!).push({ t: r.t, h: r.h }); }
 const shownAt = new Map<string, Session[]>();
 for (const g of ov.groups) (shownAt.get(g.dev + "|" + g.site) ?? shownAt.set(g.dev + "|" + g.site, []).get(g.dev + "|" + g.site)!).push(...shownSs(g));
 for (const [k, ev] of byDevApp) {
