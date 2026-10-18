@@ -1,5 +1,6 @@
 import { detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
+import { ALWAYS_SHOW_OPEN } from "./livestatus.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
 import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
@@ -846,6 +847,14 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (isHuman(x) || x.emb || x.res || x.rf || x.rl) continue;
       if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) { x.ao = 1; x.uz = 1; }
     }
+  }
+
+  // "Altijd tonen"-apps die pas tellen als ze echt opengaan (eufy): sessies met de vaste start-adressen merken.
+  for (const g of groups.values()) {
+    const re = ALWAYS_SHOW_OPEN[g.site];
+    if (!re) continue;
+    const hs = siteHosts.get(g.d + "|" + g.dev + "|" + g.site) ?? [];
+    for (const x of g.ss) if (hs.some((y) => re.test(y.host) && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) x.op = 1;
   }
 
   const SDK_IN_APP = /^(star|star-mini)(\.fallback)?\.c10r\.facebook\.com$|^graph\.facebook\.com$|^connect\.facebook\.net$|^ep\d\.facebook\.com$/;

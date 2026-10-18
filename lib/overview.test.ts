@@ -410,3 +410,16 @@ test("Facebook-pixel op een website is geen Facebook-gebruik; een website vanuit
   assert.equal(fb("P8"), 0);
   assert.equal(fb("P9"), 1);
 });
+
+test("eufy (altijd tonen) alleen als de app echt opengaat: start-adressen wel, website-logo of pushverkeer niet", async () => {
+  const o = await overview([
+    [0, "app.eufy.com"], [300, "app-passport-eu-pr.eufy.com"], [600, "app-house-eu-pr.eufy.com"], [5_000, "mall-web-eu.eufy.com"],
+    [3_600_000, "www.eufy.com"], [3_600_400, "www.digid.nl"], // wachtwoordenlijst haalt logo's op
+    [7_200_000, "app-openapi-eu-pr.eufy.com"],
+  ]);
+  const ss = o.groups.filter((g) => g.site === "eufy.com").flatMap((g) => g.ss) as { s: number; op?: 1 }[];
+  const at = (ms: number) => ss.find((x) => Math.abs(x.s - (Date.parse("2026-09-01T10:52:38Z") + ms)) < 2_000);
+  assert.equal(at(0)?.op, 1);
+  assert.notEqual(at(3_600_000)?.op, 1);
+  assert.notEqual(at(7_200_000)?.op, 1);
+});

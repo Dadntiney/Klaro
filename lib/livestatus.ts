@@ -8,6 +8,14 @@ import { isNow, tvStart } from "./play.ts";
  */
 /** Altijd tonen (wens eigenaar), ook als het geen echt gebruik lijkt. */
 export const ALWAYS_SHOW = new Set(["gofiev.nl", "meethue.com", "eufy.com"]);
+/**
+ * Voor sommige "altijd tonen"-apps alleen als de app echt opengaat (wens eigenaar, 18 okt): eufy start met een vaste reeks
+ * adressen (passport/house/news/...: ~30 keer in 3 weken, nooit 's nachts). Pushverbinding, cameraplaatjes en de website (de
+ * wachtwoordenlijst haalt www.eufy.com op voor het logo) tellen niet.
+ */
+export const ALWAYS_SHOW_OPEN: Record<string, RegExp> = {
+  "eufy.com": /^app-(passport|house|news|devicerelation|devicemanage|things|agreement|shopping)-[a-z]+-pr\.eufy\.com$|^app\.eufy\.com$|^mall-web-eu\.eufy\.com$/,
+};
 
 export interface LiveGroup {
   d: string;

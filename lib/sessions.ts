@@ -17,6 +17,7 @@ export interface Session {
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   lg?: 1; // inlog- of bankierpagina geopend (bankieren.*, mijn.*): altijd een bewust bezoek
   pv?: 1;
+  op?: 1; // de app is echt geopend (vaste start-adressen, zie ALWAYS_SHOW_OPEN in lib/livestatus.ts)
   ao?: 1; // app gestart (eigen startadres), maar geen inhoud gezien: tonen als onzeker (zie lib/overview.ts)
   uz?: 1; // onzeker: één los adres terwijl in een social-app gescrold werd (advertentie óf echt geopend) // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
   ml?: 1;

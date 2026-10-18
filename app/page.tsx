@@ -9,7 +9,7 @@ import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
-import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
+import { ALWAYS_SHOW, ALWAYS_SHOW_OPEN, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
@@ -1033,7 +1033,7 @@ export default function Home() {
         all = m.reverse();
       }
       // Gemarkeerde en verdachte regels blijven altijd staan.
-      const ss = all.filter((x) => (!cut || x.s >= cut) && (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || human(g, x) : standalone(g, x)));
+      const ss = all.filter((x) => (!cut || x.s >= cut) && (g.main ? g.flag || g.susp || (ALWAYS_SHOW.has(g.site) && (!ALWAYS_SHOW_OPEN[g.site] || !!x.op)) || human(g, x) : standalone(g, x)));
       if (!isTv(g.dev) || ss.length < 2) return ss;
       // Op een tv is kijken één geheel: stukjes van dezelfde app met minder dan 15 minuten ertussen samenvoegen
       // (tijdens het kijken vraagt de tv maar af en toe iets op, waardoor er anders losse regels ontstaan).

@@ -42,4 +42,4 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
 ## Vaste afspraken
 - Nooit echte apparaat- of persoonsnamen in code, tests of commits. Geen geheimen in bestanden of commits.
 - Dagelijkse controle: `docs/dagelijkse-controle.md`, `scripts/controle.ts` (alle controles in één keer) en `scripts/gemist.ts`.
-- Altijd tonen (wens eigenaar): GoFiev, Philips Hue, eufy (`ALWAYS_SHOW` in `lib/livestatus.ts`).
+- Altijd tonen (wens eigenaar): GoFiev, Philips Hue, eufy (`ALWAYS_SHOW` in `lib/livestatus.ts`); eufy alleen als de app echt opengaat (`ALWAYS_SHOW_OPEN`).
