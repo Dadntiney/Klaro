@@ -86,6 +86,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    *-netseer-ipaddr-assoc.*.fbcdn.net, scontent-*.xx.fbcdn.net). Daardoor stond Instagram-gebruik als "Facebook" in het overzicht,
    of dubbel (Instagram én Facebook). Een gedeeld adres hoort nu bij de app van het dichtstbijzijnde eigen adres (5 min);
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
+   Geleerd (18 okt): na een zeker geopende WhatsApp-sessie verlengt de kale naam (whatsapp.com) binnen 5 min de duur, maar
+   maakt nooit zelf een rij: chat.cdn → whatsapp.com → mmx-ds komt ook zonder openen voor (36 rijen als die zou tellen).
+   Nog uitzoeken: braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
    Geleerd (18 okt, idee eigenaar): WhatsApp-reeks die met g.whatsapp.net begint en zonder de kale naam whatsapp.com is een
    binnenkomend bericht (met foto: static. + media. tegelijk), geen openen. Openen heeft altijd whatsapp.com.
    Geleerd (18 okt): sites die zichzelf verversen (onsoranje26.nl + voetbalkrant.com) leken een getikt zoekresultaat als de

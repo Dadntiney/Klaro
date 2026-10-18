@@ -95,7 +95,9 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
   if (i >= 0) {
     const x = next[i];
     // Kijkmelding (zie KEEP_ALIVE in lib/sites.ts): telt als inhoud als er al echte inhoud was, en niet binnen 30 s daarvan.
-    if (keep && fg === false && ((x.f ?? 0) > 0 || (x.m ?? 0) > 0) && t >= x.e && t - (x.lf ?? 0) > 30_000) fg = true;
+    // WhatsApp (kale naam): alleen een sessie verlengen die al zeker gebruik was (zie KEEP_ALIVE in lib/sites.ts).
+    const kept = host && OPEN_BURST.has(host) ? isHuman(x) : (x.f ?? 0) > 0 || (x.m ?? 0) > 0;
+    if (keep && fg === false && kept && t >= x.e && t - (x.lf ?? 0) > 30_000) fg = true;
     const prevE = x.e;
     if (fg === undefined || fg || media) {
       if (fg !== undefined && !(x.f ?? 0) && !(x.m ?? 0)) { x.s = t; x.e = t; } // eerste echte inhoud: daar begint het gebruik

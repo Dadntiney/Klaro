@@ -108,7 +108,8 @@ export const FG_RULES: Record<string, RegExp> = {
  * zodra het adres verlopen is). De video zelf komt dan vaak over een al open verbinding, zonder nieuwe opvragingen. Zo'n melding
  * telt alleen als hij aansluit op echte inhoud (hooguit 5 minuten na de vorige); een losse melding start nooit gebruik.
  */
-export const KEEP_ALIVE: Record<string, RegExp> = { "youtube.com": /^(www\.)?youtube\.com$/ };
+// WhatsApp: de kale naam (whatsapp.com) vlak na een zeker geopende sessie = nog (of weer) in de app; maakt zelf geen nieuwe rij.
+export const KEEP_ALIVE: Record<string, RegExp> = { "youtube.com": /^(www\.)?youtube\.com$/, "whatsapp.com": /^whatsapp\.com$/ };
 export function isKeepAlive(site: string, host: string): boolean { return !!KEEP_ALIVE[site]?.test(host); }
 /** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */
 /** Zelf geleerde bewijs-adressen per app (lib/selflearn.ts), naast de vaste FG_RULES. Adres met "*" = een willekeurig id-deel. */

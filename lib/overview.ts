@@ -565,7 +565,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // Kijkmeldingen (zie KEEP_ALIVE) die aansluiten op echte inhoud: tellen als inhoud.
       // Niet binnen 30 s van de inhoud zelf: dat is gewoon het laden van de pagina (of een ingebouwde video op een andere site).
       const keep = (siteHosts.get(gkey) ?? []).filter((h) => isKeepAlive(g.site, h.host) && !real.some((t) => Math.abs(t - h.t) <= 30_000)).map((h) => h.t);
-      if (keep.length && real.length) { const ch = chainTimes(real, keep, GAP, 0); real.push(...ch); (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(...ch); }
+      // YouTube: kijkmeldingen tellen als inhoud. WhatsApp: de kale naam verlengt alleen een sessie die al zeker gebruik was.
+      const keepCounts = g.site === "youtube.com";
+      const keepCh = keep.length && real.length ? chainTimes(real, keep, GAP, 0) : new Set<number>();
+      if (keepCounts && keepCh.size) { real.push(...keepCh); (fgTimes.get(gkey) ?? fgTimes.set(gkey, []).get(gkey)!).push(...keepCh); }
       for (const x of sessions) {
         const inX = real.filter((t) => t >= x.s && t <= x.e);
         // Inhoud-momenten, of het aantal verschillende inhoud-adressen als dat meer is: een app die opent haalt in één
@@ -580,6 +583,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const fgHosts = fgSet.size;
         x.f = Math.max(moments((fgTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e)), fgHosts);
         if (inX.length) { x.s = inX.reduce((a, b) => Math.min(a, b)); x.e = inX.reduce((a, b) => Math.max(a, b)); }
+        if (!keepCounts && isHuman(x)) for (const t of [...keepCh].sort((a, b) => a - b)) if (t > x.e && t <= x.e + GAP) x.e = t;
         // Op een tv telt kijken vanaf het afspelen (met 2 minuten om iets te kiezen), niet vanaf het beginscherm dat open stond.
         const play = (mediaTimes.get(gkey) ?? []).filter((t) => t >= x.s && t <= x.e);
         if (/^(Apple TV|TV)( \d+)?$/.test(g.dev) && play.length) x.s = Math.max(x.s, play.reduce((a, b) => Math.min(a, b)) - 120_000);

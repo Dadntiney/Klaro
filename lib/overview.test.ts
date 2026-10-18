@@ -433,3 +433,16 @@ test("Meditopia die alleen even start (paar seconden) staat er als onzeker; éé
   assert.equal(shownMed.length, 1);
   assert.equal(shownMed[0].uz, 1);
 });
+
+test("WhatsApp: opnieuw de kale naam vlak na een zeker geopende sessie verlengt die; maakt zelf geen nieuwe rij", async () => {
+  const min = 60_000;
+  const o = await overview([
+    [0, "whatsapp.com"], [100, "g.whatsapp.net"], [300, "static.whatsapp.net"], [600, "graph.whatsapp.com"], [2_000, "api.whatsapp.net"],
+    [100_000, "chat.cdn.whatsapp.net"], [100_300, "whatsapp.com"], [100_600, "mmx-ds.cdn.whatsapp.net"],
+    // een uur later: alleen chatverbinding + kale naam + één plaatje: geen eigen rij
+    [60 * min, "chat.cdn.whatsapp.net"], [60 * min + 300, "whatsapp.com"], [60 * min + 2_000, "mmx-ds.cdn.whatsapp.net"],
+  ]);
+  const ss = shown(o, "whatsapp.com").sort((a, b) => a.s - b.s);
+  assert.equal(ss.length, 1);
+  assert.ok(ss[0].e - ss[0].s >= 99_000);
+});
