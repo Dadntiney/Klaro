@@ -423,3 +423,13 @@ test("eufy (altijd tonen) alleen als de app echt opengaat: start-adressen wel, w
   assert.notEqual(at(3_600_000)?.op, 1);
   assert.notEqual(at(7_200_000)?.op, 1);
 });
+
+test("Meditopia die alleen even start (paar seconden) staat er als onzeker; één losse opvraging helemaal niet", async () => {
+  const o = await overview([
+    [0, "updates.meditopia.com"], [300, "api.meditopia.com"], [5_000, "media.meditopia.com"],
+    [3_600_000, "images.meditationapp.co"],
+  ]);
+  const shownMed = shown(o, "meditopia.com") as { uz?: 1 }[];
+  assert.equal(shownMed.length, 1);
+  assert.equal(shownMed[0].uz, 1);
+});

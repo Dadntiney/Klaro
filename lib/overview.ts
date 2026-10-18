@@ -165,6 +165,7 @@ export async function fetchToday(client: NextDNSClient, hours = 0): Promise<{ ro
 const SEARCH = new Set(["google.com", "bing.com", "duckduckgo.com", "ecosia.org"]);
 
 /** Social-apps waarin advertenties en links staan die de app alvast "aanklopt". */
+const START_ONLY = new Set(["meditopia.com"]);
 const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", "reddit.com", "linkedin.com", "snapchat.com", "pinterest.com", "threads.net"]);
 
 /** Het overzicht van alle (of alleen vandaag de) logs: precies dezelfde berekening op de server, in scripts en in de browser. */
@@ -848,6 +849,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) { x.ao = 1; x.uz = 1; }
     }
   }
+
+  // Apps die alleen even starten (een paar seconden, telkens als eerste bij het ontgrendelen 's ochtends) en daarna niets: kan
+  // ook vanzelf verversen (widget, dagelijkse quote). Gemeten: Meditopia 9 ochtenden, steeds 5-6 s, nooit langer. Onzeker tonen.
+  for (const g of groups.values()) if (START_ONLY.has(g.site)) for (const x of g.ss) if (x.e - x.s < 60_000 && isHuman(x)) { x.ao = 1; x.uz = 1; }
 
   // "Altijd tonen"-apps die pas tellen als ze echt opengaan (eufy): sessies met de vaste start-adressen merken.
   for (const g of groups.values()) {

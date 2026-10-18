@@ -387,7 +387,7 @@ function whyShown(g: Group, ss: Session[]): string {
   if (!x) return "";
   const mins = Math.round(ss.reduce((n, y) => n + (y.e - y.s), 0) / 60_000);
   if (x.lg) return "Inlog- of bankierpagina geopend.";
-  if (ss.every((y) => y.ao)) return "Onzeker: de app is gestart, maar er laadden geen foto's of video's. Misschien even geopend en weer weggelegd.";
+  if (ss.every((y) => y.ao)) return "Onzeker: de app is gestart, maar er is geen teken dat hij daarna gebruikt werd. Misschien even geopend, misschien vanzelf ververst.";
   if (ss.every((y) => y.uz)) return "Onzeker: één adres terwijl in X/Facebook gescrold werd. Misschien een advertentie die de app alvast aanklopte, misschien echt geopend.";
   if (x.ck) return "Geopend via een link (in een mail of na zoeken).";
   if ((x.m ?? 0) >= 2) return `Video of geluid afgespeeld${mins ? `, ongeveer ${mins} min` : ""}.`;
