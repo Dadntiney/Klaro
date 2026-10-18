@@ -158,6 +158,32 @@ function MiniFav({ domain }: { domain: string }) {
  * Bovenaan komen ze live binnen; daaronder alles uit de volledige download: zoeken in alle dagen, verder terugbladeren en
  * naar een dag en tijd springen (zie lib/rawlog.ts). Rood streepje = door NextDNS geblokkeerd; rode regel = Klaro-vangnet.
  */
+const longFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" });
+/** Volledige tijd zoals NextDNS: "18 oktober 2026 om 10:27:26". */
+function longWhen(t: number) {
+  return `${longFmt.format(t)} om ${timeSecFmt.format(t)}`;
+}
+/** Tijd zoals NextDNS: kort geleden relatief ("15 minuten geleden"), anders de volledige tijd. */
+function when(t: number, now = Date.now()) {
+  const s = (now - t) / 1000;
+  if (s < 45) return "een paar seconden geleden";
+  if (s < 90) return "een minuut geleden";
+  if (s < 45 * 60) return `${Math.round(s / 60)} minuten geleden`;
+  return longWhen(t);
+}
+/** Kopiëren als de klembordfunctie ontbreekt (oudere browsers). */
+function fallbackCopy(text: string) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch {}
+  ta.remove();
+}
+
 function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void; status?: React.ReactNode }) {
   const [q, setQ] = useState("");
   const [at, setAt] = useState<number | null>(null); // gesprongen naar dit moment: regels van daarvoor
@@ -170,6 +196,13 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
   const [err, setErr] = useState("");
   const [range, setRange] = useState<{ since: number; until: number } | null>(null);
   const [openKey, setOpenKey] = useState<string | null>(null); // opengeklapte regel (details)
+  const [menuKey, setMenuKey] = useState<string | null>(null); // ⋮-menu open bij deze regel
+  const [copied, setCopied] = useState<string | null>(null); // net gekopieerd (korte bevestiging)
+  const copy = (text: string, key: string) => {
+    const done = () => { setCopied(key); setMenuKey(null); setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500); };
+    if (navigator.clipboard) void navigator.clipboard.writeText(text).then(done, () => { fallbackCopy(text); done(); });
+    else { fallbackCopy(text); done(); }
+  };
   const req = useRef(0);
   const devKey = devIds?.join(",") ?? "";
   const load = useCallback(async (before: number | null, append: boolean) => {
@@ -274,15 +307,25 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
                   <svg className="rawchev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
                 </button>
                 {isOpen && (
+                  // Zoals NextDNS: apparaat, status, dan de tijd (kort geleden = "x minuten geleden") met een ⋮-menu om te kopiëren.
                   <div className="rawdet">
-                    <div className="rawfull">{host}</div>
-                    <dl>
-                      <dt>Apparaat</dt><dd>{dev}</dd>
-                      <dt>Tijd</dt><dd>{dayLabel(day)} {timeSecFmt.format(e.t)}</dd>
-                      <dt>Status</dt><dd>{e.blocked ? `Geblokkeerd door NextDNS${e.why ? ` (${e.why})` : ""}` : "Doorgelaten"}</dd>
-                      <dt>Hoort bij</dt><dd>{e.name}{e.flag ? ` · vangnet: ${e.flag}` : e.bg ? " · achtergrond (geen gebruik)" : ""}</dd>
-                    </dl>
-                    {q.trim().toLowerCase() !== host && <button type="button" className="rawsearch" onClick={() => { setQ(host); setOpenKey(null); }}>Alle regels van dit adres</button>}
+                    <div className="rdev">{dev}</div>
+                    <div className="rinfo">{e.blocked ? `Geblokkeerd door NextDNS${e.why ? ` (${e.why})` : ""}` : "Doorgelaten"}</div>
+                    <div className="rinfo">Hoort bij {e.name}{e.flag ? ` · vangnet: ${e.flag}` : e.bg ? " · achtergrond (geen gebruik)" : ""}</div>
+                    <div className="rfoot">
+                      <span className="rwhen" title={longWhen(e.t)}>{copied === key ? "Gekopieerd ✓" : when(e.t)}</span>
+                      <button type="button" className="rdots" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-expanded={menuKey === key} aria-label="Meer: kopiëren" title="Kopiëren">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
+                      </button>
+                    </div>
+                    {menuKey === key && (
+                      <div className="rmenu" role="menu">
+                        <button type="button" role="menuitem" onClick={() => copy(host, key)}>Adres kopiëren</button>
+                        {base !== host && <button type="button" role="menuitem" onClick={() => copy(base, key)}>Hoofddomein kopiëren ({base})</button>}
+                        <button type="button" role="menuitem" onClick={() => copy(`${host}\t${dev}\t${longWhen(e.t)}\t${e.blocked ? "geblokkeerd" : "doorgelaten"}`, key)}>Hele regel kopiëren</button>
+                        {q.trim().toLowerCase() !== host && <button type="button" role="menuitem" className="racc" onClick={() => { setQ(host); setOpenKey(null); setMenuKey(null); }}>Alle regels van dit adres</button>}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

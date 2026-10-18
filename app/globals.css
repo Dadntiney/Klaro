@@ -592,3 +592,17 @@ h2 .livedot { margin:0 2px 0 12px; }
 .rawlog .rawline { padding-top:13px; padding-bottom:13px; }
 .rawlog .rawchev { flex:none; color:var(--muted); opacity:.6; transition:transform .15s; }
 .rawrow.open .rawchev { transform:rotate(180deg); }
+/* Opengeklapte regel zoals NextDNS: apparaat, status, tijd ("x minuten geleden") en een ⋮-menu om te kopiëren. */
+.rawlog .rawdet { padding:0 16px 12px 42px; font-size:14px; position:relative; }
+.rawlog .rawfull { font-size:13px; color:var(--muted); margin-bottom:6px; }
+.rdev { font-size:16px; }
+.rinfo { color:var(--muted); margin-top:2px; overflow-wrap:anywhere; }
+.rfoot { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.rwhen { font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.rdots { border:0; background:none; color:var(--muted); padding:6px; margin:-6px -6px -6px 0; border-radius:8px; cursor:pointer; display:inline-flex; }
+.rdots[aria-expanded="true"] { background:color-mix(in srgb, var(--muted) 15%, transparent); }
+.rmenu { display:flex; flex-direction:column; margin-top:6px; border:1px solid var(--line); border-radius:12px; background:var(--card); overflow:hidden; }
+.rmenu button { border:0; background:none; font:inherit; font-size:15px; text-align:left; padding:11px 14px; color:inherit; cursor:pointer; overflow-wrap:anywhere; }
+.rmenu button + button { border-top:1px solid var(--line); }
+.rmenu .racc { color:var(--accent); }
+.rawrow.open .rawhost { white-space:normal; overflow-wrap:anywhere; } /* open: het hele adres zichtbaar */
