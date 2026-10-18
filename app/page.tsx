@@ -1305,11 +1305,16 @@ export default function Home() {
               <button type="submit">Ga</button>
             </form>
           )}
-              {isDayOpen && (
-              <div className="list">
+              {isDayOpen && (() => {
+                // Dagdelen: alleen als de dag er meer dan één heeft; een label bovenaan elk dagdeel.
+                // Het bovenste label staat rustig óp de bovenrand van de lijst (half grijs, half wit), niet als extra regel erin.
+                const multiPart = rows.some((r) => r.t && rows[0].t && partOf(r.t) !== partOf(rows[0].t));
+                const cap = multiPart && rows[0]?.t ? partOf(rows[0].t) : null;
+                return (
+              <>
+              {cap !== null && <div className="partcap"><span><PartIcon p={cap} />{PARTS[cap]}</span></div>}
+              <div className={"list" + (cap !== null ? " capped" : "")}>
                 {(() => {
-                  // Dagdelen: alleen als de dag er meer dan één heeft; een label bovenaan elk dagdeel.
-                  const multiPart = rows.some((r) => r.t && rows[0].t && partOf(r.t) !== partOf(rows[0].t));
                   return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
                   // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
@@ -1320,7 +1325,7 @@ export default function Home() {
                   // Het label is het einde van het uur van de regels eronder: boven 21:57 en 21:21 staat "22:00" (daaronder 21:00–22:00),
                   // ook als er in het uur daarna niets gebeurde.
                   const boundary = (hr + 1) % 24;
-                  const partStart = multiPart && !!t && (ri === 0 || (!!rows[ri - 1].t && partOf(rows[ri - 1].t) !== partOf(t) && dayKeyFmt.format(rows[ri - 1].t) === dayKeyFmt.format(t)));
+                  const partStart = multiPart && !!t && ri > 0 && (!!rows[ri - 1].t && partOf(rows[ri - 1].t) !== partOf(t) && dayKeyFmt.format(rows[ri - 1].t) === dayKeyFmt.format(t));
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
@@ -1445,7 +1450,9 @@ export default function Home() {
                   });
                 })()}
               </div>
-              )}
+              </>
+                );
+              })()}
               {/* Wat er bewust níet staat, met de reden: zo is zelf na te gaan dat er niets gemist is. */}
               {isDayOpen && hidden.length > 0 && (
                 <details className="hidden-list">
