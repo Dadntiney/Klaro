@@ -7,6 +7,15 @@ export const metadata = {
   referrer: "no-referrer" as const,
 };
 
+// Vaste kleur voor de balk bovenin (zelfde als de achtergrond). Zonder deze kleur legt Safari op de iPhone zelf een
+// waas/kleurverloop over de bovenkant (de chips), tot je een keer scrolt.
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1115" },
+  ],
+};
+
 // Vangnet: start de app niet op (een onderdeel laadt niet, of een fout in de browser), dan na 10 s een melding met de fout en
 // een knop om opnieuw te laden, in plaats van eindeloos het laadscherm op 0%. De app zet window.__klaroUp zodra hij draait.
 const BOOT_GUARD = `(function(){var e=[];function add(m){if(e.length<5)e.push(String(m).slice(0,200));}
