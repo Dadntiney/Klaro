@@ -163,13 +163,13 @@ const longFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long"
 function longWhen(t: number) {
   return `${longFmt.format(t)} om ${timeSecFmt.format(t)}`;
 }
-/** Tijd zoals NextDNS: kort geleden relatief ("15 minuten geleden"), anders de volledige tijd. */
+/** Tijd bij een opengeklapte regel: t/m 30 minuten relatief ("15 minuten geleden"), daarna de kloktijd. */
 function when(t: number, now = Date.now()) {
   const s = (now - t) / 1000;
   if (s < 45) return "een paar seconden geleden";
   if (s < 90) return "een minuut geleden";
-  if (s < 45 * 60) return `${Math.round(s / 60)} minuten geleden`;
-  return longWhen(t);
+  if (s < 30.5 * 60) return `${Math.round(s / 60)} minuten geleden`;
+  return dayKeyFmt.format(t) === dayKeyFmt.format(now) ? `vandaag om ${timeSecFmt.format(t)}` : longWhen(t);
 }
 /** Kopiëren als de klembordfunctie ontbreekt (oudere browsers). */
 function fallbackCopy(text: string) {
@@ -290,16 +290,13 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
           const sub = host.length > base.length ? host.slice(0, host.length - base.length) : "";
           const day = dayKeyFmt.format(e.t);
           const newDay = i === 0 ? at !== null || day !== dayKeyFmt.format(Date.now()) : day !== dayKeyFmt.format(shown[i - 1].t);
-          // Rustig zoals NextDNS: per minuut één tijdkopje; per regel alleen logo en adres (apparaat en details bij openklikken).
-          const minute = timeFmt.format(e.t);
-          const newMin = newDay || i === 0 || minute !== timeFmt.format(shown[i - 1].t);
+          // Rustig zoals NextDNS: per regel alleen logo en adres; apparaat en tijd bij openklikken.
           const key = `${e.t}|${e.devId}|${host}`;
           const isOpen = openKey === key;
           const dev = devName(e.devId);
           return (
             <Fragment key={key}>
               {newDay && <div className="hourmark">{dayLabel(day)}</div>}
-              {newMin && <div className="rawmin">{minute}</div>}
               <div className={"rawrow" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "") + (isOpen ? " open" : "")}>
                 <button type="button" className="rawline" onClick={() => setOpenKey(isOpen ? null : key)} aria-expanded={isOpen}>
                   <MiniFav domain={logoDomain(host, base, e.icon)} />
