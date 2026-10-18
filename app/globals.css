@@ -585,3 +585,10 @@ h2 .livedot { margin:0 2px 0 12px; }
 .partmark::before, .partmark::after { content:""; flex:1; height:1px; background:var(--line); }
 .partmark span { display:inline-flex; align-items:center; gap:5px; }
 .list > div:first-child > .partmark { padding-top:10px; }
+/* NextDNS-lijst rustiger, zoals NextDNS zelf: tijdkopje per minuut, per regel alleen logo + adres + pijltje omlaag. */
+.rawmin { padding:12px 16px 4px; font-size:12px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+.rawlog > .rawmin + .rawrow::before { display:none; }
+.rawlog .rawhost { font-size:16px; }
+.rawlog .rawline { padding-top:13px; padding-bottom:13px; }
+.rawlog .rawchev { flex:none; color:var(--muted); opacity:.6; transition:transform .15s; }
+.rawrow.open .rawchev { transform:rotate(180deg); }

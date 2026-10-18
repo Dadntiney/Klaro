@@ -257,19 +257,21 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
           const sub = host.length > base.length ? host.slice(0, host.length - base.length) : "";
           const day = dayKeyFmt.format(e.t);
           const newDay = i === 0 ? at !== null || day !== dayKeyFmt.format(Date.now()) : day !== dayKeyFmt.format(shown[i - 1].t);
+          // Rustig zoals NextDNS: per minuut één tijdkopje; per regel alleen logo en adres (apparaat en details bij openklikken).
+          const minute = timeFmt.format(e.t);
+          const newMin = newDay || i === 0 || minute !== timeFmt.format(shown[i - 1].t);
           const key = `${e.t}|${e.devId}|${host}`;
           const isOpen = openKey === key;
           const dev = devName(e.devId);
           return (
             <Fragment key={key}>
               {newDay && <div className="hourmark">{dayLabel(day)}</div>}
+              {newMin && <div className="rawmin">{minute}</div>}
               <div className={"rawrow" + (e.blocked ? " blk" : "") + (e.flag ? " flag" : "") + (isOpen ? " open" : "")}>
                 <button type="button" className="rawline" onClick={() => setOpenKey(isOpen ? null : key)} aria-expanded={isOpen}>
                   <MiniFav domain={logoDomain(host, base, e.icon)} />
                   <span className="rawhost"><span className="muted">{sub}</span>{base}</span>
-                  {!device && <span className="rawdev" title={dev}><DevIcon name={dev} /></span>}
-                  <span className="rawtime">{timeFmt.format(e.t)}</span>
-                  <span className="rawchev" aria-hidden>›</span>
+                  <svg className="rawchev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
                 </button>
                 {isOpen && (
                   <div className="rawdet">
