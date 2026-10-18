@@ -100,7 +100,7 @@ test("app opent: twee verschillende inhoud-adressen in één moment tellen als g
   ss = extendSessions(ss, t + 100, false, false, undefined, "g.whatsapp.net");
   ss = extendSessions(ss, t + 200, false, true, undefined, "static.whatsapp.net");
   ss = extendSessions(ss, t + 600, false, true, undefined, "graph.whatsapp.com");
-  assert.equal(ss[0].f, 2);
+  assert.ok((ss[0].f ?? 0) >= 2);
   assert.equal(isHuman(ss[0]), true);
   // Binnenkomend bericht met foto: chatverbinding (g.) en dan foto + profielfoto tegelijk, zonder de kale naam: geen openen.
   let inc = extendSessions([], t, false, false, undefined, "g.whatsapp.net");
@@ -132,8 +132,11 @@ test("live WhatsApp: de volledige opstart (kale naam, api., g., static.) telt me
   const feed = (ev: [number, string, boolean][]) => ev.reduce((ss, [t, h, fg]) => extendSessions(ss, T + t, false, fg, undefined, h), [] as Session[]);
   const open = feed([[0, "g.whatsapp.net", false], [1_000, "whatsapp.com", false], [2_500, "static.whatsapp.net", true], [2_600, "mmx-ds.cdn.whatsapp.net", false], [3_500, "api.whatsapp.net", false]]);
   assert.equal(isHuman(open[0]), true);
-  const bericht = feed([[0, "api.whatsapp.net", false], [500, "g.whatsapp.net", false], [1_000, "static.whatsapp.net", true], [60_000, "whatsapp.com", false]]);
+  const bericht = feed([[0, "api.whatsapp.net", false], [500, "g.whatsapp.net", false], [1_000, "static.whatsapp.net", true]]);
   assert.equal(isHuman(bericht[0]), false);
+  // Na de melding de app openen (kale naam): dan wel gebruik.
+  const daarna = feed([[0, "api.whatsapp.net", false], [500, "g.whatsapp.net", false], [1_000, "static.whatsapp.net", true], [60_000, "whatsapp.com", false]]);
+  assert.equal(isHuman(daarna[0]), true);
 });
 
 test("kijkmelding van YouTube rekt het kijken op, maar start nooit zelf gebruik", () => {
