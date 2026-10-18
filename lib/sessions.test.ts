@@ -95,12 +95,20 @@ test("één pagina op de site zelf geopend is een bezoek, behalve uit een mail o
 
 test("app opent: twee verschillende inhoud-adressen in één moment tellen als gebruik, hetzelfde adres herhaald niet", () => {
   const t = 1_000_000_000;
-  // WhatsApp geopend en bericht verstuurd: instellingen en plaatjes binnen een seconde.
-  let ss = extendSessions([], t, false, false, undefined, "g.whatsapp.net");
+  // WhatsApp geopend (de kale naam whatsapp.com) en bericht verstuurd: instellingen en plaatjes binnen een seconde.
+  let ss = extendSessions([], t, false, false, undefined, "whatsapp.com");
+  ss = extendSessions(ss, t + 100, false, false, undefined, "g.whatsapp.net");
   ss = extendSessions(ss, t + 200, false, true, undefined, "static.whatsapp.net");
   ss = extendSessions(ss, t + 600, false, true, undefined, "graph.whatsapp.com");
   assert.equal(ss[0].f, 2);
   assert.equal(isHuman(ss[0]), true);
+  // Binnenkomend bericht met foto: chatverbinding (g.) en dan foto + profielfoto tegelijk, zonder de kale naam: geen openen.
+  let inc = extendSessions([], t, false, false, undefined, "g.whatsapp.net");
+  inc = extendSessions(inc, t + 3_000, false, true, undefined, "static.whatsapp.net");
+  inc = extendSessions(inc, t + 3_100, false, true, undefined, "media-ams2-1.cdn.whatsapp.net");
+  inc = extendSessions(inc, t + 6_000, false, false, undefined, "api.whatsapp.net");
+  assert.equal(inc[0].f, 1);
+  assert.equal(isHuman(inc[0]), false);
   // Achtergrond: hetzelfde inhoud-adres een paar keer vlak na elkaar blijft één moment.
   let bg = extendSessions([], t, false, true, undefined, "media-ams2-1.cdn.whatsapp.net");
   bg = extendSessions(bg, t + 300, false, true, undefined, "media-ams2-1.cdn.whatsapp.net");

@@ -17,6 +17,7 @@ export interface Session {
   res?: 1; // alleen losse onderdelen (tellers, plaatjes, advertenties, mail-onderdelen): geen bezoek // ingesloten filmpje op een andere site die op dat moment bezocht werd: hoort bij die site, geen eigen bezoek
   lg?: 1; // inlog- of bankierpagina geopend (bankieren.*, mijn.*): altijd een bewust bezoek
   pv?: 1;
+  bn?: 1; // live: de kale naam van de app (opstart) is in deze sessie gezien
   op?: 1; // de app is echt geopend (vaste start-adressen, zie ALWAYS_SHOW_OPEN in lib/livestatus.ts)
   ao?: 1; // app gestart (eigen startadres), maar geen inhoud gezien: tonen als onzeker (zie lib/overview.ts)
   uz?: 1; // onzeker: één los adres terwijl in een social-app gescrold werd (advertentie óf echt geopend) // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
@@ -66,8 +67,9 @@ export function totalMinutes(times: number[]): number {
 }
 
 // Apps waarbij openen in één moment meerdere inhoud-adressen tegelijk ophaalt (WhatsApp: graph + static bij openen en
-// versturen). Alleen hier telt elk ander adres als extra teken van gebruik; bij Facebook/Instagram/YouTube doet
-// achtergrondverversen dat ook, daar zou het vals alarm geven (nagerekend over de hele CSV).
+// versturen). Alleen hier telt elk ander adres als extra teken van gebruik, en alleen als de kale naam (whatsapp.com) erbij is:
+// een binnenkomend bericht met foto haalt ook static. + media. tegelijk op (g. → static./media. → api.), maar nooit de kale naam
+// (18 okt, 20 keer onterecht als openen). Bij Facebook/Instagram/YouTube doet achtergrondverversen dit ook: daar niet.
 export const OPEN_BURST = new Set(["whatsapp.com"]);
 /**
  * WhatsApp opent met dit rijtje binnen 5 seconden: de kale naam, de server voor het account (api.), de chatverbinding (g.) en
@@ -106,13 +108,17 @@ export function extendSessions(ss: Session[], t: number, media = false, fg?: boo
     if (media && !(x.lmt && Math.abs(t - x.lmt) <= MOMENT)) x.m = (x.m ?? 0) + 1;
     if (media) x.lmt = t;
     // Twee verschillende inhoud-adressen in één moment (app opent: instellingen + plaatjes) telt ook als twee.
-    if (fg && (!(x.lf && Math.abs(t - x.lf) <= MOMENT) || (host && x.lfh && host !== x.lfh))) x.f = (x.f ?? 0) + 1;
+    // Verschillende inhoud-adressen tellen alleen als de app zelf opstartte (kale naam gezien, zie OPEN_BURST): een binnenkomend
+    // bericht met foto haalt ook static. en media. tegelijk op.
+    if (host && OPEN_BURST.has(host)) x.bn = 1;
+    if (fg && (!(x.lf && Math.abs(t - x.lf) <= MOMENT) || (host && x.bn && x.lfh && host !== x.lfh))) x.f = (x.f ?? 0) + 1;
     if (fg) { x.lf = t; if (host) x.lfh = host; }
     if (res === false) delete x.res; // iets van de site zelf erbij: wel een bezoek
     if (host) openStart(x, host, t);
     return next.sort((a, b) => b.e - a.e);
   }
   const fresh: Session = { s: t, e: t, n: 1, ...(media ? { m: 1, lmt: t } : {}), ...(fg !== undefined ? { f: fg ? 1 : 0, ...(fg ? { lf: t, ...(host ? { lfh: host } : {}) } : {}) } : {}), ...(res ? { res: 1 as const } : {}) };
+  if (host && OPEN_BURST.has(host)) fresh.bn = 1;
   if (host) openStart(fresh, host, t);
   return [fresh, ...next].sort((a, b) => b.e - a.e).slice(0, MAX);
 }

@@ -571,7 +571,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // Inhoud-momenten, of het aantal verschillende inhoud-adressen als dat meer is: een app die opent haalt in één
         // moment instellingen én plaatjes op (WhatsApp: graph + static); achtergrond raakt hooguit één zo'n adres. Zie OPEN_BURST.
         const sh = OPEN_BURST.has(g.site) ? (siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s && h.t <= x.e) : [];
-        const fgSet = new Set(sh.filter((h) => fgHit(g.site, h.host)).map((h) => h.host));
+        // Alleen als de app zelf opstart (de kale naam, bv. whatsapp.com): een binnenkomend bericht met foto haalt ook static. en
+        // media. tegelijk op (g. → static./media. → api.), zonder de kale naam (18 okt, 22 keer onterecht als openen geteld).
+        const opened = sh.some((h) => OPEN_BURST.has(h.host));
+        const fgSet = new Set(opened ? sh.filter((h) => fgHit(g.site, h.host)).map((h) => h.host) : []);
         // De volledige opstart van de app (zie OPEN_START) telt ook als inhoud-adres: graph. ligt dan soms nog in het geheugen.
         if (sh.some((h) => OPEN_START.every((re) => sh.some((o) => re.test(o.host) && Math.abs(o.t - h.t) <= 5_000)))) fgSet.add("(opstart)");
         const fgHosts = fgSet.size;
