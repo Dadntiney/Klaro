@@ -427,7 +427,7 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .chip.on.act { background:var(--fg); border-color:var(--fg); color:var(--bg); box-shadow:none; }
 .chip-app { font-weight:500; opacity:.95; max-width:9.5em; overflow:hidden; text-overflow:ellipsis; }
 .pulse { position:relative; flex:none; width:8px; height:8px; border-radius:50%; background:#22c55e; margin-right:1px; }
-.chip.on .pulse { background:#22c55e; box-shadow:0 0 0 1.5px var(--bg); }
+.chip.on .pulse { background:#22c55e; box-shadow:none; } /* gekozen chip: alleen het groene bolletje, geen randje */
 .pulse::after { content:""; position:absolute; inset:0; border-radius:50%; background:#22c55e; animation:pulse 1.6s ease-out infinite; }
 @keyframes pulse { 0% { transform:scale(1); opacity:.8; } 100% { transform:scale(2.6); opacity:0; } }
 @media (prefers-reduced-motion: reduce) { .pulse::after { animation:none; } }
