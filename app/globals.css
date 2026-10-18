@@ -580,3 +580,8 @@ h2 .livedot { margin:0 2px 0 12px; }
 /* Laden: korte uitleg in plaats van alleen grijze blokjes. */
 .skel-empty { margin:6px 0 18px; font-size:15px; }
 .skel-note { margin:0 0 6px; font-size:13px; }
+/* Dagdelen (nacht, ochtend, middag, avond): dun grijs lijntje met in het midden een klein label met icoon. */
+.partmark { display:flex; align-items:center; gap:10px; padding:16px 14px 6px; color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; }
+.partmark::before, .partmark::after { content:""; flex:1; height:1px; background:var(--line); }
+.partmark span { display:inline-flex; align-items:center; gap:5px; }
+.list > div:first-child > .partmark { padding-top:10px; }

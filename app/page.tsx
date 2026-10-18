@@ -86,6 +86,19 @@ function CalendarIcon() {
   );
 }
 
+/** Dagdelen in de lijst: nacht 0-6, ochtend 6-12, middag 12-18, avond 18-24 uur. */
+const PARTS = ["Nacht", "Ochtend", "Middag", "Avond"] as const;
+const partOf = (t: number) => Math.floor(hourOf(t) / 6);
+function PartIcon({ p }: { p: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {p === 0 && <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />}
+      {p === 2 && <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>}
+      {(p === 1 || p === 3) && <><path d="M17 18a5 5 0 0 0-10 0" /><path d="M2 18h20M12 9V3M4.2 10.2l1.4 1.4M18.4 11.6l1.4-1.4M7 21h10" />{p === 1 ? <path d="M9 6l3-3 3 3" /> : <path d="M9 4l3 3 3-3" />}</>}
+    </svg>
+  );
+}
+
 /** Alle losse DNS-regels (logboek): streepjes met een stipje ervoor. */
 function LogIcon() {
   return (
@@ -1250,6 +1263,8 @@ export default function Home() {
               {isDayOpen && (
               <div className="list">
                 {(() => {
+                  // Dagdelen: alleen als de dag er meer dan één heeft; een label bovenaan elk dagdeel.
+                  const multiPart = rows.some((r) => r.t && rows[0].t && partOf(r.t) !== partOf(rows[0].t));
                   return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
                   // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
@@ -1260,6 +1275,7 @@ export default function Home() {
                   // Het label is het einde van het uur van de regels eronder: boven 21:57 en 21:21 staat "22:00" (daaronder 21:00–22:00),
                   // ook als er in het uur daarna niets gebeurde.
                   const boundary = (hr + 1) % 24;
+                  const partStart = multiPart && !!t && (ri === 0 || (!!rows[ri - 1].t && partOf(rows[ri - 1].t) !== partOf(t) && dayKeyFmt.format(rows[ri - 1].t) === dayKeyFmt.format(t)));
                   const key = g.d + g.site + g.dev;
                   const rowKey = key + ":" + t;
                   const isOpen = expanded === rowKey;
@@ -1270,8 +1286,8 @@ export default function Home() {
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   return (
-                    <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart ? " hourstart" : "")}>
-                      {hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
+                    <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "")}>
+                      {partStart ? <div className="partmark"><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
