@@ -51,7 +51,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "NPO", icon: "npo.nl", domains: ["npo.nl", "npoplayer.nl", "npostart.nl", "omroep.nl", "npox.nl", "zappelin.nl", "zapp.nl", "npo3.nl", "nporadio1.nl", "nporadio2.nl", "npo3fm.nl"] }, // Zappelin/Zapp = NPO voor kinderen
   { name: "Kijk", icon: "kijk.nl", domains: ["kijk.nl"] },
   { name: "Videoland", icon: "videoland.com", domains: ["videoland.com", "bedrock.tech"] },
-  { name: "Prime Video", icon: "primevideo.com", domains: ["primevideo.com", "aiv-cdn.net", "pv-cdn.net"] },
+  { name: "Prime Video", icon: "primevideo.com", domains: ["primevideo.com", "aiv-cdn.net", "pv-cdn.net", "amazonvideo.com", "aiv-delivery.net"] }, // amazonvideo.com: de Prime Video-app zelf (Apple TV, 19 okt)
   { name: "Max", icon: "max.com", domains: ["max.com", "hbomax.com", "hbo.com"] },
   { name: "Viaplay", icon: "viaplay.com", domains: ["viaplay.com", "viaplay.nl"] },
   { name: "SkyShowtime", icon: "skyshowtime.com", domains: ["skyshowtime.com"] },

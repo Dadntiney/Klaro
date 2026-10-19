@@ -474,3 +474,42 @@ test("Shopify-winkel met één eigen adres tijdens scrollen in Instagram: echt g
   const other = o.groups.find((g) => g.site === "anderewinkel.nl")!.ss[0] as { s: number; e: number; uz?: 1 };
   assert.equal(other.uz, 1);
 });
+
+test("Amazon-verkeer op een tv hoort bij Prime Video (één rij); op een telefoon blijft Amazon Amazon", async () => {
+  const min = 60_000;
+  const rows: R[] = [];
+  for (let m = 0; m <= 60; m += 2) rows.push([m * min, "api.amazon.com", "TV1"], [m * min + 300, "abc.zaz.api.amazonvideo.com", "TV1"]);
+  rows.push([1 * min, "x.ta.vod-hls.main.amazon.pv-cdn.net", "TV1"], [30 * min, "y.ta.vod-hls.main.amazon.pv-cdn.net", "TV1"]);
+  rows.push([0, "minerva.devices.a2z.com", "P1"], [400, "api.amazon.com", "P1"], [5 * min, "minerva.devices.a2z.com", "P1"]);
+  const o = await overview(rows);
+  assert.ok(!o.groups.some((g) => g.dev === "Apple TV" && g.site === "amazon.com"), "geen aparte Amazon-rij op de tv");
+  const pv = o.groups.find((g) => g.dev === "Apple TV" && g.site === "primevideo.com")!;
+  assert.ok(pv.ss.some((x) => x.e - x.s >= 55 * min), "Prime Video als één geheel");
+  assert.ok(o.groups.some((g) => g.dev === "iPhone" && g.site === "amazon.com"), "op de telefoon blijft het Amazon");
+});
+
+test("inlog-adres dat bij elke pagina meelaadt, in een vaak herladen tabblad, is geen inloggen; één keer inloggen wel", async () => {
+  const min = 60_000;
+  const rows: R[] = [];
+  for (const m of [0, 40, 80, 120, 160, 200]) rows.push([m * min, "www.receptensite.nl", "P1"], [m * min + 80, "mijn.receptensite.nl", "P1"]);
+  rows.push([300 * min, "mijn.bankvoorbeeld.nl", "P1"]);
+  const o = await overview(rows);
+  const rec = o.groups.find((g) => g.site === "receptensite.nl")!;
+  assert.ok(!rec.ss.some((x) => isHuman(x)), "herladen tabblad met mijn.: geen bezoek");
+  const bank = o.groups.find((g) => g.site === "bankvoorbeeld.nl")!;
+  assert.ok(bank.ss.some((x) => isHuman(x)), "één keer inloggen telt wel");
+});
+
+test("klik in een nieuwsbrief via het eigen klik-adres van de winkel telt, ook als een ander tabblad tegelijk herlaadt; Mail die veel nieuwsbrieven opent niet", async () => {
+  const s = 1000;
+  const rows: R[] = [[0, "url861.winkelmail.nl", "P1"], [1 * s, "sendgrid.net", "P1"], [28 * s, "www.winkelmail.nl", "P1"], [32 * s, "sgtm.winkelmail.nl", "P1"]];
+  rows.push([28 * s, "www.ander-tabblad.nl", "P1"]); // Safari herlaadt toevallig tegelijk een ander tabblad
+  const T = 3_600_000; // later: Mail opent veel nieuwsbrieven tegelijk
+  for (const h of ["click.mail.supermarkt.nl", "image.mail.supermarkt.nl", "email.merk1.nl", "email.merk2.nl", "res.mail.merk3.nl", "t.mail.merk4.nl"]) rows.push([T, h, "P1"]);
+  rows.push([T + 50, "www.supermarkt.nl", "P1"], [T + 60, "www.drogist.nl", "P1"], [T + 70, "www.warenhuis.nl", "P1"]); // mail laadt pagina's van meerdere winkels voor
+  const o = await overview(rows);
+  const shop = o.groups.find((g) => g.site === "winkelmail.nl")!.ss[0] as { s: number; e: number; ck?: 1 };
+  assert.ok(isHuman(shop as never) && shop.ck === 1, "geklikt");
+  const sm = o.groups.find((g) => g.site === "supermarkt.nl")!.ss[0];
+  assert.ok(!isHuman(sm as never), "mail geopend, niet geklikt");
+});

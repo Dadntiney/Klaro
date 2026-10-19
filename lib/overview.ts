@@ -447,6 +447,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const fol = t ? followOf.get(dev + "|" + host) : undefined;
     if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
     if (t && igShared.has(dev + "|" + t + "|" + host)) info = classify("instagram.com");
+    // Op een tv is Amazon-verkeer (api.amazon.com, a2z.com, plaatjes) altijd de Prime Video-app: een tv heeft geen Amazon-winkel
+    // (19 okt: "Amazon 2 u 8 min" naast losse Prime Video-stukjes).
+    if (info.site === "amazon.com" && /^(Apple TV|TV)( \d+)?$/.test(dev)) info = { ...classify("primevideo.com"), bg: info.bg };
     const d = t ? dayFmt.format(t) : "onbekend";
 
     // Door NextDNS geblokkeerd? Een geblokkeerde poging naar porno/dating is altijd belangrijk, ook als het adres niet op mijn lijst staat.
@@ -655,6 +658,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
       const shopLoaded = (x: Session) => (devShop.get(g.dev) ?? []).some((t) => t >= x.s && t <= x.e + 3_000);
       if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) x.uz = 1; }
+      // Laadt de site die dag vaker dan 4 keer los (open tabblad dat Safari herlaadt), dan is een inlog-adres in zo'n los moment
+      // geen inloggen maar een vast onderdeel van de pagina (19 okt leukerecepten.nl: mijn. bij elke pagina, ook bij herladen).
+      else for (const x of cand) delete x.lg;
       if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
       // Twee of drie opvragingen binnen 5 minuten met weer alleen de kale naam en www. van de site (en hooguit een meetadres, zoals
       // een open Canva-tabblad dat zich elke paar minuten meldt), verder niets van de site (een echte pagina laadt ook plaatjes en onderdelen): bij een site die zichzelf ververst zijn dat verversingen (zie onder).
@@ -711,8 +717,14 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const byClick = new Map<string, typeof clickVisits>();
     for (const v of clickVisits) (byClick.get(v.g.dev + "|" + v.click) ?? byClick.set(v.g.dev + "|" + v.click, []).get(v.g.dev + "|" + v.click)!).push(v);
     for (const vs of byClick.values()) {
+      // Hoort het klik-adres zelf bij één van die sites (url861.xenos.nl → xenos.nl: de sessie begint met de klik), dan is dat de
+      // geklikte site; de andere laadde toevallig tegelijk (19 okt: Safari herlaadde leukerecepten.nl in dezelfde seconde).
+      // Alleen bij één losse klik: opent de Mail-app veel nieuwsbrieven tegelijk, dan staan er tientallen klik-adressen in dezelfde
+      // seconden (Lidl, Kruidvat, ...) en is niets geklikt. Xenos 19 okt: één klik-adres, 2 nieuwsbrief-adressen.
+      const alone = (v: (typeof vs)[number]) => (devClick.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 3_000).length === 1 && (devEsp.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 3_000).length <= 3;
+      const own = new Set(vs.filter((v) => v.x.s === v.click && alone(v)).map((v) => v.g.site));
       const single = new Set(vs.map((v) => v.g.site)).size === 1;
-      for (const { x } of vs) if (single) x.ck = 1; else { x.ml = 1; delete x.pv; }
+      for (const { g, x } of vs) if (single || (own.size === 1 && own.has(g.site))) x.ck = 1; else { x.ml = 1; delete x.pv; }
     }
   }
 

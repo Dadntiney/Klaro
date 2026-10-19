@@ -96,6 +96,13 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Shopify-winkels (19 okt, xellybeauty.nl): de winkel vraagt maar één eigen adres op, de rest komt van cdn.shopify.com. shop.app
    (Shop Pay-knop) en judge.me (reviews) zitten in die winkels (28 van 31 keer tegelijk) en gaven nep-rijen van 10-11 min: nu
    achtergrond. cdn.shopify.com in dezelfde seconden = winkel echt geladen, dus niet meer "onzeker" tijdens Instagram-scrollen.
+   Grote controle 19 okt (avond): Prime Video op de Apple TV stond als "Amazon 2 u 8 min" plus losse Prime Video-stukjes:
+   amazonvideo.com/aiv-delivery.net zijn Prime Video, en Amazon-verkeer op een tv is altijd de Prime Video-app (één rij).
+   leukerecepten.nl kwam 8 keer als losse rij: Safari herlaadt het open tabblad, en mijn.leukerecepten.nl (laadt bij elke
+   pagina mee sinds het inloggen) telde als "inloggen". Een inlog-adres in een los moment telt niet meer als de site die dag
+   vaker dan 4 keer los laadt (zelfde regel als voor gewone pagina's). Klik in een nieuwsbrief via het eigen klik-adres van de
+   winkel (url861.xenos.nl) telde als mail omdat een ander tabblad in dezelfde seconde herlaadde; nu telt de winkel met het
+   eigen klik-adres, behalve als Mail veel nieuwsbrieven tegelijk opent (meer dan 3 nieuwsbrief-adressen in 3 s).
    Facebook-pixel-venster bewust 3 s gelaten: 5 s haalde echte Instagram-momenten weg (4 dagen).
    Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
    Geleerd (19 okt): nieuw kinderspel BoBo World op de iPad (18 okt uit de App Store gehaald). Het start met svip.bobo-world.com,
@@ -134,6 +141,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    19 okt 10:56 (iPhone): xellybeauty.nl (afrekenpagina) en aboutyou.nl laden 3 s na elkaar, net na een Google-opvraging. Tabbladen
    die Safari opnieuw laadt, of echt? Drempel "tabbladen opnieuw geladen" naar 3 sites haalde 14 waarschijnlijk echte rijen weg;
    daarom nu getoond. Meer van zulke paren verzamelen.
+   Buienradar (iPhone): 18 en 19 okt 8-9 eigen adressen tegelijk zonder rij. Widget op het beginscherm of de app geopend?
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.

@@ -58,6 +58,7 @@ export const GELEERD: {
     { k: "iPhone|a1952.dscb.akamai.net|buienradar.nl", laatst: "2026-10-19" },
     { k: "iPhone|a1964.dscb.akamai.net|buienradar.nl", laatst: "2026-10-19" },
     { k: "iPhone|a233.dscb.akamai.net|buienradar.nl", laatst: "2026-10-19" },
+    { k: "iPhone|cloudflare-edge-plumbing.spotifycdn.com.cdn.cloudflare.net|spotify.com", laatst: "2026-10-19" },
     { k: "iPhone|e28241.dscb.akamaiedge.net|buienradar.nl", laatst: "2026-10-19" },
     { k: "iPhone|global.tls13.spotifycdn.map.fastly.net|spotify.com", laatst: "2026-10-19" },
     { k: "iPhone|main-d.contentful.map.fastly.net|meethue.com", laatst: "2026-10-19" },
