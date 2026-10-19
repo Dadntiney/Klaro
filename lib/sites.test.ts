@@ -367,6 +367,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   assert.equal(classify("other-alb-production-1.eu-central-1.elb.amazonaws.com").bg, true); // andere Amazon-servers blijven achtergrond
   assert.equal(classify("apps.tutotoons.com").name, "TutoTOONS (spel)");
   assert.equal(classify("vast.tutoads.tv").name, "TutoTOONS (spel)");
+  for (const h of ["svip.bobo-world.com", "www.kalegames.com", "cp.papoworld.com"]) assert.equal(classify(h).name, "BoBo World (spel)", h);
+  assert.notEqual(classify("www.bobo.com").name, "BoBo World (spel)"); // geen vals alarm op een gelijkende naam
   // geen vals alarm: gewone sites met een vergelijkbaar stukje in de naam blijven gewone sites
   assert.equal(classify("www.awin.nl").bg, false);
   assert.equal(classify("www.tolkien.nl").bg, false);

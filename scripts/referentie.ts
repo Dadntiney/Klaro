@@ -78,6 +78,8 @@ const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "trivago.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "allcamps.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: true, why: "winkel echt geopend (hele pagina geladen); het 'scrollen in Facebook' erna was de Facebook-pixel van een andere site" },
+  { day: "2026-10-18", dev: "iPad", site: "bobo-world.com", at: "16:25", want: true, why: "kinderspel BoBo World gestart (svip./www.bobo-world + www.kalegames), daarna elke ~4 min cp.papoworld" },
+  { day: "2026-10-18", dev: "iPad", site: "papoworld.com", at: "16:26", want: false, why: "hoort bij het spel BoBo World, geen aparte site" },
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.cloud", at: "16:01", want: false, why: "onderdeel van ravensburger.nl (zelfde merk)" },
   { day: "2026-10-11", dev: "iPhone", site: "nu.nl", at: "10:53", want: true, why: "link uit X geopend" },
   { day: "2026-10-17", dev: "iPhone", site: "shazam.com", at: "14:49", want: true, why: "Shazam geopend (nummer herkend, daarna door naar Spotify)" },

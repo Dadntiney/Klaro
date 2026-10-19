@@ -42,6 +42,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Playrix (spel)", icon: "playrix.com", domains: ["playrix.com"] },
   { name: "Mobile Legends (spel)", icon: "mobilelegends.com", domains: ["mobilelegends.com", "moonton.com"] },
   { name: "Sago Mini (spel)", icon: "sagomini.com", domains: ["sagomini.com"] },
+  { name: "BoBo World (spel)", icon: "bobo-world.com", domains: ["bobo-world.com", "kalegames.com", "papoworld.com"] }, // kinderspel: start met svip./www.bobo-world + www.kalegames, tijdens spelen elke ~3-4 min cp.papoworld
   { name: "TutoTOONS (spel)", icon: "tutotoons.com", domains: ["tutotoons.com", "tutoads.tv"] }, // kinderspellen; tijdens het spelen elke paar minuten reclame/gegevens
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
