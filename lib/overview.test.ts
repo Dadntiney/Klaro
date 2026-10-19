@@ -461,3 +461,16 @@ test("spel dat volledig opstart (3+ eigen adressen in één moment) is geopend, 
   assert.equal(human[0].s, T0);
   assert.equal((human[0] as { gs?: 1 }).gs, 1);
 });
+
+test("Shopify-winkel met één eigen adres tijdens scrollen in Instagram: echt geladen (cdn.shopify.com), niet onzeker; zonder winkel-onderdelen wel onzeker", async () => {
+  const rows: R[] = [];
+  for (const s of [0, 20, 40, 60, 80]) rows.push([s * 1000, "scontent-ams2-1.cdninstagram.com", "P1"], [s * 1000 + 300, "i.instagram.com", "P1"]);
+  rows.push([30_000, "winkelvoorbeeld.nl", "P1"], [30_700, "cdn.shopify.com", "P1"], [30_800, "shop.app", "P1"], [31_000, "cdn.judge.me", "P1"]);
+  rows.push([70_000, "anderewinkel.nl", "P1"]); // alleen de naam: kan een aangeklopte advertentie zijn
+  const o = await overview(rows);
+  const shop = o.groups.find((g) => g.site === "winkelvoorbeeld.nl")!.ss[0] as { s: number; e: number; uz?: 1 };
+  assert.ok(isHuman(shop) && !shop.uz, "winkel echt geladen");
+  assert.ok(!o.groups.some((g) => (g.site === "shop.app" || g.site === "judge.me") && !(g as { bg?: boolean }).bg && g.ss.some((x) => isHuman(x))), "onderdelen geen eigen rij");
+  const other = o.groups.find((g) => g.site === "anderewinkel.nl")!.ss[0] as { s: number; e: number; uz?: 1 };
+  assert.equal(other.uz, 1);
+});

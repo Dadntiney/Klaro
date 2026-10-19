@@ -159,7 +159,7 @@ for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
 const BACKGROUND = new Set([
   // chatknoppen die in andere sites zitten (geen eigen bezoek)
-  "replain.cc", "tolkie.nl", "surfly.com", "usizy.com", "snapwidget.com", "giftomatic.io", "shopboostapp.com", "omniconvert.com", "masslytics.io", "klarnaevt.com", "intercom.io", "intercomcdn.com", "intercomassets.com", "zdassets.com", "tawk.to", "crisp.chat", "livechatinc.com", "tidio.co", "tidiochat.com", "driftt.com", "usemessages.com", "olark.com", "jivosite.com", "chatbase.co", // chatbase: AI-chatknop op sites (leukerecepten.nl, 19 okt)
+  "replain.cc", "tolkie.nl", "surfly.com", "usizy.com", "snapwidget.com", "giftomatic.io", "shopboostapp.com", "omniconvert.com", "masslytics.io", "klarnaevt.com", "intercom.io", "intercomcdn.com", "intercomassets.com", "zdassets.com", "tawk.to", "crisp.chat", "livechatinc.com", "tidio.co", "tidiochat.com", "driftt.com", "usemessages.com", "olark.com", "jivosite.com", "judge.me", "shop.app", "chatbase.co", // chatbase: AI-chatknop; judge.me (reviews) en shop.app (Shop Pay-knop) zitten in Shopify-winkels (28 van 31 keer tegelijk met de winkel)
   "stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
   "ift.tt", "bit.ly", "tinyurl.com", "awin1.com", "tradetracker.net", "go2cloud.org", "bigspark.link", // ook affiliate-links

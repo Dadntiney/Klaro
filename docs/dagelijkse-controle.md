@@ -93,6 +93,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    apps., tutoclub., tutopulse.) en speelt daarna soms 9 min zonder verkeer. Dat telt nu als geopend (19 van 21 opstarts waren al
    zichtbaar; 2 TutoTOONS-opstarts gemist). ipapi.co / ipify.org (IP-opzoekdienst van apps) zijn achtergrond. Amaya Kids herkend.
    chatbase.co is een AI-chatknop in sites (leukerecepten.nl), geen bezoek.
+   Shopify-winkels (19 okt, xellybeauty.nl): de winkel vraagt maar één eigen adres op, de rest komt van cdn.shopify.com. shop.app
+   (Shop Pay-knop) en judge.me (reviews) zitten in die winkels (28 van 31 keer tegelijk) en gaven nep-rijen van 10-11 min: nu
+   achtergrond. cdn.shopify.com in dezelfde seconden = winkel echt geladen, dus niet meer "onzeker" tijdens Instagram-scrollen.
+   Facebook-pixel-venster bewust 3 s gelaten: 5 s haalde echte Instagram-momenten weg (4 dagen).
    Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
    Geleerd (19 okt): nieuw kinderspel BoBo World op de iPad (18 okt uit de App Store gehaald). Het start met svip.bobo-world.com,
    www.bobo-world.com en www.kalegames.com tegelijk en meldt tijdens het spelen elke ~4 min cp.papoworld.com. Zelf leren zag die
@@ -127,6 +131,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    35 van 6-8 min, 70 van 8-15 min. De twee gevallen (18-10 16:00 en 19:30) vielen in pauzes van 9 en 7 min. Nog geen zekere grens.
    19 okt 08:36 (iPad): chip groen, geen rij "nu": NPO en Toca Boca startten in dezelfde seconden; de rij kiest de laatst
    gestarte app (Toca Boca, 7 s), de chip ziet NPO. Uitzoeken of zo'n gelijktijdige Toca Boca-melding bij het wisselen hoort.
+   19 okt 10:56 (iPhone): xellybeauty.nl (afrekenpagina) en aboutyou.nl laden 3 s na elkaar, net na een Google-opvraging. Tabbladen
+   die Safari opnieuw laadt, of echt? Drempel "tabbladen opnieuw geladen" naar 3 sites haalde 14 waarschijnlijk echte rijen weg;
+   daarom nu getoond. Meer van zulke paren verzamelen.
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.

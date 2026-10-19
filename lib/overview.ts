@@ -43,6 +43,8 @@ export function directClient(key: string, profile: string): NextDNSClient {
 
 const MAX_GROUPS = 15000;
 const DAY = 86_400_000;
+/** Onderdelen van een Shopify-winkel: de winkel zelf vraagt maar één eigen adres op, de rest komt van hier. */
+const SHOP_ASSET = /(^|\.)(cdn\.shopify\.com|shopifycdn\.com)$/;
 
 /** Eén regel in het overzicht: een site/app, op één dag, door één apparaat. */
 export interface Group {
@@ -248,6 +250,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
+  // Onderdelen van een webwinkel-platform (Shopify) per apparaat: een Shopify-winkel vraagt zelf maar één eigen adres op en haalt
+  // de rest van cdn.shopify.com. Komen die in dezelfde seconden, dan is de winkel echt geladen (geen aangeklopte advertentie).
+  const devShop = new Map<string, number[]>();
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
@@ -294,6 +299,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
     if (!t) return [];
     if (/facebook|fbcdn/.test(host!)) return [{ t, dev: deviceMap[idOf(r)], host: host! }];
+    // Een Shopify-winkel laadt de rest van de pagina van cdn.shopify.com: telt ook als "website geopend" (3 okt breyerhorses.com).
+    if (SHOP_ASSET.test(host!)) return [{ t, dev: deviceMap[idOf(r)], host: host!, page: true }];
     const c = classify(host!);
     return c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site) ? [{ t, dev: deviceMap[idOf(r)], host: host!, page: true }] : [];
   }));
@@ -480,6 +487,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
+    if (SHOP_ASSET.test(host)) (devShop.get(dev) ?? devShop.set(dev, []).get(dev)!).push(t);
     if (isQuietHost(host)) continue; // verbinding openhouden: geen bezoek, geen sessie
     if (t && fbPixel.has(dev + "|" + t + "|" + host)) continue; // Facebook-pixel van de website ervoor: geen Facebook-gebruik
 
@@ -645,7 +653,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const cand = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
       // Eén los adres tijdens scrollen in een social-app: kan een aangeklopte advertentie zijn, maar ook een echt geopende
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
-      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x)) x.uz = 1; }
+      const shopLoaded = (x: Session) => (devShop.get(g.dev) ?? []).some((t) => t >= x.s && t <= x.e + 3_000);
+      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) x.uz = 1; }
       if (cand.length) singles.set(g.dev + "|" + g.site, [...(singles.get(g.dev + "|" + g.site) ?? []), cand.length]);
       // Twee of drie opvragingen binnen 5 minuten met weer alleen de kale naam en www. van de site (en hooguit een meetadres, zoals
       // een open Canva-tabblad dat zich elke paar minuten meldt), verder niets van de site (een echte pagina laadt ook plaatjes en onderdelen): bij een site die zichzelf ververst zijn dat verversingen (zie onder).
