@@ -558,6 +558,12 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
     // Tellen in momenten per site: alles van dezelfde site binnen 1,5 s (www + plaatjes + script) is één moment.
     for (const x of sessions) x.n = moments(all.filter((t) => t >= x.s && t <= x.e));
+    // Spellen en leer-apps halen bij het opstarten in één moment 3+ eigen adressen op (TutoTOONS: apps., tutoclub., tutopulse.);
+    // daarna speelt het spel soms minuten zonder verkeer. Zo'n opstart is echt geopend (19 okt: 19 van 21 al getoond, 2 gemist).
+    if (/\((spel|leren)\)$/.test(g.name ?? "")) {
+      const sh = siteHosts.get(gkey) ?? [];
+      for (const x of sessions) if (sh.some((h) => h.t >= x.s && h.t <= x.e && new Set(sh.filter((o) => o.t >= h.t && o.t - h.t <= MOMENT).map((o) => o.host)).size >= 3)) x.gs = 1;
+    }
     // Apps met veel achtergrondverkeer (Facebook, Instagram, WhatsApp, ...): tel hoe vaak er echt inhoud laadde, en meet de duur
     // alleen van de eerste tot de laatste keer inhoud; verversen op de achtergrond rekt de duur dan niet op.
     if (FG_RULES[g.site]) {

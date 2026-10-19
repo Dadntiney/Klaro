@@ -89,6 +89,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (18 okt, bevestigd door de eigenaar terwijl hij WhatsApp gebruikte): de kale naam whatsapp.com = de app gaat open
    (ook chat.cdn → whatsapp.com → mmx-ds zonder foto's). Zonder de kale naam is het een binnenkomend bericht.
    Nog uitzoeken: braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
+   Geleerd (19 okt, 2e ronde): een spel of leer-app die volledig opstart vraagt in één moment 3+ eigen adressen op (TutoTOONS:
+   apps., tutoclub., tutopulse.) en speelt daarna soms 9 min zonder verkeer. Dat telt nu als geopend (19 van 21 opstarts waren al
+   zichtbaar; 2 TutoTOONS-opstarts gemist). ipapi.co / ipify.org (IP-opzoekdienst van apps) zijn achtergrond. Amaya Kids herkend.
+   Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
    Geleerd (19 okt): nieuw kinderspel BoBo World op de iPad (18 okt uit de App Store gehaald). Het start met svip.bobo-world.com,
    www.bobo-world.com en www.kalegames.com tegelijk en meldt tijdens het spelen elke ~4 min cp.papoworld.com. Zelf leren zag die
    drie adressen als "vast hulpje" en verborg het spel (stond als "Spel (naam onbekend)" of TutoTOONS). Nu een eigen app.
@@ -120,6 +124,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    een andere grens voor "nu"; uitzoeken welke klopt met de pauzes tussen Netflix-meldingen (vaak 5-6 min).
    19 okt gemeten (alle dagen, Apple TV): pauzes tussen Netflix-adressen onder 15 min: 897 korter dan 3 min, 280 van 3-6 min,
    35 van 6-8 min, 70 van 8-15 min. De twee gevallen (18-10 16:00 en 19:30) vielen in pauzes van 9 en 7 min. Nog geen zekere grens.
+   19 okt 08:36 (iPad): chip groen, geen rij "nu": NPO en Toca Boca startten in dezelfde seconden; de rij kiest de laatst
+   gestarte app (Toca Boca, 7 s), de chip ziet NPO. Uitzoeken of zo'n gelijktijdige Toca Boca-melding bij het wisselen hoort.
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.

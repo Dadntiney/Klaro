@@ -43,6 +43,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Mobile Legends (spel)", icon: "mobilelegends.com", domains: ["mobilelegends.com", "moonton.com"] },
   { name: "Sago Mini (spel)", icon: "sagomini.com", domains: ["sagomini.com"] },
   { name: "BoBo World (spel)", icon: "bobo-world.com", domains: ["bobo-world.com", "kalegames.com", "papoworld.com"] }, // kinderspel: start met svip./www.bobo-world + www.kalegames, tijdens spelen elke ~3-4 min cp.papoworld
+  { name: "Amaya Kids (leren)", icon: "amayakids.com", domains: ["amayakids.com"] },
   { name: "TutoTOONS (spel)", icon: "tutotoons.com", domains: ["tutotoons.com", "tutoads.tv"] }, // kinderspellen; tijdens het spelen elke paar minuten reclame/gegevens
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
@@ -168,6 +169,7 @@ const BACKGROUND = new Set([
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
   "googletagservices.com", "doubleclick.net", "googlesyndication.com", "googleadservices.com", "gvt1.com", "gvt2.com",
   "app-measurement.com", "crashlytics.com", "firebaseio.com", "firebaseinstallations.googleapis.com",
+  "ipapi.co", "ipify.org", // "wat is mijn IP/land"-diensten die apps bij het opstarten aanroepen (een kinder-app op de iPad: ipapi.co), geen bezoek
   "akamaihd.net", "akamaiedge.net", "akamai.net", "edgekey.net", "edgesuite.net", "cloudfront.net", "fastly.net",
   "fastlylb.net", "azureedge.net", "trafficmanager.net", "amazonaws.com", "windowsupdate.com", "msftconnecttest.com",
   "msftncsi.com", "apple-dns.net", "mzstatic.com", "icloud-content.com", "sentry.io", "appsflyer.com", "adjust.com",

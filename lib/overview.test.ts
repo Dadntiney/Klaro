@@ -448,3 +448,16 @@ test("WhatsApp: opnieuw de kale naam vlak na een geopende sessie verlengt die; e
   assert.equal(ss.length, 1);
   assert.ok(ss[0].e - ss[0].s >= 99_000);
 });
+
+test("spel dat volledig opstart (3+ eigen adressen in één moment) is geopend, ook zonder verkeer daarna; 1 of 2 adressen niet", async () => {
+  const min = 60_000;
+  const rows: R[] = [[0, "apps.tutotoons.com", "P4"], [300, "tutoclub.tutotoons.com", "P4"], [600, "tutopulse.tutotoons.com", "P4"]];
+  rows.push([120 * min, "h-kafka-rest.tutotoons.com", "P4"], [120 * min + 400, "tutopulse.tutotoons.com", "P4"]); // alleen 2: geen opstart
+  rows.push([240 * min, "h-kafka-rest.tutotoons.com", "P4"]); // los meetbericht
+  const o = await overview(rows);
+  const tuto = o.groups.filter((g) => g.site === "tutotoons.com").flatMap((g) => g.ss);
+  const human = tuto.filter((x) => isHuman(x));
+  assert.equal(human.length, 1);
+  assert.equal(human[0].s, T0);
+  assert.equal((human[0] as { gs?: 1 }).gs, 1);
+});
