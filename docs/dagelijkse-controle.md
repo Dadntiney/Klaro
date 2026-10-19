@@ -92,6 +92,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (19 okt, 2e ronde): een spel of leer-app die volledig opstart vraagt in één moment 3+ eigen adressen op (TutoTOONS:
    apps., tutoclub., tutopulse.) en speelt daarna soms 9 min zonder verkeer. Dat telt nu als geopend (19 van 21 opstarts waren al
    zichtbaar; 2 TutoTOONS-opstarts gemist). ipapi.co / ipify.org (IP-opzoekdienst van apps) zijn achtergrond. Amaya Kids herkend.
+   chatbase.co is een AI-chatknop in sites (leukerecepten.nl), geen bezoek.
    Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
    Geleerd (19 okt): nieuw kinderspel BoBo World op de iPad (18 okt uit de App Store gehaald). Het start met svip.bobo-world.com,
    www.bobo-world.com en www.kalegames.com tegelijk en meldt tijdens het spelen elke ~4 min cp.papoworld.com. Zelf leren zag die

@@ -370,6 +370,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   for (const h of ["svip.bobo-world.com", "www.kalegames.com", "cp.papoworld.com"]) assert.equal(classify(h).name, "BoBo World (spel)", h);
   assert.notEqual(classify("www.bobo.com").name, "BoBo World (spel)"); // geen vals alarm op een gelijkende naam
   assert.equal(classify("my.amayakids.com").name, "Amaya Kids (leren)");
+  for (const h of ["www.chatbase.co", "backend.chatbase.co"]) assert.equal(classify(h).bg, true, h); // chatknop in een andere site
+  assert.equal(classify("www.chatbaas.nl").bg, false); // geen vals alarm
   for (const h of ["ipapi.co", "api.ipify.org"]) assert.equal(classify(h).bg, true, h); // IP/land-opzoekdienst van apps
   assert.equal(classify("www.ipapotheek.nl").bg, false); // geen vals alarm
   // geen vals alarm: gewone sites met een vergelijkbaar stukje in de naam blijven gewone sites
