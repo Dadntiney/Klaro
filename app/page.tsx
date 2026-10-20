@@ -541,10 +541,11 @@ function PushToggle() {
         </>
       )}
       {note && <p className="pushnote">{note}</p>}
-      {hist.length > 0 && (
+      {st === "aan" && (
         <div className="pushhist" ref={histRef}>
           <button type="button" onClick={() => setShowHist((v) => !v)}>Laatste meldingen ({hist.length}) {showHist ? "‹" : "›"}</button>
-          {showHist && (
+          {showHist && hist.length === 0 && <p className="muted">Nog geen meldingen in de laatste 30 dagen.</p>}
+          {showHist && hist.length > 0 && (
             <ul>
               {hist.slice(0, 20).map((m, i) => (
                 <li key={m.t + ":" + i}>
