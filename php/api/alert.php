@@ -63,7 +63,7 @@ foreach (is_array($in['alerts'] ?? null) ? $in['alerts'] : [] as $a) {
   $repeat = str_starts_with($key, 'stil|') ? 24 * 3600_000 - 60_000 : ALERT_REPEAT;
   if ($key === '' || ($now - (int)($sent[$key] ?? 0)) < $repeat) continue;
   $sent[$key] = $now;
-  $send[] = ['title' => (string)($a['title'] ?? 'Klaro'), 'body' => (string)($a['body'] ?? ''), 'tag' => $key];
+  $send[] = ['title' => (string)($a['title'] ?? 'Dobber'), 'body' => (string)($a['body'] ?? ''), 'tag' => $key];
 }
 store_meta($db, 'alerted', json_encode($sent));
 // De echte tekst alleen in Klaro (na inloggen, api/push.php); op de iPhone komt een neutrale melding zonder details.

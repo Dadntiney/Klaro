@@ -4,8 +4,8 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-static";
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Klaro",
-    short_name: "Klaro",
+    name: "Dobber",
+    short_name: "Dobber",
     start_url: "/",
     scope: "/",
     display: "standalone",

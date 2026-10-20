@@ -523,7 +523,7 @@ function PushToggle() {
   const run = (fn: () => Promise<PushState | boolean>, done: string) => {
     setBusy(true);
     setNote("");
-    fn().then((r) => { if (typeof r === "string") setSt(r); setNote(r === "geweigerd" ? "Meldingen zijn geweigerd: zet ze aan bij Instellingen → Meldingen → Klaro." : done); }, (e) => setNote(e instanceof Error ? e.message : "Dat lukte niet.")).finally(() => setBusy(false));
+    fn().then((r) => { if (typeof r === "string") setSt(r); setNote(r === "geweigerd" ? "Meldingen zijn geweigerd: zet ze aan bij Instellingen → Meldingen → Dobber." : done); }, (e) => setNote(e instanceof Error ? e.message : "Dat lukte niet.")).finally(() => setBusy(false));
   };
   if (st === null || st === "geen") return null;
   const on = st === "aan";
@@ -531,7 +531,7 @@ function PushToggle() {
     <>
       {stuck && <p className="pushwarn">Let op: waarschuwen heeft sinds {dayLabel(dayKeyFmt.format(laatst!)).toLowerCase()} {timeFmt.format(laatst!)} niet gedraaid. Meldingen komen nu niet.</p>}
       <FoldRow label="Meldingen" value={<><span className={"dot" + (on ? " on" : "")} aria-hidden />{on ? "aan" : "uit"}</>}>
-        {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Klaro eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
+        {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Dobber eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
         {(st === "uit" || st === "geweigerd") && <button type="button" className="setbtn" disabled={busy} onClick={() => run(pushOn, "Meldingen staan aan. Binnen een kwartier komt een proefmelding.")}>Meldingen aanzetten</button>}
         {on && (
           <>
@@ -552,7 +552,7 @@ function PushToggle() {
                 {hist.slice(0, 20).map((m, i) => (
                   <li key={m.t + ":" + i}>
                     <span className="muted">{dayLabel(dayKeyFmt.format(m.t))} {timeFmt.format(m.t)}</span>
-                    <span>{m.title.replace(/^Klaro: /, "")}: {m.body}</span>
+                    <span>{m.title.replace(/^(Klaro|Dobber): /, "")}: {m.body}</span>
                   </li>
                 ))}
               </ul>

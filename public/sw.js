@@ -2,7 +2,7 @@
 self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data ? e.data.text() : "" }; }
-  e.waitUntil(self.registration.showNotification(d.title || "Klaro", { body: d.body || "", tag: d.tag, icon: "/apple-icon.png", badge: "/apple-icon.png" }));
+  e.waitUntil(self.registration.showNotification(d.title || "Dobber", { body: d.body || "", tag: d.tag, icon: "/apple-icon.png", badge: "/apple-icon.png" }));
 });
 // Tik op de melding: Klaro openen (of naar voren halen als hij al open is).
 self.addEventListener("notificationclick", (e) => {
