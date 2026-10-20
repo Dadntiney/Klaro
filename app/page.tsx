@@ -1560,7 +1560,7 @@ export default function Home() {
             </div>
           )}
           {histErr && <p className="muted skel-err">{cut > 0 ? "Eerder vandaag en oudere dagen laden lukt nu even niet." : "Oudere dagen laden lukt nu even niet; vandaag is wel compleet."}</p>}
-          {full && windowFrom > 0 && (
+          {full && windowFrom > 0 && groups.some((g) => g.d <= dayKeyFmt.format(windowFrom + 86_400_000)) && ( // alleen als de 30 dagen vol zijn (anders is er niets ouder)
             <div className="older">
               <button type="button" disabled={olderBusy} onClick={() => { setOlderBusy(true); void refreshFull(false, true).finally(() => setOlderBusy(false)); }}>
                 {olderBusy ? "Oudere dagen laden…" : "Oudere dagen laden"}
