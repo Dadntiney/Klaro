@@ -11,7 +11,12 @@ import { parseRaw, rawEvents, type RawQuery, type RawRow } from "./rawlog.ts";
 const DAY = 86_400_000;
 const OVERLAP = 10 * 60_000; // de laatste 10 minuten altijd opnieuw (regels die NextDNS net later wegschrijft)
 
-type Saved = { text: string; fullAt: number };
+/** Na het inloggen alleen de laatste 30 dagen ophalen en uitrekenen; oudere dagen pas op verzoek (expand). Gemeten 20 okt: met
+ *  alleen de laatste 14 dagen kwamen er over die dagen dezelfde rijen uit (hooguit een eindtijd een paar seconden anders); wat
+ *  Klaro over langere tijd leert, staat vast in lib/geleerd.ts. Zo wordt laden niet trager naarmate het logboek groeit. */
+export const WINDOW_DAYS = 30;
+
+type Saved = { text: string; fullAt: number; from?: number };
 
 function idb(): Promise<IDBDatabase | null> {
   return new Promise((res) => {
@@ -75,6 +80,8 @@ export function mergeDownload(old: string, fresh: string, since: number): string
 export function rawSource(base: NextDNSClient & { since?: (since: number, ms: number) => Promise<NDResponse> }) {
   let text: string | null = null;
   let fullAt = 0;
+  let from = 0; // 0 = alles; anders: de bewaarde regels beginnen hier (laatste WINDOW_DAYS dagen)
+  let all = false; // alle dagen gevraagd (Oudere dagen laden)
   let at = 0;
   let rows: RawRow[] | null = null;
   let loaded = false;
@@ -82,9 +89,9 @@ export function rawSource(base: NextDNSClient & { since?: (since: number, ms: nu
   const asResponse = (t: string) => ({ ok: true, status: 200, text: async () => t, json: async () => JSON.parse(t) }) as NDResponse;
 
   async function refresh(ms: number): Promise<NDResponse | null> {
-    if (!loaded) { loaded = true; const s = await load(); if (s && !text) { text = s.text; fullAt = s.fullAt; } }
+    if (!loaded) { loaded = true; const s = await load(); if (s && !text) { text = s.text; fullAt = s.fullAt; from = s.from ?? 0; } }
     const newest = text ? lineT(text.slice(text.indexOf("\n") + 1, text.indexOf("\n", text.indexOf("\n") + 1))) : 0;
-    if (text && base.since && newest && Date.now() - fullAt < DAY) {
+    if (text && base.since && newest && Date.now() - fullAt < DAY && !(all && from)) {
       try {
         const since = newest - OVERLAP;
         const r = await base.since(since, ms);
@@ -92,17 +99,19 @@ export function rawSource(base: NextDNSClient & { since?: (since: number, ms: nu
         if (merged !== null) {
           text = merged;
           at = Date.now(); rows = null;
-          void save({ text, fullAt });
+          void save({ text, fullAt, from });
           return asResponse(text);
         }
         if (r.status === 401) return r;
       } catch { /* dan alles opnieuw */ }
     }
-    const r = await base.download(ms);
+    // Alles opnieuw: alleen de laatste WINDOW_DAYS dagen, tenzij alle dagen gevraagd zijn (of de server geen ?since kent).
+    const start = !all && base.since ? Date.now() - WINDOW_DAYS * DAY : 0;
+    const r = start && base.since ? await base.since(start, ms) : await base.download(ms);
     if (!r.ok) return r;
     const t = await r.text();
-    text = t; fullAt = Date.now(); at = Date.now(); rows = null;
-    void save({ text, fullAt });
+    text = t; fullAt = Date.now(); at = Date.now(); rows = null; from = start;
+    void save({ text, fullAt, from });
     return asResponse(t);
   }
 
@@ -138,5 +147,9 @@ export function rawSource(base: NextDNSClient & { since?: (since: number, ms: nu
     if (!rows) rows = parseRaw(text!);
     return { status: 200, body: { ...(await rawEvents(rows, q)), until: rows[0]?.t ?? 0, since: rows[rows.length - 1]?.t ?? 0 } };
   }
-  return { client, recentClient, search };
+  /** Oudere dagen ook (eenmalig alles ophalen); daarna blijft het voor deze sessie alles. */
+  const expand = () => { all = true; };
+  /** Vanaf wanneer de regels er zijn (0 = alles). */
+  const windowFrom = () => from;
+  return { client, recentClient, search, expand, windowFrom };
 }

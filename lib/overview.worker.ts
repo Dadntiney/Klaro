@@ -11,8 +11,9 @@ serverLists();
 const raw = rawSource(php);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let lastFull: any = null;
-self.onmessage = async (e: MessageEvent<{ id: number; todayOnly: boolean; hours?: number; raw?: RawQuery; recent?: boolean }>) => {
-  const { id, raw: q, recent, ...opts } = e.data;
+self.onmessage = async (e: MessageEvent<{ id: number; todayOnly: boolean; hours?: number; raw?: RawQuery; recent?: boolean; all?: boolean }>) => {
+  const { id, raw: q, recent, all, ...opts } = e.data;
+  if (all) raw.expand();
   try {
     if (q) { postMessage({ id, ...(await raw.search(q)) }); return; }
     if (recent && lastFull) {
@@ -21,7 +22,8 @@ self.onmessage = async (e: MessageEvent<{ id: number; todayOnly: boolean; hours?
       if (r.status === 200) { postMessage({ id, status: 200, body: mergeRecent(lastFull, r.body, now) }); return; }
     }
     const r = await buildOverview(raw.client, opts);
-    if (r.status === 200) lastFull = r.body;
+    // Alleen de laatste dagen geladen: de pagina toont dan "Oudere dagen laden".
+    if (r.status === 200) { lastFull = r.body; (r.body as { windowFrom?: number }).windowFrom = raw.windowFrom(); }
     postMessage({ id, ...r });
   } catch {
     postMessage({ id, status: 502, body: { error: "De server is niet bereikbaar." } });

@@ -18,8 +18,14 @@ let worker: Worker | null = null;
 let nextId = 1;
 const waiting = new Map<number, (r: { status: number; body: unknown }) => void>();
 const local = rawSource(php); // zonder worker (oude browser): hier zoeken
-function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery; recent?: boolean }): Promise<{ status: number; body: unknown }> {
-  const fallback = () => (opts.raw ? local.search(opts.raw) : buildOverview(local.client, opts));
+function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery; recent?: boolean; all?: boolean }): Promise<{ status: number; body: unknown }> {
+  const fallback = async () => {
+    if (opts.raw) return local.search(opts.raw);
+    if (opts.all) local.expand();
+    const r = await buildOverview(local.client, opts);
+    if (r.status === 200) (r.body as { windowFrom?: number }).windowFrom = local.windowFrom();
+    return r;
+  };
   try {
     if (!worker) {
       worker = new Worker("/overview-worker.js");
@@ -54,6 +60,8 @@ export async function apiFetch(path: string, init?: { signal?: AbortSignal }): P
       if (url.searchParams.get("scope") === "today") return answer(await buildOverview(php, { todayOnly: true, hours: Number(url.searchParams.get("hours")) || 0 }));
       // Alleen de laatste uren opnieuw, met dezelfde regels (elke minuut; zie lib/recent.ts). Zonder worker: gewoon alles.
       if (url.searchParams.get("scope") === "recent") return answer(await inWorker({ todayOnly: false, recent: true }));
+      // Oudere dagen laden (?all=1): eenmalig alles ophalen en uitrekenen.
+      if (url.searchParams.get("all")) { full = null; const r = await inWorker({ todayOnly: false, all: true }); if (r.status === 200) full = { at: Date.now(), ...r }; return answer(r); }
       if (full && Date.now() - full.at < 120_000) return answer(full);
       if (!fullInflight) fullInflight = inWorker({ todayOnly: false }).finally(() => { fullInflight = null; });
       const r = await fullInflight;

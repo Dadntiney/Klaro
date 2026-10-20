@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findAlerts, flagOf, silentAlerts, weeklyAlert, type DevStat } from "../scripts/waarschuw.ts";
+import { findAlerts, flagOf, screenTime, silentAlerts, weeklyAlert, type DevStat } from "../scripts/waarschuw.ts";
 
 test("waarschuwen: 18+, dating, VPN en door NextDNS geblokkeerde porno worden gemeld", () => {
   assert.equal(flagOf("www.pornhub.com", "", ""), "18+");
@@ -54,4 +54,30 @@ test("weekbericht alleen op zondagavond, met aantallen en apparaten (soort, geen
   assert.equal(weeklyAlert(devs, sun - 3 * H, 0), undefined); // zondagmiddag
   assert.equal(weeklyAlert(devs, Date.parse("2026-10-24T18:30:00Z"), 0), undefined); // zaterdag
   assert.match(weeklyAlert(devs, sun, 2)!.body, /^2 waarschuwingen/);
+});
+
+test("weekbericht met schermtijd: per apparaat gemiddeld per dag, in plaats van alleen 'actief'", () => {
+  const sun = Date.parse("2026-10-25T18:30:00Z");
+  const w = weeklyAlert([dev({ last: sun - 60_000 })], sun, 0, "iPhone 1u 5m (vooral YouTube)")!;
+  assert.match(w.body, /^Geen waarschuwingen deze week\. Schermtijd per dag: iPhone 1u 5m \(vooral YouTube\)\. Waarschuwen werkt\.$/);
+});
+
+const week = (rows: [number, string][]) => {
+  const head = "timestamp\tdomain\tstatus\treasons\tdestination_country\tclient_ip\tdevice_id\tdevice_name\tdevice_model";
+  const T = Date.parse("2026-10-25T10:00:00Z");
+  return { now: T + 3 * H, tsv: [head, ...rows.map(([t, h]) => [new Date(T + t).toISOString(), h, "", "", "", "10.0.0.1", "P1", "iPhone", ""].join("\t")).reverse()].join("\n") };
+};
+
+test("schermtijd: 35 minuten YouTube in een week is 5 minuten per dag (zelfde telling als de pagina)", async () => {
+  const rows: [number, string][] = [];
+  for (let t = 0; t <= 35 * 60_000; t += 20_000) rows.push([t, t % 60_000 ? "i.ytimg.com" : "www.youtube.com"]);
+  const { tsv, now } = week(rows);
+  assert.equal(await screenTime(tsv, now), "iPhone 5m (vooral YouTube)");
+});
+
+test("schermtijd: alleen achtergrondverkeer telt niet mee", async () => {
+  const rows: [number, string][] = [];
+  for (let t = 0; t <= 60 * 60_000; t += 60_000) rows.push([t, "gateway.icloud.com"]);
+  const { tsv, now } = week(rows);
+  assert.equal(await screenTime(tsv, now), "");
 });

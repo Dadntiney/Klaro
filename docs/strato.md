@@ -7,7 +7,8 @@ draait in de browser met precies dezelfde code als voorheen. De server (map `php
 |---|---|
 | `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles uit de kopie, `&oud=1` = rechtstreeks de hele download) |
 | `api/store.php` | eigen kopie van het logboek (`_private/logs.sqlite`): eens per minuut alleen nieuwe regels (raw /logs), gelijk aan de download; test: `php tests/store.php` |
-| `api/alert.php` | voor de waarschuw-taak (GitHub, elke 5 min, `scripts/waarschuw.ts`): nieuwe regels + abonnementen; alleen met de taaksleutel (hash in `_private/alert.key`) |
+| `api/alert.php` | voor de waarschuw-taak (GitHub, elke 5 min, `scripts/waarschuw.ts`): nieuwe regels + abonnementen, `?week=1` de laatste 8 dagen voor de schermtijd in het weekbericht; alleen met de taaksleutel (hash in `_private/alert.key`) |
+| `api/feedback.php` | "Klopt niet" en "Iets gemist?" van de eigenaar (na inloggen); in `_private/feedback.json`, afgehandeld door de dagelijkse controle (`scripts/feedback.ts`) |
 | `api/push.php` | meldingen aan/uit op dit toestel (na inloggen); abonnementen in `_private/push.json` |
 | `api/info.php` | alleen-lezen: bewaartermijn van NextDNS en welke databases de server heeft (na inloggen) |
 | `api/lists.php` | welke adressen op de 18+/datinglijst staan (lijsten per vakje in `api/_private/lists/`) |

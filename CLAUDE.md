@@ -16,9 +16,10 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
   nieuwe regels, zelfde formaat als de download. Leeg/oud/half binnen = opnieuw vullen uit de download; fout = oude manier.
   Een storing kost dus geen data.
 - Laden: eerst het laatste 1,5 uur, dan heel vandaag (`/logs`), dan alles (CSV-download, 2 min cache). Live: elke 1,5 s.
-  Elke 5 min volledig opnieuw berekend. Niet vaker ophalen: NextDNS geeft dan 429.
+  Eerst de laatste 30 dagen (oudere dagen op verzoek: knop "Oudere dagen laden"); elk uur volledig opnieuw berekend. Niet vaker
+  ophalen: NextDNS geeft dan 429.
 - Herkenning: `lib/sites.ts` (apps, achtergrond, vangnet), `lib/mail.ts` (nieuwsbrieven, klikken), `lib/sessions.ts`
-  (sessies, `isHuman`), `lib/play.ts` (afspeelmeldingen bij tv-apps), `lib/livestatus.ts` (groene chip), overzicht-regels in `lib/overview.ts`, weergave-regels in `app/page.tsx`. Dit draait allemaal in de
+  (sessies, `isHuman`), `lib/play.ts` (afspeelmeldingen bij tv-apps), `lib/livestatus.ts` (groene chip), overzicht-regels in `lib/overview.ts`, weergave-regels in `app/page.tsx`, wat als gebruik telt en de minuten in `lib/usage.ts` (ook voor het weekbericht). Dit draait allemaal in de
   browser (`lib/browser-api.ts`); de PHP-server (`php/api`) bewaart alleen de geheimen en de 18+/datinglijsten.
 - Waarschuwen: elke 5 min een GitHub-taak (`scripts/waarschuw.ts`, zie `docs/strato.md`) met dezelfde vangnet-code; pushmelding
   naar de iPhone (Klaro op het beginscherm, "Meldingen aan").
@@ -45,5 +46,6 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
 
 ## Vaste afspraken
 - Nooit echte apparaat- of persoonsnamen in code, tests of commits. Geen geheimen in bestanden of commits.
+- "Klopt niet"/"Iets gemist?" van de eigenaar (`api/feedback.php`, `scripts/feedback.ts`): elke dag uitzoeken, oplossen, afhandelen.
 - Dagelijkse controle: `docs/dagelijkse-controle.md`, `scripts/controle.ts` (alle controles in één keer) en `scripts/gemist.ts`.
 - Altijd tonen (wens eigenaar): GoFiev, Philips Hue, eufy (`ALWAYS_SHOW` in `lib/livestatus.ts`); eufy alleen als de app echt opengaat (`ALWAYS_SHOW_OPEN`).

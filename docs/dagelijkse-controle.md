@@ -11,6 +11,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
 
        node --experimental-strip-types scripts/overzicht.ts > /tmp/overzicht.json
 
+1b. Meldingen van de eigenaar ("Klopt niet" bij een regel, "Iets gemist?" onderaan): `node --experimental-strip-types scripts/feedback.ts`.
+   Elke open melding eerst uitzoeken in de echte gegevens, er een referentiegeval van maken (`scripts/referentie.ts`), algemeen
+   oplossen, en na live zetten afhandelen met een kort antwoord dat de eigenaar in Klaro ziet:
+   `scripts/feedback.ts --klaar <id> "Opgelost: ..."` (of "Klopt toch: ..." met de reden). Nooit een melding laten liggen.
 2. Vaste voorbeelden: `node --experimental-strip-types scripts/referentie.ts /tmp/overzicht.json` moet volledig kloppen.
 3. Mogelijk gemist: `node --experimental-strip-types scripts/gemist.ts /tmp/overzicht.json`. Zoek bij elk geval de oorzaak
    (adressen rond dat moment: `nd.php?q=from=...&to=...&device=...`).

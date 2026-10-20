@@ -2,14 +2,14 @@
 
 import { OPEN_BURST, extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
-import { HEARTBEAT_GAP, NAV_APPS, NAV_GAP, setLearnedFg } from "@/lib/sites";
-import { isPlainSite, isSystemSite } from "@/lib/system";
-import { isMailSession } from "@/lib/mail";
+import { activeMinutes, usage } from "@/lib/usage";
+import { HEARTBEAT_GAP, setLearnedFg } from "@/lib/sites";
+import { isPlainSite } from "@/lib/system";
 import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
-import { ALWAYS_SHOW, ALWAYS_SHOW_OPEN, activeWhat, deviceUse, isActiveNow, isTv, tvBlipper } from "@/lib/livestatus";
+import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
@@ -17,6 +17,7 @@ import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
 import { pushHealth, pushOff, pushOn, pushState, pushTest, type PushState } from "@/lib/push-client";
+import { listFeedback, sendFeedback, type FeedbackItem } from "@/lib/feedback-client";
 import { baseDomain } from "@/lib/parse";
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -531,6 +532,51 @@ function PushToggle() {
   );
 }
 
+/** "Klopt niet" bij een regel, of "Iets gemist?" onderaan: kort opschrijven, de dagelijkse controle zoekt het uit. */
+function FeedbackForm({ item, label, hint, onClose }: { item: Partial<FeedbackItem>; label: string; hint: string; onClose?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [st, setSt] = useState<"" | "busy" | "ok" | string>("");
+  if (st === "ok") return <p className="fbdone">Bedankt, wordt bij de volgende controle uitgezocht.</p>;
+  if (!open) return <button type="button" className="fblink" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{label}</button>;
+  return (
+    <form className="fbform" onClick={(e) => e.stopPropagation()} onSubmit={(e) => {
+      e.preventDefault();
+      setSt("busy");
+      sendFeedback({ ...item, note }).then(() => setSt("ok"), (x) => setSt(x instanceof Error ? x.message : "Versturen lukte niet."));
+    }}>
+      <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={hint} rows={2} maxLength={500} autoFocus />
+      <div className="fbbtns">
+        <button type="submit" disabled={st === "busy" || (!item.site && !note.trim())}>{st === "busy" ? "Versturen…" : "Versturen"}</button>
+        <button type="button" onClick={() => { setOpen(false); setSt(""); onClose?.(); }}>Annuleren</button>
+      </div>
+      {st && st !== "busy" && <p className="fberr">{st}</p>}
+    </form>
+  );
+}
+
+/** Onderaan: iets melden dat ontbreekt, en de laatste meldingen met het antwoord van de controle. */
+function FeedbackPanel() {
+  const [items, setItems] = useState<FeedbackItem[]>([]);
+  useEffect(() => { listFeedback().then(setItems, () => {}); }, []);
+  const recent = items.filter((x) => !x.done || Date.now() - x.done < 7 * 86_400_000).slice(0, 5);
+  return (
+    <div className="fbpanel">
+      <FeedbackForm item={{ kind: "gemist" }} label="Iets gemist of klopt iets niet?" hint="Bijv. ‘iPad speelde om 9 uur een spelletje, staat er niet’" />
+      {recent.length > 0 && (
+        <ul className="fblist">
+          {recent.map((x) => (
+            <li key={x.id}>
+              <span className="fbwhat">{x.site || x.note}{x.dev ? ` · ${x.dev}` : ""}</span>
+              <span className={x.done ? "fbok" : "muted"}>{x.done ? x.antwoord || "Uitgezocht" : "Wordt uitgezocht"}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -638,6 +684,7 @@ export default function Home() {
         // alleen het laatste uur: geen tijdsmeting opslaan
       } else if (isFull) {
         setFull(true);
+        setWindowFrom((data as { windowFrom?: number }).windowFrom ?? 0);
         // Live-gegevens van na het ophalen opnieuw laten binnenkomen bovenop de volledige lijst.
         seen.current = new Set();
         lastHost.current = new Map();
@@ -919,15 +966,21 @@ export default function Home() {
   }, [state, poll]);
 
   // Opnieuw berekenen met precies dezelfde regels: elke minuut de laatste uren (snel; de download wordt alleen aangevuld) en
-  // elke 5 minuten alles, en zodra de pagina weer zichtbaar wordt na een tijd op de achtergrond. Zo komt ook alles binnen wat
+  // elk uur alles (was elke 5 min; de snelle berekening geeft gemeten dezelfde uitkomst, 0,3 s tegen 9 s en meer naarmate er
+  // dagen bijkomen), en zodra de pagina weer zichtbaar wordt na een tijd op de achtergrond. Zo komt ook alles binnen wat
   // de live-controle gemist heeft (bijvoorbeeld als de telefoon vergrendeld was), inclusief rode sites, en lopen live en
   // volledig rekenen nooit lang uit elkaar.
   const lastFull = useRef(Date.now());
-  const refreshFull = useCallback(async (recent = false) => {
+  const FULL_EVERY = 59 * 60_000;
+  // Alleen de laatste 30 dagen geladen (lib/rawsource.ts): vanaf wanneer; 0 = alles. Onderaan staat dan "Oudere dagen laden".
+  const [windowFrom, setWindowFrom] = useState(0);
+  const [olderBusy, setOlderBusy] = useState(false);
+  const refreshFull = useCallback(async (recent = false, older = false) => {
     try {
-      const res = await apiFetch(recent ? "/api/nextdns?scope=recent" : "/api/nextdns");
+      const res = await apiFetch(older ? "/api/nextdns?all=1" : recent ? "/api/nextdns?scope=recent" : "/api/nextdns");
       const data = await res.json();
       if (!res.ok) return;
+      if (!recent) setWindowFrom(data.windowFrom ?? 0);
       if (!recent) lastFull.current = Date.now();
       if (data.followers) followOf.current = data.followers;
       if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned as Record<string, string[]>).map(([k, v]) => [k, new Set(v)])));
@@ -966,8 +1019,8 @@ export default function Home() {
 
   useEffect(() => {
     if (state !== "ready") return;
-    const id = setInterval(() => document.visibilityState === "visible" && refreshFull(Date.now() - lastFull.current < 290_000), 60_000);
-    const onVisible = () => document.visibilityState === "visible" && Date.now() - lastFull.current > 60_000 && refreshFull(Date.now() - lastFull.current < 290_000);
+    const id = setInterval(() => document.visibilityState === "visible" && refreshFull(Date.now() - lastFull.current < FULL_EVERY), 60_000);
+    const onVisible = () => document.visibilityState === "visible" && Date.now() - lastFull.current > 60_000 && refreshFull(Date.now() - lastFull.current < FULL_EVERY);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(id);
@@ -1122,53 +1175,11 @@ export default function Home() {
 
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
-    // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
-    const blip = tvBlipper(groups);
-    const human = (g: Group, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site)) && !(isPlainSite(g) && mailT.get(g.dev) && !x.ck && !x.lg && isMailSession(x, mailT.get(g.dev)!.esp, mailT.get(g.dev)!.mc));
-    // Sessies van zichtbare sites per apparaat: een app zonder eigen www-adres (zoals Buienradar) telt alleen als er geen zichtbaar bezoek tegelijk speelde.
-    const visSes = new Map<string, Session[]>();
-    const visBy = new Map<string, { s: number; site: string }[]>(); // per apparaat: begin van elk zichtbaar bezoek, met de site
+    const { listed, shown } = usage(groups, { auto, followers: followOf.current, mailT, cut });
     for (const g of groups) {
-      if (g.bg || !g.main) continue;
-      for (const x of g.ss ?? []) if (g.flag || g.susp || human(g, x)) {
-        (visSes.get(g.dev) ?? visSes.set(g.dev, []).get(g.dev)!).push(x);
-        (visBy.get(g.dev) ?? visBy.set(g.dev, []).get(g.dev)!).push({ s: x.s, site: g.site });
-      }
-    }
-    const standalone = (g: Group, x: Session) =>
-      (x.n ?? 0) >= 3 && !x.ml && !x.res && !(visSes.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
-    for (const g of groups) {
-      if ((device && g.dev !== device) || g.bg) continue;
-      if (!g.main && (isSystemSite(g.site) || !(g.ss ?? []).some((x) => standalone(g, x)))) continue;
-      if ((g.bl ?? 0) >= g.n && !g.flag) continue; // alles geblokkeerd door NextDNS: niet bezocht
+      if ((device && g.dev !== device) || !listed(g)) continue;
       byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
     }
-    // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
-    const shown = (g: Group): Session[] => {
-      let all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
-      // Navigatie (Waze) en apps met een vaste melding (Toca Boca): stukjes met hooguit NAV_GAP / HEARTBEAT_GAP ertussen zijn één
-      // rit of één keer spelen, ook live (zelfde regel als lib/overview.ts).
-      const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : Object.entries(followOf.current).some(([k, site]) => site === g.site && k.startsWith(g.dev + "|")) ? HEARTBEAT_GAP : 0;
-      if (joinGap && all.length > 1) {
-        const m: Session[] = [];
-        for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }
-        all = m.reverse();
-      }
-      // Gemarkeerde en verdachte regels blijven altijd staan.
-      const ss = all.filter((x) => (!cut || x.s >= cut) && (g.main ? g.flag || g.susp || (ALWAYS_SHOW.has(g.site) && (!ALWAYS_SHOW_OPEN[g.site] || !!x.op)) || human(g, x) : standalone(g, x)));
-      if (!isTv(g.dev) || ss.length < 2) return ss;
-      // Op een tv is kijken één geheel: stukjes van dezelfde app met minder dan 15 minuten ertussen samenvoegen
-      // (tijdens het kijken vraagt de tv maar af en toe iets op, waardoor er anders losse regels ontstaan).
-      const out: Session[] = [];
-      for (const x of [...ss].sort((a, b) => a.s - b.s)) {
-        const last = out[out.length - 1];
-        // Niet samenvoegen als er tussendoor een andere app op deze tv gebruikt is (F1 TV, dan YouTube: YouTube is een nieuw bezoek).
-        const other = last && (visBy.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s > last.e && v.s < x.s);
-        if (last && !other && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0) };
-        else out.push({ ...x });
-      }
-      return out.reverse();
-    };
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
       .map(([d, list]) => {
@@ -1177,14 +1188,7 @@ export default function Home() {
         const byDev = new Map<string, Session[]>();
         for (const { g, ss } of per) byDev.set(g.dev, [...(byDev.get(g.dev) ?? []), ...ss]);
         let mins = 0;
-        for (const ss of byDev.values()) {
-          const iv = ss.map((x) => [x.s, x.e]).sort((p, q) => p[0] - q[0]);
-          let cs = -1, ce = -1;
-          for (const [s0, e0] of iv) {
-            if (s0 > ce) { if (ce > cs) mins += (ce - cs) / 60_000; cs = s0; ce = e0; } else ce = Math.max(ce, e0);
-          }
-          if (ce > cs) mins += (ce - cs) / 60_000;
-        }
+        for (const ss of byDev.values()) mins += activeMinutes(ss);
         return {
           d,
           list: per.map((x) => x.g),
@@ -1448,6 +1452,7 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
+                            <FeedbackForm key={rowKey} item={{ kind: "fout", dev: g.dev, site: g.site, name: g.name, s: rss[0]?.s ?? t, e: rss[rss.length - 1]?.e ?? t }} label="Klopt niet" hint="Wat klopt er niet? Bijv. ‘niet gebruikt’ of ‘duurde veel langer’" />
                             {!compact && rss.length > 1 && (
                               <>
                                 <div className="dh">Bezoeken</div>
@@ -1555,7 +1560,16 @@ export default function Home() {
             </div>
           )}
           {histErr && <p className="muted skel-err">{cut > 0 ? "Eerder vandaag en oudere dagen laden lukt nu even niet." : "Oudere dagen laden lukt nu even niet; vandaag is wel compleet."}</p>}
+          {full && windowFrom > 0 && (
+            <div className="older">
+              <button type="button" disabled={olderBusy} onClick={() => { setOlderBusy(true); void refreshFull(false, true).finally(() => setOlderBusy(false)); }}>
+                {olderBusy ? "Oudere dagen laden…" : "Oudere dagen laden"}
+              </button>
+              <span className="muted">Nu zichtbaar: de laatste 30 dagen.</span>
+            </div>
+          )}
           <PushToggle />
+          <FeedbackPanel />
           {/* Uitloggen: na 60 minuten zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
           <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
             // Eerst de bewaarde kopie van het logboek op dit toestel weghalen (lib/wipe.ts), dan pas uitloggen. De gekozen knop

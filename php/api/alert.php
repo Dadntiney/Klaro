@@ -2,6 +2,7 @@
 // Voor de waarschuw-taak op GitHub (scripts/waarschuw.ts, elke 5 minuten). Alleen met de geheime sleutel (kop X-Klaro-Sleutel;
 // op de server staat alleen de hash in _private/alert.key, gemaakt bij het live zetten).
 //  GET                       kopie bijwerken; regels sinds de vorige controle (de taak beoordeelt ze met dezelfde code als de pagina)
+//  GET ?week=1               alle regels van de laatste 8 dagen, zoals de download (schermtijd in het weekbericht)
 //  POST {until, alerts}      wat de taak vond: al gemeld (zelfde apparaat + site, laatste 3 uur) valt weg; geeft wat verstuurd moet
 //                            worden en naar welke abonnementen
 //  POST {gone: [endpoint]}   abonnementen die niet meer bestaan (Apple antwoordt 404/410) weghalen
@@ -25,6 +26,11 @@ if (!$k) json_out(503, ['error' => 'Geen kopie mogelijk op deze server.']);
 [$db] = $k;
 $now = (int)(microtime(true) * 1000);
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['week'])) {
+  header('Content-Type: text/tab-separated-values; charset=utf-8');
+  store_out($db, $now - 8 * 86_400_000);
+  exit;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   // Eerste keer: niet de hele geschiedenis melden, alleen vanaf nu.
   $until = (int)(store_meta($db, 'alert_until') ?? 0) ?: $now - 10 * 60_000;
@@ -35,7 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $log = json_decode(store_meta($db, 'alerts_log') ?? '[]', true) ?: [];
   $week = count(array_filter($log, fn($t) => $now - (int)$t < 7 * 86_400_000));
   json_out(200, ['since' => $until - ALERT_OVERLAP, 'until' => $max, 'now' => $now, 'cols' => STORE_COLS, 'rows' => $lines, 'subs' => count(push_subs()),
-    'devices' => store_devices_cached($db, $now), 'week' => $week]);
+    'devices' => store_devices_cached($db, $now), 'week' => $week,
+    // Weekberichten die al verstuurd zijn (dan haalt de taak de week niet nog eens op).
+    'sent' => array_values(array_filter(array_keys(json_decode(store_meta($db, 'alerted') ?? '{}', true) ?: []), fn($k) => str_starts_with((string)$k, 'week|')))]);
 }
 
 $in = json_decode((string)file_get_contents('php://input'), true);

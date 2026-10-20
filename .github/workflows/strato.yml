@@ -33,6 +33,7 @@ jobs:
           php tests/sessies.php
           php tests/store.php
           php tests/push.php
+          php tests/feedback.php
           npx next build
           node scripts/build-site.mjs
           wait $T || { cat /tmp/test.log; exit 1; }
