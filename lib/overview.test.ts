@@ -513,3 +513,14 @@ test("klik in een nieuwsbrief via het eigen klik-adres van de winkel telt, ook a
   const sm = o.groups.find((g) => g.site === "supermarkt.nl")!.ss[0];
   assert.ok(!isHuman(sm as never), "mail geopend, niet geklikt");
 });
+
+test("Buienradar even openen (volledige opstart in één moment) is gebruik; één los adres niet", async () => {
+  const rows: R[] = [];
+  for (const [i, h] of ["location", "graphdata", "image-lite", "data", "userapi", "forecast", "tiles"].entries()) rows.push([i * 120, h + ".buienradar.nl", "P1"]);
+  rows.push([3_600_000, "observations.buienradar.nl", "P1"]);
+  const o = await overview(rows);
+  const br = o.groups.find((g) => g.site === "buienradar.nl")!;
+  const human = br.ss.filter((x) => isHuman(x as never));
+  assert.equal(human.length, 1);
+  assert.ok(human[0].s < T0 + 1000);
+});

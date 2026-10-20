@@ -44,6 +44,8 @@ export function directClient(key: string, profile: string): NextDNSClient {
 const MAX_GROUPS = 15000;
 const DAY = 86_400_000;
 /** Onderdelen van een Shopify-winkel: de winkel zelf vraagt maar één eigen adres op, de rest komt van hier. */
+/** Apps zonder achtergrondverkeer: een volledige opstart (3+ eigen adressen in één moment) is altijd echt geopend. */
+const START_BURST = new Set(["buienradar.nl"]);
 const SHOP_ASSET = /(^|\.)(cdn\.shopify\.com|shopifycdn\.com)$/;
 
 /** Eén regel in het overzicht: een site/app, op één dag, door één apparaat. */
@@ -571,7 +573,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     for (const x of sessions) x.n = moments(all.filter((t) => t >= x.s && t <= x.e));
     // Spellen en leer-apps halen bij het opstarten in één moment 3+ eigen adressen op (TutoTOONS: apps., tutoclub., tutopulse.);
     // daarna speelt het spel soms minuten zonder verkeer. Zo'n opstart is echt geopend (19 okt: 19 van 21 al getoond, 2 gemist).
-    if (/\((spel|leren)\)$/.test(g.name ?? "")) {
+    // Ook apps die nooit op de achtergrond iets opvragen: Buienradar vraagt bij elke opstart 8-10 eigen adressen tegelijk op, altijd
+    // samen met het toestemmingsscherm en advertenties (30 van 30 keer, 20 okt): even naar de radar kijken (1-3 s) is echt gebruik.
+    if (/\((spel|leren)\)$/.test(g.name ?? "") || START_BURST.has(g.site)) {
       const sh = siteHosts.get(gkey) ?? [];
       for (const x of sessions) if (sh.some((h) => h.t >= x.s && h.t <= x.e && new Set(sh.filter((o) => o.t >= h.t && o.t - h.t <= MOMENT).map((o) => o.host)).size >= 3)) x.gs = 1;
     }

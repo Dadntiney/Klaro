@@ -79,6 +79,7 @@ const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "allcamps.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: true, why: "winkel echt geopend (hele pagina geladen); het 'scrollen in Facebook' erna was de Facebook-pixel van een andere site" },
   { day: "2026-10-19", dev: "iPad", site: "tutotoons.com", at: "08:04", want: true, why: "TutoTOONS volledig opgestart (apps./tutoclub./tutopulse./h-kafka in één moment), daarna 9 min stil spelen" },
+  { day: "2026-10-19", dev: "iPhone", site: "buienradar.nl", at: "14:58", want: true, why: "Buienradar-app even geopend (9 eigen adressen, toestemmingsscherm en advertenties in dezelfde seconden)" },
   { day: "2026-10-19", dev: "iPhone", site: "xenos.nl", at: "10:30", want: true, why: "in de nieuwsbrief getikt (url861.xenos.nl), winkel 28 s later geopend; leukerecepten.nl herlaadde toevallig tegelijk" },
   { day: "2026-10-19", dev: "Apple TV", site: "primevideo.com", at: "19:35", want: true, why: "Prime Video gekeken tot 21:42 (amazonvideo.com, api.amazon.com en beeld van pv-cdn.net horen samen)" },
   { day: "2026-10-19", dev: "Apple TV", site: "amazon.com", at: "19:35", want: false, why: "op een tv is Amazon-verkeer de Prime Video-app" },

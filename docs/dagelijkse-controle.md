@@ -103,6 +103,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    vaker dan 4 keer los laadt (zelfde regel als voor gewone pagina's). Klik in een nieuwsbrief via het eigen klik-adres van de
    winkel (url861.xenos.nl) telde als mail omdat een ander tabblad in dezelfde seconde herlaadde; nu telt de winkel met het
    eigen klik-adres, behalve als Mail veel nieuwsbrieven tegelijk opent (meer dan 3 nieuwsbrief-adressen in 3 s).
+   Geleerd (20 okt): Buienradar vraagt nooit iets op de achtergrond: alle 30 keer 8-10 eigen adressen tegelijk mét
+   toestemmingsscherm en advertenties = de app open. Even naar de radar kijken (1-3 s) telde niet (één moment); nu wel
+   (START_BURST in lib/overview.ts, 14 opstarts over alle dagen erbij).
    Facebook-pixel-venster bewust 3 s gelaten: 5 s haalde echte Instagram-momenten weg (4 dagen).
    Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
    Geleerd (19 okt): nieuw kinderspel BoBo World op de iPad (18 okt uit de App Store gehaald). Het start met svip.bobo-world.com,
@@ -141,7 +144,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    19 okt 10:56 (iPhone): xellybeauty.nl (afrekenpagina) en aboutyou.nl laden 3 s na elkaar, net na een Google-opvraging. Tabbladen
    die Safari opnieuw laadt, of echt? Drempel "tabbladen opnieuw geladen" naar 3 sites haalde 14 waarschijnlijk echte rijen weg;
    daarom nu getoond. Meer van zulke paren verzamelen.
-   Buienradar (iPhone): 18 en 19 okt 8-9 eigen adressen tegelijk zonder rij. Widget op het beginscherm of de app geopend?
+   Ouderportaal kinderopvang (iPhone, korein.ouderportaal.nl + frontend…ouderportaal.nl): 4 keer in 24 dagen, één keer met de
+   push-registratie van de app (20 okt 07:38, daarna iDEAL-betaling), één keer in een herlaad-golf van Safari. Te weinig bewijs.
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
