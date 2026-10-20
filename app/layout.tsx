@@ -5,6 +5,8 @@ export const metadata = {
   description: "Overzicht van bezochte websites en apps uit NextDNS",
   robots: { index: false, follow: false },
   referrer: "no-referrer" as const,
+  // Op het beginscherm als losse app (nodig voor pushmeldingen op de iPhone).
+  appleWebApp: { capable: true, title: "Klaro", statusBarStyle: "default" as const },
 };
 
 // Vaste kleur voor de balk bovenin (zelfde als de achtergrond). Zonder deze kleur legt Safari op de iPhone zelf een

@@ -20,6 +20,8 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
 - Herkenning: `lib/sites.ts` (apps, achtergrond, vangnet), `lib/mail.ts` (nieuwsbrieven, klikken), `lib/sessions.ts`
   (sessies, `isHuman`), `lib/play.ts` (afspeelmeldingen bij tv-apps), `lib/livestatus.ts` (groene chip), overzicht-regels in `lib/overview.ts`, weergave-regels in `app/page.tsx`. Dit draait allemaal in de
   browser (`lib/browser-api.ts`); de PHP-server (`php/api`) bewaart alleen de geheimen en de 18+/datinglijsten.
+- Waarschuwen: elke 5 min een GitHub-taak (`scripts/waarschuw.ts`, zie `docs/strato.md`) met dezelfde vangnet-code; pushmelding
+  naar de iPhone (Klaro op het beginscherm, "Meldingen aan").
 - Tellen in **momenten** (alles van een site binnen 1,5 s = één moment), zelfde telling live en op de server.
 
 ## Grenzen van DNS (eerlijk blijven)

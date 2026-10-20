@@ -1,5 +1,7 @@
 # Klaro op eigen hosting (Apache, Strato). Beveiligingskoppen, nette adressen en de afscherming van geheime bestanden.
 Options -Indexes
+# Beginscherm-app (manifest) met de juiste soort, zodat de iPhone hem herkent.
+AddType application/manifest+json .webmanifest
 # /login is zowel een map als login.html: niet doorsturen naar /login/, maar login.html tonen (zie hieronder).
 <IfModule mod_dir.c>
   DirectorySlash Off
@@ -15,7 +17,7 @@ Options -Indexes
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
 # Hulpbestanden van de server: alleen voor de andere api-bestanden, niet los op te vragen.
-<FilesMatch "^(common|slim)\.php$">
+<FilesMatch "^(common|slim|store|ndlib|push-lib)\.php$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>

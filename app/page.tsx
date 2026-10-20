@@ -16,6 +16,7 @@ import { wipeLocal } from "@/lib/wipe";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
+import { pushOff, pushOn, pushState, pushTest, type PushState } from "@/lib/push-client";
 import { baseDomain } from "@/lib/parse";
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -490,6 +491,39 @@ function ToTop() {
     <button type="button" className={"totop" + (show ? " show" : "")} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Naar boven" title="Naar boven" tabIndex={show ? 0 : -1} aria-hidden={!show}>
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 19V5M5 12l7-7 7 7" /></svg>
     </button>
+  );
+}
+
+/**
+ * Meldingen bij 18+, dating en VPN op dit toestel, ook als Klaro dicht is (onderaan, naast Uitloggen). Op de iPhone kan dat
+ * alleen vanaf het beginscherm; in Safari staat er dan hoe.
+ */
+function PushToggle() {
+  const [st, setSt] = useState<PushState | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { pushState().then(setSt, () => setSt("geen")); }, []);
+  const run = (fn: () => Promise<PushState | boolean>, done: string) => {
+    setBusy(true);
+    setNote("");
+    fn().then((r) => { if (typeof r === "string") setSt(r); setNote(r === "geweigerd" ? "Meldingen zijn geweigerd: zet ze aan bij Instellingen → Meldingen → Klaro." : done); }, (e) => setNote(e instanceof Error ? e.message : "Dat lukte niet.")).finally(() => setBusy(false));
+  };
+  if (st === null || st === "geen") return null;
+  return (
+    <div className="pushbox">
+      {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Klaro eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
+      {(st === "uit" || st === "geweigerd") && <button type="button" disabled={busy} onClick={() => run(pushOn, "Meldingen staan aan. Binnen een kwartier komt een proefmelding.")}>Meldingen aan</button>}
+      {st === "aan" && (
+        <>
+          <span>Meldingen staan aan</span>
+          <span aria-hidden>·</span>
+          <button type="button" disabled={busy} onClick={() => run(pushTest, "Proefmelding komt binnen een kwartier.")}>Proefmelding</button>
+          <span aria-hidden>·</span>
+          <button type="button" disabled={busy} onClick={() => run(pushOff, "Meldingen staan uit.")}>Uitzetten</button>
+        </>
+      )}
+      {note && <p className="pushnote">{note}</p>}
+    </div>
   );
 }
 
@@ -1517,6 +1551,7 @@ export default function Home() {
             </div>
           )}
           {histErr && <p className="muted skel-err">{cut > 0 ? "Eerder vandaag en oudere dagen laden lukt nu even niet." : "Oudere dagen laden lukt nu even niet; vandaag is wel compleet."}</p>}
+          <PushToggle />
           {/* Uitloggen: na 60 minuten zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
           <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
             // Eerst de bewaarde kopie van het logboek op dit toestel weghalen (lib/wipe.ts), dan pas uitloggen. De gekozen knop

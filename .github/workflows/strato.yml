@@ -32,6 +32,7 @@ jobs:
           npx tsc --noEmit & C=$!
           php tests/sessies.php
           php tests/store.php
+          php tests/push.php
           npx next build
           node scripts/build-site.mjs
           wait $T || { cat /tmp/test.log; exit 1; }
@@ -46,6 +47,11 @@ jobs:
           if [ -z "$PW" ]; then echo "STRATO_SFTP_PASSWORD ontbreekt: niets geüpload."; echo "go=no" >> $GITHUB_OUTPUT; else echo "go=yes" >> $GITHUB_OUTPUT; fi
           echo "dir=$(node -e 'console.log(require("./deploy/strato.json").dir||"")')" >> $GITHUB_OUTPUT
           echo "cleanup=$(node -e 'console.log(require("./deploy/strato.json").cleanupRoot?"yes":"no")')" >> $GITHUB_OUTPUT
+      - name: Sleutels voor waarschuwen
+        if: steps.s.outputs.go == 'yes'
+        env:
+          KLARO_GEHEIM: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: node --experimental-strip-types scripts/sleutels.ts out/api/_private
       - name: Uploaden
         if: steps.s.outputs.go == 'yes'
         env:

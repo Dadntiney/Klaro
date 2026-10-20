@@ -1,0 +1,28 @@
+<?php
+// Test van de push-abonnementen (php/api/push-lib.php). Draait bij elke update (GitHub Actions). Gebruik: php tests/push.php
+declare(strict_types=1);
+define('PRIV', sys_get_temp_dir() . '/klaro-pushtest-' . getmypid());
+@mkdir(PRIV);
+require __DIR__ . '/../php/api/push-lib.php';
+
+$ok = 0; $bad = 0;
+function check(string $name, bool $c): void { global $ok, $bad; echo ($c ? '✓ ' : '✗ ') . $name . "\n"; $c ? $ok++ : $bad++; }
+$apple = ['endpoint' => 'https://web.push.apple.com/QAbc', 'keys' => ['p256dh' => 'BPub', 'auth' => 'Auth']];
+
+check('abonnement van Apple wordt bewaard', push_add($apple, 'iPhone') && count(push_subs()) === 1);
+check('nep-adres (niet van een push-dienst) wordt geweigerd', !push_add(['endpoint' => 'https://kwaadaardig.example/x', 'keys' => ['p256dh' => 'a', 'auth' => 'b']], 'x'));
+check('zonder sleutels geweigerd', !push_add(['endpoint' => 'https://web.push.apple.com/Q2'], 'x'));
+check('opnieuw aanzetten: geen dubbel abonnement', push_add($apple, 'iPhone') && count(push_subs()) === 1);
+check('nieuw abonnement krijgt één keer een proefmelding', push_take_tests() === [$apple['endpoint']] && push_take_tests() === []);
+check('proefmelding opnieuw aanvragen', push_mark_test($apple['endpoint']) && push_take_tests() === [$apple['endpoint']]);
+check('onbekend abonnement: geen proefmelding', !push_mark_test('https://web.push.apple.com/onbekend'));
+check('bekend abonnement herkend', push_has($apple['endpoint']) && !push_has('https://web.push.apple.com/onbekend'));
+check('abonnementen geven geen labels of tijden mee aan de taak', array_keys(push_subs()[0]) === ['endpoint', 'keys']);
+push_remove([$apple['endpoint']]);
+check('uitzetten haalt het abonnement weg', push_subs() === []);
+check('geen openbare sleutel zolang de server niet klaar is', push_public_key() === '');
+
+array_map('unlink', glob(PRIV . '/*') ?: []);
+@rmdir(PRIV);
+echo "\n$ok goed, $bad fout\n";
+exit($bad ? 1 : 0);

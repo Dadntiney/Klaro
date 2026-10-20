@@ -7,6 +7,8 @@ draait in de browser met precies dezelfde code als voorheen. De server (map `php
 |---|---|
 | `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles uit de kopie, `&oud=1` = rechtstreeks de hele download) |
 | `api/store.php` | eigen kopie van het logboek (`_private/logs.sqlite`): eens per minuut alleen nieuwe regels (raw /logs), gelijk aan de download; test: `php tests/store.php` |
+| `api/alert.php` | voor de waarschuw-taak (GitHub, elke 5 min, `scripts/waarschuw.ts`): nieuwe regels + abonnementen; alleen met de taaksleutel (hash in `_private/alert.key`) |
+| `api/push.php` | meldingen aan/uit op dit toestel (na inloggen); abonnementen in `_private/push.json` |
 | `api/info.php` | alleen-lezen: bewaartermijn van NextDNS en welke databases de server heeft (na inloggen) |
 | `api/lists.php` | welke adressen op de 18+/datinglijst staan (lijsten per vakje in `api/_private/lists/`) |
 | `api/login.php` | inloggen: nieuwe sessie per apparaat (willekeurig cookie; op de server alleen de hash in `_private/sessions.json`) |
@@ -36,3 +38,10 @@ Nodig in GitHub: het geheim `STRATO_SFTP_PASSWORD`. Instellingen op de server (`
 ## Zelf controleren
 `KLARO_PW=... node --experimental-strip-types scripts/overzicht.ts > overzicht.json` geeft het overzicht zoals de pagina het
 berekent; daarna `scripts/referentie.ts` en `scripts/gemist.ts` erop.
+
+## Waarschuwen (pushmeldingen)
+- `.github/workflows/waarschuw.yml` draait elke 5 minuten `scripts/waarschuw.ts`: dezelfde herkenning als de pagina (lib/sites.ts,
+  data/-lijsten). Rood (18+, dating, VPN/proxy, door NextDNS geblokkeerde porno/dating) = melding, één keer per apparaat + site per 3 uur.
+- Sleutels (`lib/webpush.ts`) worden afgeleid van het geheim `STRATO_SFTP_PASSWORD`; bij het live zetten komen alleen de openbare
+  push-sleutel en de hash van de taaksleutel op de server (`scripts/sleutels.ts`). Verandert dat geheim, dan meldingen opnieuw aanzetten.
+- Op de iPhone: Klaro op het beginscherm zetten, daar openen, onderaan "Meldingen aan". Binnen ~15 min komt een proefmelding.

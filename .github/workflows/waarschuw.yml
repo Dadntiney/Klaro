@@ -1,0 +1,25 @@
+# Elke 5 minuten: nieuwe regels beoordelen met dezelfde code als de pagina en bij 18+, dating of VPN een pushmelding sturen
+# (scripts/waarschuw.ts). Het geheim is hetzelfde als voor het live zetten; in het logboek staan alleen aantallen.
+name: Waarschuwen
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: waarschuwen
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  waarschuw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Nieuwe regels nakijken
+        env:
+          KLARO_GEHEIM: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: node --experimental-strip-types scripts/waarschuw.ts
