@@ -87,7 +87,7 @@ test("pushmelding op het scherm zegt niets over wat er gebeurde (meekijkers), de
   assert.match(a.body, /pornhub/); // in Klaro (na inloggen) wel
   for (const key of [a.key, "stil|A1", "week|2026-10-25", "proef"]) {
     const m = pushText(key);
-    assert.equal(m.title, "Klaro");
-    assert.doesNotMatch(m.body + m.tag, /18\+|porn|dating|vpn|iphone|ipad|A1|stil/i, key);
+    assert.ok(m.title && m.body);
+    assert.doesNotMatch(m.title + m.body + m.tag, /18\+|porn|dating|vpn|iphone|ipad|A1|stil/i, key);
   }
 });

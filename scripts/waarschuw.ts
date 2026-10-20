@@ -118,9 +118,10 @@ export function weeklyAlert(devs: DevStat[], now: number, week: number, use?: st
  * ziet (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen", pas na inloggen.
  */
 export function pushText(key: string): { title: string; body: string; tag: string } {
-  if (key.startsWith("week|")) return { title: "Klaro", body: "Je weekoverzicht staat klaar.", tag: "week" };
-  if (key === "proef") return { title: "Klaro", body: "Meldingen staan aan. Je krijgt hier bericht als er iets is.", tag: "proef" };
-  return { title: "Klaro", body: "Er is iets om te bekijken.", tag: "melding" };
+  // De iPhone zet er zelf "from Klaro" onder; de titel is dus de boodschap (anders staat er twee keer Klaro).
+  if (key.startsWith("week|")) return { title: "Weekoverzicht staat klaar", body: "Tik om het te bekijken.", tag: "week" };
+  if (key === "proef") return { title: "Meldingen staan aan", body: "Je krijgt hier bericht als er iets is.", tag: "proef" };
+  return { title: "Er is iets om te bekijken", body: "Tik om het te bekijken.", tag: "melding" };
 }
 
 async function api(url: string, k: Keys, body?: unknown): Promise<Record<string, unknown>> {
