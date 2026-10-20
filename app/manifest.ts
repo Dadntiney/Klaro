@@ -6,6 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Dobber",
     short_name: "Dobber",
+    lang: "nl",
     start_url: "/",
     scope: "/",
     display: "standalone",
