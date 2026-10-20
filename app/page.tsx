@@ -16,7 +16,7 @@ import { wipeLocal } from "@/lib/wipe";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
-import { pushOff, pushOn, pushState, pushTest, type PushState } from "@/lib/push-client";
+import { pushHealth, pushOff, pushOn, pushState, pushTest, type PushState } from "@/lib/push-client";
 import { baseDomain } from "@/lib/parse";
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -502,7 +502,10 @@ function PushToggle() {
   const [st, setSt] = useState<PushState | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { pushState().then(setSt, () => setSt("geen")); }, []);
+  const [laatst, setLaatst] = useState<number | null>(null);
+  useEffect(() => { pushState().then(setSt, () => setSt("geen")); pushHealth().then(setLaatst, () => {}); }, []);
+  // Zelfbewaking: draaide de waarschuw-taak (elke 5 min) al een uur niet goed, dan hier zeggen; anders lijkt "geen melding" op "niets aan de hand".
+  const stuck = laatst !== null && Date.now() - laatst > 60 * 60_000;
   const run = (fn: () => Promise<PushState | boolean>, done: string) => {
     setBusy(true);
     setNote("");
@@ -511,6 +514,7 @@ function PushToggle() {
   if (st === null || st === "geen") return null;
   return (
     <div className="pushbox">
+      {stuck && <p className="pushwarn">Let op: waarschuwen heeft sinds {dayLabel(dayKeyFmt.format(laatst!)).toLowerCase()} {timeFmt.format(laatst!)} niet gedraaid. Meldingen komen nu niet.</p>}
       {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Klaro eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
       {(st === "uit" || st === "geweigerd") && <button type="button" disabled={busy} onClick={() => run(pushOn, "Meldingen staan aan. Binnen een kwartier komt een proefmelding.")}>Meldingen aan</button>}
       {st === "aan" && (

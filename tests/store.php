@@ -51,6 +51,19 @@ check('dagen oud: opnieuw vullen', store_sync($db, fn() => [200, '{}'], $T + 5 *
 // Opnieuw vullen vervangt alles.
 check('opnieuw vullen vervangt de kopie', store_seed($db, $tsv) === 2 && count(lines($db)) === 3);
 
+// Apparaten: laatst gezien, langste pauze, actieve dagen, en het soort uit naam/model.
+$db2 = store_db(PRIV . '/apparaten.sqlite');
+$D = 86_400_000; $N = $T + 14 * $D;
+$rows = [];
+foreach ([1, 2, 3, 3.5, 5] as $h) $rows[] = [$N - (int)($h * 3_600_000), 'P1|www.x.nl', implode("\t", [iso($N - (int)($h * 3_600_000)), 'www.x.nl', '', '', '', '', 'P1', 'Telefoon', 'iPhone'])];
+store_add($db2, $rows);
+$dv = store_devices($db2, $N);
+check('apparaat: laatst gezien en langste pauze (1,5 uur)', count($dv) === 1 && $dv[0]['last'] === $N - 3_600_000 && $dv[0]['maxGap'] === 5_400_000 && $dv[0]['days7'] >= 1);
+check('apparaat: model mee voor het soort', ($dv[0]['model'] ?? '') === 'iPhone');
+$c1 = store_devices_cached($db2, $N);
+store_add($db2, [[$N + 60_000, 'P1|www.y.nl', implode("\t", [iso($N + 60_000), 'www.y.nl', '', '', '', '', 'P1', 'Telefoon', 'iPhone'])]]);
+check('laatst gezien altijd vers, ook met de bewaarde telling', store_devices_cached($db2, $N + 120_000)[0]['last'] === $N + 60_000);
+
 array_map('unlink', glob(PRIV . '/*') ?: []);
 @rmdir(PRIV);
 echo "\n$ok goed, $bad fout\n";

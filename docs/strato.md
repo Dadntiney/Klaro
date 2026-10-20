@@ -44,4 +44,7 @@ berekent; daarna `scripts/referentie.ts` en `scripts/gemist.ts` erop.
   data/-lijsten). Rood (18+, dating, VPN/proxy, door NextDNS geblokkeerde porno/dating) = melding, één keer per apparaat + site per 3 uur.
 - Sleutels (`lib/webpush.ts`) worden afgeleid van het geheim `STRATO_SFTP_PASSWORD`; bij het live zetten komen alleen de openbare
   push-sleutel en de hash van de taaksleutel op de server (`scripts/sleutels.ts`). Verandert dat geheim, dan meldingen opnieuw aanzetten.
+- Ook: "apparaat stil" (langer dan 2× de langste pauze van 14 dagen en minstens 3 uur, alleen apparaten die bijna dagelijks actief
+  zijn; hooguit eens per dag) en een weekbericht op zondag 19-21 uur ("Waarschuwen werkt"). Draaide de taak een uur niet goed, dan
+  staat dat onderaan in Klaro (rood); de dagelijkse controle kijkt het ook na.
 - Op de iPhone: Klaro op het beginscherm zetten, daar openen, onderaan "Meldingen aan". Binnen ~15 min komt een proefmelding.

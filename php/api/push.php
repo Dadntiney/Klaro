@@ -1,6 +1,6 @@
 <?php
 // Meldingen op dit toestel (alleen na inloggen).
-//  GET                         {publicKey, aan: is dit abonnement bekend} (?endpoint=... om te weten of dit toestel al aan staat)
+//  GET                         {publicKey, aan: is dit abonnement bekend, laatst: waarschuw-taak laatst goed} (?endpoint=...)
 //  POST {subscription, label}  aanzetten (de volgende controle, binnen ~5-15 min, stuurt een proefmelding)
 //  POST {uit: endpoint}        uitzetten
 //  POST {test: endpoint}       nog een proefmelding bij de volgende controle
@@ -10,7 +10,10 @@ require_login();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $e = (string)($_GET['endpoint'] ?? '');
-  json_out(200, ['publicKey' => push_public_key(), 'aan' => $e !== '' && push_has($e)]);
+  // Wanneer de waarschuw-taak laatst goed draaide (de pagina meldt het als dat te lang geleden is).
+  $ok = null;
+  try { require_once __DIR__ . '/store.php'; $ok = (int)(store_meta(store_db(), 'alert_ok') ?? 0) ?: null; } catch (Throwable $x) { $ok = null; }
+  json_out(200, ['publicKey' => push_public_key(), 'aan' => $e !== '' && push_has($e), 'laatst' => $ok]);
 }
 $in = json_decode((string)file_get_contents('php://input'), true);
 if (!is_array($in)) json_out(400, ['error' => 'Ongeldige aanvraag.']);

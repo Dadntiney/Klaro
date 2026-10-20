@@ -620,3 +620,4 @@ h2 .livedot { margin:0 2px 0 12px; }
 .pushbox button { background:none; border:0; padding:4px; color:var(--accent); font:inherit; font-weight:600; cursor:pointer; }
 .pushbox button:disabled { opacity:.5; }
 .pushbox .pushnote { flex-basis:100%; }
+.pushbox .pushwarn { flex-basis:100%; color:#dc2626; font-weight:600; }

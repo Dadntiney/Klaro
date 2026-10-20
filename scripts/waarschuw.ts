@@ -6,7 +6,7 @@
 //          ... scripts/waarschuw.ts --proef   (alleen kijken wat er gemeld zou worden, niets versturen of bijwerken)
 import { classify } from "../lib/sites.ts";
 import { extractHost } from "../lib/parse.ts";
-import { deviceType } from "../lib/names.ts";
+import { deviceType, labelDevices } from "../lib/names.ts";
 import { keysFrom, sendPush, type Keys, type Sub } from "../lib/webpush.ts";
 
 export type Alert = { key: string; title: string; body: string; t: number };
@@ -43,6 +43,40 @@ export function findAlerts(cols: string[], rows: string[]): Alert[] {
   return [...out.values()].sort((a, b) => a.t - b.t);
 }
 
+export type DevStat = { id: string; first: number; last: number; maxGap: number; days7: number; name: string; model: string };
+
+const HOUR = 3_600_000;
+const labels = (devs: DevStat[]) => labelDevices(devs.map((d) => ({ id: d.id, type: deviceType(d.name, d.model) })));
+const uren = (ms: number) => (ms >= 48 * HOUR ? `${Math.round(ms / 86_400_000)} dagen` : `${Math.max(1, Math.round(ms / HOUR))} uur`);
+
+/**
+ * Ongewoon lang stil: langer dan twee keer de langste pauze van de laatste 14 dagen, en minstens 3 uur. Alleen voor apparaten
+ * die bijna elke dag actief zijn (5 van de 7 dagen) en minstens een week geschiedenis hebben. Gemeten (20 okt): iPhone en
+ * Apple TV nooit langer dan een half uur stil (ook 's nachts), iPad hooguit 12 uur, MacBook vaak dagen uit (telt dus niet).
+ * Stil = NextDNS ziet het apparaat niet meer: profiel weg, VPN aan, of uit.
+ */
+export function silentAlerts(devs: DevStat[], now: number): Alert[] {
+  const name = labels(devs);
+  return devs
+    .filter((d) => d.days7 >= 5 && now - d.first >= 7 * 86_400_000 && now - d.last > Math.max(3 * HOUR, 2 * d.maxGap))
+    .map((d) => ({ key: `stil|${d.id}`, t: d.last, title: "Klaro: apparaat stil", body: `${name[d.id]} is al ${uren(now - d.last)} stil (normaal hooguit ${uren(d.maxGap)}). Uit, VPN aan, of NextDNS-profiel weg?` }));
+}
+
+/** Weekbericht op zondag tussen 19 en 21 uur: dat waarschuwen werkt, hoeveel meldingen er waren en welke apparaten actief zijn. */
+export function weeklyAlert(devs: DevStat[], now: number, week: number): Alert | undefined {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const wd = parts.find((p) => p.type === "weekday")?.value, h = Number(parts.find((p) => p.type === "hour")?.value);
+  if (wd !== "Sun" || h < 19 || h > 20) return undefined;
+  const name = labels(devs);
+  const active = devs.filter((d) => now - d.last < 24 * HOUR).map((d) => name[d.id]).sort();
+  const quiet = devs.filter((d) => now - d.last >= 24 * HOUR).map((d) => `${name[d.id]} (${uren(now - d.last)})`).sort();
+  const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(now);
+  return {
+    key: `week|${day}`, t: now, title: "Klaro: weekoverzicht",
+    body: `${week === 0 ? "Geen waarschuwingen" : week === 1 ? "1 waarschuwing" : `${week} waarschuwingen`} deze week. Actief: ${active.join(", ") || "geen"}.${quiet.length ? ` Al langer stil: ${quiet.join(", ")}.` : ""} Waarschuwen werkt.`,
+  };
+}
+
 async function api(url: string, k: Keys, body?: unknown): Promise<Record<string, unknown>> {
   const res = await fetch(url, {
     method: body === undefined ? "GET" : "POST",
@@ -61,9 +95,12 @@ async function main() {
   const k = keysFrom(secret);
   const url = (process.env.KLARO_URL ?? "https://pichya.nl") + "/api/alert.php";
   const got = await api(url, k);
-  const alerts = findAlerts(got.cols as string[], got.rows as string[]);
+  const devs = (got.devices ?? []) as DevStat[];
+  const now = Number(got.now) || Date.now();
+  const week = weeklyAlert(devs, now, Number(got.week) || 0);
+  const alerts = [...findAlerts(got.cols as string[], got.rows as string[]), ...silentAlerts(devs, now), ...(week ? [week] : [])];
   // Geen namen of adressen in het logboek van GitHub (openbaar): alleen aantallen.
-  console.log(`${(got.rows as string[]).length} nieuwe regels, ${alerts.length} keer rood, ${got.subs} abonnement(en)`);
+  console.log(`${(got.rows as string[]).length} nieuwe regels, ${alerts.length} melding(en) gevonden, ${devs.length} apparaten, ${got.subs} abonnement(en)`);
   if (proef) return;
   const res = await api(url, k, { until: got.until, alerts: alerts.map(({ key, title, body }) => ({ key, title, body })) });
   const subs = res.subs as Sub[];

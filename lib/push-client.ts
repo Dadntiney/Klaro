@@ -54,3 +54,9 @@ export async function pushTest(): Promise<boolean> {
   const sub = await (await registration()).pushManager.getSubscription();
   return !!sub && (await post({ test: sub.endpoint })).ok;
 }
+
+/** Wanneer de waarschuw-taak laatst goed draaide (ms), of null als dat (nog) niet bekend is. */
+export async function pushHealth(): Promise<number | null> {
+  const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { laatst?: number | null };
+  return r.laatst ?? null;
+}

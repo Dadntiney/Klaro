@@ -133,3 +133,45 @@ function store_out(PDO $db, int $since): void {
   $q->execute([$since]);
   while (($line = $q->fetchColumn()) !== false) echo $line, "\n";
 }
+
+/**
+ * Per apparaat (laatste 14 dagen): wanneer laatst gezien, de langste pauze tot nu toe, op hoeveel van de laatste 7 dagen actief,
+ * en naam/model (alleen om het soort apparaat te bepalen). Voor de melding "ongewoon lang stil" (scripts/waarschuw.ts).
+ */
+function store_devices(PDO $db, int $nowMs): array {
+  $q = $db->prepare("SELECT t, substr(k, 1, instr(k, '|') - 1) AS d FROM logs WHERE t > ? ORDER BY d, t");
+  $q->execute([$nowMs - 14 * 86_400_000]);
+  $out = [];
+  $prev = null; $prevT = 0;
+  while (($r = $q->fetch(PDO::FETCH_NUM)) !== false) {
+    $t = (int)$r[0]; $d = (string)$r[1];
+    if ($d !== $prev) { $out[$d] = ['id' => $d, 'first' => $t, 'last' => $t, 'maxGap' => 0, 'days' => []]; $prev = $d; $prevT = $t; }
+    $o = &$out[$d];
+    $o['maxGap'] = max($o['maxGap'], $t - $prevT);
+    $o['last'] = $t;
+    if ($t > $nowMs - 7 * 86_400_000) $o['days'][intdiv($t, 86_400_000)] = 1;
+    $prevT = $t;
+    unset($o);
+  }
+  $line = $db->prepare('SELECT line FROM logs WHERE k >= ? AND k < ? ORDER BY t DESC LIMIT 1');
+  foreach ($out as $d => &$o) {
+    $line->execute([$d . '|', $d . '}']);
+    $c = explode("\t", (string)$line->fetchColumn());
+    $line->closeCursor();
+    $o = ['id' => $d, 'first' => $o['first'], 'last' => $o['last'], 'maxGap' => $o['maxGap'], 'days7' => min(7, count($o['days'])), 'name' => $c[7] ?? '', 'model' => $c[8] ?? ''];
+  }
+  return array_values($out);
+}
+
+/** Zoals store_devices, maar de zware telling hooguit eens per uur; "laatst gezien" altijd vers (anders vals "stil"). */
+function store_devices_cached(PDO $db, int $nowMs): array {
+  $c = json_decode(store_meta($db, 'devstats') ?? '', true);
+  if (!is_array($c) || $nowMs - (int)($c['at'] ?? 0) > 3_600_000) {
+    $c = ['at' => $nowMs, 'devices' => store_devices($db, $nowMs)];
+    store_meta($db, 'devstats', json_encode($c));
+  }
+  $q = $db->prepare("SELECT substr(k, 1, instr(k, '|') - 1) AS d, MAX(t) FROM logs WHERE t > ? GROUP BY d");
+  $q->execute([(int)$c['at'] - 600_000]);
+  $last = $q->fetchAll(PDO::FETCH_KEY_PAIR);
+  return array_map(fn($o) => ['last' => max((int)$o['last'], (int)($last[$o['id']] ?? 0))] + $o, $c['devices']);
+}
