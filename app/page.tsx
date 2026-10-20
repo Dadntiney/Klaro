@@ -534,8 +534,8 @@ function PushToggle() {
   return (
     <>
       {stuck && <p className="pushwarn">Let op: waarschuwen heeft sinds {dayLabel(dayKeyFmt.format(laatst!)).toLowerCase()} {timeFmt.format(laatst!)} niet gedraaid. Meldingen komen nu niet.</p>}
-      <FoldRow label="Meldingen" value={<><span className={"dot" + (on ? " on" : "")} aria-hidden />{on ? "aan" : "uit"}</>}>
-        {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Dobber eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
+      <FoldRow label="Meldingen" value={<><span className={"dot" + (on ? " on" : "")} aria-hidden />{on ? "aan" : st === "beginscherm" ? "alleen in de app" : "uit"}</>}>
+        {st === "beginscherm" && <p>Je kijkt nu in Safari. Meldingen werken alleen in de Dobber-app op je beginscherm; daar staan ze apart aan of uit. Nog geen Dobber op je beginscherm? Deel → Zet op beginscherm, en open hem daar.</p>}
         {(st === "uit" || st === "geweigerd") && <button type="button" className="setbtn" disabled={busy} onClick={() => run(pushOn, "Meldingen staan aan. Binnen een kwartier komt een proefmelding.")}>Meldingen aanzetten</button>}
         {on && (
           <>
