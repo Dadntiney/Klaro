@@ -526,44 +526,64 @@ function PushToggle() {
     fn().then((r) => { if (typeof r === "string") setSt(r); setNote(r === "geweigerd" ? "Meldingen zijn geweigerd: zet ze aan bij Instellingen → Meldingen → Klaro." : done); }, (e) => setNote(e instanceof Error ? e.message : "Dat lukte niet.")).finally(() => setBusy(false));
   };
   if (st === null || st === "geen") return null;
+  const on = st === "aan";
   return (
-    <div className="pushbox">
+    <>
       {stuck && <p className="pushwarn">Let op: waarschuwen heeft sinds {dayLabel(dayKeyFmt.format(laatst!)).toLowerCase()} {timeFmt.format(laatst!)} niet gedraaid. Meldingen komen nu niet.</p>}
-      {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Klaro eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
-      {(st === "uit" || st === "geweigerd") && <button type="button" disabled={busy} onClick={() => run(pushOn, "Meldingen staan aan. Binnen een kwartier komt een proefmelding.")}>Meldingen aan</button>}
-      {st === "aan" && (
-        <>
-          <span>Meldingen staan aan</span>
-          <span aria-hidden>·</span>
-          <button type="button" disabled={busy} onClick={() => run(pushTest, "Proefmelding komt binnen een kwartier.")}>Proefmelding</button>
-          <span aria-hidden>·</span>
-          <button type="button" disabled={busy} onClick={() => run(pushOff, "Meldingen staan uit.")}>Uitzetten</button>
-        </>
-      )}
-      {note && <p className="pushnote">{note}</p>}
-      {st === "aan" && (
-        <div className="pushhist" ref={histRef}>
-          <button type="button" onClick={() => setShowHist((v) => !v)}>Laatste meldingen ({hist.length}) {showHist ? "‹" : "›"}</button>
-          {showHist && hist.length === 0 && <p className="muted">Nog geen meldingen in de laatste 30 dagen.</p>}
-          {showHist && hist.length > 0 && (
-            <ul>
-              {hist.slice(0, 20).map((m, i) => (
-                <li key={m.t + ":" + i}>
-                  <span className="muted">{dayLabel(dayKeyFmt.format(m.t))} {timeFmt.format(m.t)}</span>
-                  <span>{m.title.replace(/^Klaro: /, "")}: {m.body}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+      <FoldRow label="Meldingen" value={<><span className={"dot" + (on ? " on" : "")} aria-hidden />{on ? "aan" : "uit"}</>}>
+        {st === "beginscherm" && <p>Meldingen bij 18+, dating of VPN? Zet Klaro eerst op je beginscherm (Deel → Zet op beginscherm) en open hem daar.</p>}
+        {(st === "uit" || st === "geweigerd") && <button type="button" className="setbtn" disabled={busy} onClick={() => run(pushOn, "Meldingen staan aan. Binnen een kwartier komt een proefmelding.")}>Meldingen aanzetten</button>}
+        {on && (
+          <>
+            <p className="muted">Op het scherm staat alleen ‘Er is iets om te bekijken’; wat er gebeurde zie je hier onder Laatste meldingen.</p>
+            <div className="setbtns">
+              <button type="button" className="setbtn" disabled={busy} onClick={() => run(pushTest, "Proefmelding komt binnen een kwartier.")}>Proefmelding sturen</button>
+              <button type="button" className="setbtn quiet" disabled={busy} onClick={() => run(pushOff, "Meldingen staan uit.")}>Uitzetten</button>
+            </div>
+          </>
+        )}
+        {note && <p className="pushnote">{note}</p>}
+      </FoldRow>
+      {on && (
+        <div ref={histRef}>
+          <FoldRow label="Laatste meldingen" value={String(hist.length)} open={showHist} onToggle={setShowHist}>
+            {hist.length === 0 ? <p className="muted">Nog geen meldingen in de laatste 30 dagen.</p> : (
+              <ul className="setlist">
+                {hist.slice(0, 20).map((m, i) => (
+                  <li key={m.t + ":" + i}>
+                    <span className="muted">{dayLabel(dayKeyFmt.format(m.t))} {timeFmt.format(m.t)}</span>
+                    <span>{m.title.replace(/^Klaro: /, "")}: {m.body}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </FoldRow>
         </div>
       )}
+    </>
+  );
+}
+
+/** Een rij onderaan in dezelfde stijl als de dagkoppen: hoofdletters, waarde in grijs, pijltje dat openklapt. */
+function FoldRow({ label, value, open, onToggle, children }: { label: string; value?: React.ReactNode; open?: boolean; onToggle?: (v: boolean) => void; children: React.ReactNode }) {
+  const [own, setOwn] = useState(false);
+  const isOpen = open ?? own;
+  const toggle = () => (onToggle ? onToggle(!isOpen) : setOwn(!isOpen));
+  return (
+    <div className="setrow">
+      <h2 className="fold" role="button" tabIndex={0} aria-expanded={isOpen} onClick={toggle} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggle())}>
+        {label}
+        {value !== undefined && <span className="muted">· {value}</span>}
+        <span className={"fold-chev" + (isOpen ? " up" : "")} aria-hidden>›</span>
+      </h2>
+      {isOpen && <div className="setbody">{children}</div>}
     </div>
   );
 }
 
 /** "Klopt niet" bij een regel, of "Iets gemist?" onderaan: kort opschrijven, de dagelijkse controle zoekt het uit. */
-function FeedbackForm({ item, label, hint, onClose }: { item: Partial<FeedbackItem>; label: string; hint: string; onClose?: () => void }) {
-  const [open, setOpen] = useState(false);
+function FeedbackForm({ item, label, hint, onClose, startOpen }: { item: Partial<FeedbackItem>; label: string; hint: string; onClose?: () => void; startOpen?: boolean }) {
+  const [open, setOpen] = useState(!!startOpen);
   const [note, setNote] = useState("");
   const [st, setSt] = useState<"" | "busy" | "ok" | string>("");
   if (st === "ok") return <p className="fbdone">Bedankt, wordt bij de volgende controle uitgezocht.</p>;
@@ -587,22 +607,24 @@ function FeedbackForm({ item, label, hint, onClose }: { item: Partial<FeedbackIt
 /** Onderaan: iets melden dat ontbreekt, en de laatste meldingen met het antwoord van de controle. */
 function FeedbackPanel() {
   const [items, setItems] = useState<FeedbackItem[]>([]);
+  const [open, setOpen] = useState(false);
   useEffect(() => { listFeedback().then(setItems, () => {}); }, []);
   const recent = items.filter((x) => !x.done || Date.now() - x.done < 7 * 86_400_000).slice(0, 5);
+  const waiting = items.filter((x) => !x.done).length;
   return (
-    <div className="fbpanel">
-      <FeedbackForm item={{ kind: "gemist" }} label="Iets gemist of klopt iets niet?" hint="Bijv. ‘iPad speelde om 9 uur een spelletje, staat er niet’" />
+    <FoldRow label="Iets gemist?" value={waiting ? `${waiting} wordt uitgezocht` : undefined} open={open} onToggle={setOpen}>
+      <FeedbackForm startOpen item={{ kind: "gemist" }} label="" hint="Wat ontbreekt of klopt niet? Bijv. ‘iPad speelde om 9 uur een spelletje, staat er niet’" onClose={() => setOpen(false)} />
       {recent.length > 0 && (
-        <ul className="fblist">
+        <ul className="setlist">
           {recent.map((x) => (
             <li key={x.id}>
-              <span className="fbwhat">{x.site || x.note}{x.dev ? ` · ${x.dev}` : ""}</span>
+              <span>{x.site || x.note}{x.dev ? ` · ${x.dev}` : ""}</span>
               <span className={x.done ? "fbok" : "muted"}>{x.done ? x.antwoord || "Uitgezocht" : "Wordt uitgezocht"}</span>
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </FoldRow>
   );
 }
 
@@ -1597,8 +1619,10 @@ export default function Home() {
               <span className="muted">Nu zichtbaar: de laatste 30 dagen.</span>
             </div>
           )}
-          <PushToggle />
-          <FeedbackPanel />
+          <section className="settings">
+            <PushToggle />
+            <FeedbackPanel />
+          </section>
           {/* Uitloggen: na 60 minuten zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
           <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
             // Eerst de bewaarde kopie van het logboek op dit toestel weghalen (lib/wipe.ts), dan pas uitloggen. De gekozen knop
