@@ -41,7 +41,8 @@ Nodig in GitHub: het geheim `STRATO_SFTP_PASSWORD`. Instellingen op de server (`
 berekent; daarna `scripts/referentie.ts` en `scripts/gemist.ts` erop.
 
 ## Waarschuwen (pushmeldingen)
-- `.github/workflows/waarschuw.yml` draait elke 5 minuten `scripts/waarschuw.ts`: dezelfde herkenning als de pagina (lib/sites.ts,
+- `.github/workflows/waarschuw.yml` draait elke 5 minuten `scripts/waarschuw.ts` (één run loopt ~5,5 uur en start dan zijn opvolger;
+  het GitHub-schema bleek onbetrouwbaar, het uurschema is alleen reserve): dezelfde herkenning als de pagina (lib/sites.ts,
   data/-lijsten). Rood (18+, dating, VPN/proxy, door NextDNS geblokkeerde porno/dating) = melding, één keer per apparaat + site per 3 uur.
 - Op de iPhone komt alleen een neutrale tekst ("Er is iets om te bekijken", "Je weekoverzicht staat klaar"): meekijkers zien niets
   (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen" (api/push.php, na inloggen; laatste 50, 30 dagen).
