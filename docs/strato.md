@@ -43,6 +43,8 @@ berekent; daarna `scripts/referentie.ts` en `scripts/gemist.ts` erop.
 ## Waarschuwen (pushmeldingen)
 - `.github/workflows/waarschuw.yml` draait elke 5 minuten `scripts/waarschuw.ts`: dezelfde herkenning als de pagina (lib/sites.ts,
   data/-lijsten). Rood (18+, dating, VPN/proxy, door NextDNS geblokkeerde porno/dating) = melding, één keer per apparaat + site per 3 uur.
+- Op de iPhone komt alleen een neutrale tekst ("Er is iets om te bekijken", "Je weekoverzicht staat klaar"): meekijkers zien niets
+  (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen" (api/push.php, na inloggen; laatste 50, 30 dagen).
 - Sleutels (`lib/webpush.ts`) worden afgeleid van het geheim `STRATO_SFTP_PASSWORD`; bij het live zetten komen alleen de openbare
   push-sleutel en de hash van de taaksleutel op de server (`scripts/sleutels.ts`). Verandert dat geheim, dan meldingen opnieuw aanzetten.
 - Ook: "apparaat stil" (langer dan 2× de langste pauze van 14 dagen en minstens 3 uur, alleen apparaten die bijna dagelijks actief

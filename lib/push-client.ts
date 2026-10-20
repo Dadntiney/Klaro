@@ -60,3 +60,11 @@ export async function pushHealth(): Promise<number | null> {
   const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { laatst?: number | null };
   return r.laatst ?? null;
 }
+
+export type SentAlert = { t: number; title: string; body: string };
+
+/** De laatste meldingen met de echte tekst (op de iPhone zelf staat alleen "Er is iets om te bekijken"). */
+export async function pushHistory(): Promise<SentAlert[]> {
+  const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { meldingen?: SentAlert[] };
+  return r.meldingen ?? [];
+}

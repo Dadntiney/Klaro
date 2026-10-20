@@ -113,6 +113,16 @@ export function weeklyAlert(devs: DevStat[], now: number, week: number, use?: st
   };
 }
 
+/**
+ * Wat er op het scherm van de iPhone komt: nooit wat er gebeurde (geen 18+, site of apparaat), zodat een meekijker niets
+ * ziet (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen", pas na inloggen.
+ */
+export function pushText(key: string): { title: string; body: string; tag: string } {
+  if (key.startsWith("week|")) return { title: "Klaro", body: "Je weekoverzicht staat klaar.", tag: "week" };
+  if (key === "proef") return { title: "Klaro", body: "Meldingen staan aan. Je krijgt hier bericht als er iets is.", tag: "proef" };
+  return { title: "Klaro", body: "Er is iets om te bekijken.", tag: "melding" };
+}
+
 async function api(url: string, k: Keys, body?: unknown): Promise<Record<string, unknown>> {
   const res = await fetch(url, {
     method: body === undefined ? "GET" : "POST",
@@ -153,9 +163,9 @@ async function main() {
   let ok = 0, fail = 0;
   for (const s of subs) {
     const msgs = [...send];
-    if (tests.has(s.endpoint)) msgs.push({ title: "Klaro", body: "Meldingen staan aan. Bij 18+, dating of VPN krijg je hier bericht.", tag: "proef" });
+    if (tests.has(s.endpoint)) msgs.push({ title: "", body: "", tag: "proef" });
     for (const m of msgs) {
-      const st = await sendPush(s, m, k).catch(() => 0);
+      const st = await sendPush(s, pushText(m.tag), k).catch(() => 0);
       if (st === 404 || st === 410) { gone.push(s.endpoint); break; }
       if (st >= 200 && st < 300) ok++; else fail++;
     }

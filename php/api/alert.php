@@ -66,6 +66,10 @@ foreach (is_array($in['alerts'] ?? null) ? $in['alerts'] : [] as $a) {
   $send[] = ['title' => (string)($a['title'] ?? 'Klaro'), 'body' => (string)($a['body'] ?? ''), 'tag' => $key];
 }
 store_meta($db, 'alerted', json_encode($sent));
+// De echte tekst alleen in Klaro (na inloggen, api/push.php); op de iPhone komt een neutrale melding zonder details.
+$hist = array_values(array_filter(json_decode(store_meta($db, 'alerts_hist') ?? '[]', true) ?: [], fn($m) => $now - (int)($m['t'] ?? 0) < 30 * 86_400_000));
+foreach ($send as $m) $hist[] = ['t' => $now, 'title' => $m['title'], 'body' => $m['body']];
+store_meta($db, 'alerts_hist', json_encode(array_slice($hist, -50), JSON_UNESCAPED_UNICODE));
 // Meldingen over sites bijhouden voor het weekbericht (niet de stil-, week- of proefmeldingen).
 $log = array_values(array_filter(json_decode(store_meta($db, 'alerts_log') ?? '[]', true) ?: [], fn($t) => $now - (int)$t < 8 * 86_400_000));
 foreach ($send as $m) if (!preg_match('/^(stil|week)\|/', $m['tag'])) $log[] = $now;

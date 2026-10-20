@@ -641,3 +641,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 .fblist li { display:flex; justify-content:space-between; gap:12px; padding:5px 0; border-top:1px solid var(--line); }
 .fbwhat { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .fbok { color:#16a34a; text-align:right; }
+/* Laatste meldingen: de echte tekst (op de iPhone staat alleen een neutrale melding). */
+.pushhist { flex-basis:100%; display:flex; flex-direction:column; align-items:center; }
+.pushhist ul { list-style:none; margin:8px 0 0; padding:0; width:100%; max-width:420px; text-align:left; }
+.pushhist li { display:flex; flex-direction:column; gap:2px; padding:6px 0; border-top:1px solid var(--line); color:var(--fg); }

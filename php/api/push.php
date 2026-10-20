@@ -1,6 +1,7 @@
 <?php
 // Meldingen op dit toestel (alleen na inloggen).
-//  GET                         {publicKey, aan: is dit abonnement bekend, laatst: waarschuw-taak laatst goed} (?endpoint=...)
+//  GET                         {publicKey, aan: is dit abonnement bekend, laatst: waarschuw-taak laatst goed,
+//                               meldingen: de laatste meldingen met de echte tekst (op de iPhone staat alleen een neutrale tekst)} (?endpoint=...)
 //  POST {subscription, label}  aanzetten (de volgende controle, binnen ~5-15 min, stuurt een proefmelding)
 //  POST {uit: endpoint}        uitzetten
 //  POST {test: endpoint}       nog een proefmelding bij de volgende controle
@@ -11,9 +12,14 @@ require_login();
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $e = (string)($_GET['endpoint'] ?? '');
   // Wanneer de waarschuw-taak laatst goed draaide (de pagina meldt het als dat te lang geleden is).
-  $ok = null;
-  try { require_once __DIR__ . '/store.php'; $ok = (int)(store_meta(store_db(), 'alert_ok') ?? 0) ?: null; } catch (Throwable $x) { $ok = null; }
-  json_out(200, ['publicKey' => push_public_key(), 'aan' => $e !== '' && push_has($e), 'laatst' => $ok]);
+  $ok = null; $hist = [];
+  try {
+    require_once __DIR__ . '/store.php';
+    $db = store_db();
+    $ok = (int)(store_meta($db, 'alert_ok') ?? 0) ?: null;
+    $hist = array_reverse(json_decode(store_meta($db, 'alerts_hist') ?? '[]', true) ?: []);
+  } catch (Throwable $x) { $ok = null; }
+  json_out(200, ['publicKey' => push_public_key(), 'aan' => $e !== '' && push_has($e), 'laatst' => $ok, 'meldingen' => $hist]);
 }
 $in = json_decode((string)file_get_contents('php://input'), true);
 if (!is_array($in)) json_out(400, ['error' => 'Ongeldige aanvraag.']);

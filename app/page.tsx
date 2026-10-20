@@ -16,7 +16,7 @@ import { wipeLocal } from "@/lib/wipe";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
-import { pushHealth, pushOff, pushOn, pushState, pushTest, type PushState } from "@/lib/push-client";
+import { pushHealth, pushHistory, pushOff, pushOn, pushState, pushTest, type PushState, type SentAlert } from "@/lib/push-client";
 import { listFeedback, sendFeedback, type FeedbackItem } from "@/lib/feedback-client";
 import { baseDomain } from "@/lib/parse";
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -504,7 +504,20 @@ function PushToggle() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [laatst, setLaatst] = useState<number | null>(null);
-  useEffect(() => { pushState().then(setSt, () => setSt("geen")); pushHealth().then(setLaatst, () => {}); }, []);
+  const [hist, setHist] = useState<SentAlert[]>([]);
+  const [showHist, setShowHist] = useState(false);
+  const histRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    pushState().then(setSt, () => setSt("geen"));
+    pushHealth().then(setLaatst, () => {});
+    // Getikt op een melding (die bewust niets zegt): meteen de echte tekst laten zien.
+    const open = () => { pushHistory().then(setHist, () => {}); setShowHist(true); setTimeout(() => histRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 300); };
+    if (new URLSearchParams(location.search).has("meldingen")) { open(); history.replaceState(null, "", "/"); }
+    else pushHistory().then(setHist, () => {});
+    const onMsg = (e: MessageEvent) => { if ((e.data as { meldingen?: number })?.meldingen) open(); };
+    navigator.serviceWorker?.addEventListener("message", onMsg);
+    return () => navigator.serviceWorker?.removeEventListener("message", onMsg);
+  }, []);
   // Zelfbewaking: draaide de waarschuw-taak (elke 5 min) al een uur niet goed, dan hier zeggen; anders lijkt "geen melding" op "niets aan de hand".
   const stuck = laatst !== null && Date.now() - laatst > 60 * 60_000;
   const run = (fn: () => Promise<PushState | boolean>, done: string) => {
@@ -528,6 +541,21 @@ function PushToggle() {
         </>
       )}
       {note && <p className="pushnote">{note}</p>}
+      {hist.length > 0 && (
+        <div className="pushhist" ref={histRef}>
+          <button type="button" onClick={() => setShowHist((v) => !v)}>Laatste meldingen ({hist.length}) {showHist ? "‹" : "›"}</button>
+          {showHist && (
+            <ul>
+              {hist.slice(0, 20).map((m, i) => (
+                <li key={m.t + ":" + i}>
+                  <span className="muted">{dayLabel(dayKeyFmt.format(m.t))} {timeFmt.format(m.t)}</span>
+                  <span>{m.title.replace(/^Klaro: /, "")}: {m.body}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

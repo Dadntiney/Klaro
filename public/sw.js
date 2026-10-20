@@ -7,5 +7,10 @@ self.addEventListener("push", (e) => {
 // Tik op de melding: Klaro openen (of naar voren halen als hij al open is).
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ws) => (ws.length ? ws[0].focus() : self.clients.openWindow("/"))));
+  // De melding zelf zegt niets (meekijkers); Klaro laat dan meteen de echte tekst zien onder "Laatste meldingen".
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ws) => {
+    if (!ws.length) return self.clients.openWindow("/?meldingen");
+    ws[0].postMessage({ meldingen: 1 });
+    return ws[0].focus();
+  }));
 });
