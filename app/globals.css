@@ -649,3 +649,4 @@ h2 .livedot { margin:0 2px 0 12px; }
 .setrow .dot.on { background:#22c55e; }
 .pushnote { color:var(--muted); }
 .pushwarn { margin:20px 0 0; color:#dc2626; font-weight:600; font-size:14px; }
+.fbform textarea:focus { outline:none; border-color:var(--accent); }
