@@ -1,4 +1,4 @@
-import { detectColumns, extractHost, parseCsv } from "./parse.ts";
+import { baseDomain, detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { ALWAYS_SHOW_OPEN } from "./livestatus.ts";
 import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
@@ -257,6 +257,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devShop = new Map<string, number[]>();
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
+  const devBase = new Map<string, { t: number; b: string }[]>(); // per apparaat: welk hoofddomein wanneer (niet geblokkeerd)
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
   const visSites = new Map<string, { t: number; site: string }[]>(); // zichtbaar verkeer met site, om trackers aan een app te koppelen
   const blockedRows: { dev: string; t: number }[] = []; // geblokkeerde verzoeken (trackers e.d.)
@@ -485,6 +486,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const pay = payKind(host);
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
+      if (!blocked) (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) });
       if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
@@ -704,10 +706,20 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   {
     const searchSes = new Map<string, Session[]>();
     for (const g of groups.values()) if (SEARCH.has(g.site)) for (const x of g.ss) if (isHuman(x) && (x.n ?? 0) >= 2) (searchSes.get(g.dev) ?? searchSes.set(g.dev, []).get(g.dev)!).push(x);
+    // Een adres dat op dit apparaat verder alleen uit mails laadt (minstens 3 keer, nooit los bezocht) en waarbij in de eerste 3 s
+    // weinig anders laadt (een echte pagina haalt meteen onderdelen van 9-14 andere domeinen: toestemming, lettertypes, tellers),
+    // is een plaatje uit een mail, ook als er net gezocht leek (20 okt 19:12: 4kmedia-market.com uit spam, eigenaar: "niet gebruikt").
+    const pendingClick = new Set(clickVisits.map((v) => v.x)); // klik-bezoeken worden hieronder pas mail of klik
+    const mailish = (y: Session) => !!y.ml || pendingClick.has(y);
+    const bySite = new Map<string, Session[]>(); // alle sessies van een site op een apparaat, over alle dagen
+    for (const g of groups.values()) (bySite.get(g.dev + "|" + g.site) ?? bySite.set(g.dev + "|" + g.site, []).get(g.dev + "|" + g.site)!).push(...g.ss);
     for (const g of groups.values()) {
       if (!g.main || g.bg || g.flag || !isPlainSite(g)) continue;
       for (const x of g.ss) {
         if (!x.ml || !(x.mh ?? 0)) continue;
+        const others = (bySite.get(g.dev + "|" + g.site) ?? []).filter((y) => y !== x);
+        const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => r.t >= x.s && r.t <= x.s + 3_000).map((r) => r.b)).size;
+        if (loaded < 6 && others.filter(mailish).length >= 3 && !others.some((y) => !mailish(y) && isHuman(y))) continue;
         const q = (devSearch.get(g.dev) ?? []).filter((t) => t >= x.s - 60_000 && t <= x.s + 1_000);
         if (q.length && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
       }

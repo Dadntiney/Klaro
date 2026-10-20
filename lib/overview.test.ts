@@ -534,3 +534,19 @@ test("filmpje (Wistia) hoort bij de cursussite die het laadde, niet bij Google d
   assert.ok(yoga[0].e - yoga[0].s >= 20 * 60_000, "yogales loopt door zolang het filmpje speelt");
   assert.ok(shown(o, "google.com").every((x) => x.e - x.s < 5 * 60_000), "Google krijgt de tijd van het filmpje niet");
 });
+
+test("adres dat telkens alleen uit mails laadt is geen zoekresultaat, ook niet vlak na zoeken; een echte pagina na zoeken wel (20 okt 19:12)", async () => {
+  const M = 60_000;
+  const burst = (t: number, site: string): R[] => [[t, "email.mail.winkel-voorbeeld.nl"], [t + 300, "nieuws.activehosted.com"], [t + 500, site]];
+  const page = (t: number, site: string): R[] => [[t, `www.${site}`], ...["consent.cookiebot.com", "www.googletagmanager.com", "use.typekit.net", "cdn.consentmanager.net", "widget.trustpilot.com", "s.pinimg.com"].map((h, i): R => [t + 200 + i * 100, h])];
+  const search = (t: number): R[] => [...Array.from({ length: 11 }, (_, i): R => [t + i * 10_000, "www.google.com"]), ...Array.from({ length: 6 }, (_, i): R => [t + 1_000 + i * 15_000, "encrypted-tbn0.gstatic.com"])];
+  const rows: R[] = [...burst(0, "spam-voorbeeld.com"), ...burst(10 * M, "spam-voorbeeld.com"), ...burst(20 * M, "spam-voorbeeld.com"),
+    ...burst(1 * M, "winkel-uit-mail.nl"), ...burst(11 * M, "winkel-uit-mail.nl"), ...burst(21 * M, "winkel-uit-mail.nl"),
+    // zoeken, een pagina openen (die Google meelaadt), en wat later opent de Mail-app een spammail
+    ...search(40 * M), ...page(40 * M + 105_000, "andere-winkel.nl"), [40 * M + 108_000, "www.google.com"], ...burst(40 * M + 150_000, "spam-voorbeeld.com"),
+    // zoeken en echt een resultaat openen van een winkel die ook nieuwsbrieven stuurt: wel een bezoek
+    ...search(60 * M), [60 * M + 125_000, "nieuws.activehosted.com"], ...page(60 * M + 126_000, "winkel-uit-mail.nl")];
+  const o = await overview(rows);
+  assert.equal(shown(o, "spam-voorbeeld.com").length, 0, "plaatje uit spammail");
+  assert.equal(shown(o, "winkel-uit-mail.nl").filter((x) => x.s >= 60 * M).length, 1, "echt geopend zoekresultaat blijft");
+});

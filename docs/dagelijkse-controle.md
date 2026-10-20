@@ -41,7 +41,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Wordt het NextDNS-logboek leeggemaakt: de regels staan in de code en blijven. Referentiegevallen van dagen die er niet
    meer zijn worden overgeslagen; wat Klaro uit de geschiedenis afleidt (widgets, vaste hulpjes) staat vast in lib/geleerd.ts.
 
-   Geleerd (niet opnieuw uitzoeken): Netflix op een telefoon/tablet wordt elk uur op de achtergrond wakker; zonder beeld
+   Geleerd (niet opnieuw uitzoeken): Filmpje (Wistia) hoort bij de pagina die het laadde; Google binnen 5 s na een andere
+   pagina is een teller (20 okt, yogales). Adres dat op een apparaat telkens alleen uit mails laadt en weinig meelaadt
+   (< 6 domeinen in 3 s) is een plaatje, ook vlak na zoeken (20 okt, 4kmedia-market.com, eerste "Klopt niet" van de eigenaar). Netflix op een telefoon/tablet wordt elk uur op de achtergrond wakker; zonder beeld
    en zonder plaatjes is dat nooit langer dan 2 minuten en geen kijken (opgelost, 16 okt). Canva-tabblad dat zich elke ~6 min
    meldt: geen gebruik (opgelost). WhatsApp kort openen geeft veel korte rijen: normaal. Facebook/Instagram vragen vaak veel
    adressen op de achtergrond op (mqtt, gateway, graph): zonder plaatjes geen gebruik.
