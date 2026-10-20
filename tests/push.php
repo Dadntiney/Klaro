@@ -22,7 +22,7 @@ push_remove([$apple['endpoint']]);
 check('uitzetten haalt het abonnement weg', push_subs() === []);
 check('geen openbare sleutel zolang de server niet klaar is', push_public_key() === '');
 
-// "?>" in een opmerking beëindigt PHP: de rest wordt dan als tekst getoond (20 okt, push.php). Alleen setup.php mag het (HTML).
+// Het PHP-sluitteken (vraagteken + groter-dan) in een opmerking beëindigt PHP: de rest wordt dan als tekst getoond (20 okt, push.php). Alleen setup.php mag het (HTML).
 foreach (glob(__DIR__ . '/../php/api/*.php') as $f) if (basename($f) !== 'setup.php') check(basename($f) . ' bevat geen "?>"', strpos((string)file_get_contents($f), '?' . '>') === false);
 
 array_map('unlink', glob(PRIV . '/*') ?: []);
