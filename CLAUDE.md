@@ -12,7 +12,9 @@ uit de DNS-logboeken van NextDNS. Schrijf met de eigenaar altijd in eenvoudig Ne
 5. **Zelfcontrole:** de eigenaar hoeft niets na te checken; fouten vinden en oplossen we zelf.
 
 ## Hoe het systeem werkt (niet zomaar veranderen)
-- Geen eigen database: NextDNS bewaart alle logboeken; Klaro leest ze telkens opnieuw. Een storing kost dus geen data.
+- NextDNS is de bron (bewaart 2 jaar). De server houdt alleen een snelle kopie bij (SQLite, `php/api/store.php`): elke minuut de
+  nieuwe regels, zelfde formaat als de download. Leeg/oud/half binnen = opnieuw vullen uit de download; fout = oude manier.
+  Een storing kost dus geen data.
 - Laden: eerst het laatste 1,5 uur, dan heel vandaag (`/logs`), dan alles (CSV-download, 2 min cache). Live: elke 1,5 s.
   Elke 5 min volledig opnieuw berekend. Niet vaker ophalen: NextDNS geeft dan 429.
 - Herkenning: `lib/sites.ts` (apps, achtergrond, vangnet), `lib/mail.ts` (nieuwsbrieven, klikken), `lib/sessions.ts`

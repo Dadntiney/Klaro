@@ -5,7 +5,9 @@ draait in de browser met precies dezelfde code als voorheen. De server (map `php
 
 | Bestand | Wat |
 |---|---|
-| `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles, 2 min bewaard) |
+| `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles uit de kopie, `&oud=1` = rechtstreeks de hele download) |
+| `api/store.php` | eigen kopie van het logboek (`_private/logs.sqlite`): eens per minuut alleen nieuwe regels (raw /logs), gelijk aan de download; test: `php tests/store.php` |
+| `api/info.php` | alleen-lezen: bewaartermijn van NextDNS en welke databases de server heeft (na inloggen) |
 | `api/lists.php` | welke adressen op de 18+/datinglijst staan (lijsten per vakje in `api/_private/lists/`) |
 | `api/login.php` | inloggen: nieuwe sessie per apparaat (willekeurig cookie; op de server alleen de hash in `_private/sessions.json`) |
 | `api/activity.php` | de pagina meldt hier echt gebruik (tikken, scrollen, typen; hooguit eens per minuut, alleen vanuit een tabblad in beeld) |

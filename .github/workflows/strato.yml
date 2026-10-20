@@ -31,6 +31,7 @@ jobs:
           npm test > /tmp/test.log 2>&1 & T=$!
           npx tsc --noEmit & C=$!
           php tests/sessies.php
+          php tests/store.php
           npx next build
           node scripts/build-site.mjs
           wait $T || { cat /tmp/test.log; exit 1; }

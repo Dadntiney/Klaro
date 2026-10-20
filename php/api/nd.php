@@ -20,8 +20,11 @@ function nd_get(string $url, string $key, int $timeout): array {
 
 require __DIR__ . '/slim.php';
 
-if (isset($_GET['download'])) {
-  // Alles ophalen is traag en NextDNS remt bij te vaak vragen: 2 minuten hergebruiken (meerdere toestellen tegelijk).
+/**
+ * De hele download van NextDNS, licht gemaakt (TSV). Alles ophalen is traag en NextDNS remt bij te vaak vragen: 2 minuten
+ * hergebruiken (meerdere toestellen tegelijk). Geeft het pad van het lichte bestand, of stopt met de fout van NextDNS.
+ */
+function nd_full_download(array $cfg, string $base): string {
   $cache = PRIV . '/download.csv';
   if (!is_file($cache) || time() - filemtime($cache) > 120) {
     $lock = fopen(PRIV . '/download.lock', 'c');
@@ -42,12 +45,43 @@ if (isset($_GET['download'])) {
   // Elk verzoek een eigen tijdelijk bestand: schrijven twee apparaten tegelijk naar hetzelfde bestand, dan raken regels door elkaar
   // (17 okt: een Facebook-regel zonder tijd, "Datum onbekend").
   if (!is_file($slim) || filemtime($slim) < filemtime($cache)) { $tmp = $slim . '.' . getmypid() . '.tmp'; slim_csv($cache, $tmp) && rename($tmp, $slim); }
+  return is_file($slim) ? $slim : $cache;
+}
+
+if (isset($_GET['download'])) {
+  // ?since=<ms>: alleen regels van na dat moment (de telefoon bewaart de rest zelf).
+  $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
+  // Eigen kopie (lib: store.php): alleen de nieuwe regels bij NextDNS ophalen. ?oud=1 of een fout: de oude manier hieronder.
+  if (!isset($_GET['oud']) && class_exists('PDO') && in_array('sqlite', PDO::getAvailableDrivers(), true)) {
+    try {
+      require_once __DIR__ . '/store.php';
+      $db = store_db();
+      $lock = fopen(PRIV . '/store.lock', 'c');
+      flock($lock, LOCK_EX);
+      $now = (int)(microtime(true) * 1000);
+      $r = store_sync($db, fn(string $q) => nd_get($base . '?' . $q, $cfg['key'], 20), $now);
+      if ($r === 'leeg' || $r === 'oud' || $r === 'onvolledig') {
+        $file = nd_full_download($cfg, $base);
+        if (str_ends_with($file, '.tsv')) { store_seed($db, $file); store_meta($db, 'synced', (string)$now); store_meta($db, 'seeded', (string)$now); }
+      }
+      flock($lock, LOCK_UN);
+      if ($db->query('SELECT 1 FROM logs LIMIT 1')->fetchColumn()) {
+        header('Content-Type: text/tab-separated-values; charset=utf-8');
+        header('X-Klaro-Bron: kopie-' . $r);
+        if (!ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
+        store_out($db, $since);
+        exit;
+      }
+    } catch (Throwable $e) {
+      error_log('Klaro kopie: ' . $e->getMessage()); // dan de oude manier
+    }
+  }
+  $file = nd_full_download($cfg, $base);
   header('Content-Type: text/tab-separated-values; charset=utf-8');
   if (!ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
-  // ?since=<ms>: alleen regels van na dat moment (de telefoon bewaart de rest zelf). Het bestand staat op tijd, nieuwste eerst.
-  $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
-  if ($since > 0 && is_file($slim)) { slim_since($slim, $since); exit; }
-  readfile(is_file($slim) ? $slim : $cache);
+  // Het bestand staat op tijd, nieuwste eerst.
+  if ($since > 0 && str_ends_with($file, '.tsv')) { slim_since($file, $since); exit; }
+  readfile($file);
   exit;
 }
 
