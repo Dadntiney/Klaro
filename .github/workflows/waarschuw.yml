@@ -1,9 +1,10 @@
 # Elke 5 minuten: nieuwe regels beoordelen met dezelfde code als de pagina en bij 18+, dating of VPN een pushmelding sturen
 # (scripts/waarschuw.ts). Het geheim is hetzelfde als voor het live zetten; in het logboek staan alleen aantallen.
 #
-# GitHub start geplande taken vaak laat of helemaal niet (20 okt: na 2 uur nog geen enkele). Daarom draait elke run zelf
-# ~5,5 uur lang elke 5 minuten de controle en start dan zijn eigen opvolger. Het uurschema is alleen reserve als die keten
-# ooit breekt; handmatig annuleren stopt de keten. Er draait er altijd hooguit één tegelijk (concurrency). Openbare repository: geen kosten.
+# GitHub start geplande taken in deze repository niet (20 okt: geen enkele). Daarom draait elke run zelf ~50 minuten lang
+# elke 5 minuten de controle en start dan zijn eigen opvolger, ook als hij vastliep (tijdslimiet 58 min). Elke stap heeft een
+# eigen tijdslimiet: op 20 okt bleef een run 1,5 uur hangen. Er draait er hooguit één tegelijk. Stoppen: de taak uitzetten
+# (Actions → Waarschuwen → Disable). Openbare repository: geen kosten.
 name: Waarschuwen
 on:
   schedule:
@@ -18,25 +19,27 @@ permissions:
 jobs:
   waarschuw:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 58
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Elke 5 minuten nieuwe regels nakijken
+        timeout-minutes: 53   # vastgelopen: deze stap stopt, de opvolger start toch
         env:
           KLARO_GEHEIM: ${{ secrets.STRATO_SFTP_PASSWORD }}
         run: |
-          end=$(( $(date +%s) + 330 * 60 ))
+          end=$(( $(date +%s) + 50 * 60 ))
           while [ "$(date +%s)" -lt "$end" ]; do
             start=$(date +%s)
-            git pull -q --ff-only origin main || true   # nieuwe herkenning meteen gebruiken, niet pas bij de volgende run
+            timeout 60 git pull -q --ff-only origin main || true   # nieuwe herkenning meteen gebruiken, niet pas bij de volgende run
             timeout 240 node --experimental-strip-types scripts/waarschuw.ts || echo "deze ronde mislukt"
             sleep $(( 300 - ($(date +%s) - start) > 0 ? 300 - ($(date +%s) - start) : 1 ))
           done
       - name: Opvolger starten
-        if: ${{ !cancelled() }}   # handmatig annuleren stopt de keten
+        if: always()   # ook na vastlopen of de tijdslimiet: de keten mag nooit breken
         env:
           GH_TOKEN: ${{ github.token }}
+        timeout-minutes: 2
         run: gh workflow run waarschuw.yml --ref main
