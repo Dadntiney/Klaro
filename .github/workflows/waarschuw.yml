@@ -3,7 +3,7 @@
 #
 # GitHub start geplande taken in deze repository niet (20 okt: geen enkele). Daarom draait elke run zelf ~50 minuten lang
 # elke 5 minuten de controle en start dan zijn eigen opvolger, ook als hij vastliep (tijdslimiet 58 min). Elke stap heeft een
-# eigen tijdslimiet: op 20 okt bleef een run 1,5 uur hangen. Er draait er hooguit één tegelijk. Stoppen: de taak uitzetten
+# eigen tijdslimiet, zodat een hangende stap de keten nooit stilzet. Er draait er hooguit één tegelijk. Stoppen: de taak uitzetten
 # (Actions → Waarschuwen → Disable). Openbare repository: geen kosten.
 name: Waarschuwen
 on:

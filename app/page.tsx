@@ -509,14 +509,18 @@ function PushToggle() {
   const histRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     pushState().then(setSt, () => setSt("geen"));
-    pushHealth().then(setLaatst, () => {});
+    // Steeds opnieuw vragen: één keer bij het openen gaf een vals "niet gedraaid" als de app lang open bleef (20 okt).
+    const health = () => { if (document.visibilityState === "visible") pushHealth().then(setLaatst, () => {}); };
+    health();
+    const hTimer = setInterval(health, 60_000);
+    document.addEventListener("visibilitychange", health);
     // Getikt op een melding (die bewust niets zegt): meteen de echte tekst laten zien.
     const open = () => { pushHistory().then(setHist, () => {}); setShowHist(true); setTimeout(() => histRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 300); };
     if (new URLSearchParams(location.search).has("meldingen")) { open(); history.replaceState(null, "", "/"); }
     else pushHistory().then(setHist, () => {});
     const onMsg = (e: MessageEvent) => { if ((e.data as { meldingen?: number })?.meldingen) open(); };
     navigator.serviceWorker?.addEventListener("message", onMsg);
-    return () => navigator.serviceWorker?.removeEventListener("message", onMsg);
+    return () => { navigator.serviceWorker?.removeEventListener("message", onMsg); clearInterval(hTimer); document.removeEventListener("visibilitychange", health); };
   }, []);
   // Zelfbewaking: draaide de waarschuw-taak (elke 5 min) al een uur niet goed, dan hier zeggen; anders lijkt "geen melding" op "niets aan de hand".
   const stuck = laatst !== null && Date.now() - laatst > 60 * 60_000;
