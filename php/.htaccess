@@ -31,7 +31,7 @@ AddType application/manifest+json .webmanifest
   # De pagina zelf alleen met een geldige sessie (api/gate.php controleert dat en telt het openen als gebruik).
   RewriteRule ^(index\.html)?$ api/gate.php [L]
   # Browsers vragen altijd /favicon.ico: het icoon van de app geven (anders een 404 bij elke opening).
-  RewriteRule ^favicon\.ico$ icon.svg [L,T=image/svg+xml]
+  RewriteRule ^favicon\.ico$ icon.png [L,T=image/png]
   # /login -> login.html
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME}.html -f
