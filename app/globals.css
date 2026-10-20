@@ -650,3 +650,9 @@ h2 .livedot { margin:0 2px 0 12px; }
 .pushnote { color:var(--muted); }
 .pushwarn { margin:20px 0 0; color:#dc2626; font-weight:600; font-size:14px; }
 .fbform textarea:focus { outline:none; border-color:var(--accent); }
+/* Uitzetten alleen na het overtypen van UITZETTEN. */
+.offask { display:flex; flex-direction:column; gap:10px; }
+.offask label { display:flex; flex-direction:column; gap:8px; line-height:1.45; }
+.offask input { font:inherit; font-size:16px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--fg); letter-spacing:.05em; }
+.offask input:focus { outline:none; border-color:var(--accent); }
+.setbtn.danger { color:#dc2626; }

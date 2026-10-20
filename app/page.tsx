@@ -506,11 +506,14 @@ function PushToggle() {
   const [laatst, setLaatst] = useState<number | null>(null);
   const [hist, setHist] = useState<SentAlert[]>([]);
   const [showHist, setShowHist] = useState(false);
+  const [aantal, setAantal] = useState<number | null>(null); // op hoeveel toestellen meldingen aan staan
+  const [offAsk, setOffAsk] = useState(false);
+  const [offWord, setOffWord] = useState("");
   const histRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     pushState().then(setSt, () => setSt("geen"));
     // Steeds opnieuw vragen: één keer bij het openen gaf een vals "niet gedraaid" als de app lang open bleef (20 okt).
-    const health = () => { if (document.visibilityState === "visible") pushHealth().then(setLaatst, () => {}); };
+    const health = () => { if (document.visibilityState === "visible") pushHealth().then((h) => { setLaatst(h.laatst); setAantal(h.aantal); }, () => {}); };
     health();
     const hTimer = setInterval(health, 60_000);
     document.addEventListener("visibilitychange", health);
@@ -533,6 +536,7 @@ function PushToggle() {
   const on = st === "aan";
   return (
     <>
+      {aantal === 0 && <p className="pushwarn">Let op: meldingen staan op geen enkel toestel aan. Open Dobber vanaf je beginscherm en zet ze aan.</p>}
       {stuck && <p className="pushwarn">Let op: waarschuwen heeft sinds {dayLabel(dayKeyFmt.format(laatst!)).toLowerCase()} {timeFmt.format(laatst!)} niet gedraaid. Meldingen komen nu niet.</p>}
       <FoldRow label="Meldingen" value={<><span className={"dot" + (on ? " on" : "")} aria-hidden />{on ? "aan" : st === "beginscherm" ? "alleen in de app" : "uit"}</>}>
         {st === "beginscherm" && <p>Je kijkt nu in Safari. Meldingen werken alleen in de Dobber-app op je beginscherm; daar staan ze apart aan of uit. Nog geen Dobber op je beginscherm? Deel → Zet op beginscherm, en open hem daar.</p>}
@@ -542,8 +546,20 @@ function PushToggle() {
             <p className="muted">Op het scherm staat alleen ‘Er is iets om te bekijken’; wat er gebeurde zie je hier onder Laatste meldingen.</p>
             <div className="setbtns">
               <button type="button" className="setbtn" disabled={busy} onClick={() => run(pushTest, "Proefmelding komt binnen een kwartier.")}>Proefmelding sturen</button>
-              <button type="button" className="setbtn quiet" disabled={busy} onClick={() => run(pushOff, "Meldingen staan uit.")}>Uitzetten</button>
+              {!offAsk && <button type="button" className="setbtn quiet" disabled={busy} onClick={() => { setOffAsk(true); setOffWord(""); }}>Uitzetten…</button>}
             </div>
+            {/* Niet per ongeluk uitzetten (wens eigenaar): eerst het woord UITZETTEN overtypen. */}
+            {offAsk && (
+              <form className="offask" onSubmit={(e) => { e.preventDefault(); if (offWord.trim().toUpperCase() !== "UITZETTEN") return; setOffAsk(false); run(pushOff, "Meldingen staan uit."); }}>
+                <label>Weet je het zeker? Typ <b>UITZETTEN</b> om de meldingen op dit toestel uit te zetten.
+                  <input value={offWord} onChange={(e) => setOffWord(e.target.value)} autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} />
+                </label>
+                <div className="setbtns">
+                  <button type="submit" className="setbtn danger" disabled={busy || offWord.trim().toUpperCase() !== "UITZETTEN"}>Definitief uitzetten</button>
+                  <button type="button" className="setbtn quiet" onClick={() => setOffAsk(false)}>Toch aan laten</button>
+                </div>
+              </form>
+            )}
           </>
         )}
         {note && <p className="pushnote">{note}</p>}
