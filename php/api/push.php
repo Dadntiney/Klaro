@@ -1,6 +1,6 @@
 <?php
 // Meldingen op dit toestel (alleen na inloggen).
-//  GET                         {publicKey, aan: <dit abonnement bekend?>} (?endpoint=... om te weten of dit toestel al aan staat)
+//  GET                         {publicKey, aan: is dit abonnement bekend} (?endpoint=... om te weten of dit toestel al aan staat)
 //  POST {subscription, label}  aanzetten (de volgende controle, binnen ~5-15 min, stuurt een proefmelding)
 //  POST {uit: endpoint}        uitzetten
 //  POST {test: endpoint}       nog een proefmelding bij de volgende controle
