@@ -31,6 +31,9 @@ test("WhatsApp is niet rood", () => {
 test("dating", () => {
   for (const h of ["www.tinder.com", "bumble.com", "nl.badoo.com", "www.datingsite.nl", "lexa.nl", "www.parship.nl"]) assert.equal(classify(h).flag, "Dating", h);
   for (const h of ["www.bumblebee.nl", "www.lego.com", "www.update.nl"]) assert.equal(classify(h).flag, undefined, h);
+  // Second Love (vreemdgaan): ook de Belgische en andere versies, niet alleen secondlove.nl van de 18+-lijst (eigenaar, 20 okt)
+  for (const h of ["www.secondlove.nl", "www.secondlove.be", "secondlove.com", "api.secondlove.de"]) assert.ok(classify(h).flag, h);
+  for (const h of ["www.second-hand.nl", "www.lovespace.nl", "www.secondopinion.nl"]) assert.equal(classify(h).flag, undefined, h);
 });
 
 test("hoofdadressen", () => {

@@ -264,7 +264,7 @@ const DATING_PARTS = [
   "jdate", "ourtime", "seniorpeoplemeet", "plentyoffish", "datemyage", "c-date", "lovescout", "elitepartner", "friendscout",
   "singleboerse", "gaydar", "growlr", "scruff", "jackd", "taimi", "meetme", "mocospace", "datingjungle", "flirtfair",
   "omegle", "chatroulette", "emeraldchat", "monkey.app", "singles", "hookup", "lovoo", "jaumo", "mamba.ru", "loveawake",
-  "sugardaddy", "sugarbaby", "sugardating", "affairdating", "overspel", "slippertje", "speeddate", "speeddating", "datingapp", "datingsite", "lovematch", "sexdating",
+  "sugardaddy", "sugarbaby", "sugardating", "affairdating", "overspel", "slippertje", "secondlove", "speeddate", "speeddating", "datingapp", "datingsite", "lovematch", "sexdating",
 ];
 /** Exacte sites; voor namen die als woord te algemeen zijn. */
 const DATING_DOMAINS = new Set([
