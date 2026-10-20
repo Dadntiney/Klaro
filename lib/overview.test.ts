@@ -524,3 +524,13 @@ test("Buienradar even openen (volledige opstart in één moment) is gebruik; é�
   assert.equal(human.length, 1);
   assert.ok(human[0].s < T0 + 1000);
 });
+
+test("filmpje (Wistia) hoort bij de cursussite die het laadde, niet bij Google dat als teller meelaadde (20 okt 11:44: yogales)", async () => {
+  const rows: R[] = [[0, "www.jumbo.com"], [4_000, "www.hippebeebjes.nl"], [8_000, "academy.happywithyoga.com"], [8_100, "www.google.nl"], [8_200, "www.google.com"], [9_000, "fast.wistia.net"], [22_000, "fast.wistia.com"], [23_000, "embed-ssl.wistia.com"]];
+  for (let t = 23_000; t <= 25 * 60_000; t += 109_000) rows.push([t, "distillery.wistia.com", "P1", "blocked"], [t + 500, "pipedream.wistia.com", "P1", "blocked"]);
+  const o = await overview(rows);
+  const yoga = shown(o, "happywithyoga.com");
+  assert.equal(yoga.length, 1);
+  assert.ok(yoga[0].e - yoga[0].s >= 20 * 60_000, "yogales loopt door zolang het filmpje speelt");
+  assert.ok(shown(o, "google.com").every((x) => x.e - x.s < 5 * 60_000), "Google krijgt de tijd van het filmpje niet");
+});

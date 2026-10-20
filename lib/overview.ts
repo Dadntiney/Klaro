@@ -747,7 +747,11 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const on = (vis.get(g.dev) ?? []).filter((v) => v.g.site !== g.site && v.x.s <= x.e + 60_000 && v.x.e >= x.s - 60_000);
       if (!on.length) continue;
       x.emb = 1;
-      const host = on.filter((v) => v.x.s <= x.s + 60_000).sort((a, b) => b.x.s - a.x.s)[0];
+      // De pagina met de speler: de laatst geopende. Een zoekmachine die binnen 5 s na een andere pagina opduikt, is een teller
+      // die met die pagina meelaadt (Google Ads op een cursussite), niet de pagina zelf (20 okt 11:44: yogavideo telde als Google).
+      const cands = on.filter((v) => v.x.s <= x.s + 60_000);
+      const tracker = (v: { g: Group; x: Session }) => SEARCH.has(v.g.site) && cands.some((w) => !SEARCH.has(w.g.site) && Math.abs(w.x.s - v.x.s) <= 5_000);
+      const host = cands.filter((v) => !tracker(v)).sort((a, b) => b.x.s - a.x.s)[0];
       if (host && x.e > host.x.e) {
         const before = minutes(host.x);
         host.x.e = x.e;
