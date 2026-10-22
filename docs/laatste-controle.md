@@ -1,4 +1,4 @@
 # Laatste dagelijkse controle
 
-Datum: 2026-10-20 (avond)
-Resultaat: eerste "Klopt niet" van de eigenaar opgelost (4kmedia-market.com 19:12 = plaatje uit spammail); yogales 11:44 telde als Google (nu happywithyoga.com, 25 min). Over alle dagen elk één verschil, beide nagelopen. Vangnet: niets.
+Datum: 2026-10-22
+Resultaat: ochtendcontroles 21 en 22 okt niet gelopen (gebruikslimiet van het Claude-abonnement bereikt), nu hier gedaan. "Klopt niet" dwin2.com opgelost (Awin-teller). Live zetten liep vast op een beveiligingsmelding van Next.js: bijgewerkt naar 16.4.2. Vangnet: niets.

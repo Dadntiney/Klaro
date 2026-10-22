@@ -374,6 +374,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   assert.notEqual(classify("www.bobo.com").name, "BoBo World (spel)"); // geen vals alarm op een gelijkende naam
   assert.equal(classify("my.amayakids.com").name, "Amaya Kids (leren)");
   for (const h of ["www.chatbase.co", "backend.chatbase.co"]) assert.equal(classify(h).bg, true, h); // chatknop in een andere site
+  for (const h of ["www.dwin1.com", "www.dwin2.com", "www.awin1.com", "www.zenaps.com"]) assert.equal(classify(h).bg, true, h); // Awin-affiliateteller in webwinkels (21 okt)
+  for (const h of ["www.go-kids.nl", "www.darwin.nl"]) assert.notEqual(classify(h).bg, true, h); // de winkel zelf, en een naam die op dwin lijkt
   for (const h of ["shop.app", "server.shop.app", "api.judge.me", "tracking.aws.judge.me"]) assert.equal(classify(h).bg, true, h); // onderdelen van Shopify-winkels
   assert.equal(classify("www.shopapotheke.com").bg, false); // geen vals alarm
   assert.equal(classify("www.chatbaas.nl").bg, false); // geen vals alarm
