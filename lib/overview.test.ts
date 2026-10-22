@@ -462,17 +462,17 @@ test("spel dat volledig opstart (3+ eigen adressen in één moment) is geopend, 
   assert.equal((human[0] as { gs?: 1 }).gs, 1);
 });
 
-test("Shopify-winkel met één eigen adres tijdens scrollen in Instagram: echt geladen (cdn.shopify.com), niet onzeker; zonder winkel-onderdelen wel onzeker", async () => {
+test("Shopify-winkel met één eigen adres tijdens scrollen in Instagram: echt geladen (cdn.shopify.com), niet onzeker; zonder enig onderdeel geen bezoek", async () => {
   const rows: R[] = [];
   for (const s of [0, 20, 40, 60, 80]) rows.push([s * 1000, "scontent-ams2-1.cdninstagram.com", "P1"], [s * 1000 + 300, "i.instagram.com", "P1"]);
   rows.push([30_000, "winkelvoorbeeld.nl", "P1"], [30_700, "cdn.shopify.com", "P1"], [30_800, "shop.app", "P1"], [31_000, "cdn.judge.me", "P1"]);
-  rows.push([70_000, "anderewinkel.nl", "P1"]); // alleen de naam: kan een aangeklopte advertentie zijn
+  rows.push([70_000, "anderewinkel.nl", "P1"]); // alleen de naam, niets van de pagina: aangeklopte advertentie (22 okt)
   const o = await overview(rows);
   const shop = o.groups.find((g) => g.site === "winkelvoorbeeld.nl")!.ss[0] as { s: number; e: number; uz?: 1 };
   assert.ok(isHuman(shop) && !shop.uz, "winkel echt geladen");
   assert.ok(!o.groups.some((g) => (g.site === "shop.app" || g.site === "judge.me") && !(g as { bg?: boolean }).bg && g.ss.some((x) => isHuman(x))), "onderdelen geen eigen rij");
-  const other = o.groups.find((g) => g.site === "anderewinkel.nl")!.ss[0] as { s: number; e: number; uz?: 1 };
-  assert.equal(other.uz, 1);
+  const other = o.groups.find((g) => g.site === "anderewinkel.nl")!.ss[0] as { s: number; e: number; pf?: 1 };
+  assert.ok(other.pf === 1 && !isHuman(other), "alleen aangeklopt: geen bezoek");
 });
 
 test("Amazon-verkeer op een tv hoort bij Prime Video (één rij); op een telefoon blijft Amazon Amazon", async () => {
@@ -549,4 +549,14 @@ test("adres dat telkens alleen uit mails laadt is geen zoekresultaat, ook niet v
   const o = await overview(rows);
   assert.equal(shown(o, "spam-voorbeeld.com").length, 0, "plaatje uit spammail");
   assert.equal(shown(o, "winkel-uit-mail.nl").filter((x) => x.s >= 60 * M).length, 1, "echt geopend zoekresultaat blijft");
+});
+
+test("voorvertoning of advertentie in een social-app: alleen het adres opgevraagd, niets van de pagina = geen bezoek; echt geopend (ook traag) blijft", async () => {
+  const rows: R[] = [];
+  for (let t = 0; t <= 6 * 60_000; t += 15_000) rows.push([t, "i.instagram.com"], [t + 200, "scontent-ams2-1.cdninstagram.com"]);
+  rows.push([60_000 + 7_000, "www.advertentie-voorbeeld.nl"]); // alleen het adres: de app klopte aan
+  rows.push([180_000 + 7_000, "www.echt-geopend-voorbeeld.nl"], ...["use.typekit.net", "consent.cookiebot.com", "kit.fontawesome.com"].map((h): R => [180_000 + 12_000, h])); // pagina laadt pas na 5 s
+  const o = await overview(rows);
+  assert.equal(shown(o, "advertentie-voorbeeld.nl").length, 0, "alleen aangeklopt");
+  assert.equal(shown(o, "echt-geopend-voorbeeld.nl").length, 1, "echt geopend, al laadde de pagina traag");
 });

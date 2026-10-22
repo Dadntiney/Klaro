@@ -137,7 +137,7 @@ test("gofiev.vercel.app wordt GoFiev.nl", () => {
 });
 
 test("bekende spellen worden als app getoond", () => {
-  const cases: [string, string][] = [["api.tocaboca.com", "Toca Boca (spel)"], ["www.squla.nl", "Squla (leren)"], ["gateway.king.com", "Candy Crush (spel)"], ["cdp.cloud.unity3d.com", "Spel (naam onbekend)"], ["config.applovin.com", "Spel (naam onbekend)"]];
+  const cases: [string, string][] = [["api.tocaboca.com", "Toca Boca (spel)"], ["www.squla.nl", "Squla (leren)"], ["gateway.king.com", "Candy Crush (spel)"], ["cdp.cloud.unity3d.com", "Spel (naam onbekend)"], ["config.applovin.com", "Spel (naam onbekend)"], ["account-api.playpiknik.com", "Piknik (spel)"]];
   for (const [h, n] of cases) {
     const c = classify(h);
     assert.equal(c.name, n, h);
@@ -375,6 +375,7 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   assert.equal(classify("my.amayakids.com").name, "Amaya Kids (leren)");
   for (const h of ["www.chatbase.co", "backend.chatbase.co"]) assert.equal(classify(h).bg, true, h); // chatknop in een andere site
   for (const h of ["www.dwin1.com", "www.dwin2.com", "www.awin1.com", "www.zenaps.com"]) assert.equal(classify(h).bg, true, h); // Awin-affiliateteller in webwinkels (21 okt)
+  for (const h of ["widget.youshouldask.ai", "js.hcaptcha.com", "www.wepowerconnections.com"]) assert.equal(classify(h).bg, true, h); // chatknop, captcha en affiliateteller in andere sites (22 okt)
   for (const h of ["www.go-kids.nl", "www.darwin.nl"]) assert.notEqual(classify(h).bg, true, h); // de winkel zelf, en een naam die op dwin lijkt
   for (const h of ["shop.app", "server.shop.app", "api.judge.me", "tracking.aws.judge.me"]) assert.equal(classify(h).bg, true, h); // onderdelen van Shopify-winkels
   assert.equal(classify("www.shopapotheke.com").bg, false); // geen vals alarm

@@ -1,4 +1,4 @@
 # Laatste dagelijkse controle
 
-Datum: 2026-10-22
-Resultaat: ochtendcontroles 21 en 22 okt niet gelopen (gebruikslimiet van het Claude-abonnement bereikt), nu hier gedaan. "Klopt niet" dwin2.com opgelost (Awin-teller). Live zetten liep vast op een beveiligingsmelding van Next.js: bijgewerkt naar 16.4.2. Vangnet: niets.
+Datum: 2026-10-22 (grote weekcontrole, avond)
+Resultaat: advertenties/voorvertoningen in X zonder geladen pagina tellen niet meer (13 onzekere regels over alle dagen weg, elk nagelopen); chatknop, captcha en affiliateteller zijn achtergrond; "Spel (naam onbekend)" op de iPad is Piknik. Vangnet: niets.

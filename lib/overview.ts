@@ -257,7 +257,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devShop = new Map<string, number[]>();
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
-  const devBase = new Map<string, { t: number; b: string }[]>(); // per apparaat: welk hoofddomein wanneer (niet geblokkeerd)
+  const devBase = new Map<string, { t: number; b: string; bl?: 1 }[]>(); // per apparaat: welk hoofddomein wanneer (bl: geblokkeerd)
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
   const visSites = new Map<string, { t: number; site: string }[]>(); // zichtbaar verkeer met site, om trackers aan een app te koppelen
   const blockedRows: { dev: string; t: number }[] = []; // geblokkeerde verzoeken (trackers e.d.)
@@ -486,7 +486,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const pay = payKind(host);
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
-      if (!blocked) (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) });
+      (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push(blocked ? { t, b: baseDomain(host), bl: 1 } : { t, b: baseDomain(host) });
       if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
@@ -663,7 +663,18 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // Eén los adres tijdens scrollen in een social-app: kan een aangeklopte advertentie zijn, maar ook een echt geopende
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
       const shopLoaded = (x: Session) => (devShop.get(g.dev) ?? []).some((t) => t >= x.s && t <= x.e + 3_000);
-      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) x.uz = 1; }
+      // Laadt er in de 8 s erna niets nieuws mee (geen lettertype, script, teller of plaatje van een ander domein dan wat de app al
+      // gebruikte; een trage pagina haalt zijn onderdelen soms pas na 5-6 s; ook een door NextDNS geblokkeerde teller telt, want
+      // die bewijst dat de pagina draaide), dan is de pagina nooit getoond: de app vroeg alleen het adres op voor een voorvertoning
+      // of advertentie. Een link die echt opent (ook in de browser in de app) haalt meteen onderdelen op (22 okt: starlink.com,
+      // ftmo.com, jobescape.me in X).
+      const own = baseDomain(g.site);
+      const nothingLoaded = (x: Session) => {
+        const near = devBase.get(g.dev) ?? [];
+        const before = new Set(near.filter((r) => r.t >= x.s - 60_000 && r.t < x.s - 500).map((r) => r.b));
+        return !near.some((r) => r.t >= x.s - 500 && r.t <= x.s + 8_000 && r.b !== own && !before.has(r.b));
+      };
+      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) { if (nothingLoaded(x)) { delete x.pv; x.res = 1; x.pf = 1; } else x.uz = 1; } }
       // Laadt de site die dag vaker dan 4 keer los (open tabblad dat Safari herlaadt), dan is een inlog-adres in zo'n los moment
       // geen inloggen maar een vast onderdeel van de pagina (19 okt leukerecepten.nl: mijn. bij elke pagina, ook bij herladen).
       else for (const x of cand) delete x.lg;
@@ -718,7 +729,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       for (const x of g.ss) {
         if (!x.ml || !(x.mh ?? 0)) continue;
         const others = (bySite.get(g.dev + "|" + g.site) ?? []).filter((y) => y !== x);
-        const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => r.t >= x.s && r.t <= x.s + 3_000).map((r) => r.b)).size;
+        const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => !r.bl && r.t >= x.s && r.t <= x.s + 3_000).map((r) => r.b)).size;
         if (loaded < 6 && others.filter(mailish).length >= 3 && !others.some((y) => !mailish(y) && isHuman(y))) continue;
         const q = (devSearch.get(g.dev) ?? []).filter((t) => t >= x.s - 60_000 && t <= x.s + 1_000);
         if (q.length && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
@@ -876,7 +887,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const byDev = new Map<string, { g: Group; x: Session }[]>();
     for (const [, g] of groups) {
       if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g)) continue;
-      for (const x of g.ss) if (isHuman(x) && !x.lg) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push({ g, x });
+      // Ook een alleen-aangeklopte pagina (pf) telt mee als tabblad dat de browser tegelijk ververste.
+      for (const x of g.ss) if ((isHuman(x) && !x.lg) || x.pf) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push({ g, x });
     }
     const brand = (site: string) => site.split(".")[0];
     for (const [, l] of byDev) {

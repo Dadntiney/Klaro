@@ -21,6 +21,7 @@ export interface Session {
   op?: 1; // de app is echt geopend (vaste start-adressen, zie ALWAYS_SHOW_OPEN in lib/livestatus.ts)
   gs?: 1; // spel of leer-app opgestart: 3+ eigen adressen in één moment (daarna soms minuten zonder verkeer), zie lib/overview.ts
   ao?: 1; // app gestart (eigen startadres), maar geen inhoud gezien: tonen als onzeker (zie lib/overview.ts)
+  pf?: 1; // alleen het adres opgevraagd, niets van de pagina geladen (voorvertoning of aangeklopte advertentie): geen bezoek
   uz?: 1; // onzeker: één los adres terwijl in een social-app gescrold werd (advertentie óf echt geopend) // één pagina geopend op de site zelf (los, niet uit een mail, niet steeds herhaald): een echt bezoek
   ml?: 1;
   ck?: 1; // via een tik op een link in een mail naar de site gegaan: een echt bezoek (niet als mail zien) // hoort bij het openen van een e-mail (plaatjes/tellers van een nieuwsbrief), geen bezoek
