@@ -619,17 +619,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .older { display:flex; flex-direction:column; align-items:center; gap:4px; padding:20px 16px 0; font-size:13px; }
 .older button { background:none; border:1px solid var(--line); border-radius:99px; padding:7px 16px; color:var(--accent); font:inherit; font-weight:600; cursor:pointer; }
 .older button:disabled { opacity:.6; }
-/* "Klopt niet" bij een regel en "Iets gemist?" onderaan. */
-.fblink { display:block; margin:6px 0 2px; padding:0; background:none; border:0; font:inherit; font-size:13px; color:var(--muted); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
-.fbform { display:flex; flex-direction:column; gap:6px; margin:8px 0 4px; width:100%; max-width:420px; }
-.fbform textarea { font:inherit; font-size:16px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--card, transparent); color:var(--fg); resize:vertical; }
-.fbbtns { display:flex; gap:12px; }
-.fbbtns button { background:none; border:0; padding:4px 0; font:inherit; font-size:14px; font-weight:600; color:var(--accent); cursor:pointer; }
-.fbbtns button:disabled { opacity:.5; }
-.fbbtns button + button { color:var(--muted); font-weight:500; }
-.fberr { margin:0; color:#dc2626; font-size:13px; }
-.fbdone { margin:6px 0 2px; font-size:13px; color:var(--muted); }
-.fbok { color:#16a34a; text-align:right; }
 /* Laatste meldingen: de echte tekst (op de iPhone staat alleen een neutrale melding). */
 
 /* Onderaan: Meldingen, Laatste meldingen en Iets gemist? als rijen in de stijl van de dagkoppen. */

@@ -17,7 +17,6 @@ import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
 import { pushHealth, pushHistory, pushOff, pushOn, pushState, pushTest, type PushState, type SentAlert } from "@/lib/push-client";
-import { listFeedback, sendFeedback, type FeedbackItem } from "@/lib/feedback-client";
 import { baseDomain } from "@/lib/parse";
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -598,53 +597,6 @@ function FoldRow({ label, value, open, onToggle, children }: { label: string; va
       </h2>
       {isOpen && <div className="setbody">{children}</div>}
     </div>
-  );
-}
-
-/** "Klopt niet" bij een regel, of "Iets gemist?" onderaan: kort opschrijven, de dagelijkse controle zoekt het uit. */
-function FeedbackForm({ item, label, hint, onClose, startOpen }: { item: Partial<FeedbackItem>; label: string; hint: string; onClose?: () => void; startOpen?: boolean }) {
-  const [open, setOpen] = useState(!!startOpen);
-  const [note, setNote] = useState("");
-  const [st, setSt] = useState<"" | "busy" | "ok" | string>("");
-  if (st === "ok") return <p className="fbdone">Bedankt, wordt bij de volgende controle uitgezocht.</p>;
-  if (!open) return <button type="button" className="fblink" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{label}</button>;
-  return (
-    <form className="fbform" onClick={(e) => e.stopPropagation()} onSubmit={(e) => {
-      e.preventDefault();
-      setSt("busy");
-      sendFeedback({ ...item, note }).then(() => setSt("ok"), (x) => setSt(x instanceof Error ? x.message : "Versturen lukte niet."));
-    }}>
-      <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={hint} rows={2} maxLength={500} autoFocus />
-      <div className="fbbtns">
-        <button type="submit" disabled={st === "busy" || (!item.site && !note.trim())}>{st === "busy" ? "Versturen…" : "Versturen"}</button>
-        <button type="button" onClick={() => { setOpen(false); setSt(""); onClose?.(); }}>Annuleren</button>
-      </div>
-      {st && st !== "busy" && <p className="fberr">{st}</p>}
-    </form>
-  );
-}
-
-/** Onderaan: iets melden dat ontbreekt, en de laatste meldingen met het antwoord van de controle. */
-function FeedbackPanel() {
-  const [items, setItems] = useState<FeedbackItem[]>([]);
-  const [open, setOpen] = useState(false);
-  useEffect(() => { listFeedback().then(setItems, () => {}); }, []);
-  const recent = items.filter((x) => !x.done || Date.now() - x.done < 7 * 86_400_000).slice(0, 5);
-  const waiting = items.filter((x) => !x.done).length;
-  return (
-    <FoldRow label="Iets gemist?" value={waiting ? `${waiting} wordt uitgezocht` : undefined} open={open} onToggle={setOpen}>
-      <FeedbackForm startOpen item={{ kind: "gemist" }} label="" hint="Wat ontbreekt of klopt niet? Bijv. ‘iPad speelde om 9 uur een spelletje, staat er niet’" onClose={() => setOpen(false)} />
-      {recent.length > 0 && (
-        <ul className="setlist">
-          {recent.map((x) => (
-            <li key={x.id}>
-              <span>{x.site || x.note}{x.dev ? ` · ${x.dev}` : ""}</span>
-              <span className={x.done ? "fbok" : "muted"}>{x.done ? x.antwoord || "Uitgezocht" : "Wordt uitgezocht"}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </FoldRow>
   );
 }
 
@@ -1523,7 +1475,6 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
-                            <FeedbackForm key={rowKey} item={{ kind: "fout", dev: g.dev, site: g.site, name: g.name, s: rss[0]?.s ?? t, e: rss[rss.length - 1]?.e ?? t }} label="Klopt niet" hint="Wat klopt er niet? Bijv. ‘niet gebruikt’ of ‘duurde veel langer’" />
                             {!compact && rss.length > 1 && (
                               <>
                                 <div className="dh">Bezoeken</div>
@@ -1641,7 +1592,6 @@ export default function Home() {
           )}
           <section className="settings">
             <PushToggle />
-            <FeedbackPanel />
           </section>
           {/* Uitloggen: na 60 minuten zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
           <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
