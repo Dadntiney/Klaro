@@ -37,7 +37,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    "Nog uitzoeken" zetten en de volgende dagen opnieuw bekijken (meer dagen = meer bewijs). Wat geleerd is komt onder "Geleerd".
 
    Wordt het NextDNS-logboek leeggemaakt: de regels staan in de code en blijven. Referentiegevallen van dagen die er niet
-   meer zijn worden overgeslagen; wat Klaro uit de geschiedenis afleidt (widgets, vaste hulpjes) staat vast in lib/geleerd.ts.
+   meer zijn worden overgeslagen; wat Klaro uit de geschiedenis afleidt (widgets, vaste hulpjes) staat vast in data/geleerd.json.
 
    Geleerd (niet opnieuw uitzoeken): Eén los adres tijdens een social-app waarbij binnen 8 s niets van de pagina laadt
    (geen lettertype/script/teller van een ander domein) is een voorvertoning of aangeklopte advertentie: geen bezoek (22 okt, X:
@@ -64,7 +64,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    opgelost 17 okt). Op de achtergrond vraagt Waze niets op.
    Doorverwijs-adressen: veel apps praten via een cloud-adres (Amazon-loadbalancer, CloudFront, Akamai, Fastly) waar hun eigen
    adres naar doorverwijst; dat cloud-adres staat vaker in het logboek dan het eigen adres. Toca Boca meldt zo elke 2 à 2,5 min
-   tijdens het spelen. Klaro herkent zo'n koppeling zelf (followers() in lib/companion.ts, vastgelegd in lib/geleerd.ts) en telt
+   tijdens het spelen. Klaro herkent zo'n koppeling zelf (followers() in lib/companion.ts, vastgelegd in data/geleerd.json) en telt
    het cloud-adres mee zolang het aansluit op de app (opgelost 17 okt; ook Budge, Spotify, NPO, Videoland, Disney+, Buienradar).
    Tabbladen opnieuw geladen: komt Safari/Chrome weer in beeld, dan ververst hij alle open tabbladen tegelijk (zondag 11 okt
    17:09: tien sites in 17 s). Vier of meer sites binnen 20 s die elk maar even laden: geen bezoek (opgelost 17 okt).
@@ -82,7 +82,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
 
    Zelf leren (controle.ts, sectie 12; lib/selflearn.ts): Klaro leert elke berekening zelf welke adressen bewijzen dat een app
    echt open is (zeker gebruik = link uit de app of bekende inhoud; zeker achtergrond = nacht zonder ander gebruik). Elke dag
-   nalopen wat nieuw geleerd is (doorrekenen over de hele CSV) en wat nog wacht; leer.ts legt het vast in lib/geleerd.ts.
+   nalopen wat nieuw geleerd is (doorrekenen over de hele CSV) en wat nog wacht; leer.ts legt het vast in data/geleerd.json.
    Vangnet: elke dag nagaan of nieuwe dating-, 18+- en VPN-apps (ook hun app-adressen, niet alleen de website) herkend worden.
 
    Rij voor rij (controle.ts, sectie 11) en na ELKE wijziging: het hele overzicht van vandaag naast het ruwe logboek leggen
@@ -171,7 +171,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
 
        node --experimental-strip-types scripts/leer.ts /tmp/overzicht.json
 
-   Dat vult lib/geleerd.ts aan (widgets/open tabbladen en vaste hulpjes, met datum "laatst gezien"; geldt 90 dagen na de laatste
+   Dat vult data/geleerd.json aan (widgets/open tabbladen en vaste hulpjes, met datum "laatst gezien"; geldt 90 dagen na de laatste
    bevestiging). Is het bestand veranderd: meenemen in de commit.
 7. `npm test`, `npx tsc --noEmit`, `npx next build` moeten slagen. Dan naar `main`: GitHub zet het via SFTP live en
    controleert pichya.nl. Daarna stap 1, 2 en 4 opnieuw.

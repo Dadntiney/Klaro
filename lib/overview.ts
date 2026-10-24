@@ -11,7 +11,7 @@ import { suspicion } from "./suspect.ts";
 import { analyzeNetwork, type AwayInfo, type NetRow } from "./network.ts";
 import { autoRefreshing, nextdnsError, windowStart } from "./nextdns.ts";
 import { anchorOf, assignGameSdk, chainTimes, companionFor, COMPANIONS, followers, GAME_SDK, facebookPixel, instagramShared, loadedWith, NAV_SDK } from "./companion.ts";
-import { GELEERD, geldig } from "./geleerd.ts";
+import { geldig, loadGeleerd } from "./geleerd.ts";
 import { learnFg } from "./selflearn.ts";
 import { assignPlayback } from "./play.ts";
 import { isVideoOnlyClip, isYouTubeAppHost } from "./clip.ts";
@@ -173,6 +173,7 @@ export type Known = { auto?: string[]; helpers?: string[]; followers?: string[];
 export async function buildOverview(client: NextDNSClient, opts: { todayOnly: boolean; hours?: number; known?: Known }): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const todayOnly = opts.todayOnly;
   const hours = Math.min(24, Math.max(0, Number(opts.hours) || 0));
+  const GELEERD = await loadGeleerd(); // wat eerder geleerd is (data/geleerd.json; in de browser na inloggen van de server)
 
   let rows: string[][];
   let cutAt: number | undefined;

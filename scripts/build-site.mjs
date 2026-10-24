@@ -7,6 +7,8 @@ import { buildSync } from "esbuild";
 
 if (!fs.existsSync("out/index.html")) throw new Error("Eerst `npx next build` (map out/ ontbreekt)");
 fs.cpSync("php", "out", { recursive: true });
+// Wat Klaro leerde: alleen via api/geleerd.php (na inloggen), niet in de scripts van de website.
+fs.copyFileSync("data/geleerd.json", "out/api/_private/geleerd.json");
 // Bestanden in _next/static hebben een vingerafdruk van de inhoud in hun naam: ze veranderen nooit, dus de browser mag ze een jaar
 // bewaren (anders haalt elke opening ~1 MB aan scripts opnieuw op of vraagt hij het na).
 fs.writeFileSync("out/_next/static/.htaccess", '<IfModule mod_headers.c>\n  Header set Cache-Control "public, max-age=31536000, immutable"\n</IfModule>\n');

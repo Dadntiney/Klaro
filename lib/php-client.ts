@@ -1,5 +1,6 @@
 import type { NDResponse, NextDNSClient } from "./overview.ts";
 import { setRemoteLists } from "./adultlist.ts";
+import { setGeleerdSource, type GeleerdData } from "./geleerd.ts";
 
 /** Niet ingelogd, of automatisch uitgelogd na 60 minuten zonder gebruik: naar het inlogscherm (alleen op de pagina, niet in de worker). */
 export function checkLogin(res: Response): Response {
@@ -16,8 +17,13 @@ export const php: NextDNSClient & { since: (since: number, ms: number) => Promis
   since: async (since: number, ms: number) => checkLogin(await fetch(`/api/nd.php?download=1&since=${Math.floor(since)}`, { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(Math.max(ms, 60_000)) })) as NDResponse,
 };
 
-/** De grote 18+/datinglijsten staan op de server: daar navragen. */
+/** De grote 18+/datinglijsten en wat Klaro eerder leerde staan op de server: daar navragen (alleen na inloggen). */
 export function serverLists() {
+  setGeleerdSource(async () => {
+    const res = checkLogin(await fetch("/api/geleerd.php", { cache: "no-store", credentials: "same-origin" }));
+    if (!res.ok) throw new Error("geleerd niet bereikbaar");
+    return (await res.json()) as GeleerdData;
+  });
   setRemoteLists(async (hosts) => {
     const res = checkLogin(await fetch("/api/lists.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hosts }), credentials: "same-origin" }));
     if (!res.ok) throw new Error("lijsten niet bereikbaar");

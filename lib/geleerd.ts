@@ -8,7 +8,7 @@ export interface Geleerd { k: string; laatst: string } // laatst: dag (JJJJ-MM-D
 
 export const GELEERD_DAGEN = 90;
 
-export const GELEERD: {
+export type GeleerdData = {
   /** apparaat|site die zichzelf ververst (widget, open tabblad): losse opvragingen zijn geen bezoek */
   auto: Geleerd[];
   /** sites die altijd met een hulpadres van een andere site meekomen (script van een websitebouwer) */
@@ -17,55 +17,38 @@ export const GELEERD: {
   followers: Geleerd[];
   /** site|adres: zelf geleerd bewijs dat een app echt open is (zie lib/selflearn.ts) */
   fg?: Geleerd[];
-} = {
-  auto: [
-    { k: "Apple TV|google.com", laatst: "2026-10-20" },
-    { k: "iPhone|google.com", laatst: "2026-10-20" },
-    { k: "iPhone|onsoranje26.nl", laatst: "2026-10-20" },
-    { k: "iPhone|voetbalkrant.com", laatst: "2026-10-20" },
-    { k: "MacBook|canva.com", laatst: "2026-10-20" },
-  ],
-  helpers: [
-    { k: "clouding17.com", laatst: "2026-10-20" },
-    { k: "sugar-b.com", laatst: "2026-10-20" },
-  ],
-  followers: [
-    { k: "Apple TV|a564.dscb.akamai.net|videoland.com", laatst: "2026-10-20" },
-    { k: "Apple TV|d16w83149ahatb.cloudfront.net|videoland.com", laatst: "2026-10-20" },
-    { k: "Apple TV|dualstack.dss-eu.map.fastly.net|disneyplus.com", laatst: "2026-10-20" },
-    { k: "Apple TV|dualstack.j.sni.global.fastly.net|videoland.com", laatst: "2026-10-20" },
-    { k: "Apple TV|f2.shared.global.fastly.net|videoland.com", laatst: "2026-10-20" },
-    { k: "Apple TV|ftc-cr-delivery.dss.map.fastly.net|disneyplus.com", laatst: "2026-10-20" },
-    { k: "iPad|a554.dscv.akamai.net|npo.nl", laatst: "2026-10-20" },
-    { k: "iPad|a564.dscb.akamai.net|videoland.com", laatst: "2026-10-20" },
-    { k: "iPad|budge-data-server-alb-prod-1279544458.us-west-2.elb.amazonaws.com|budgestudios.ca", laatst: "2026-10-20" },
-    { k: "iPad|d22ykmcsp72ej5.cloudfront.net|npo.nl", laatst: "2026-10-20" },
-    { k: "iPad|d2ql4livs4fn0v.cloudfront.net|npo.nl", laatst: "2026-10-20" },
-    { k: "iPad|d6nwv1ijjxg0s.cloudfront.net|tocaboca.com", laatst: "2026-10-20" },
-    { k: "iPad|dualstack.j.sni.global.fastly.net|videoland.com", laatst: "2026-10-20" },
-    { k: "iPad|event-alb-23664651.eu-west-1.elb.amazonaws.com|tocaboca.com", laatst: "2026-10-20" },
-    { k: "iPad|f2.shared.global.fastly.net|videoland.com", laatst: "2026-10-20" },
-    { k: "iPad|scdnco.spotify.map.fastly.net|spotify.com", laatst: "2026-10-20" },
-    { k: "iPad|tls13.spotifycdn.map.fastly.net|spotify.com", laatst: "2026-10-20" },
-    { k: "iPad|x.sni.global.fastly.net|npo.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1272.dscg2.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1814.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1819.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1830.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1869.dscg2.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1883.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1936.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1952.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a1964.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|a233.dscb.akamai.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|cloudflare-edge-plumbing.spotifycdn.com.cdn.cloudflare.net|spotify.com", laatst: "2026-10-20" },
-    { k: "iPhone|e28241.dscb.akamaiedge.net|buienradar.nl", laatst: "2026-10-20" },
-    { k: "iPhone|global.tls13.spotifycdn.map.fastly.net|spotify.com", laatst: "2026-10-20" },
-    { k: "iPhone|main-d.contentful.map.fastly.net|meethue.com", laatst: "2026-10-20" },
-    { k: "iPhone|scdnco.spotify.map.fastly.net|spotify.com", laatst: "2026-10-20" },
-  ],
-  fg: [],
 };
+
+/**
+ * De gegevens zelf staan in data/geleerd.json, niet in de code: zo komen ze niet in de scripts van de website terecht (die zijn
+ * zonder inloggen op te halen). Scripts en tests (Node) lezen het bestand; de pagina vraagt het na inloggen aan de eigen server
+ * (api/geleerd.php, zie lib/php-client.ts).
+ */
+const EMPTY: GeleerdData = { auto: [], helpers: [], followers: [], fg: [] };
+let cache: GeleerdData | null = null;
+let cacheAt = 0;
+let remote: (() => Promise<GeleerdData>) | null = null;
+
+/** In de browser: waar de geleerde gegevens vandaan komen (na inloggen). */
+export function setGeleerdSource(fn: () => Promise<GeleerdData>) {
+  remote = fn;
+  cache = null;
+}
+
+/** Node (scripts, tests): het bestand data/geleerd.json. Zonder import bovenaan, zodat dit bestand ook in de browser kan. */
+export function geleerdFile(): GeleerdData {
+  const p = (globalThis as { process?: { getBuiltinModule?: (m: string) => unknown; cwd?: () => string } }).process;
+  const fs = p?.getBuiltinModule?.("node:fs") as typeof import("node:fs") | undefined;
+  if (!fs || !p?.cwd) return EMPTY;
+  try { return { ...EMPTY, ...JSON.parse(fs.readFileSync(`${p.cwd()}/data/geleerd.json`, "utf8")) }; } catch { return EMPTY; }
+}
+
+/** De geleerde gegevens; lukt ophalen niet, dan zonder (Klaro werkt dan zoals voordat er iets geleerd was). */
+export async function loadGeleerd(): Promise<GeleerdData> {
+  if (!remote) return (cache ??= geleerdFile());
+  if (cache && Date.now() - cacheAt < 3_600_000) return cache; // een pagina die dagen openstaat krijgt elk uur het nieuwste
+  try { cache = { ...EMPTY, ...(await remote()) }; cacheAt = Date.now(); return cache; } catch { return cache ?? EMPTY; }
+}
 
 /** Wat op `now` nog geldt. */
 export function geldig(lijst: Geleerd[], now: number): string[] {

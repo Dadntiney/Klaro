@@ -1,12 +1,13 @@
 /**
- * Legt vast wat Klaro uit de logboeken leert (lib/geleerd.ts), zodat het blijft als het NextDNS-logboek wordt leeggemaakt.
+ * Legt vast wat Klaro uit de logboeken leert (data/geleerd.json), zodat het blijft als het NextDNS-logboek wordt leeggemaakt.
  * Alleen aanvullen en de datum "laatst gezien" bijwerken; oude punten vallen pas na 90 dagen zonder bevestiging weg.
  * Gebruik: node --experimental-strip-types scripts/leer.ts overzicht.json   (overzicht van scripts/overzicht.ts)
  * Persoonlijke subdomeinen van hostingdiensten (bijv. eigen-naam.vercel.app) worden niet vastgelegd.
  */
 import fs from "node:fs";
-import { GELEERD, GELEERD_DAGEN, type Geleerd } from "../lib/geleerd.ts";
+import { geleerdFile, GELEERD_DAGEN, type Geleerd } from "../lib/geleerd.ts";
 
+const GELEERD = geleerdFile();
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 if (!d.learned) throw new Error("Geen 'learned' in het overzicht: gebruik het volledige overzicht (scripts/overzicht.ts).");
 const day = new Date(d.insights?.until || Date.now()).toISOString().slice(0, 10);
@@ -23,9 +24,5 @@ const a = merge(GELEERD.auto, d.learned.auto ?? []);
 const h = merge(GELEERD.helpers, d.learned.helpers ?? []);
 const f = merge(GELEERD.followers ?? [], d.learned.followers ?? []);
 const fg = merge(GELEERD.fg ?? [], d.learned.fg ?? []);
-const fmt = (xs: Geleerd[]) => (xs.length ? "\n" + xs.map((x) => `    { k: ${JSON.stringify(x.k)}, laatst: "${x.laatst}" },`).join("\n") + "\n  " : "");
-const file = "lib/geleerd.ts";
-let src = fs.readFileSync(file, "utf8");
-src = src.replace(/  auto: \[[\s\S]*?\],\n  helpers: \[[\s\S]*?\],\n  followers: \[[\s\S]*?\],\n(?:  fg: \[[\s\S]*?\],\n)?\};/, `  auto: [${fmt(a.out)}],\n  helpers: [${fmt(h.out)}],\n  followers: [${fmt(f.out)}],\n  fg: [${fmt(fg.out)}],\n};`);
-fs.writeFileSync(file, src);
+fs.writeFileSync("data/geleerd.json", JSON.stringify({ auto: a.out, helpers: h.out, followers: f.out, fg: fg.out }, null, 1) + "\n");
 console.log(`Geleerd vastgelegd (${day}): widgets/tabbladen ${a.out.length} (+${a.added}, -${a.removed}), vaste hulpjes ${h.out.length} (+${h.added}, -${h.removed}), doorverwijs-adressen ${f.out.length} (+${f.added}, -${f.removed}), bewijs-adressen ${fg.out.length} (+${fg.added}, -${fg.removed}).`);

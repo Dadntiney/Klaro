@@ -13,7 +13,7 @@ const OVERLAP = 10 * 60_000; // de laatste 10 minuten altijd opnieuw (regels die
 
 /** Na het inloggen alleen de laatste 30 dagen ophalen en uitrekenen; oudere dagen pas op verzoek (expand). Gemeten 20 okt: met
  *  alleen de laatste 14 dagen kwamen er over die dagen dezelfde rijen uit (hooguit een eindtijd een paar seconden anders); wat
- *  Klaro over langere tijd leert, staat vast in lib/geleerd.ts. Zo wordt laden niet trager naarmate het logboek groeit. */
+ *  Klaro over langere tijd leert, staat vast in data/geleerd.json. Zo wordt laden niet trager naarmate het logboek groeit. */
 export const WINDOW_DAYS = 30;
 
 type Saved = { text: string; fullAt: number; from?: number };

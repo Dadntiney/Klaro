@@ -1,0 +1,169 @@
+{
+ "auto": [
+  {
+   "k": "Apple TV|google.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|google.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|onsoranje26.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|voetbalkrant.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "MacBook|canva.com",
+   "laatst": "2026-10-20"
+  }
+ ],
+ "helpers": [
+  {
+   "k": "clouding17.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "sugar-b.com",
+   "laatst": "2026-10-20"
+  }
+ ],
+ "followers": [
+  {
+   "k": "Apple TV|a564.dscb.akamai.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "Apple TV|d16w83149ahatb.cloudfront.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "Apple TV|dualstack.dss-eu.map.fastly.net|disneyplus.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "Apple TV|dualstack.j.sni.global.fastly.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "Apple TV|f2.shared.global.fastly.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "Apple TV|ftc-cr-delivery.dss.map.fastly.net|disneyplus.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|a554.dscv.akamai.net|npo.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|a564.dscb.akamai.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|budge-data-server-alb-prod-1279544458.us-west-2.elb.amazonaws.com|budgestudios.ca",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|d22ykmcsp72ej5.cloudfront.net|npo.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|d2ql4livs4fn0v.cloudfront.net|npo.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|d6nwv1ijjxg0s.cloudfront.net|tocaboca.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|dualstack.j.sni.global.fastly.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|event-alb-23664651.eu-west-1.elb.amazonaws.com|tocaboca.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|f2.shared.global.fastly.net|videoland.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|scdnco.spotify.map.fastly.net|spotify.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|tls13.spotifycdn.map.fastly.net|spotify.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPad|x.sni.global.fastly.net|npo.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1272.dscg2.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1814.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1819.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1830.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1869.dscg2.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1883.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1936.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1952.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a1964.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|a233.dscb.akamai.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|cloudflare-edge-plumbing.spotifycdn.com.cdn.cloudflare.net|spotify.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|e28241.dscb.akamaiedge.net|buienradar.nl",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|global.tls13.spotifycdn.map.fastly.net|spotify.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|main-d.contentful.map.fastly.net|meethue.com",
+   "laatst": "2026-10-20"
+  },
+  {
+   "k": "iPhone|scdnco.spotify.map.fastly.net|spotify.com",
+   "laatst": "2026-10-20"
+  }
+ ],
+ "fg": []
+}
