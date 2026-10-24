@@ -27,8 +27,9 @@ import { baseDomain } from "../lib/parse.ts";
 import { inAdultList, inDatingList } from "../lib/adultlist.ts";
 import { isPlainSite, isSystemSite } from "../lib/system.ts";
 import { isHuman, type Session } from "../lib/sessions.ts";
+import { usage } from "../lib/usage.ts";
 import { isNow } from "../lib/play.ts";
-import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, tvBlipper, type LiveGroup } from "../lib/livestatus.ts";
+import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, type LiveGroup } from "../lib/livestatus.ts";
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 let text: string;
@@ -271,22 +272,13 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
   const o = await overview(lines.slice(1).filter((l) => { const t = Date.parse(l.slice(0, 24)); return t <= T && t >= T - 30 * 3_600_000; }), T);
   const groups = o.groups, au = new Set(o.auto ?? []);
   const use = deviceUse(groups, au);
-  const blip = tvBlipper(groups);
-  const hum = (g: LiveGroup, x: Session) => isHuman(x) && !blip(g, x) && !(x.pv && !x.lg && au.has(g.dev + "|" + g.site));
-  const vis = new Map<string, Session[]>(), visBy = new Map<string, { s: number; site: string }[]>();
-  for (const g of groups) { if (g.bg || !g.main) continue; for (const x of g.ss) if (g.flag || g.susp || hum(g, x)) { (vis.get(g.dev) ?? vis.set(g.dev, []).get(g.dev)!).push(x); (visBy.get(g.dev) ?? visBy.set(g.dev, []).get(g.dev)!).push({ s: x.s, site: g.site }); } }
-  const standalone = (g: LiveGroup, x: Session) => (x.n ?? 0) >= 3 && !x.ml && !x.res && !(vis.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000);
+  // Dezelfde rijen als de pagina (lib/usage.ts): wat als gebruik telt, en op een tv samengevoegd (met beeld-bruggen).
   const rowsT: { g: LiveGroup; x: Session }[] = [];
-  for (const g of groups) {
-    if (g.d !== today(T) || g.bg || ((g.bl ?? 0) >= g.n && !g.flag)) continue;
-    if (!g.main && (isSystemSite(g.site) || !g.ss.some((x) => standalone(g, x)))) continue;
-    let ss = g.ss.filter((x) => (g.main ? g.flag || g.susp || ALWAYS_SHOW.has(g.site) || hum(g, x) : standalone(g, x)));
-    if (isTv(g.dev) && ss.length >= 2) {
-      const out: Session[] = [];
-      for (const x of [...ss].sort((a, b) => a.s - b.s)) { const l = out[out.length - 1]; const other = l && (visBy.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s > l.e && v.s < x.s); if (l && !other && x.s - l.e <= 900_000) out[out.length - 1] = { ...l, e: Math.max(l.e, x.e) }; else out.push({ ...x }); }
-      ss = out;
-    }
-    for (const x of ss) rowsT.push({ g, x });
+  const todayGroups = groups.filter((g) => g.d === today(T));
+  const { listed, shown } = usage(todayGroups as never[], { auto: au, followers: (o as { followers?: Record<string, string> }).followers ?? {} });
+  for (const g of todayGroups) {
+    if (!listed(g as never)) continue;
+    for (const x of shown(g as never)) rowsT.push({ g, x });
   }
   const lastStart = new Map<string, number>();
   for (const r of rowsT) if (r.g.flag || isHuman(r.x)) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.x.s));

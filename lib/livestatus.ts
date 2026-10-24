@@ -1,6 +1,7 @@
 import { isHuman, type Session } from "./sessions.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { isNow, tvStart } from "./play.ts";
+import { HEARTBEAT_GAP } from "./sites.ts";
 
 /**
  * Live-status per apparaat (de groene chip). Gedeeld door de pagina en scripts/controle.ts, zodat de dagelijkse controle
@@ -88,11 +89,34 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
     hits.set(g.dev, a);
   }
   // Op een tv: het laatste stukje telt samen met de stukjes ervoor, net als in de lijst.
+  // Ook losse beeldmomenten van de app tellen mee als brug of verlenging (zelfde regel als lib/usage.ts), en het aantal
+  // opvragingen van het geheel bepaalt of het "lang" kijken is (anders zei de chip na 3 min al "uit" en de rij nog 6 min "nu").
   for (const [dev, l] of latest) {
     if (!isTv(dev)) continue;
-    const pieces = (l.g.ss ?? []).filter((x) => isHuman(x) && !blip(l.g, x));
+    const bridge = (x: Session) => (x.m ?? 0) >= 1 && !x.ml && !x.res && !x.emb;
+    const pieces = (l.g.ss ?? []).filter((x) => (isHuman(x) && !blip(l.g, x)) || bridge(x));
     const others = groups.filter((g) => g.dev === dev && g !== l.g && !g.bg && g.main).flatMap((g) => (g.ss ?? []).filter((x) => isHuman(x) && !blip(g, x)).map((x) => x.s));
-    latest.set(dev, { g: l.g, x: { ...l.x, s: tvStart(l.x, pieces, others) } });
+    const s = tvStart(l.x, pieces, others);
+    let e = l.x.e;
+    for (const p of pieces.filter((p) => p.s > l.x.s).sort((a, b) => a.s - b.s)) {
+      if (p.s - e > 15 * 60_000 || others.some((o) => o > e && o < p.s)) break;
+      e = Math.max(e, p.e);
+    }
+    const n = pieces.filter((p) => p.s >= s && p.s <= e).reduce((a, p) => a + (p.n ?? 1), 0);
+    latest.set(dev, { g: l.g, x: { ...l.x, s, e, n } });
+  }
+  // Een spel dat echt opstartte (gs): stukjes met hooguit HEARTBEAT_GAP ertussen zijn één keer spelen, net als in de lijst
+  // (lib/usage.ts); anders zei de chip na 3 min "uit" terwijl de rij van het hele spel nog "nu" zei.
+  for (const [dev, l] of latest) {
+    if (isTv(dev) || !(l.g.ss ?? []).some((x) => x.gs)) continue;
+    const all = [...(l.g.ss ?? [])].sort((a, b) => a.s - b.s);
+    const i = all.findIndex((x) => x.s === l.x.s);
+    if (i < 0) continue;
+    let a = i, b = i;
+    while (a > 0 && all[a].s - all[a - 1].e <= HEARTBEAT_GAP) a--;
+    while (b < all.length - 1 && all[b + 1].s - all[b].e <= HEARTBEAT_GAP) b++;
+    const span = all.slice(a, b + 1);
+    latest.set(dev, { g: l.g, x: { ...l.x, s: span[0].s, e: Math.max(...span.map((x) => x.e)), n: span.reduce((n, x) => n + (x.n ?? 1), 0) } });
   }
   return { hits, media, latest };
 }

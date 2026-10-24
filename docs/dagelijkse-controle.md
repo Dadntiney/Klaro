@@ -50,6 +50,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    tegelijk): op een link getikt, ook als het klik-adres van het merk zelf is (www.email.happinez.nl, 24 okt 11:39). Zonder de
    uitzondering voor "Mail-app haalt nieuwsbrieven op" kwamen er 23 valse bezoeken bij. Live stond zo'n bezoek eerst 1,5 min als
    mail verborgen terwijl de chip al groen was.
+   Tv: een los moment met beeldverkeer van de app (Netflix-videoservers elke 5-15 min tijdens het kijken) telt als brug of
+   verlenging van echt kijken binnen 15 min, nooit als eigen regel (24 okt: Netflix middag 43 -> 106 min; over alle dagen alleen
+   Apple TV-regels langer/samengevoegd, niets nieuws erbij). Spel dat die dag echt opstartte (gs): stukjes met hooguit 10 min
+   ertussen zijn één keer spelen (spelmotor meldt elke 5 min; Piknik 26 -> 41 min). De chip rekent met hetzelfde geheel
+   (lib/livestatus.ts), en controle.ts speelt de rijen na met lib/usage.ts, net als de pagina: chip en rij 435/435 gelijk.
    Mislukt `next build` met SecurityFatalError: Next.js bijwerken naar de herstelde versie (22 okt: 16.4.0 → 16.4.2). Filmpje (Wistia) hoort bij de pagina die het laadde; Google binnen 5 s na een andere
    pagina is een teller (20 okt, yogales). Adres dat op een apparaat telkens alleen uit mails laadt en weinig meelaadt
    (< 6 domeinen in 3 s) is een plaatje, ook vlak na zoeken (20 okt, 4kmedia-market.com, eerste "Klopt niet" van de eigenaar). Netflix op een telefoon/tablet wordt elk uur op de achtergrond wakker; zonder beeld
@@ -103,7 +108,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
    Geleerd (18 okt, bevestigd door de eigenaar terwijl hij WhatsApp gebruikte): de kale naam whatsapp.com = de app gaat open
    (ook chat.cdn → whatsapp.com → mmx-ds zonder foto's). Zonder de kale naam is het een binnenkomend bericht.
-   Nog uitzoeken: fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
+   Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
+   van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
    Geleerd (19 okt, 2e ronde): een spel of leer-app die volledig opstart vraagt in één moment 3+ eigen adressen op (TutoTOONS:
    apps., tutoclub., tutopulse.) en speelt daarna soms 9 min zonder verkeer. Dat telt nu als geopend (19 van 21 opstarts waren al
    zichtbaar; 2 TutoTOONS-opstarts gemist). ipapi.co / ipify.org (IP-opzoekdienst van apps) zijn achtergrond. Amaya Kids herkend.

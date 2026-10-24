@@ -50,7 +50,10 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     let all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
     // Navigatie (Waze) en apps met een vaste melding (Toca Boca): stukjes met hooguit NAV_GAP / HEARTBEAT_GAP ertussen zijn één
     // rit of één keer spelen, ook live (zelfde regel als lib/overview.ts).
-    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : followed.has(g.dev + "|" + g.site) ? HEARTBEAT_GAP : 0;
+    // Ook een spel of leer-app die die dag echt opstartte (gs): de spelmotor meldt zich tijdens het spelen elke ~5 min, en op die
+    // grens vielen de stukjes uit elkaar (24 okt: Piknik 08:06-08:47 als 3 stukjes van samen 26 min).
+    const game = (g.ss ?? []).some((x) => x.gs);
+    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : followed.has(g.dev + "|" + g.site) || game ? HEARTBEAT_GAP : 0;
     if (joinGap && all.length > 1) {
       const m: Session[] = [];
       for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }
@@ -58,18 +61,22 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     }
     // Gemarkeerde en verdachte regels blijven altijd staan.
     const ss = all.filter((x) => (!o.cut || x.s >= o.cut) && (g.main ? g.flag || g.susp || (ALWAYS_SHOW.has(g.site) && (!ALWAYS_SHOW_OPEN[g.site] || !!x.op)) || human(g, x) : standalone(g, x)));
-    if (!isTv(g.dev) || ss.length < 2) return ss;
+    if (!isTv(g.dev) || !ss.length) return ss;
     // Op een tv is kijken één geheel: stukjes van dezelfde app met minder dan 15 minuten ertussen samenvoegen
-    // (tijdens het kijken vraagt de tv maar af en toe iets op, waardoor er anders losse regels ontstaan).
-    const out: Session[] = [];
-    for (const x of [...ss].sort((a, b) => a.s - b.s)) {
+    // (tijdens het kijken vraagt de tv maar af en toe iets op, waardoor er anders losse regels ontstaan). Ook een los moment met
+    // beeldverkeer van de app (bijv. Netflix-videoservers, elke 5-15 min tijdens het kijken) telt mee, maar alleen als brug of
+    // verlenging van echt kijken, nooit als eigen regel (24 okt: Netflix 13:53-16:49 stond als 5 stukjes van samen 43 min).
+    const real = new Set(ss);
+    const bridges = all.filter((x) => !real.has(x) && (x.m ?? 0) >= 1 && !x.ml && !x.res && !x.emb && (!o.cut || x.s >= o.cut));
+    const out: (Session & { real?: boolean })[] = [];
+    for (const x of [...ss, ...bridges].sort((a, b) => a.s - b.s)) {
       const last = out[out.length - 1];
       // Niet samenvoegen als er tussendoor een andere app op deze tv gebruikt is (F1 TV, dan YouTube: YouTube is een nieuw bezoek).
       const other = last && (visBy.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s > last.e && v.s < x.s);
-      if (last && !other && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0) };
-      else out.push({ ...x });
+      if (last && !other && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0), real: last.real || real.has(x) };
+      else out.push({ ...x, real: real.has(x) });
     }
-    return out.reverse();
+    return out.filter((x) => x.real).map(({ real: _r, ...x }) => x).reverse();
   };
   return { listed, shown };
 }
