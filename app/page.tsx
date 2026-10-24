@@ -1208,41 +1208,6 @@ export default function Home() {
 
   // Los van het apparaat-filter: zo hoeft een tik op een chip dit niet opnieuw uit te rekenen.
   const use = useMemo(() => usage(groups, { auto, followers: followOf.current, mailT, cut }), [groups, mailT, cut, auto]);
-  // Dagsamenvatting bovenaan: per apparaat de schermtijd van vandaag (zelfde telling als de lijst), de apps met de meeste tijd,
-  // en een weekbeeld (laatste 7 dagen). Altijd één regel per apparaat, zodat de kaart niet van hoogte verandert tijdens het laden.
-  const daySum = useMemo(() => {
-    const now = Date.now();
-    const week = Array.from({ length: 7 }, (_, i) => dayKeyFmt.format(now - (6 - i) * 86_400_000));
-    const today = week[6];
-    const per = new Map<string, { mins: number[]; apps: Map<string, number> }>();
-    for (const dv of devices) per.set(dv.name, { mins: week.map(() => 0), apps: new Map() });
-    const ses = new Map<string, Session[]>(); // apparaat|dag -> sessies
-    for (const g of groups) {
-      const wi = week.indexOf(g.d);
-      if (wi < 0 || !use.listed(g)) continue;
-      const ss = use.shown(g);
-      if (!ss.length) continue;
-      const k = g.dev + "|" + g.d;
-      (ses.get(k) ?? ses.set(k, []).get(k)!).push(...ss);
-      if (g.d === today) {
-        const p = per.get(g.dev) ?? per.set(g.dev, { mins: week.map(() => 0), apps: new Map() }).get(g.dev)!;
-        const app = (g.name ?? g.site).replace(/ \([^)]*\)$/, "");
-        p.apps.set(app, (p.apps.get(app) ?? 0) + activeMinutes(ss));
-      }
-    }
-    for (const [k, ss] of ses) {
-      const [dev, d] = [k.slice(0, k.lastIndexOf("|")), k.slice(k.lastIndexOf("|") + 1)];
-      const p = per.get(dev) ?? per.set(dev, { mins: week.map(() => 0), apps: new Map() }).get(dev)!;
-      p.mins[week.indexOf(d)] = Math.round(activeMinutes(ss));
-    }
-    const flagged = groups.filter((g) => g.d === today && !g.bg && (g.flag || g.susp));
-    return {
-      week,
-      devs: [...per].map(([name, p]) => ({ name, mins: p.mins, top: [...p.apps].filter(([, m]) => m >= 1).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([a]) => a) })),
-      flagged: flagged.length,
-    };
-  }, [groups, devices, use, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     const mainByDay = new Map<string, Group[]>(); // voor "niet getoond": per dag, in plaats van per dag alle groepen door te lopen
@@ -1322,7 +1287,6 @@ export default function Home() {
           <div className="skel-chips">
             {[44, 84, 96, 70, 92].map((w, i) => <span key={i} className="sk sk-chip" style={{ width: w }} />)}
           </div>
-          <div className="skel-sum">{[0, 1, 2].map((i) => <span key={i} className="sk skel-tile" />)}</div>
           <div className="skel-head"><span className="sk" style={{ width: 84, height: 14 }} /><span className="sk" style={{ width: 30, height: 24, borderRadius: 99 }} /></div>
           <div className="list skel-list">
             {[62, 48, 70, 55, 66, 44, 58, 52].map((w, i) => (
@@ -1358,29 +1322,10 @@ export default function Home() {
           </div>
 
 
-          {!rawView && (
-            <div className="daysum" aria-label="Vandaag in het kort">
-              {/* Vaste hoogte: tegels komen er naast elkaar bij (opzij vegen), de lijst eronder verspringt dus nooit. */}
-              <div className="ds-tiles">
-                {daySum.devs.filter((d) => d.mins.some((m) => m > 0)).map((d) => {
-                  const max = Math.max(30, ...d.mins);
-                  return (
-                    <button type="button" key={d.name} className={"ds-tile" + (device === d.name ? " on" : "")} onClick={() => setDevice(device === d.name ? null : d.name)} title={d.mins.map((m, i) => `${dayLabel(daySum.week[i])}: ${m ? dur(m) : "niets"}`).join("\n")}>
-                      <span className="ds-dev"><DevIcon name={d.name} />{d.name}</span>
-                      <span className="ds-min">{d.mins[6] > 0 ? dur(d.mins[6]) : "–"}</span>
-                      <span className="ds-top">{d.mins[6] > 0 ? d.top.join(", ") || "\u00a0" : "vandaag niet"}</span>
-                      <span className="ds-week" aria-label={`Laatste 7 dagen: ${d.mins.map((m) => (m ? dur(m) : "niets")).join(", ")}`}>
-                        {d.mins.map((m, i) => <i key={i} className={i === 6 ? "t" : undefined} style={{ height: `${Math.max(m ? 3 : 1, Math.round((m / max) * 14))}px` }} />)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className={"ds-net" + (daySum.flagged || summary.blocked ? " warn" : "")}>
-                {daySum.flagged ? `Vangnet: ${daySum.flagged === 1 ? "1 melding" : `${daySum.flagged} meldingen`} vandaag (rood in de lijst)` : "Vangnet: vandaag niets gezien"}
-                {summary.blocked > 0 && ` · ${summary.blocked}× geblokkeerd 18+/dating`}
-                {device && silentNames.has(device) && " · ⚠ ongewoon lang stil"}
-              </div>
+          {(summary.blocked > 0 || (device && silentNames.has(device))) && (
+            <div className="summary">
+              {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
+              {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
             </div>
           )}
 

@@ -553,25 +553,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 /* Daglijst zonder dagdeel-label op dezelfde hoogte als met label: anders springt de lijst 10 px zodra het label verschijnt
    (eerst alleen het laatste anderhalf uur = één dagdeel, daarna de hele dag). */
 .list.day:not(.capped) { margin-top:18px; } /* zelfde als .partcap (de marge valt samen met die van de dagkop) */
-/* Dagsamenvatting bovenaan: per apparaat een tegel (tijd vandaag, apps met de meeste tijd, 7 staafjes voor de week). Vaste hoogte,
-   tegels naast elkaar (opzij vegen), zodat de lijst eronder nooit verspringt als er gegevens bij komen. */
-.daysum { margin:10px 0 0; }
-.ds-tiles { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; height:92px; padding:1px; }
-.ds-tiles::-webkit-scrollbar { display:none; }
-.ds-tile { flex:0 0 auto; width:136px; height:90px; display:grid; grid-template-rows:auto auto 1fr auto; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--card); font:inherit; color:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.ds-tile.on { border-color:color-mix(in srgb, var(--accent) 55%, var(--line)); background:color-mix(in srgb, var(--accent) 6%, var(--card)); }
-.ds-dev { display:flex; align-items:center; gap:4px; color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ds-min { font-size:17px; font-weight:650; line-height:1.25; }
-.ds-top { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ds-week { display:flex; align-items:flex-end; gap:2px; height:14px; }
-.ds-week i { display:block; width:5px; border-radius:2px; background:color-mix(in srgb, var(--muted) 40%, transparent); }
-.ds-week i.t { background:var(--accent); }
-.ds-net { height:18px; margin-top:6px; padding:0 2px; color:var(--muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ds-net.warn { color:#dc2626; font-weight:600; }
-/* Skelet van de dagsamenvatting: zelfde plek en hoogte als de echte tegels, zodat de lijst bij het laden niet verspringt. */
-.skel-sum { display:flex; gap:8px; height:116px; margin-top:1px; overflow:hidden; }
-.skel-tile { flex:0 0 136px; height:92px; border-radius:12px; }
-.skel-sum + .skel-head { margin-top:28px; }
 /* Onzeker met reden: het label mag inkorten, de apparaatnaam niet. */
 .item .meta .mdev { flex:none; }
 .item .meta .unsure { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
