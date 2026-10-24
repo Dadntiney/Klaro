@@ -35,4 +35,3 @@ export function categoryOf(site: string): string {
   return LOOKUP.get(site) ?? "Overig";
 }
 
-export const CATEGORY_NAMES = [...Object.keys(CATS), "Overig"];

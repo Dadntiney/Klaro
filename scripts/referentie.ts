@@ -141,6 +141,8 @@ for (const c of CASES) {
   const unsure = visS.some((x: any) => (c.at === "*" || hm(x.s) === c.at) && x.uz);
   const ok = c.want === "onzeker" ? got && unsure : got === c.want && !(c.want && unsure);
   if (!ok) bad++;
+  // Op GitHub zijn de logboeken openbaar: daar geen dagen en sites, alleen het nummer van het geval.
+  if (process.env.GITHUB_ACTIONS) { if (!ok) console.log(`✗ referentiegeval ${CASES.indexOf(c) + 1} klopt niet`); continue; }
   console.log(`${ok ? "✓" : "✗"} ${c.day} ${c.at} ${c.site} → ${c.want === "onzeker" ? "tonen als onzeker" : c.want ? "tonen" + (c.until ? ` tot ${c.until}` : "") : "niet tonen"} (${c.why})${ok ? "" : `  [nu: ${got ? (unsure ? "getoond als onzeker" : "getoond") : "niet getoond"}]`}`);
 }
 if (skipped) console.log(`\n${skipped} referentiegeval(len) overgeslagen: die dag staat niet meer in NextDNS.`);

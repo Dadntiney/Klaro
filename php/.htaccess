@@ -17,7 +17,7 @@ AddType application/manifest+json .webmanifest
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
 # Hulpbestanden van de server: alleen voor de andere api-bestanden, niet los op te vragen.
-<FilesMatch "^(common|slim|store|ndlib|push-lib|feedback-lib)\.php$">
+<FilesMatch "^(common|slim|store|ndlib|push-lib)\.php$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
@@ -38,7 +38,8 @@ AddType application/manifest+json .webmanifest
   RewriteRule ^(.+?)/?$ $1.html [L]
 </IfModule>
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/plain
+  # Strato stuurt scripts als text/javascript: die ook (anders gaat 1 MB aan scripts ongecomprimeerd over de lijn).
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json text/plain application/manifest+json image/svg+xml
 </IfModule>
 # De pagina's zelf mogen niet uit de cache van tussenstations komen (altijd de nieuwste versie na een update).
 <FilesMatch "(\.html|^overview-worker\.js)$">

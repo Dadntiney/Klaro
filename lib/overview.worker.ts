@@ -23,7 +23,7 @@ self.onmessage = async (e: MessageEvent<{ id: number; todayOnly: boolean; hours?
     }
     const r = await buildOverview(raw.client, opts);
     // Alleen de laatste dagen geladen: de pagina toont dan "Oudere dagen laden".
-    if (r.status === 200) { lastFull = r.body; (r.body as { windowFrom?: number }).windowFrom = raw.windowFrom(); }
+    if (r.status === 200 && !opts.todayOnly) { lastFull = r.body; (r.body as { windowFrom?: number }).windowFrom = raw.windowFrom(); }
     postMessage({ id, ...r });
   } catch {
     postMessage({ id, status: 502, body: { error: "De server is niet bereikbaar." } });

@@ -33,7 +33,6 @@ jobs:
           php tests/sessies.php
           php tests/store.php
           php tests/push.php
-          php tests/feedback.php
           npx next build
           node scripts/build-site.mjs
           wait $T || { cat /tmp/test.log; exit 1; }
@@ -71,6 +70,8 @@ jobs:
           # namen met een vingerafdruk van de inhoud, dus gelijke naam en grootte = gelijk bestand); 8 bestanden tegelijk.
           # Volgorde: eerst de nieuwe _next-bestanden, dan pas de pagina's die ernaar verwijzen, en pas daarna oude _next-bestanden weg.
           # Anders blijft wie tijdens het live zetten opent op 0% hangen (pagina verwijst naar bestanden die er nog niet zijn).
+          # Weggehaalde serverbestanden ook op de server weghalen (de map zelf wordt niet gespiegeld met --delete: config staat daar).
+          lftp -c "$L; set cmd:fail-exit no; rm -f $DIR/api/info.php $DIR/api/feedback.php $DIR/api/feedback-lib.php" || true
           lftp -c "$L; mkdir -pf $DIR; mirror -R --no-perms --parallel=8 --ignore-time out/_next/ $DIR/_next/; mirror -R --no-perms --parallel=8 -x '^_next/' -x '^api/_private/lists/' --exclude-glob api/_private/config.php --exclude-glob 'api/_private/download.*' out/ $DIR/; mirror -R --delete --no-perms --parallel=8 --ignore-time out/_next/ $DIR/_next/; mirror -R --delete --no-perms --parallel=4 --ignore-time out/api/_private/lists/ $DIR/api/_private/lists/"
       - name: Oude kopie in de hoofdmap opruimen (eenmalig; alleen bekende Klaro-bestanden, nooit de map klaro)
         if: steps.s.outputs.go == 'yes' && steps.s.outputs.cleanup == 'yes'

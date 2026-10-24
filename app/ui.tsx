@@ -45,11 +45,3 @@ export function dayLabel(d: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/** Middernacht (Amsterdamse tijd) van de dag waarin `t` valt, in ms. */
-export function dayStartMs(t: number): number {
-  const parts = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz }).formatToParts(t);
-  const get = (type: string) => parseInt(parts.find((x) => x.type === type)?.value ?? "0", 10) % 24;
-  return t - (get("hour") * 3600 + get("minute") * 60 + get("second")) * 1000 - (t % 1000);
-}
-
-export const shortDayFmt = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "short", timeZone: tz });

@@ -30,7 +30,6 @@ h2 .muted { font-weight:400; }
 .sub { color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .meta { text-align:right; flex:none; }
 .time { font-variant-numeric:tabular-nums; font-weight:500; }
-.loader { width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:32px auto; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:middle; }
 .dot.ok { background:#22c55e; box-shadow:0 0 0 0 rgba(34,197,94,.6); animation:pulse 2s infinite; }
@@ -40,8 +39,6 @@ h2 .muted { font-weight:400; }
 @keyframes fresh { from { box-shadow:inset 0 0 0 100px rgba(79,70,229,.18); } to { box-shadow:inset 0 0 0 100px rgba(79,70,229,0); } }
 .item.adult, .item.adult:hover, .item.adult[aria-expanded="true"] { background:#dc2626; color:#fff; }
 .item.adult .sub { color:rgba(255,255,255,.85); }
-.fav.badge { display:grid; place-items:center; opacity:1; background:#fff; color:#dc2626; font-size:11px; font-weight:700; }
-.hint { font-size:13px; margin:8px 0 0; }
 .title { display:flex; align-items:center; gap:12px; }
 .bang { position:relative; width:34px; height:34px; border-radius:50%; border:0; background:#dc2626; color:#fff; font:700 20px/1 system-ui; cursor:pointer; flex:none; animation:ring 2s infinite; }
 .bang .count { position:absolute; top:-6px; right:-8px; min-width:20px; padding:1px 5px; border-radius:99px; background:var(--fg); color:var(--bg); font:600 11px/16px system-ui; }
@@ -53,28 +50,20 @@ h2 .muted { font-weight:400; }
 .close { font:inherit; font-size:24px; line-height:1; background:none; border:0; color:var(--muted); cursor:pointer; }
 .hit { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
 .tag { flex:none; background:#dc2626; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; }
-.dot.warn { background:#f59e0b; }
-.spk { font:inherit; background:none; border:0; padding:0 2px; cursor:pointer; }
 .item.clickable { cursor:pointer; }
-.chev { color:var(--muted); font-size:20px; line-height:1; transition:transform .15s; margin-left:-4px; }
-.item.adult .chev { color:rgba(255,255,255,.8); }
-.chev.up { transform:rotate(90deg); }
 .detail { padding:8px 16px 12px 54px; background:var(--head); border-bottom:1px solid var(--line); font-size:13px; }
 .dh { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin:8px 0 4px; }
 .times { font-variant-numeric:tabular-nums; }
 .near { display:flex; align-items:center; gap:8px; padding:2px 0; }
 .near .nt { font-variant-numeric:tabular-nums; color:var(--muted); flex:none; }
 .near .nn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-.timelist { font-variant-numeric:tabular-nums; line-height:1.7; }
 .more-link { display:block; margin:10px 0 2px; padding:0; font:inherit; font-size:13px; background:none; border:0; color:var(--accent); cursor:pointer; }
 .item.near-flag { box-shadow:inset 4px 0 0 #f59e0b; }
 .item.near-flag .sub { color:#b45309; }
 @media (prefers-color-scheme: dark) { .item.near-flag .sub { color:#fbbf24; } }
 .dur { font-weight:600; color:var(--fg); }
 .item.adult .dur { color:#fff; }
-.chip-min { opacity:.75; font-variant-numeric:tabular-nums; }
 .summary { margin:10px 0 0; padding:10px 14px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-size:14px; }
-.s-row { display:flex; flex-wrap:wrap; gap:4px; align-items:baseline; }
 .cats { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .cat { background:var(--head); border-radius:99px; padding:2px 10px; font-size:13px; }
 .cat b { font-weight:600; }
@@ -89,7 +78,6 @@ h2 .muted { font-weight:400; }
 .fav.ph { display:grid; place-items:center; opacity:1; background:var(--head); color:var(--muted); font-weight:700; font-size:13px; }
 .fav.ph { background:color-mix(in srgb, var(--muted) 16%, var(--card)); }
 .summary { background:none !important; border:0 !important; padding:6px 2px 0 !important; border-radius:0 !important; }
-.s-cats { color:var(--muted); font-size:13px; margin-top:2px; }
 .fav.ph { background:color-mix(in srgb, var(--muted) 11%, var(--card)); }
 .item { padding-top:8px; padding-bottom:8px; }
 .dev { display:inline-flex; align-items:center; gap:4px; color:var(--muted); }
@@ -111,28 +99,10 @@ h2 .muted { font-weight:400; }
 .tabs button { font:inherit; font-size:14px; padding:4px 14px; border:0; border-radius:8px; background:none; color:var(--muted); cursor:pointer; }
 .tabs button.on { background:var(--card); color:var(--fg); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
 .insights { margin-top:4px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:12px; }
-.card h3 { margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; }
 .note { display:flex; gap:8px; padding:4px 0; font-size:14px; line-height:1.4; }
-.ni { flex:none; width:20px; text-align:center; }
 .ok { color:var(--muted); margin:0; }
-.tiny { font-size:12px; margin:8px 0 0; }
-.dayrow { margin-bottom:12px; }
-.dayhead { display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
-.strip { position:relative; height:12px; border-radius:6px; overflow:hidden; background:linear-gradient(90deg, rgba(120,120,140,.22) 0 25%, var(--head) 25% 95.83%, rgba(120,120,140,.22) 95.83% 100%); }
-.strip.thin { height:5px; margin-top:3px; background:var(--head); }
-.seg { position:absolute; top:0; bottom:0; background:var(--accent); opacity:.85; border-radius:3px; min-width:3px; }
-.seg.away { background:var(--muted); opacity:.55; }
-.nowline { position:absolute; top:0; bottom:0; width:2px; background:var(--fg); opacity:.55; }
-.ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:2px; }
 .sleep { font-size:13px; overflow-x:auto; }
-.srow { display:grid; grid-template-columns:64px repeat(auto-fit, minmax(56px, 1fr)); gap:6px; padding:5px 0; border-top:1px solid var(--line); align-items:start; }
-.srow.head { border-top:0; color:var(--muted); font-size:11px; font-weight:600; }
-.srow .late { color:#b45309; }
-.bar-row { display:grid; grid-template-columns:96px 1fr 48px; gap:8px; align-items:center; padding:3px 0; font-size:13px; }
 .bn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.bt { height:8px; background:var(--head); border-radius:4px; overflow:hidden; }
-.bf { display:block; height:100%; background:var(--accent); opacity:.6; border-radius:4px; }
 .bv { text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
 /* Compacter bovenstuk: titel kleiner, tabs als tekst met streepje, samenvatting op één regel. */
 h1 { font-size:23px; }
@@ -142,7 +112,6 @@ header .muted { font-size:13px; margin-top:2px; }
 .tabs button { padding:6px 2px !important; border-radius:0 !important; background:none !important; box-shadow:none !important; border-bottom:2px solid transparent !important; margin-bottom:-1px; }
 .tabs button.on { color:var(--fg) !important; border-bottom-color:var(--accent) !important; font-weight:600; }
 .summary { padding-top:10px !important; }
-.s-row { font-size:14px; line-height:1.45; }
 h2.fold { cursor:pointer; display:flex; align-items:baseline; gap:6px; }
 h2.fold .muted { text-transform:none; letter-spacing:0; font-weight:400; }
 .fold-chev { margin-left:auto; color:var(--muted); font-size:18px; line-height:1; transition:transform .15s; }
@@ -151,37 +120,10 @@ h2 .muted { text-transform:none; letter-spacing:0; }
 .open-link { display:inline-block; margin:2px 0 4px; font-size:14px; color:var(--accent); text-decoration:none; font-weight:500; }
 .open-link:active { opacity:.6; }
 /* Inzichten in kindertaal: grote vragen, korte antwoorden, duidelijke kleuren. */
-.insights.kids .card { padding:14px 16px; }
-.insights.kids .card h3 { font-size:17px; text-transform:none; letter-spacing:0; color:var(--fg); margin:0 0 10px; }
-.k-note { display:flex; gap:10px; padding:5px 0; font-size:16px; line-height:1.45; }
-.k-note .ni { width:24px; font-size:18px; }
-.k-text, .k-ok { margin:0; font-size:16px; line-height:1.45; }
-.k-ok { color:#15803d; font-weight:500; }
-@media (prefers-color-scheme: dark) { .k-ok { color:#4ade80; } }
-.k-sub { font-size:14px; color:var(--muted); margin:6px 0 0; line-height:1.4; }
-.k-warn { color:#b45309; font-weight:500; }
-.card.status { border-left-width:6px; }
-.card.status.green { border-left-color:#22c55e; }
-.card.status.orange { border-left-color:#f59e0b; }
-.card.status.red { border-left-color:#dc2626; background:color-mix(in srgb, #dc2626 7%, var(--card)); }
-.status-head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-.status-icon { font-size:30px; line-height:1; }
-.insights.kids .status-head h3 { margin:0; font-size:21px; }
-.k-dev { margin-bottom:14px; }
-.k-devhead { display:flex; justify-content:space-between; align-items:center; font-size:16px; margin-bottom:5px; }
-.dev.big { font-size:16px; color:var(--fg); }
-.k-bar { height:12px; background:var(--head); border-radius:6px; overflow:hidden; }
-.k-bar > span { display:block; height:100%; background:var(--accent); opacity:.8; border-radius:6px; }
-.k-times { display:grid; grid-template-columns:repeat(4, 1fr); font-size:12px; color:var(--muted); text-align:center; margin-top:2px; }
-.k-more { display:block; margin:8px 0 0; padding:6px 0; font:inherit; font-size:15px; background:none; border:0; color:var(--accent); cursor:pointer; }
-.insights.kids .strip { margin-top:6px; }
-.insights.kids .bar-row { grid-template-columns:96px 1fr 64px; font-size:15px; padding:5px 0; }
 
 /* Ga naar dag en tijd */
 .bar-in { display:flex; align-items:center; gap:8px; }
 .bar-in .chips { flex:1 1 auto; min-width:0; margin:0 0 0 -16px; }
-.goto-btn { flex:none; display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:14px; padding:4px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; box-shadow:-10px 0 10px -4px var(--bg); }
-.goto-btn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
 .goto { display:flex; align-items:flex-end; gap:10px; margin:6px 0 4px; padding:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; }
 .goto label { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .goto label:first-child { flex:1 1 auto; }
@@ -195,17 +137,8 @@ h2 .muted { text-transform:none; letter-spacing:0; }
 main { padding-top:14px; }
 
 .time { display:flex; align-items:baseline; gap:6px; white-space:nowrap; }
-.time .vdur { font-size:13px; font-weight:500; color:var(--muted); }
-.time .vsep { color:var(--line); font-weight:400; }
-.item.adult .time .vdur { color:rgba(255,255,255,.85); }
-.item.adult .time .vsep { color:rgba(255,255,255,.4); }
 
 /* Laadbalk voor de volledige geschiedenis */
-.histbar { position:fixed; top:0; left:0; right:0; height:4px; z-index:50; background:color-mix(in srgb, var(--accent) 15%, transparent); }
-.histfill { height:100%; background:var(--accent); transition:width .25s ease-out; }
-.histbar.err .histfill { background:#dc2626; }
-.histtxt { position:absolute; top:6px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:11px; line-height:14px; padding:0 9px; border-radius:99px; background:var(--card); color:var(--muted); border:1px solid var(--line); box-shadow:0 1px 4px rgba(0,0,0,.08); }
-.histbar.err .histtxt { color:#dc2626; }
 .item .dev .di { width:17px; height:17px; }
 .item .dev { font-size:13px; font-weight:600; }
 
@@ -219,25 +152,15 @@ h2.fold .dview { margin-left:auto; }
 h2.fold .dview + .fold-chev { margin-left:2px; }
 
 /* Reeksen per apparaat: kopje met icoontje, daaronder rustige regels van gelijke hoogte zonder lijnen */
-.devhead { display:flex; align-items:center; gap:6px; padding:12px 14px 6px; color:var(--muted); font-size:13px; font-weight:600; position:relative; }
-.devhead .di { width:17px; height:17px; }
-.devhead::after { content:""; position:absolute; left:14px; right:14px; bottom:0; height:1px; background:var(--line); opacity:.7; }
-.list > div:first-child .devhead { padding-top:10px; }
 .item { min-height:52px; box-sizing:border-box; }
 
 /* Rustiger: meer lucht boven en onder de sitenaam, overal dezelfde hoogte */
 .item { min-height:64px; padding-top:13px; padding-bottom:13px; }
-.list.lined > div + div::before { display:block; }
-.devhead span { letter-spacing:.01em; }
 
 
 /* Nu in gebruik: zachte groene tint op de chip (de gekozen chip houdt zijn blauwe vulling en een klein stipje) */
 .chip.act:not(.on) { background:color-mix(in srgb, #22c55e 13%, var(--card)); border-color:color-mix(in srgb, #22c55e 50%, var(--line)); }
-
-.inldev { display:inline-flex; vertical-align:-3px; margin-left:8px; color:var(--muted); opacity:.75; }
-.inldev .di { width:15px; height:15px; }
 .item { min-height:56px; padding-top:11px; padding-bottom:11px; }
-.devhead { padding-top:14px; }
 
 /* Details van een bezoek */
 .hostrow { display:flex; justify-content:space-between; gap:12px; padding:3px 0; font-size:13px; }
@@ -249,30 +172,19 @@ h2.fold .dview + .fold-chev { margin-left:2px; }
 h2 .dview + .dview.icon { margin-left:0; }
 
 /* Eén duidelijke regel: elk regel een klein apparaat-icoon rechts, een dun lijntje waar het apparaat wisselt */
-.devmark { display:inline-flex; margin-left:10px; color:var(--muted); width:20px; justify-content:center; }
-.devmark .di { width:17px; height:17px; }
-.item.adult .devmark { color:rgba(255,255,255,.85); }
 
 /* Nu in gebruik: alleen de chip kleurt groen (de gekozen chip wordt dan vol groen), geen bolletjes */
 .chip.on.act { background:#16a34a; border-color:#16a34a; color:#fff; }
-
-
-.reltime { font-weight:500; white-space:nowrap; }
 
 /* Duidelijker: vaste regelhoogte, klein Nieuw-label, uurmarkering, duur met klokje */
 .item .name { line-height:20px; }
 .newtag { font-size:9px !important; padding:0 6px !important; line-height:14px; margin-left:6px !important; }
 .item .main { overflow:hidden; }
 .hourmark { padding:10px 14px 0 54px; font-size:11px; font-weight:600; letter-spacing:.06em; color:var(--muted); opacity:.75; font-variant-numeric:tabular-nums; }
-.time .vdur { display:inline-flex; align-items:center; gap:4px; }
-.time .vdur svg { opacity:.65; }
-.time:has(.reltime) .vdur svg { display:none; }
 .time { gap:5px; }
 
 /* Twee regels: naam boven, apparaat en duur eronder; rechts alleen de tijd. Overal even hoog, lijntjes tussen alle regels. */
 .time { display:block !important; flex:none; text-align:right; }
-.time .tcol { font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; font-size:15px; }
-.time .reltime { color:var(--accent); font-size:14px; }
 .item { min-height:62px; padding-top:10px; padding-bottom:10px; }
 .item .meta { display:flex; align-items:center; gap:6px; margin-top:2px; font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; }
 .item .meta .mdev { display:inline-flex; align-items:center; gap:4px; }
@@ -300,7 +212,7 @@ h2 .dview + .dview.icon { margin-left:0; }
 /* Skeleton tijdens het laden: grijze vlakken met een zachte glans die eroverheen schuift. */
 .skel { padding-top:8px; }
 .skel-chips { display:flex; gap:6px; overflow:hidden; padding:2px 0 14px; }
-.skel-head { display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px; }
+.skel-head { display:flex; justify-content:space-between; align-items:center; height:34px; margin:19px 0 18px; } /* zelfde plek als de echte dagkop: anders springt de lijst bij het laden (CLS) */
 .skel-list { pointer-events:none; }
 .skel-item { min-height:62px; border-bottom:0; }
 .skel-item .main { display:flex; flex-direction:column; }
@@ -374,11 +286,6 @@ h2 .dview + .dview.icon { margin-left:0; }
 .dview + .dview { margin-left:6px; }
 .dview b { font-weight:700; font-size:12px; line-height:18px; }
 .rawq { width:100%; box-sizing:border-box; margin:0 0 10px; padding:9px 14px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:inherit; font:inherit; }
-.rawlog .rawi { position:relative; }
-.rawlog .rawi.blk::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:#e5484d; }
-.rawlog .rawi.flag { background:color-mix(in srgb, #e5484d 12%, transparent); }
-.rawt { min-width:0; }
-.rawh { font-size:15px; overflow-wrap:anywhere; }
 /* N en kalender: twee ronde knoppen in één ronde houder. */
 .dview.icon { width:24px; height:24px; padding:0; justify-content:center; border-radius:50%; }
 .dpair { margin-left:auto; display:inline-flex; align-items:center; gap:2px; padding:2px; border:1px solid var(--line); border-radius:99px; }
@@ -406,17 +313,12 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .mfav img { width:18px; height:18px; opacity:0; }
 .mfav img.ok { opacity:1; background:var(--card); }
 .rawhost { flex:1; min-width:0; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rawdev { flex:none; color:var(--muted); display:inline-flex; }
-.rawdev svg { width:14px; height:14px; }
-.rawtime { flex:none; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; }
 .rawchev { flex:none; color:var(--muted); font-size:18px; line-height:1; transition:transform .15s; }
 .rawrow.open .rawchev { transform:rotate(90deg); }
 .rawdet { padding:2px 14px 12px 42px; font-size:13px; }
-.rawfull { font-size:14px; overflow-wrap:anywhere; margin-bottom:6px; }
 .rawdet dl { display:grid; grid-template-columns:auto 1fr; gap:3px 12px; margin:0; }
 .rawdet dt { color:var(--muted); }
 .rawdet dd { margin:0; overflow-wrap:anywhere; }
-.rawsearch { margin-top:8px; font:inherit; font-size:13px; font-weight:600; padding:5px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--accent); cursor:pointer; }
 /* Gekozen tab = neutraal gevuld (wit in donker, donker in licht), zoals in iOS; kleur alleen waar het iets betekent (groen = nu in gebruik, rood = vangnet). Nu in gebruik = alleen een groen knipperend bolletje met de app erbij,
    verder een gewone chip. Gekozen én online: neutraal gevuld met het groene bolletje. Zo zijn "gekozen" en "nu bezig" nooit te verwarren. */
 .chip.on { background:var(--fg); border:1px solid var(--fg); color:var(--bg); font-weight:600; }
@@ -426,7 +328,6 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 :root[data-theme] .chip.act:not(.on) { color:var(--fg); }
 .chip.act .di { opacity:1; }
 .chip.on.act { background:var(--fg); border-color:var(--fg); color:var(--bg); box-shadow:none; }
-.chip-app { font-weight:500; opacity:.95; max-width:9.5em; overflow:hidden; text-overflow:ellipsis; }
 .pulse { position:relative; flex:none; width:8px; height:8px; border-radius:50%; background:#22c55e; margin-right:1px; }
 .chip.on .pulse { background:#22c55e; box-shadow:none; } /* gekozen chip: alleen het groene bolletje, geen randje */
 .pulse::after { content:""; position:absolute; inset:0; border-radius:50%; background:#22c55e; animation:pulse 1.6s ease-out infinite; }
@@ -441,10 +342,8 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .time .tdur { font-size:15px; font-weight:600; }
 /* Strak en overal gelijk: elke regel even hoog; links naam met daaronder (toestel ·) tijd; rechts alleen de duur.
    Korte bezoeken zijn alleen iets lichter, verder precies hetzelfde. */
-.mwhen { display:inline-flex; align-items:center; gap:5px; font-variant-numeric:tabular-nums; }
 .time .tdur { font-size:15px; font-weight:600; }
 /* Rechts: duur, daaronder klein de tijd (van–tot). */
-.time .twhen { display:flex; justify-content:flex-end; align-items:center; gap:5px; font-size:12.5px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
 /* Wat nu bezig is: een rustige groene zweem die langzaam door de regel trekt (leeft, maar stoort niet). */
 .item.nowrow {
   background-image:linear-gradient(100deg, transparent 25%, color-mix(in srgb, #22c55e 13%, transparent) 50%, transparent 75%);
@@ -476,9 +375,8 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 /* Variant C (gekozen): agenda met ruimte – kleine logo's bovenaan bij de naam, lichtere namen, geen lijntjes tussen de
    regels, meer lucht tussen de uren. */
 .list .item { padding-top:9px; padding-bottom:9px; min-height:0; }
-.list .item .fav, .list .item .fav.badge { align-self:flex-start; width:20px; height:20px; border-radius:5px; margin-top:0; }
+.list .item .fav{ align-self:flex-start; width:20px; height:20px; border-radius:5px; margin-top:0; }
 .list .item .fav.ph { width:20px; height:20px; font-size:10px; }
-.list .item .fav.badge { font-size:8px; }
 .item .name { font-weight:500; }
 .item .sub { font-size:12.5px; }
 .list > div > .hourmark { padding:14px 14px 6px; }
@@ -487,16 +385,14 @@ h2.fold .dpair + .fold-chev { margin-left:2px; }
 .list > div > .hourmark { padding:0; height:16px; }
 .list > div > .hourmark::after { display:none; }
 /* Logo's iets groter (herkenbaar), en weer dunne lijntjes tussen de regels (vanaf de naam); uren blijven met lucht gescheiden. */
-.list .item .fav, .list .item .fav.badge, .list .item .fav.ph { width:26px; height:26px; border-radius:6px; margin-top:-3px; }
+.list .item .fav,.list .item .fav.ph{ width:26px; height:26px; border-radius:6px; margin-top:-3px; }
 .list .item .fav.ph { font-size:12px; }
-.list .item .fav.badge { font-size:9px; }
 .list > div + div:has(.tstart)::before { display:block; left:110px; }
 .list > div.hourstart:has(.tstart)::before { display:none; }
 /* Weer verticaal gecentreerd (luchtiger): tijd, logo, naam/toestel en duur in het midden van de regel; logo's 28px. */
 .list .item { align-items:center; padding-top:12px; padding-bottom:12px; }
-.list .item .fav, .list .item .fav.badge, .list .item .fav.ph { align-self:center; width:28px; height:28px; border-radius:7px; margin-top:0; }
+.list .item .fav,.list .item .fav.ph{ align-self:center; width:28px; height:28px; border-radius:7px; margin-top:0; }
 .list .item .fav.ph { font-size:13px; }
-.list .item .fav.badge { font-size:10px; }
 .list > div + div:has(.tstart)::before { left:112px; }
 /* Geselecteerd én online: tekst en icoon ook groen (donkergroen op de lichte knop, lichtgroen op de donkere knop). */
 .chip.on.act, .chip.on.act .di { color:#4ade80; }
@@ -572,7 +468,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 .time .tdur.kort { font-size:14px; font-weight:400; color:var(--muted); }
 /* Vangnet-rij (rood) blijft rood, ook als hij nu bezig is; alle tekst wit zodat hij leesbaar blijft. */
 .item.adult.nowrow { background-color:#dc2626; background-image:linear-gradient(100deg, transparent 20%, rgba(255,255,255,.16) 50%, transparent 80%); }
-.item.adult .tstart, .item.adult .time, .item.adult .time .twhen, .item.adult .tdur, .item.adult .nowtag { color:#fff; }
+.item.adult .tstart,.item.adult .time,.item.adult .tdur,.item.adult .nowtag{ color:#fff; }
 .item.adult .tstart { opacity:.85; }
 /* Vangnet: het echte logo blijft staan (op een wit vlakje, leesbaar op rood); het soort staat als wit label achter de naam. */
 .flagtag { display:inline-block; margin-left:8px; padding:0 7px; font-size:11px; line-height:18px; font-weight:700; border-radius:6px; vertical-align:2px; background:#fff; color:#dc2626; }
@@ -587,15 +483,12 @@ h2 .livedot { margin:0 2px 0 12px; }
 .partmark span { display:inline-flex; align-items:center; gap:5px; }
 .list > div:first-child > .partmark { padding-top:10px; }
 /* NextDNS-lijst rustiger, zoals NextDNS zelf: tijdkopje per minuut, per regel alleen logo + adres + pijltje omlaag. */
-.rawmin { padding:12px 16px 4px; font-size:12px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
-.rawlog > .rawmin + .rawrow::before { display:none; }
 .rawlog .rawhost { font-size:16px; }
 .rawlog .rawline { padding-top:13px; padding-bottom:13px; }
 .rawlog .rawchev { flex:none; color:var(--muted); opacity:.6; transition:transform .15s; }
 .rawrow.open .rawchev { transform:rotate(180deg); }
 /* Opengeklapte regel zoals NextDNS: apparaat, status, tijd ("x minuten geleden") en een ⋮-menu om te kopiëren. */
 .rawlog .rawdet { padding:0 16px 12px 42px; font-size:14px; position:relative; }
-.rawlog .rawfull { font-size:13px; color:var(--muted); margin-bottom:6px; }
 .rdev { font-size:16px; }
 .rinfo { color:var(--muted); margin-top:2px; overflow-wrap:anywhere; }
 .rfoot { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
@@ -626,7 +519,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .setrow h2 { margin:20px 0 8px; }
 .setbody { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; font-size:14px; display:flex; flex-direction:column; gap:10px; }
 .setbody p { margin:0; line-height:1.45; }
-.setbody .fbform { margin:0; max-width:none; }
 .setbtns { display:flex; gap:10px; flex-wrap:wrap; }
 .setbtn { border:1px solid var(--line); background:var(--bg); color:var(--accent); border-radius:99px; padding:7px 14px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
 .setbtn.quiet { color:var(--muted); font-weight:500; }
@@ -638,10 +530,23 @@ h2 .livedot { margin:0 2px 0 12px; }
 .setrow .dot.on { background:#22c55e; }
 .pushnote { color:var(--muted); }
 .pushwarn { margin:20px 0 0; color:#dc2626; font-weight:600; font-size:14px; }
-.fbform textarea:focus { outline:none; border-color:var(--accent); }
 /* Uitzetten alleen na het overtypen van UITZETTEN. */
 .offask { display:flex; flex-direction:column; gap:10px; }
 .offask label { display:flex; flex-direction:column; gap:8px; line-height:1.45; }
 .offask input { font:inherit; font-size:16px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--fg); letter-spacing:.05em; }
 .offask input:focus { outline:none; border-color:var(--accent); }
 .setbtn.danger { color:#dc2626; }
+/* De zweem van "nu" schuift als een aparte laag (transform) in plaats van de achtergrond te verschuiven: dan tekent de telefoon de
+   regel niet elk beeldje opnieuw (scheelde op een trage telefoon honderden ms tekenwerk per seconde). Zelfde uiterlijk. */
+.item.nowrow { position:relative; overflow:hidden; isolation:isolate; background-image:none; animation:none; }
+.item.nowrow::before { content:""; position:absolute; inset:0 -60%; z-index:-1; pointer-events:none; background:linear-gradient(100deg, transparent 30%, color-mix(in srgb, #22c55e 16%, transparent) 50%, transparent 70%); transform:translateX(-60%); animation:nowsweep 3.5s ease-in-out infinite; }
+.item.adult.nowrow { background-image:none; }
+.item.adult.nowrow::before { background:linear-gradient(100deg, transparent 30%, rgba(255,255,255,.16) 50%, transparent 70%); }
+@keyframes nowsweep { from { transform:translateX(-60%); } to { transform:translateX(60%); } }
+@media (prefers-reduced-motion: reduce) { .item.nowrow::before { animation:none; transform:none; } }
+/* Rode knop: de ring als aparte laag die groter wordt en vervaagt (transform/opacity), in plaats van een bewegende schaduw die
+   de telefoon elk beeldje opnieuw laat tekenen. Zelfde uiterlijk. */
+.bang { animation:none; isolation:isolate; }
+.bang::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:50%; background:rgba(220,38,38,.6); pointer-events:none; animation:bangring 2s infinite; }
+@keyframes bangring { 0% { transform:scale(1); opacity:1; } 70% { transform:scale(1.6); opacity:0; } 100% { transform:scale(1.6); opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .bang::after { animation:none; opacity:0; } }

@@ -55,6 +55,19 @@ check('script met juist wachtwoord', basic_auth_ok($cfg));
 $_SERVER['HTTP_AUTHORIZATION'] = 'Basic ' . base64_encode('klaro:fout');
 check('script met fout wachtwoord geweigerd', !basic_auth_ok($cfg));
 
+// Raden afremmen (inlogscherm en basic-auth samen) en wachtwoord vergelijken zonder lengte-lek.
+@unlink(FAILS);
+check('goed wachtwoord via password_ok', password_ok($cfg, $cfg['password']));
+check('leeg wachtwoord nooit goed', !password_ok($cfg, ''));
+check('langer wachtwoord met hetzelfde begin is fout', !password_ok($cfg, $cfg['password'] . 'x'));
+for ($i = 0; $i < 19; $i++) auth_failed();
+check('19 fouten: nog niet dicht', !auth_blocked());
+auth_failed();
+check('20 fouten in 15 min: dicht', auth_blocked());
+file_put_contents(FAILS, json_encode(array_fill(0, 30, time() - 901)));
+check('oude fouten (> 15 min) tellen niet', !auth_blocked());
+@unlink(FAILS);
+
 array_map('unlink', glob(PRIV . '/*')); rmdir(PRIV);
 echo "\n$ok goed, $bad fout\n";
 exit($bad ? 1 : 0);

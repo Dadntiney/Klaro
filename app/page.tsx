@@ -1196,12 +1196,16 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Los van het apparaat-filter: zo hoeft een tik op een chip dit niet opnieuw uit te rekenen.
+  const use = useMemo(() => usage(groups, { auto, followers: followOf.current, mailT, cut }), [groups, mailT, cut, auto]);
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
-    const { listed, shown } = usage(groups, { auto, followers: followOf.current, mailT, cut });
+    const mainByDay = new Map<string, Group[]>(); // voor "niet getoond": per dag, in plaats van per dag alle groepen door te lopen
+    const { listed, shown } = use;
     for (const g of groups) {
-      if ((device && g.dev !== device) || !listed(g)) continue;
-      byDay.set(g.d, [...(byDay.get(g.d) ?? []), g]);
+      if (device && g.dev !== device) continue;
+      if (g.main && !g.bg && !g.flag && !g.susp) (mainByDay.get(g.d) ?? mainByDay.set(g.d, []).get(g.d)!).push(g);
+      if (listed(g)) (byDay.get(g.d) ?? byDay.set(g.d, []).get(g.d)!).push(g);
     }
     return [...byDay.entries()]
       .sort((a, b) => (a[0] < b[0] ? 1 : -1))
@@ -1209,15 +1213,14 @@ export default function Home() {
         const per = list.map((g) => ({ g, ss: shown(g) })).filter((x) => x.ss.length);
         // Actieve minuten van de dag: per apparaat de echte-gebruik-sessies samengevoegd (overlappende apps niet dubbel).
         const byDev = new Map<string, Session[]>();
-        for (const { g, ss } of per) byDev.set(g.dev, [...(byDev.get(g.dev) ?? []), ...ss]);
+        for (const { g, ss } of per) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push(...ss);
         let mins = 0;
         for (const ss of byDev.values()) mins += activeMinutes(ss);
         return {
           d,
           list: per.map((x) => x.g),
           // Bewust niet getoond (met reden): sessies van echte sites/apps die op gebruik leken, maar het niet waren.
-          hidden: groups
-            .filter((g) => g.d === d && g.main && !g.bg && !g.flag && !g.susp && (!device || g.dev === device))
+          hidden: (mainByDay.get(d) ?? [])
             .flatMap((g) => {
               const shownS = new Set(shown(g).map((x) => x.s));
               return (g.ss ?? [])
@@ -1241,7 +1244,7 @@ export default function Home() {
         };
       })
       .filter((d) => d.rows.length > 0);
-  }, [groups, device, mailT, cut, auto]);
+  }, [groups, device, use, auto]);
 
   // Geluid alleen bij een nieuwe regel van vandaag (nieuwe app, site of game), niet bij elke opvraging.
   // Pas na het volledig laden, en opnieuw beginnen bij een ander apparaat-filter: dan is alles "nieuw" maar niet gebeurd.

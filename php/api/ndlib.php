@@ -8,15 +8,24 @@ function nd_base(array $cfg): string {
 }
 
 function nd_get(string $url, string $key, int $timeout): array {
-  $ch = curl_init($url);
-  curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 5,
-    CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => $timeout, CURLOPT_ENCODING => '',
-    CURLOPT_HTTPHEADER => ['X-Api-Key: ' . trim($key)],
-  ]);
-  $body = curl_exec($ch);
-  $status = $body === false ? 502 : (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-  curl_close($ch);
+  // Doorsturen zelf afhandelen: de geheime sleutel gaat alleen naar NextDNS, nooit mee naar het adres waar die naar doorstuurt
+  // (de download staat op een tijdelijk opslagadres). Alleen https.
+  $home = parse_url($url, PHP_URL_HOST);
+  for ($hop = 0; $hop <= 5; $hop++) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+      CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => false,
+      CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => $timeout, CURLOPT_ENCODING => '',
+      CURLOPT_HTTPHEADER => parse_url($url, PHP_URL_HOST) === $home ? ['X-Api-Key: ' . trim($key)] : [],
+    ]);
+    $body = curl_exec($ch);
+    $status = $body === false ? 502 : (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $next = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    curl_close($ch);
+    if ($body === false || $status < 300 || $status >= 400 || $next === '') break;
+    if (stripos($next, 'https://') !== 0 && stripos($url, 'http://127.0.0.1') !== 0) return [502, '{"error":"NextDNS stuurde door naar een onveilig adres."}'];
+    $url = $next;
+  }
   return [$status, $body === false ? '{"error":"NextDNS is niet bereikbaar."}' : $body];
 }
 

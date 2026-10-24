@@ -22,8 +22,8 @@ function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery; re
   const fallback = async () => {
     if (opts.raw) return local.search(opts.raw);
     if (opts.all) local.expand();
-    const r = await buildOverview(local.client, opts);
-    if (r.status === 200) (r.body as { windowFrom?: number }).windowFrom = local.windowFrom();
+    const r = await buildOverview(opts.todayOnly ? php : local.client, opts);
+    if (r.status === 200 && !opts.todayOnly) (r.body as { windowFrom?: number }).windowFrom = local.windowFrom();
     return r;
   };
   try {
@@ -57,7 +57,8 @@ export async function apiFetch(path: string, init?: { signal?: AbortSignal }): P
   const url = new URL(path, "https://klaro.local");
   try {
     if (url.pathname === "/api/nextdns") {
-      if (url.searchParams.get("scope") === "today") return answer(await buildOverview(php, { todayOnly: true, hours: Number(url.searchParams.get("hours")) || 0 }));
+      // Ook vandaag in de worker: op een telefoon blokkeerde dit rekenwerk de pagina tot ~1 s (tikken reageerde dan niet).
+      if (url.searchParams.get("scope") === "today") return answer(await inWorker({ todayOnly: true, hours: Number(url.searchParams.get("hours")) || 0 }));
       // Alleen de laatste uren opnieuw, met dezelfde regels (elke minuut; zie lib/recent.ts). Zonder worker: gewoon alles.
       if (url.searchParams.get("scope") === "recent") return answer(await inWorker({ todayOnly: false, recent: true }));
       // Oudere dagen laden (?all=1): eenmalig alles ophalen en uitrekenen.

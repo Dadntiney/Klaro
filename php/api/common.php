@@ -111,6 +111,33 @@ function session_end(bool $all): void {
   set_sid_cookie('', 1);
 }
 
+/** Wachtwoord vergelijken zonder dat de lengte via de tijd uitlekt. */
+function password_ok(array $cfg, string $given): bool {
+  return $given !== '' && hash_equals(hash('sha256', (string)$cfg['password']), hash('sha256', $given));
+}
+
+/**
+ * Raden afremmen, voor inlogscherm en basic-auth samen: na 20 foute wachtwoorden in 15 minuten is alles met een wachtwoord
+ * 15 minuten dicht (429). Alleen foute pogingen tellen; verzoeken zonder wachtwoord (de pagina zelf, live) niet.
+ */
+const FAILS = PRIV . '/fails.json';
+function auth_blocked(): bool {
+  $s = is_file(FAILS) ? json_decode((string)file_get_contents(FAILS), true) : [];
+  $now = time();
+  return count(array_filter(is_array($s) ? $s : [], fn($t) => is_int($t) && $now - $t < 900)) >= 20;
+}
+function auth_failed(): void {
+  $h = fopen(FAILS, 'c+');
+  if (!$h) return;
+  flock($h, LOCK_EX);
+  $s = json_decode((string)stream_get_contents($h), true);
+  $now = time();
+  $s = array_values(array_filter(is_array($s) ? $s : [], fn($t) => is_int($t) && $now - $t < 900));
+  $s[] = $now;
+  ftruncate($h, 0); rewind($h); fwrite($h, json_encode(array_slice($s, -50)));
+  flock($h, LOCK_UN); fclose($h);
+}
+
 /** Basic-auth (voor scripts zoals de dagelijkse controle): elk verzoek met het wachtwoord; geen sessie, verlengt niets. */
 function basic_auth_ok(array $cfg): bool {
   $pw = $_SERVER['PHP_AUTH_PW'] ?? null;
@@ -121,7 +148,11 @@ function basic_auth_ok(array $cfg): bool {
       $pw = substr($d, strpos($d, ':') === false ? 0 : strpos($d, ':') + 1);
     }
   }
-  return $pw !== null && $pw !== '' && hash_equals($cfg['password'], $pw);
+  if ($pw === null || $pw === '') return false;
+  if (auth_blocked()) json_out(429, ['error' => 'Te vaak een fout wachtwoord. Probeer het over 15 minuten opnieuw.']);
+  if (password_ok($cfg, $pw)) return true;
+  auth_failed();
+  return false;
 }
 
 /** Alleen ingelogd verder; anders 401 (de pagina gaat dan naar het inlogscherm, met de reden in X-Klaro-Login). */

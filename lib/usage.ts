@@ -35,12 +35,22 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     if ((g.bl ?? 0) >= g.n && !g.flag) return false; // alles geblokkeerd door NextDNS: niet bezocht
     return true;
   };
+  // Apps met een vaste melding via een doorverwijs-adres, als "apparaat|site" (één keer opbouwen, niet per groep doorzoeken).
+  const followed = new Set(Object.entries(o.followers).map(([k, site]) => k.slice(0, k.indexOf("|")) + "|" + site));
+  const cache = new Map<G, Session[]>();
   // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
   const shown = (g: G): Session[] => {
+    const hit = cache.get(g);
+    if (hit) return hit;
+    const r = shownRaw(g);
+    cache.set(g, r);
+    return r;
+  };
+  const shownRaw = (g: G): Session[] => {
     let all = g.ss && g.ss.length ? g.ss : [{ s: g.last, e: g.last }];
     // Navigatie (Waze) en apps met een vaste melding (Toca Boca): stukjes met hooguit NAV_GAP / HEARTBEAT_GAP ertussen zijn één
     // rit of één keer spelen, ook live (zelfde regel als lib/overview.ts).
-    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : Object.entries(o.followers).some(([k, site]) => site === g.site && k.startsWith(g.dev + "|")) ? HEARTBEAT_GAP : 0;
+    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : followed.has(g.dev + "|" + g.site) ? HEARTBEAT_GAP : 0;
     if (joinGap && all.length > 1) {
       const m: Session[] = [];
       for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }

@@ -33,14 +33,6 @@ export interface NextDNSClient {
   download(timeoutMs: number): Promise<NDResponse>;
 }
 
-/** Rechtstreeks bij NextDNS (Node: scripts en tests). */
-export function directClient(key: string, profile: string): NextDNSClient {
-  const base = `https://api.nextdns.io/profiles/${encodeURIComponent(profile.trim())}/logs`;
-  const get = (url: string, ms: number) => fetch(url, { headers: { "X-Api-Key": key.trim() }, cache: "no-store", redirect: "follow", signal: AbortSignal.timeout(ms) });
-  return { logs: (q, ms) => get(`${base}?${q}`, ms), download: (ms) => get(`${base}/download`, ms) };
-}
-
-
 const MAX_GROUPS = 15000;
 const DAY = 86_400_000;
 /** Onderdelen van een Shopify-winkel: de winkel zelf vraagt maar één eigen adres op, de rest komt van hier. */
@@ -185,12 +177,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   let rows: string[][];
   let cutAt: number | undefined;
   if (todayOnly) {
-    const t0 = Date.now();
     const r = await fetchToday(client, hours);
     if ("error" in r) return ({ status: r.status, body: { error: r.error } });
     rows = r.rows;
     cutAt = r.cutAt;
-    console.log(`scope=today: ${rows.length - 1} regels in ${Date.now() - t0} ms${cutAt ? " (niet compleet)" : ""}`);
   } else {
   // De download-endpoint accepteert geen filters (alleen X-Api-Key): we krijgen alle opgeslagen logs.
   let res: NDResponse;
