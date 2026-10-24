@@ -179,6 +179,6 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    (GitHub: actions_list voor waarschuw.yml; of `api/push.php` → `laatst`, moet minder dan een uur oud zijn.) Mislukt hij: de
    oorzaak zoeken en oplossen (server, sleutel, NextDNS), net als elke andere fout. Deze dagelijkse commit houdt de taak ook in
    leven: GitHub zet geplande taken uit na 60 dagen zonder commits.
-8. `docs/laatste-controle.md` bijwerken (datum van vandaag + één regel resultaat) en meenemen in de laatste commit van de dag,
+8. `docs/laatste-controle.md` bijwerken (datum van vandaag + één regel resultaat, zonder site- of apparaatnamen: de repository is openbaar) en meenemen in de laatste commit van de dag,
    ook als er niets veranderd is. Daaraan ziet de bewaking (`.github/workflows/leren.yml`) dat de controle gedraaid heeft.
 9. Kort melden in eenvoudig Nederlands wat er is opgelost; niets gevonden = één zin.
