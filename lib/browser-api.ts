@@ -13,10 +13,12 @@ import type { RawQuery } from "./rawlog.ts";
 
 serverLists();
 
-// Het zware rekenwerk (alle dagen) in een worker; lukt dat niet (oude browser), dan gewoon hier.
-let worker: Worker | null = null;
+// Het zware rekenwerk (alle dagen) in een worker; lukt dat niet (oude browser), dan gewoon hier. Vandaag in een eigen tweede
+// worker: anders wacht het snelle eerste beeld soms tot de grote berekening van alle dagen klaar is (gemeten: tot 15 s).
+const workers: { full: Worker | null; today: Worker | null } = { full: null, today: null };
 let nextId = 1;
 const waiting = new Map<number, (r: { status: number; body: unknown }) => void>();
+const owner = new Map<number, "full" | "today">(); // welke worker een vraag beantwoordt (om bij een fout alleen die vragen te laten vallen)
 const local = rawSource(php); // zonder worker (oude browser): hier zoeken
 function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery; recent?: boolean; all?: boolean }): Promise<{ status: number; body: unknown }> {
   const fallback = async () => {
@@ -27,12 +29,15 @@ function inWorker(opts: { todayOnly: boolean; hours?: number; raw?: RawQuery; re
     return r;
   };
   try {
+    const kind = opts.todayOnly ? "today" : "full";
+    let worker = workers[kind];
     if (!worker) {
-      worker = new Worker("/overview-worker.js");
-      worker.onmessage = (e: MessageEvent<{ id: number; status: number; body: unknown }>) => { waiting.get(e.data.id)?.(e.data); waiting.delete(e.data.id); };
-      worker.onerror = () => { for (const [, done] of waiting) done({ status: 0, body: null }); waiting.clear(); worker = null; };
+      const w = (worker = workers[kind] = new Worker("/overview-worker.js"));
+      w.onmessage = (e: MessageEvent<{ id: number; status: number; body: unknown }>) => { waiting.get(e.data.id)?.(e.data); waiting.delete(e.data.id); owner.delete(e.data.id); };
+      w.onerror = () => { for (const [id, k] of owner) if (k === kind) { waiting.get(id)?.({ status: 0, body: null }); waiting.delete(id); owner.delete(id); } workers[kind] = null; };
     }
     const id = nextId++;
+    owner.set(id, kind);
     return new Promise((done) => { waiting.set(id, done); worker!.postMessage({ id, ...opts }); }).then((r) => {
       const res = r as { status: number; body: unknown };
       if (res.status === 401 && typeof location !== "undefined") location.href = "/login?verlopen=1"; // in de worker: sessie verlopen of uitgelogd
@@ -57,8 +62,13 @@ export async function apiFetch(path: string, init?: { signal?: AbortSignal }): P
   const url = new URL(path, "https://klaro.local");
   try {
     if (url.pathname === "/api/nextdns") {
-      // Ook vandaag in de worker: op een telefoon blokkeerde dit rekenwerk de pagina tot ~1 s (tikken reageerde dan niet).
-      if (url.searchParams.get("scope") === "today") return answer(await inWorker({ todayOnly: true, hours: Number(url.searchParams.get("hours")) || 0 }));
+      // Het eerste snelle beeld (laatste 1,5 uur, weinig regels) meteen hier: een worker moet eerst zijn script laden, en dan
+      // wacht dit kleine verzoek soms op de grote download. De hele dag van vandaag (veel rekenwerk, blokkeerde op een telefoon
+      // de pagina tot ~1 s) in een eigen worker.
+      if (url.searchParams.get("scope") === "today") {
+        const hours = Number(url.searchParams.get("hours")) || 0;
+        return answer(hours ? await buildOverview(php, { todayOnly: true, hours }) : await inWorker({ todayOnly: true, hours: 0 }));
+      }
       // Alleen de laatste uren opnieuw, met dezelfde regels (elke minuut; zie lib/recent.ts). Zonder worker: gewoon alles.
       if (url.searchParams.get("scope") === "recent") return answer(await inWorker({ todayOnly: false, recent: true }));
       // Oudere dagen laden (?all=1): eenmalig alles ophalen en uitrekenen.

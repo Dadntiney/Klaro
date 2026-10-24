@@ -503,7 +503,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 /* Bovenste dagdeel-label op de bovenrand van de lijst, als rustig labeltje half op grijs, half op wit. */
 .partcap { position:relative; height:0; margin-top:18px; z-index:1; display:flex; justify-content:center; }
 .partcap span { position:absolute; top:0; transform:translateY(-50%); display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border:1px solid var(--line); border-radius:99px; background:var(--card); color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; }
-.list.capped > div:first-child > .item { border-top:8px solid transparent; background-origin:border-box; } /* ruimte onder het labeltje, in de kleur van de bovenste regel (bijv. groen bij "nu") */
+.list.day > div:first-child > .item { border-top:8px solid transparent; background-origin:border-box; } /* ruimte onder het labeltje, in de kleur van de bovenste regel (bijv. groen bij "nu") */
 /* Naar boven: rond pijltje rechtsonder, alleen na flink scrollen. */
 .totop { position:fixed; right:24px; bottom:calc(36px + env(safe-area-inset-bottom)); z-index:30; width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--card); color:var(--fg); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.12); cursor:pointer; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .2s, transform .2s; -webkit-tap-highlight-color:transparent; }
 .totop.show { opacity:1; transform:none; pointer-events:auto; }
@@ -550,3 +550,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .bang::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:50%; background:rgba(220,38,38,.6); pointer-events:none; animation:bangring 2s infinite; }
 @keyframes bangring { 0% { transform:scale(1); opacity:1; } 70% { transform:scale(1.6); opacity:0; } 100% { transform:scale(1.6); opacity:0; } }
 @media (prefers-reduced-motion: reduce) { .bang::after { animation:none; opacity:0; } }
+/* Daglijst zonder dagdeel-label op dezelfde hoogte als met label: anders springt de lijst 10 px zodra het label verschijnt
+   (eerst alleen het laatste anderhalf uur = één dagdeel, daarna de hele dag). */
+.list.day:not(.capped) { margin-top:18px; } /* zelfde als .partcap (de marge valt samen met die van de dagkop) */

@@ -1407,7 +1407,7 @@ export default function Home() {
                 return (
               <>
               {cap !== null && <div className="partcap"><span><PartIcon p={cap} />{PARTS[cap]}</span></div>}
-              <div className={"list" + (cap !== null ? " capped" : "")}>
+              <div className={"list day" + (cap !== null ? " capped" : "")}>
                 {(() => {
                   return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
                   // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
