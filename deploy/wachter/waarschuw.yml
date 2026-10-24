@@ -1,0 +1,49 @@
+# Wachter: draait de waarschuw-controle van Klaro (18+, dating, VPN) elke 5 minuten, in een aparte OPENBARE repository, zodat
+# Klaro zelf privé kan blijven (openbare repositories hebben onbeperkt gratis Actions-minuten; dit draait bijna het hele uur).
+# De code komt telkens vers uit de privé-repository (geheim KLARO_LEZEN: een sleutel met alleen leesrechten op Klaro). In het
+# logboek staan alleen aantallen, nooit sites of apparaten. Plaats: .github/workflows/waarschuw.yml in de wachter-repository.
+name: Waarschuwen
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+concurrency:
+  group: waarschuwen
+  cancel-in-progress: false
+permissions:
+  contents: read
+  actions: write
+jobs:
+  waarschuw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - name: Code van Klaro ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: Dadntiney/Klaro
+          ref: main
+          token: ${{ secrets.KLARO_LEZEN || github.token }}
+          path: klaro
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Elke 5 minuten nieuwe regels nakijken
+        timeout-minutes: 53   # vastgelopen: deze stap stopt, de opvolger start toch
+        working-directory: klaro
+        env:
+          KLARO_GEHEIM: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          end=$(( $(date +%s) + 50 * 60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            start=$(date +%s)
+            timeout 60 git pull -q --ff-only origin main || true   # nieuwe herkenning meteen gebruiken
+            timeout 240 node --experimental-strip-types scripts/waarschuw.ts || echo "deze ronde mislukt"
+            sleep $(( 300 - ($(date +%s) - start) > 0 ? 300 - ($(date +%s) - start) : 1 ))
+          done
+      - name: Opvolger starten
+        if: always()   # ook na vastlopen of de tijdslimiet: de keten mag nooit breken
+        env:
+          GH_TOKEN: ${{ github.token }}
+        timeout-minutes: 2
+        run: gh workflow run waarschuw.yml --ref main -R "$GITHUB_REPOSITORY"
