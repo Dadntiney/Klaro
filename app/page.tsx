@@ -1594,6 +1594,9 @@ export default function Home() {
               <span className="muted">Nu zichtbaar: de laatste 30 dagen.</span>
             </div>
           )}
+          {/* Instellingen en uitloggen pas als vandaag compleet is (cut = 0): anders schuiven ze omlaag terwijl de lijst groeit. */}
+          {!cut && (
+            <>
           <section className="settings">
             <PushToggle />
           </section>
@@ -1611,6 +1614,8 @@ export default function Home() {
             <span aria-hidden>·</span>
             <button type="submit" name="alle" value="1">Overal uitloggen</button>
           </form>
+            </>
+          )}
         </>
       )}
       {open && (
