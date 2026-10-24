@@ -45,6 +45,13 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    (geen lettertype/script/teller van een ander domein) is een voorvertoning of aangeklopte advertentie: geen bezoek (22 okt, X:
    starlink/ftmo/jobescape). Laadt een pagina traag (onderdelen na 5-6 s), dan blijft het een bezoek. Piknik = kinderapp met
    Toca Boca/Sago Mini (playpiknik.com). youshouldask.ai (chatknop), hcaptcha (captcha), wepowerconnections: achtergrond. Awin (dwin1/dwin2/awin1/zenaps) is een affiliateteller in webwinkels (22 okt, "Klopt niet").
+   Onderdeel dat later komt (tot 15 s na de pagina) terwijl die pagina nog volop laadt (3+ andere domeinen in de 1,5 s ervoor):
+   geen bezoek (24 okt: app.varify.io, chat.stackflowaisolutions.com; over alle dagen 5 weg, niets erbij). Drempel 2 is te
+   gevoelig (dan telt ook App Store-verkeer van de telefoon zelf). placehold.co (vervang-plaatjes): achtergrond.
+   Vanuit een mail naar de site zelf (www.) waar meteen een hele pagina laadt (9+ andere domeinen in 3 s, geen nieuwsbrieven
+   tegelijk): op een link getikt, ook als het klik-adres van het merk zelf is (www.email.happinez.nl, 24 okt 11:39). Zonder de
+   uitzondering voor "Mail-app haalt nieuwsbrieven op" kwamen er 23 valse bezoeken bij. Live stond zo'n bezoek eerst 1,5 min als
+   mail verborgen terwijl de chip al groen was.
    Mislukt `next build` met SecurityFatalError: Next.js bijwerken naar de herstelde versie (22 okt: 16.4.0 → 16.4.2). Filmpje (Wistia) hoort bij de pagina die het laadde; Google binnen 5 s na een andere
    pagina is een teller (20 okt, yogales). Adres dat op een apparaat telkens alleen uit mails laadt en weinig meelaadt
    (< 6 domeinen in 3 s) is een plaatje, ook vlak na zoeken (20 okt, 4kmedia-market.com, eerste "Klopt niet" van de eigenaar). Netflix op een telefoon/tablet wordt elk uur op de achtergrond wakker; zonder beeld
@@ -98,7 +105,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
    Geleerd (18 okt, bevestigd door de eigenaar terwijl hij WhatsApp gebruikte): de kale naam whatsapp.com = de app gaat open
    (ook chat.cdn → whatsapp.com → mmx-ds zonder foto's). Zonder de kale naam is het een binnenkomend bericht.
-   Nog uitzoeken: braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
+   Nog uitzoeken: fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
    Geleerd (19 okt, 2e ronde): een spel of leer-app die volledig opstart vraagt in één moment 3+ eigen adressen op (TutoTOONS:
    apps., tutoclub., tutopulse.) en speelt daarna soms 9 min zonder verkeer. Dat telt nu als geopend (19 van 21 opstarts waren al
    zichtbaar; 2 TutoTOONS-opstarts gemist). ipapi.co / ipify.org (IP-opzoekdienst van apps) zijn achtergrond. Amaya Kids herkend.

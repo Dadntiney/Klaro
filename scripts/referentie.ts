@@ -119,6 +119,12 @@ const CASES: Case[] = [
   { day: "2026-10-18", dev: "iPhone", site: "voetbalkrant.com", at: "09:19", want: false, why: "ververst zichzelf (samen met onsoranje26.nl), viel toevallig na een zoekopdracht" },
   { day: "2026-10-18", dev: "iPhone", site: "onsoranje26.nl", at: "09:19", want: false, why: "ververst zichzelf (samen met voetbalkrant.com)" },
   { day: "2026-10-10", dev: "iPhone", site: "facebook.com", at: "15:38", want: true, why: "Facebook-app open (chat, netwerkmeting), daarna een website vanuit Facebook" },
+  { day: "2026-10-24", dev: "iPhone", site: "loislee.nl", at: "08:18", want: true, why: "webwinkel geopend (vanuit YouTube)" },
+  { day: "2026-10-24", dev: "iPhone", site: "varify.io", at: "08:18", want: false, why: "A/B-testtool die de webwinkel meelaadt (3 s na de pagina, midden in het laden)" },
+  { day: "2026-10-24", dev: "iPhone", site: "stackflowaisolutions.com", at: "08:26", want: false, why: "chatknop van een webwinkel (11 s na de pagina, die nog laadde)" },
+  { day: "2026-10-24", dev: "iPhone", site: "placehold.co", at: "09:06", want: false, why: "vervang-plaatjes op een betaalpagina" },
+  { day: "2026-10-24", dev: "iPhone", site: "happinez.nl", at: "11:39", want: true, why: "vanuit een nieuwsbrief naar de site getikt (www.email. → www., hele pagina geladen)" },
+  { day: "2026-10-15", dev: "iPhone", site: "marktplaats.nl", at: "12:44", want: true, why: "Marktplaats-app geopend vlak na het lezen van mail (app.marktplaats.nl en de hele app laadde)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);

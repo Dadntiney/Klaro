@@ -250,6 +250,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devSearch = new Map<string, number[]>(); // momenten met een zoekopdracht (Google/Bing/...)
   const devYtApp = new Map<string, number[]>(); // adressen die alleen de YouTube-app zelf gebruikt (zie lib/clip.ts)
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
+  const pageLoaded = new Set<Session>(); // vanuit een mail naar de site, waar meteen een hele pagina laadde (zie hieronder)
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
   // Onderdelen van een webwinkel-platform (Shopify) per apparaat: een Shopify-winkel vraagt zelf maar één eigen adres op en haalt
@@ -735,6 +736,22 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         if (q.length && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
       }
     }
+    // Vanuit een mail naar de site zelf (www.) en daar laadt meteen een hele pagina (onderdelen van 9+ andere domeinen binnen 3 s):
+    // op een link getikt, ook als het klik-adres van het merk zelf is en niet herkend wordt (24 okt 11:39 www.email.happinez.nl →
+    // www.happinez.nl). Een geopende mail laadt alleen plaatjes en tellers: hooguit een paar domeinen.
+    for (const [gkey, g] of groups) {
+      if (!g.main || g.bg || g.flag || !isPlainSite(g)) continue;
+      const mt = mainTimes.get(gkey) ?? [];
+      for (const x of g.ss) {
+        if (!mailish(x) || !(x.mh ?? 0)) continue;
+        const t0 = mt.filter((t) => t >= x.s && t <= x.e).sort((a, b) => a - b)[0];
+        if (t0 === undefined) continue;
+        const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => !r.bl && r.t >= t0 && r.t <= t0 + 3_000 && r.b !== g.site).map((r) => r.b)).size;
+        // Niet als de Mail-app op dat moment nieuwsbrieven ophaalt (veel mail-adressen tegelijk lijkt ook op veel domeinen).
+        const espNear = (devEsp.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000) || (devMailClient.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000);
+        if (loaded >= 9 && !espNear) { delete x.ml; x.ck = 1; pageLoaded.add(x); }
+      }
+    }
   }
 
   // Eén tik op een mail-link opent één site. "Klikt" één moment meerdere sites tegelijk open, dan laadde een mail zijn plaatjes via
@@ -751,7 +768,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const alone = (v: (typeof vs)[number]) => (devClick.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 3_000).length === 1 && (devEsp.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 3_000).length <= 3;
       const own = new Set(vs.filter((v) => v.x.s === v.click && alone(v)).map((v) => v.g.site));
       const single = new Set(vs.map((v) => v.g.site)).size === 1;
-      for (const { g, x } of vs) if (single || (own.size === 1 && own.has(g.site))) x.ck = 1; else { x.ml = 1; delete x.pv; }
+      for (const { g, x } of vs) if (single || pageLoaded.has(x) || (own.size === 1 && own.has(g.site))) x.ck = 1; else { x.ml = 1; delete x.pv; }
     }
   }
 
@@ -789,6 +806,17 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   // zelf (affiliate-links, productwidgets, tellers op een eigen domein), geen eigen bezoek. Zo snel tikt niemand op een link.
   // Een www.-adres is wel een eigen pagina (doorgestuurd naar een webwinkel), en na een zoekmachine is het juist een tik op een resultaat.
   {
+    // Hoeveel andere hoofddomeinen vroeg dit apparaat op in de 1,5 s vóór t (een pagina die nog aan het laden is)?
+    const sortedBase = new Map<string, { t: number; b: string }[]>();
+    const busyBefore = (dev: string, t: number, site: string) => {
+      let ev = sortedBase.get(dev);
+      if (!ev) sortedBase.set(dev, (ev = [...(devBase.get(dev) ?? [])].sort((a, b) => a.t - b.t)));
+      let lo = 0, hi = ev.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (ev[mid].t < t - 1_500) lo = mid + 1; else hi = mid; }
+      const seen = new Set<string>();
+      for (let i = lo; i < ev.length && ev[i].t < t; i++) if (ev[i].b !== site) seen.add(ev[i].b);
+      return seen.size;
+    };
     const pages = new Map<string, { t: number; site: string }[]>();
     for (const [gkey, g] of groups) {
       if (!g.main || g.bg || g.flag || !isPlainSite(g) || SEARCH.has(g.site)) continue;
@@ -802,7 +830,12 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         if (!(x.pv || x.ck) || x.lg || x.n !== 1 || x.e - x.s >= 60_000) continue; // een bezoek dat een filmpje laat doorlopen is geen los onderdeel
         const hs = new Set((siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host));
         if (hs.size !== 1 || [...hs][0].startsWith("www.")) continue;
-        if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000)) { delete x.pv; delete x.ck; x.emb = 1; }
+        if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000)) { delete x.pv; delete x.ck; x.emb = 1; continue; }
+        // Ook later (tot 15 s), zolang die pagina nog volop aan het laden is: in de 1,5 s ervoor vroeg het apparaat al 3+ andere
+        // domeinen op (lettertypes, tellers, winkel-onderdelen). Een echte nieuwe site komt na een rustige pagina, en laadt zijn
+        // onderdelen pas na zichzelf. (24 okt: app.varify.io, chat.stackflowaisolutions.com en placehold.co in webwinkels.)
+        const lead = pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 15_000);
+        if (lead && busyBefore(g.dev, x.s, g.site) >= 3) { delete x.pv; delete x.ck; x.emb = 1; }
       }
     }
     // Een site die elke keer (minstens 2 momenten) tegelijk met een pagina van een andere site opduikt (hooguit 5 s erna), en nooit

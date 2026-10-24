@@ -560,3 +560,43 @@ test("voorvertoning of advertentie in een social-app: alleen het adres opgevraag
   assert.equal(shown(o, "advertentie-voorbeeld.nl").length, 0, "alleen aangeklopt");
   assert.equal(shown(o, "echt-geopend-voorbeeld.nl").length, 1, "echt geopend, al laadde de pagina traag");
 });
+
+test("onderdeel dat later komt terwijl de pagina nog volop laadt (A/B-test, chatknop) is geen bezoek", async () => {
+  // Echt voorbeeld 24 okt: de winkel opent, 3 s later laadt hij in één keer zijn onderdelen, waaronder app.varify.io.
+  const o = await overview([
+    [0, "www.youtube.com"], [37_000, "winkelvoorbeeld.nl"],
+    [40_100, "cdn.weglot.com"], [40_150, "spcdn.shortpixel.ai"], [40_200, "cdn-cookieyes.com"], [40_250, "cdnjs.cloudflare.com"], [40_300, "app.varify.io"],
+    [45_000, "chat.voorbeeldchatbot.com"], // chatknop 8 s na de pagina, maar de pagina laadt nog (zie hieronder)
+    [44_000, "fonts.bunny.net"], [44_300, "scontent.xx.fbcdn.net"], [44_600, "q1.nl-cet.gh-g.v1.akaquill.net"], [44_900, "cdn.judge.me"],
+  ]);
+  assert.equal(shown(o, "winkelvoorbeeld.nl").length, 1);
+  assert.equal(shown(o, "varify.io").length, 0);
+  assert.equal(shown(o, "voorbeeldchatbot.com").length, 0);
+});
+
+test("geen vals weglaten: een site die na een rustige pagina geopend wordt blijft een bezoek, ook binnen 15 s", async () => {
+  const o = await overview([
+    [0, "www.youtube.com"], [37_000, "winkelvoorbeeld.nl"], [37_500, "cdn.weglot.com"], [37_600, "fonts.gstatic.com"], [37_700, "cdn-cookieyes.com"],
+    [48_000, "anderesite.nl"], [48_600, "cdn.anderesite.nl"], // 11 s later, de eerste pagina was al klaar met laden
+  ]);
+  assert.equal(shown(o, "anderesite.nl").length, 1);
+});
+
+test("vanuit een mail naar de site, en daar laadt meteen een hele pagina: een bezoek, ook met weinig verzoeken", async () => {
+  // Echt voorbeeld 24 okt 11:39: nieuwsbrief-plaatje, dan het klik-adres van het merk zelf (www.email.), dan www. met de pagina.
+  const parts = ["use.typekit.net", "p.typekit.net", "sdk.privacy-center.org", "www.googletagmanager.com", "pool-x.adhese.com", "a1988.dscg1.akamai.net", "cdn.mijnmagazines.be", "token.roularta.nl", "myprivacy.roularta.net", "script.hotjar.com"];
+  const o = await overview([
+    [0, "imap.mail.me.com"], [1_000, "cdn.mcauto-images-production.sendgrid.net"], [1_100, "u35449709.ct.sendgrid.net"],
+    [3_000, "bdimage.magazinevoorbeeld.nl"], [12_000, "www.email.magazinevoorbeeld.nl"], [14_000, "www.magazinevoorbeeld.nl"],
+    ...parts.map((h, i): R => [14_100 + i * 150, h]),
+  ]);
+  assert.equal(shown(o, "magazinevoorbeeld.nl").length, 1);
+});
+
+test("geen vals bezoek: een geopende nieuwsbrief (alleen plaatjes en tellers) blijft mail", async () => {
+  const o = await overview([
+    [0, "imap.mail.me.com"], [800, "url35.newsletter.anderwinkel.nl"], [900, "sendgrid.net"],
+    [3_000, "bdimage.magazinevoorbeeld.nl"], [3_100, "www.email.magazinevoorbeeld.nl"], [3_200, "1975327412.rsc.cdn77.org"],
+  ]);
+  assert.equal(shown(o, "magazinevoorbeeld.nl").length, 0);
+});
