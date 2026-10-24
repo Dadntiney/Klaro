@@ -1548,7 +1548,8 @@ export default function Home() {
                 );
               })()}
               {/* Wat er bewust níet staat, met de reden: zo is zelf na te gaan dat er niets gemist is. */}
-              {isDayOpen && hidden.length > 0 && (
+              {/* Pas als vandaag compleet is (cut = 0): tijdens het snelle eerste beeld groeit de lijst nog, en dan zou dit verspringen. */}
+              {isDayOpen && hidden.length > 0 && !cut && (
                 <details className="hidden-list">
                   <summary>Niet getoond ({hidden.length})</summary>
                   {hidden.map((h, i) => (
@@ -1578,7 +1579,7 @@ export default function Home() {
             </div>
           )}
           {/* Oudere dagen worden nog geladen: rustige grijze dagkopjes met dezelfde glans als het skelet. */}
-          {!full && !histErr && (
+          {!full && !histErr && !cut && (
             <div className="skel-days" aria-label="Oudere dagen laden">
               <p className="muted skel-note">Oudere dagen laden…</p>
               {[150, 190, 170].map((w, i) => <div key={i} className="skel-day"><span className="sk" style={{ width: w, height: 14 }} /><span className="sk" style={{ width: 14, height: 14 }} /></div>)}
