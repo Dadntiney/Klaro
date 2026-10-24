@@ -666,7 +666,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const before = new Set(near.filter((r) => r.t >= x.s - 60_000 && r.t < x.s - 500).map((r) => r.b));
         return !near.some((r) => r.t >= x.s - 500 && r.t <= x.s + 8_000 && r.b !== own && !before.has(r.b));
       };
-      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) { if (nothingLoaded(x)) { delete x.pv; x.res = 1; x.pf = 1; } else x.uz = 1; } }
+      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) { if (nothingLoaded(x)) { delete x.pv; x.res = 1; x.pf = 1; } else { x.uz = 1; x.uw = "reclame"; } } }
       // Laadt de site die dag vaker dan 4 keer los (open tabblad dat Safari herlaadt), dan is een inlog-adres in zo'n los moment
       // geen inloggen maar een vast onderdeel van de pagina (19 okt leukerecepten.nl: mijn. bij elke pagina, ook bij herladen).
       else for (const x of cand) delete x.lg;
@@ -938,13 +938,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const hs = siteHosts.get(g.d + "|" + g.dev + "|" + g.site) ?? [];
     for (const x of g.ss) {
       if (isHuman(x) || x.emb || x.res || x.rf || x.rl) continue;
-      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) { x.ao = 1; x.uz = 1; }
+      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) { x.ao = 1; x.uz = 1; x.uw = "opstart"; }
     }
   }
 
   // Apps die alleen even starten (een paar seconden, telkens als eerste bij het ontgrendelen 's ochtends) en daarna niets: kan
   // ook vanzelf verversen (widget, dagelijkse quote). Gemeten: Meditopia 9 ochtenden, steeds 5-6 s, nooit langer. Onzeker tonen.
-  for (const g of groups.values()) if (START_ONLY.has(g.site)) for (const x of g.ss) if (x.e - x.s < 60_000 && isHuman(x)) { x.ao = 1; x.uz = 1; }
+  for (const g of groups.values()) if (START_ONLY.has(g.site)) for (const x of g.ss) if (x.e - x.s < 60_000 && isHuman(x)) { x.ao = 1; x.uz = 1; x.uw = "opstart"; }
 
   // "Altijd tonen"-apps die pas tellen als ze echt opengaan (eufy): sessies met de vaste start-adressen merken.
   for (const g of groups.values()) {
@@ -968,7 +968,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const wake = named.filter((h) => h !== g && h.dev === g.dev && (siteHosts.get(h.d + "|" + h.dev + "|" + h.site) ?? []).some((y) => Math.abs(y.t - x.s) <= 3_000 && !GAME_SDK.test(y.host) && !SDK_IN_APP.test(y.host)));
         if (wake.length < 2) continue;
         const used = wake.some((h) => h.ss.some((y) => isHuman(y) && y.s <= x.s + 60_000 && y.e >= x.s - 60_000));
-        if (!used) x.uz = 1;
+        if (!used) { x.uz = 1; x.uw = "ontgrendel"; }
       }
     }
   }

@@ -336,7 +336,7 @@ test("telefoon ontgrendeld: veel apps verversen tegelijk; een korte app-rij daar
     [600.1 * s, "star.c10r.facebook.com", "P6"], [602 * s, "ms.applovin.com", "P6", "blocked"], [610 * s, "logs-ingress.svc.vinted.com", "P6"],
   ]);
   const wa = o.groups.filter((g) => g.site === "whatsapp.com").flatMap((g) => g.ss).filter((x) => isHuman(x as never));
-  for (const x of wa) assert.equal((x as { uz?: 1 }).uz, 1);
+  for (const x of wa) { assert.equal((x as { uz?: 1 }).uz, 1); assert.equal((x as { uw?: string }).uw, "ontgrendel"); }
   const vin = shown(o, "vinted.com");
   assert.equal(vin.length, 1);
   assert.notEqual((vin[0] as { uz?: 1 }).uz, 1);
@@ -368,9 +368,10 @@ test("Instagram gestart (www.instagram.com) zonder foto's: tonen als onzeker; al
     [0, "www.instagram.com"], [300, "i.instagram.com"], [400, "gateway.instagram.com"], [500, "test-gateway.instagram.com"], [11_000, "graph.instagram.com"],
     [3_600_000, "i.instagram.com"], [3_600_300, "gateway.instagram.com"], [3_600_400, "test-gateway.instagram.com"], [3_610_000, "graph.instagram.com"],
   ]);
-  const ig = shown(o, "instagram.com") as { uz?: 1; ao?: 1 }[];
+  const ig = shown(o, "instagram.com") as { uz?: 1; ao?: 1; uw?: string }[];
   assert.equal(ig.length, 1);
   assert.equal(ig[0].uz, 1);
+  assert.equal(ig[0].uw, "opstart");
   assert.equal(ig[0].ao, 1);
 });
 

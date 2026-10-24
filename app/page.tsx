@@ -79,8 +79,8 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
           width={28}
           height={28}
           loading="lazy"
-          // Heeft een site geen icoon, dan geeft Google een standaard wereldbolletje van 16x16: dat tonen we niet.
-          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`}
+          // Via de eigen server (api/icon.php). Heeft een site geen icoon, dan is het een wereldbolletje van 16x16: dat tonen we niet.
+          src={`/api/icon.php?d=${encodeURIComponent(domain)}&s=64`}
           onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
           onError={() => setState("none")}
         />
@@ -158,7 +158,7 @@ function MiniFav({ domain }: { domain: string }) {
           width={18}
           height={18}
           loading="lazy"
-          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`}
+          src={`/api/icon.php?d=${encodeURIComponent(domain)}&s=32`}
           onLoad={(e) => setOk(e.currentTarget.naturalWidth > 16)}
           onError={() => setOk(false)}
         />
@@ -449,9 +449,19 @@ function aroundIn(g: Group, list: Group[]) {
 }
 
 /** Waarom een regel als echt gebruik telt, in één zin. */
+/** Waarom een regel onzeker is (lib/overview.ts zet de reden in x.uw): kort in het label, uitgebreid bij "Waarom". */
+const UNSURE_KORT = { reclame: "misschien reclame", opstart: "alleen gestart", ontgrendel: "bij ontgrendelen" } as const;
+const UNSURE = {
+  reclame: "Onzeker: één los adres terwijl een social-app (zoals Instagram, Facebook of X) open was. Kan een advertentie of voorvertoning zijn die de app alvast laadde, of echt geopend.",
+  opstart: "Onzeker: de app is gestart, maar er laadde geen inhoud (geen foto's of berichten). Misschien alleen even open, of vanzelf gestart.",
+  ontgrendel: "Onzeker: begon op hetzelfde moment als andere apps, zoals bij het ontgrendelen of op wifi komen. Of deze app echt geopend werd, is niet te zien.",
+} as const;
+
 function whyShown(g: Group, ss: Session[]): string {
   if (g.flag) return `Staat op de vangnet-lijst (${g.flag}).`;
   if (g.susp) return "Verdacht adres: lijkt op een bekende site of komt uit een spam-hoek.";
+  const w = ss.every((x) => x.uz) ? ss.find((x) => x.uw)?.uw : undefined;
+  if (w) return UNSURE[w];
   const x = ss.reduce((a, b) => ((b.n ?? 0) > (a.n ?? 0) ? b : a), ss[0]);
   if (!x) return "";
   const mins = Math.round(ss.reduce((n, y) => n + (y.e - y.s), 0) / 60_000);
@@ -1198,6 +1208,41 @@ export default function Home() {
 
   // Los van het apparaat-filter: zo hoeft een tik op een chip dit niet opnieuw uit te rekenen.
   const use = useMemo(() => usage(groups, { auto, followers: followOf.current, mailT, cut }), [groups, mailT, cut, auto]);
+  // Dagsamenvatting bovenaan: per apparaat de schermtijd van vandaag (zelfde telling als de lijst), de apps met de meeste tijd,
+  // en een weekbeeld (laatste 7 dagen). Altijd één regel per apparaat, zodat de kaart niet van hoogte verandert tijdens het laden.
+  const daySum = useMemo(() => {
+    const now = Date.now();
+    const week = Array.from({ length: 7 }, (_, i) => dayKeyFmt.format(now - (6 - i) * 86_400_000));
+    const today = week[6];
+    const per = new Map<string, { mins: number[]; apps: Map<string, number> }>();
+    for (const dv of devices) per.set(dv.name, { mins: week.map(() => 0), apps: new Map() });
+    const ses = new Map<string, Session[]>(); // apparaat|dag -> sessies
+    for (const g of groups) {
+      const wi = week.indexOf(g.d);
+      if (wi < 0 || !use.listed(g)) continue;
+      const ss = use.shown(g);
+      if (!ss.length) continue;
+      const k = g.dev + "|" + g.d;
+      (ses.get(k) ?? ses.set(k, []).get(k)!).push(...ss);
+      if (g.d === today) {
+        const p = per.get(g.dev) ?? per.set(g.dev, { mins: week.map(() => 0), apps: new Map() }).get(g.dev)!;
+        const app = (g.name ?? g.site).replace(/ \([^)]*\)$/, "");
+        p.apps.set(app, (p.apps.get(app) ?? 0) + activeMinutes(ss));
+      }
+    }
+    for (const [k, ss] of ses) {
+      const [dev, d] = [k.slice(0, k.lastIndexOf("|")), k.slice(k.lastIndexOf("|") + 1)];
+      const p = per.get(dev) ?? per.set(dev, { mins: week.map(() => 0), apps: new Map() }).get(dev)!;
+      p.mins[week.indexOf(d)] = Math.round(activeMinutes(ss));
+    }
+    const flagged = groups.filter((g) => g.d === today && !g.bg && (g.flag || g.susp));
+    return {
+      week,
+      devs: [...per].map(([name, p]) => ({ name, mins: p.mins, top: [...p.apps].filter(([, m]) => m >= 1).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([a]) => a) })),
+      flagged: flagged.length,
+    };
+  }, [groups, devices, use, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     const mainByDay = new Map<string, Group[]>(); // voor "niet getoond": per dag, in plaats van per dag alle groepen door te lopen
@@ -1277,6 +1322,7 @@ export default function Home() {
           <div className="skel-chips">
             {[44, 84, 96, 70, 92].map((w, i) => <span key={i} className="sk sk-chip" style={{ width: w }} />)}
           </div>
+          <div className="skel-sum">{[0, 1, 2].map((i) => <span key={i} className="sk skel-tile" />)}</div>
           <div className="skel-head"><span className="sk" style={{ width: 84, height: 14 }} /><span className="sk" style={{ width: 30, height: 24, borderRadius: 99 }} /></div>
           <div className="list skel-list">
             {[62, 48, 70, 55, 66, 44, 58, 52].map((w, i) => (
@@ -1312,10 +1358,29 @@ export default function Home() {
           </div>
 
 
-          {(summary.blocked > 0 || (device && silentNames.has(device))) && (
-            <div className="summary">
-              {summary.blocked > 0 && <div className="s-warn">🚫 {summary.blocked}× een geblokkeerde 18+/dating-site geprobeerd te openen</div>}
-              {device && silentNames.has(device) && <div className="s-warn">⚠ Ongewoon lang niets doorgegeven: uitgezet, offline of filtering omzeild?</div>}
+          {!rawView && (
+            <div className="daysum" aria-label="Vandaag in het kort">
+              {/* Vaste hoogte: tegels komen er naast elkaar bij (opzij vegen), de lijst eronder verspringt dus nooit. */}
+              <div className="ds-tiles">
+                {daySum.devs.filter((d) => d.mins.some((m) => m > 0)).map((d) => {
+                  const max = Math.max(30, ...d.mins);
+                  return (
+                    <button type="button" key={d.name} className={"ds-tile" + (device === d.name ? " on" : "")} onClick={() => setDevice(device === d.name ? null : d.name)} title={d.mins.map((m, i) => `${dayLabel(daySum.week[i])}: ${m ? dur(m) : "niets"}`).join("\n")}>
+                      <span className="ds-dev"><DevIcon name={d.name} />{d.name}</span>
+                      <span className="ds-min">{d.mins[6] > 0 ? dur(d.mins[6]) : "–"}</span>
+                      <span className="ds-top">{d.mins[6] > 0 ? d.top.join(", ") || "\u00a0" : "vandaag niet"}</span>
+                      <span className="ds-week" aria-label={`Laatste 7 dagen: ${d.mins.map((m) => (m ? dur(m) : "niets")).join(", ")}`}>
+                        {d.mins.map((m, i) => <i key={i} className={i === 6 ? "t" : undefined} style={{ height: `${Math.max(m ? 3 : 1, Math.round((m / max) * 14))}px` }} />)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className={"ds-net" + (daySum.flagged || summary.blocked ? " warn" : "")}>
+                {daySum.flagged ? `Vangnet: ${daySum.flagged === 1 ? "1 melding" : `${daySum.flagged} meldingen`} vandaag (rood in de lijst)` : "Vangnet: vandaag niets gezien"}
+                {summary.blocked > 0 && ` · ${summary.blocked}× geblokkeerd 18+/dating`}
+                {device && silentNames.has(device) && " · ⚠ ongewoon lang stil"}
+              </div>
             </div>
           )}
 
@@ -1446,7 +1511,7 @@ export default function Home() {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
-                            if (rss.every((x) => x.uz)) parts.push(<span key="u" className="unsure">onzeker</span>);
+                            if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
