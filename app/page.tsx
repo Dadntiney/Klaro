@@ -1387,7 +1387,8 @@ export default function Home() {
         const hb = h.getBoundingClientRect(), sb = sec.getBoundingClientRect();
         if (sb.top > hb.top - 1 || sb.bottom < hb.bottom) continue; // deze kop staat niet vast bovenaan
         const list = sec.querySelector(".list.day");
-        if (!list || list.getBoundingClientRect().top >= hb.bottom - 2) continue; // de lijst zit nog niet onder de kop
+        const lb = list?.getBoundingClientRect();
+        if (!lb || lb.top >= hb.bottom - 2 || lb.bottom <= hb.bottom + 30) continue; // de lijst zit (nog) niet of niet meer onder de kop
         let p: number | null = null;
         for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) if (m.getBoundingClientRect().bottom <= hb.bottom + 4) p = Number(m.dataset.part);
         found = { d: sec.dataset.day!, p };
