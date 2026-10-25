@@ -557,7 +557,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 .item .meta .mdev { flex:none; }
 .item .meta .unsure { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* Tegelijk gebruikt (Spotify tijdens Waze): geen scheidingslijn, maar een dun lijntje tussen de twee logo's. */
-.list > div.together::before { display:none; }
+.list > div.together::before, .list > div.together:has(.tstart)::before { display:none; }
 .list > div.together > .item { position:relative; }
 .list > div.together > .item::before { content:""; position:absolute; left:77px; width:2px; border-radius:1px; top:calc(14px - 50%); height:calc(100% - 28px); background:color-mix(in srgb, var(--muted) 35%, transparent); z-index:1; }
 /* Apparaatknoppen die niet passen: zachte vervaging aan de kant waar er nog meer staat. */

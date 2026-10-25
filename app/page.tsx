@@ -1492,7 +1492,7 @@ export default function Home() {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
-                            if (together && prev) parts.push(<span key="t" className="with">tegelijk met {prev.g.name}</span>);
+                            if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
