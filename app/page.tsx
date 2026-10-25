@@ -63,6 +63,31 @@ function WhatsAppIcon() {
   );
 }
 
+/**
+ * Logo met een doorzichtige of bijna witte rand (happywithyoga.com: lichtgroen op wit) valt weg op de kaart: dan krijgt het een
+ * licht vlakje met een dun randje. Kijkt naar de rand van het plaatje (het komt van de eigen server, dus de browser mag het lezen).
+ */
+function isLightIcon(img: HTMLImageElement): boolean {
+  try {
+    const n = 16, c = document.createElement("canvas");
+    c.width = c.height = n;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return false;
+    ctx.drawImage(img, 0, 0, n, n);
+    const px = ctx.getImageData(0, 0, n, n).data;
+    let light = 0, all = 0;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      if (x > 0 && x < n - 1 && y > 0 && y < n - 1) continue; // alleen de rand
+      const i = (y * n + x) * 4, a = px[i + 3];
+      all++;
+      if (a < 40 || (px[i] > 225 && px[i + 1] > 225 && px[i + 2] > 225)) light++;
+    }
+    return light / all > 0.6;
+  } catch {
+    return false;
+  }
+}
+
 /** Naam zonder "(spel)"/"(leren)": dat staat als woordje in de tweede regel, zodat de naam niet afgekapt wordt. */
 const shortName = (name: string) => name.replace(/ \((spel|leren)\)$/, "");
 const kindOf = (name: string) => / \((spel|leren)\)$/.exec(name)?.[1];
@@ -116,6 +141,7 @@ function GameGlyph() {
  */
 function Favicon({ domain, name, app }: { domain: string; name: string; app?: boolean }) {
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
+  const [light, setLight] = useState(false);
   const initial = (name.replace(/^www\./, "")[0] ?? "?").toUpperCase();
   if (/(^|\.)whatsapp\.(com|net)$/.test(domain)) return <WhatsAppIcon />;
   return (
@@ -124,14 +150,14 @@ function Favicon({ domain, name, app }: { domain: string; name: string; app?: bo
       {state !== "none" && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          className={state === "ok" ? "fav ok" : "fav-hidden"}
+          className={state === "ok" ? "fav ok" + (light ? " light" : "") : "fav-hidden"}
           alt=""
           width={28}
           height={28}
           loading="lazy"
           // Via de eigen server (api/icon.php). Heeft een site geen icoon, dan is het een wereldbolletje van 16x16: dat tonen we niet.
           src={`/api/icon.php?d=${encodeURIComponent(domain)}&s=64${app ? `&n=${encodeURIComponent(name)}` : ""}`}
-          onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
+          onLoad={(e) => { const img = e.currentTarget; setState(img.naturalWidth > 16 ? "ok" : "none"); if (img.naturalWidth > 16) setLight(isLightIcon(img)); }}
           onError={() => setState("none")}
         />
       )}
@@ -1291,7 +1317,8 @@ export default function Home() {
         const byDev = new Map<string, Session[]>();
         for (const { g, ss } of per) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push(...ss);
         let mins = 0;
-        for (const ss of byDev.values()) mins += activeMinutes(ss);
+        const devMins: { dev: string; mins: number }[] = [];
+        for (const [dev, ss] of byDev) { const m = activeMinutes(ss); mins += m; devMins.push({ dev, mins: Math.round(m) }); }
         return {
           d,
           list: per.map((x) => x.g),
@@ -1306,6 +1333,7 @@ export default function Home() {
             .sort((a, b) => b.t - a.t)
             .slice(0, 60),
           mins: Math.round(mins),
+          devMins: devMins.filter((x) => x.mins > 0).sort((a, b) => b.mins - a.mins),
           // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
           rows: mergeRows(
             per
@@ -1338,6 +1366,18 @@ export default function Home() {
 
   // Apparaatknoppen die niet allemaal passen: zacht vervagen aan de kant waar er nog meer staat (dan zie je dat je kunt schuiven).
   const chipsRef = useRef<HTMLDivElement>(null);
+  const [devOpen, setDevOpen] = useState(false); // totaal per apparaat onder "Vandaag"
+  // De dagkop blijft tijdens het scrollen bovenaan staan, net onder de apparaatknoppen: die hoogte als CSS-variabele.
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const set = () => document.documentElement.style.setProperty("--barh", el.offsetHeight + "px");
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [state]);
   const [chipFade, setChipFade] = useState("");
   const updateChipFade = useCallback(() => {
     const el = chipsRef.current;
@@ -1386,7 +1426,7 @@ export default function Home() {
 
       {state === "ready" && (
         <>
-          <div className="bar">
+          <div className="bar" ref={barRef}>
             <div className="bar-in">
             <div className={"chips" + chipFade} ref={chipsRef} onScroll={updateChipFade}>
               <button className={"chip" + (deviceNow === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
@@ -1415,7 +1455,7 @@ export default function Home() {
 
           {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, mins: dm, rows: trows, hidden }, di) => {
+          {days.map(({ d, list, mins: dm, devMins, rows: trows, hidden }, di) => {
             if (rawView) return null;
             // Per apparaat: wanneer begon het laatste bezoek? Een app waarna al een andere app begon, is niet meer "nu".
             const lastStart = new Map<string, number>();
@@ -1437,7 +1477,7 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? dur(dm) : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</>}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? (!device && devMins.length > 1 ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => !v); }} aria-expanded={devOpen} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen ? " up" : "")} aria-hidden>›</span></button> : dur(dm)) : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</>}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
@@ -1455,6 +1495,15 @@ export default function Home() {
                 )}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
+          {recent && devOpen && !device && devMins.length > 1 && (
+            <div className="devtot">
+              {devMins.map((x) => (
+                <button key={x.dev} className="devtot-row" onClick={() => { setDevice(x.dev); setDevOpen(false); }} title={`Alleen ${x.dev}`}>
+                  <span className="mdev"><DevIcon name={x.dev} />{x.dev}</span><span className="devtot-m">{dur(x.mins)}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {di === 0 && goOpen && (
             <form
               className="goto"
@@ -1522,6 +1571,8 @@ export default function Home() {
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
                   const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
+                  // Altijd getoond op wens (Philips Hue, eufy, GoFiev), maar zonder echt gebruik: een vaste melding, geen gebruik.
+                  const bgOnly = ALWAYS_SHOW.has(g.site) && !rss.some((x) => isHuman(x) || x.op);
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   // Tegelijk gebruikt op hetzelfde apparaat (Spotify tijdens een rit met Waze): met een lijntje aan de regel erboven
                   // vast, zodat het niet lijkt alsof de minuten bij elkaar opgeteld moeten worden. Alleen bij minstens een minuut overlap.
@@ -1532,7 +1583,7 @@ export default function Home() {
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
                       {partStart ? <div className="partmark"><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
-                        className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
+                        className={"item clickable" + (brief ? " brief" : "") + (bgOnly ? " bgonly" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
                         role="button"
                         aria-expanded={isOpen}
@@ -1544,13 +1595,15 @@ export default function Home() {
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
-                            parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
+                            if (!device) parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>); // apparaat gekozen: staat al bovenaan
+                            if (bgOnly) parts.push(<span key="b">achtergrond</span>);
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
+                            if (!parts.length) return null;
                             return <div className="sub meta">{parts.flatMap((x, i) => (i ? [<span key={"s" + i} className="msep">·</span>, x] : [x]))}</div>;
                           })()}
                         </div>
