@@ -1367,6 +1367,28 @@ export default function Home() {
   // Apparaatknoppen die niet allemaal passen: zacht vervagen aan de kant waar er nog meer staat (dan zie je dat je kunt schuiven).
   const chipsRef = useRef<HTMLDivElement>(null);
   const [devOpen, setDevOpen] = useState(false); // totaal per apparaat onder "Vandaag"
+  // Het dagdeel (Ochtend, Middag, ...) waar je doorheen scrolt: in de vaste dagkop, zodra het eigen label onder de kop verdwenen is.
+  const [stuckPart, setStuckPart] = useState<{ d: string; p: number } | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      let found: { d: string; p: number } | null = null;
+      for (const sec of document.querySelectorAll<HTMLElement>("section[data-day]")) {
+        const h = sec.querySelector("h2");
+        if (!h) continue;
+        const hb = h.getBoundingClientRect(), sb = sec.getBoundingClientRect();
+        if (sb.top > hb.top - 1 || sb.bottom < hb.bottom) continue; // deze kop staat niet vast bovenaan
+        let p: number | null = null;
+        for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) if (m.getBoundingClientRect().bottom <= hb.bottom + 4) p = Number(m.dataset.part);
+        if (p !== null) found = { d: sec.dataset.day!, p };
+      }
+      setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p ? v : found));
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, []);
   // De dagkop blijft tijdens het scrollen bovenaan staan, net onder de apparaatknoppen: die hoogte als CSS-variabele.
   const barRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1469,7 +1491,7 @@ export default function Home() {
             const key = autoOpen ? d + "!" : d; // eigen sleutel: dichtklappen nu laat de dag later niet ineens open staan
             const isDayOpen = recent || (autoOpen ? !openDays.has(key) : openDays.has(key));
             return (
-            <section key={d}>
+            <section key={d} data-day={d}>
               <h2
                 className={recent ? "" : "fold"}
                 onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })}
@@ -1493,6 +1515,7 @@ export default function Home() {
                   <span className="dstat">{liveStatus}</span>
                   </span>
                 )}
+                {stuckPart && stuckPart.d === d && <span className="dh-part" aria-hidden><PartIcon p={stuckPart.p} />{PARTS[stuckPart.p]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {recent && devOpen && !device && devMins.length > 1 && (
@@ -1549,7 +1572,7 @@ export default function Home() {
                 const cap = multiPart && rows[0]?.t ? partOf(rows[0].t) : null;
                 return (
               <>
-              {cap !== null && <div className="partcap"><span><PartIcon p={cap} />{PARTS[cap]}</span></div>}
+              {cap !== null && <div className="partcap" data-part={cap}><span><PartIcon p={cap} />{PARTS[cap]}</span></div>}
               <div className={"list day" + (cap !== null ? " capped" : "")}>
                 {(() => {
                   return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
@@ -1581,7 +1604,7 @@ export default function Home() {
                     Math.min(Math.max(...prev.ss.map((x) => x.e)), Math.max(...rss.map((x) => x.e))) - Math.max(Math.min(...prev.ss.map((x) => x.s)), Math.min(...rss.map((x) => x.s))) >= 60_000;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
-                      {partStart ? <div className="partmark"><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
+                      {partStart ? <div className="partmark" data-part={partOf(t)}><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (brief ? " brief" : "") + (bgOnly ? " bgonly" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}

@@ -559,7 +559,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 /* Tegelijk gebruikt (Spotify tijdens Waze): geen scheidingslijn, maar een dun lijntje tussen de twee logo's. */
 .list > div.together::before, .list > div.together:has(.tstart)::before { display:none; }
 .list > div.together > .item { position:relative; }
-.list > div.together > .item::before { content:""; position:absolute; left:77px; width:2px; border-radius:1px; top:calc(14px - 50%); height:calc(100% - 28px); background:color-mix(in srgb, var(--muted) 35%, transparent); z-index:1; }
+.list > div.together > .item::before { content:""; position:absolute; left:77px; width:2px; border-radius:1px; top:calc(14px - 50%); height:calc(100% - 28px); background:color-mix(in srgb, var(--muted) 35%, transparent); }
 /* Apparaatknoppen die niet passen: zachte vervaging aan de kant waar er nog meer staat. */
 .chips.fr { -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); }
 .chips.fl { -webkit-mask-image:linear-gradient(to right, transparent, #000 36px); mask-image:linear-gradient(to right, transparent, #000 36px); }
@@ -593,5 +593,9 @@ h2 .livedot { margin:0 2px 0 12px; }
 .devtot-row + .devtot-row { border-top:1px solid var(--line); }
 .devtot-m { font-weight:600; font-variant-numeric:tabular-nums; }
 /* De dagkop blijft tijdens het scrollen bovenaan staan, onder de apparaatknoppen. */
-section > h2 { position:sticky; top:var(--barh, 52px); z-index:1; background:var(--bg); padding:6px 0; margin-top:22px; margin-bottom:2px; }
+section > h2 { position:sticky; top:var(--barh, 52px); z-index:2; background:var(--bg); padding:6px 0; margin-top:22px; margin-bottom:2px; }
 .devtot-row .mdev { display:inline-flex; align-items:center; gap:8px; }
+/* Het dagdeel waar je doorheen scrolt, rechts in de vaste dagkop (vóór de knoppen). */
+.dh-part { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--muted); background:var(--card); border:1px solid var(--line); border-radius:99px; padding:3px 10px; white-space:nowrap; align-self:center; }
+.dh-part svg { width:13px; height:13px; }
+h2 .dh-part { order:1; } h2 .dpair { order:2; } h2 .fold-chev { order:3; }
