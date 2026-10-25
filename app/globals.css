@@ -622,9 +622,3 @@ section > .partcap span { visibility:hidden; }
 .pwfield { position:relative; display:block; }
 .pwfield input { width:100%; box-sizing:border-box; padding-right:46px !important; }
 .login-card .pwfield .pweye, .pwfield .pweye { position:absolute; right:4px; top:50%; transform:translateY(-50%); width:40px; height:40px; padding:0; display:grid; place-items:center; background:transparent !important; color:var(--muted) !important; border:0; border-radius:8px; cursor:pointer; font-weight:400; }
-/* Wachtwoord wijzigen (onder Meldingen). */
-.pwchange { display:grid; gap:10px; margin-top:10px; }
-.pwchange input { font:inherit; font-size:16px; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
-.pwchange > button { font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:10px; border:0; background:var(--fg); color:var(--bg); cursor:pointer; }
-.pwchange .ok { color:#16a34a; margin:0; font-size:14px; }
-.pwchange .err { color:#dc2626; margin:0; font-size:14px; }

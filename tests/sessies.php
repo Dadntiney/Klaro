@@ -68,23 +68,6 @@ file_put_contents(FAILS, json_encode(array_fill(0, 30, time() - 901)));
 check('oude fouten (> 15 min) tellen niet', !auth_blocked());
 @unlink(FAILS);
 
-// Wachtwoord wijzigen: alleen met het juiste huidige wachtwoord; andere apparaten worden uitgelogd, dit apparaat niet.
-@unlink(FAILS);
-$conf = ['key' => str_repeat('k', 30), 'profile' => 'abc123', 'password' => 'oud-wachtwoord-1'];
-file_put_contents(PRIV . '/config.php', "<?php\nreturn " . var_export($conf, true) . ";\n");
-$a = bin2hex(random_bytes(32)); $b = bin2hex(random_bytes(32));
-foreach ([$a, $b] as $sid) sessions_with(function (array &$s) use ($sid) { $s['s'][hash('sha256', $sid)] = ['c' => time(), 'a' => time()]; $s['last'] = time(); });
-use_cookie($a);
-check('fout huidig wachtwoord: geweigerd', password_change($conf, 'fout', 'nieuw-wachtwoord-12') !== null && klaro_config()['password'] === 'oud-wachtwoord-1');
-check('te kort nieuw wachtwoord: geweigerd', password_change($conf, 'oud-wachtwoord-1', 'kort') !== null);
-check('wijzigen lukt', password_change($conf, 'oud-wachtwoord-1', 'nieuw-wachtwoord-12') === null);
-$new = include PRIV . '/config.php';
-check('nieuw wachtwoord opgeslagen, sleutel en profiel blijven', $new['password'] === 'nieuw-wachtwoord-12' && $new['key'] === $conf['key'] && $new['profile'] === 'abc123');
-check('dit apparaat blijft ingelogd', session_state(null) === 'ok');
-use_cookie($b);
-check('het andere apparaat is uitgelogd', session_state(null) !== 'ok');
-@unlink(FAILS);
-
 array_map('unlink', glob(PRIV . '/*')); rmdir(PRIV);
 echo "\n$ok goed, $bad fout\n";
 exit($bad ? 1 : 0);

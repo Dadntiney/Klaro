@@ -166,22 +166,3 @@ function require_login(): array {
   json_out(401, ['error' => $state === 'verlopen' ? 'Automatisch uitgelogd: de app is 30 dagen niet gebruikt.' : 'Inloggen vereist.']);
 }
 
-/**
- * Nieuw inlogwachtwoord opslaan (sleutel en profiel blijven). Alle andere sessies vervallen (wie het oude wachtwoord kende,
- * is overal uitgelogd); deze sessie blijft. Geeft een foutmelding terug, of null als het gelukt is.
- */
-function password_change(array $cfg, string $current, string $new): ?string {
-  if (!password_ok($cfg, $current)) { auth_failed(); return 'Het huidige wachtwoord klopt niet.'; }
-  if (strlen($new) < 12) return 'Kies een nieuw wachtwoord van minstens 12 tekens.';
-  if (hash_equals((string)$cfg['password'], $new)) return 'Het nieuwe wachtwoord is hetzelfde als het oude.';
-  $cfg['password'] = $new;
-  $f = PRIV . '/config.php';
-  if (@file_put_contents($f . '.tmp', "<?php\nreturn " . var_export($cfg, true) . ";\n", LOCK_EX) === false || !@rename($f . '.tmp', $f)) return 'Opslaan lukt niet op de server.';
-  @chmod($f, 0600);
-  if (function_exists('opcache_invalidate')) @opcache_invalidate($f, true);
-  $h = sid_hash();
-  sessions_with(function (array &$s) use ($h) {
-    foreach ($s['s'] as $k => $_) if ($k !== $h) { $s['gone'][$k] = time(); unset($s['s'][$k]); }
-  });
-  return null;
-}

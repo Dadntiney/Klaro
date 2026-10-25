@@ -13,7 +13,6 @@ import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv } from "@/lib/liv
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
-import { PasswordField } from "./pwfield";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
@@ -645,39 +644,6 @@ function PushToggle() {
 }
 
 /** Een rij onderaan in dezelfde stijl als de dagkoppen: hoofdletters, waarde in grijs, pijltje dat openklapt. */
-/** Wachtwoord wijzigen (ingelogd): huidig en twee keer het nieuwe. Andere toestellen worden daarna uitgelogd, dit toestel niet. */
-function PasswordChange() {
-  const [show, setShow] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
-  return (
-    <FoldRow label="Wachtwoord" value="wijzigen">
-      <form
-        className="pwchange"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const f = e.currentTarget;
-          setBusy(true);
-          setMsg(null);
-          fetch("/api/password.php", { method: "POST", body: new FormData(f), credentials: "same-origin" })
-            .then(async (r) => {
-              const j = (await r.json().catch(() => ({}))) as { error?: string };
-              if (r.ok) { f.reset(); setMsg({ ok: true, t: "Wachtwoord gewijzigd. Andere toestellen moeten opnieuw inloggen; hier blijf je ingelogd." }); }
-              else setMsg({ ok: false, t: j.error ?? "Dat lukte niet." });
-            }, () => setMsg({ ok: false, t: "Geen verbinding met de server." }))
-            .finally(() => setBusy(false));
-        }}
-      >
-        <PasswordField name="huidig" autoComplete="current-password" placeholder="Huidig wachtwoord" show={show} onToggle={() => setShow((v) => !v)} />
-        <PasswordField name="nieuw" autoComplete="new-password" placeholder="Nieuw wachtwoord (minstens 12 tekens)" show={show} onToggle={() => setShow((v) => !v)} />
-        <PasswordField name="nogmaals" autoComplete="new-password" placeholder="Nieuw wachtwoord nog een keer" show={show} onToggle={() => setShow((v) => !v)} />
-        {msg && <p className={msg.ok ? "ok" : "err"}>{msg.t}</p>}
-        <button type="submit" disabled={busy}>{busy ? "Bezig…" : "Wachtwoord wijzigen"}</button>
-      </form>
-    </FoldRow>
-  );
-}
-
 function FoldRow({ label, value, open, onToggle, children }: { label: string; value?: React.ReactNode; open?: boolean; onToggle?: (v: boolean) => void; children: React.ReactNode }) {
   const [own, setOwn] = useState(false);
   const isOpen = open ?? own;
@@ -1787,7 +1753,6 @@ export default function Home() {
             <>
           <section className="settings">
             <PushToggle />
-            <PasswordChange />
           </section>
           {/* Uitloggen: na 30 dagen zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
           <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
