@@ -43,6 +43,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Mobile Legends (spel)", icon: "mobilelegends.com", domains: ["mobilelegends.com", "moonton.com"] },
   { name: "Sago Mini (spel)", icon: "sagomini.com", domains: ["sagomini.com"] },
   { name: "BoBo World (spel)", icon: "bobo-world.com", domains: ["bobo-world.com", "kalegames.com", "papoworld.com"] }, // kinderspel: start met svip./www.bobo-world + www.kalegames, tijdens spelen elke ~3-4 min cp.papoworld
+  { name: "My Little Princess (spel)", icon: "my-little-princess.net", domains: ["my-little-princess.net"] }, // kinderspel (Unity) op de iPad sinds 19 okt: start met r2. + de Unity-spelmotor, daarna toca010-r2.; 25 okt 08:38-09:01 gespeeld maar nergens getoond
   { name: "Piknik (spel)", icon: "playpiknik.com", domains: ["playpiknik.com"] }, // kinderapp met Toca Boca- en Sago Mini-spellen (Unity); 22 okt 18:39 iPad: account-api.playpiknik.com bij het starten
   { name: "Amaya Kids (leren)", icon: "amayakids.com", domains: ["amayakids.com"] },
   { name: "TutoTOONS (spel)", icon: "tutotoons.com", domains: ["tutotoons.com", "tutoads.tv"] }, // kinderspellen; tijdens het spelen elke paar minuten reclame/gegevens

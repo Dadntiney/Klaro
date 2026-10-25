@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anchorOf, chainTimes, companionFor } from "./companion.ts";
+import { anchorOf, assignGameSdk, chainTimes, companionFor } from "./companion.ts";
 
 const m = (x: number) => 1_800_000_000_000 + x * 60_000;
 
@@ -60,4 +60,13 @@ test("gedeelde Meta-adressen: bij Instagram als het dichtstbijzijnde eigen adres
   assert.ok(!s.has("A|1010000|graph.facebook.com"));
   assert.ok(!s.has("B|1000|graph.facebook.com"));
   assert.ok(!s.has("A|5000000|graph.facebook.com"));
+});
+
+test("spel-motor in hetzelfde moment vlak vóór de start van een spel hoort bij dat spel; eerder of bij een andere app niet", () => {
+  const ev = [{ t: m(0) - 400, sdk: true }, { t: m(0), game: "spel.net" }, { t: m(5), sdk: true }];
+  const got = assignGameSdk(ev, 600_000);
+  assert.equal(got.get(m(0) - 400), "spel.net");
+  assert.equal(got.get(m(5)), "spel.net");
+  // Ruim vóór de start (10 s): hoort er niet bij.
+  assert.equal(assignGameSdk([{ t: m(0) - 10_000, sdk: true }, { t: m(0), game: "spel.net" }], 600_000).size, 0);
 });

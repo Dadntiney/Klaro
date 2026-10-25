@@ -372,6 +372,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   assert.equal(classify("vast.tutoads.tv").name, "TutoTOONS (spel)");
   for (const h of ["svip.bobo-world.com", "www.kalegames.com", "cp.papoworld.com"]) assert.equal(classify(h).name, "BoBo World (spel)", h);
   assert.notEqual(classify("www.bobo.com").name, "BoBo World (spel)"); // geen vals alarm op een gelijkende naam
+  for (const h of ["r2.my-little-princess.net", "toca010-r2.my-little-princess.net"]) assert.equal(classify(h).name, "My Little Princess (spel)", h);
+  assert.notEqual(classify("www.littleprincess.nl").name, "My Little Princess (spel)"); // geen vals alarm op een gelijkende naam
   assert.equal(classify("my.amayakids.com").name, "Amaya Kids (leren)");
   for (const h of ["www.chatbase.co", "backend.chatbase.co"]) assert.equal(classify(h).bg, true, h); // chatknop in een andere site
   for (const h of ["www.dwin1.com", "www.dwin2.com", "www.awin1.com", "www.zenaps.com"]) assert.equal(classify(h).bg, true, h); // Awin-affiliateteller in webwinkels (21 okt)

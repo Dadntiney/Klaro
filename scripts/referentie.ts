@@ -125,6 +125,7 @@ const CASES: Case[] = [
   { day: "2026-10-24", dev: "iPhone", site: "placehold.co", at: "09:06", want: false, why: "vervang-plaatjes op een betaalpagina" },
   { day: "2026-10-24", dev: "iPhone", site: "happinez.nl", at: "11:39", want: true, why: "vanuit een nieuwsbrief naar de site getikt (www.email. → www., hele pagina geladen)" },
   { day: "2026-10-15", dev: "iPhone", site: "marktplaats.nl", at: "12:44", want: true, why: "Marktplaats-app geopend vlak na het lezen van mail (app.marktplaats.nl en de hele app laadde)" },
+  { day: "2026-10-25", dev: "iPad", site: "my-little-princess.net", at: "08:38", want: true, why: "kinderspel (Unity) na Netflix gestart; tot 09:01 gespeeld (motor meldt elke 5 min)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const auto = new Set<string>(d.auto ?? []);

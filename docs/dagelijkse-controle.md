@@ -129,6 +129,13 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    (START_BURST in lib/overview.ts, 14 opstarts over alle dagen erbij).
    Facebook-pixel-venster bewust 3 s gelaten: 5 s haalde echte Instagram-momenten weg (4 dagen).
    Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
+   Geleerd (25 okt, controle op verzoek): nieuw kinderspel My Little Princess op de iPad (sinds 19 okt). Start met r2.my-little-princess.net
+   en de Unity-motor in dezelfde seconde, daarna toca010-r2.; tijdens het spelen meldt Unity zich elke 5 min. Klaro kende het niet,
+   dus 13 speelbeurten in 5 dagen ontbraken (25 okt 06:23 34 min, 08:38 24 min). Nu een eigen app. Daarbij: de spel-motor die in
+   hetzelfde moment (1,5 s) vlak vóór het eigen adres van een spel opstart, hoort bij dat spel (assignGameSdk); anders telde de
+   opstart niet en viel het spelen in stukjes van 5 min. Over alle dagen: alleen deze speelbeurten erbij, BoBo World-start niet meer
+   als staartje van TutoTOONS (18 okt), en twee keer TutoTOONS 0 min (alleen even geopend; het spelen daarna was My Little Princess).
+   Nagelopen en goed: Buienalarm en Buienradar tegelijk (beide echt geopend), blakelyclothing.com (Google-resultaat, hele winkel geladen).
    Geleerd (19 okt): nieuw kinderspel BoBo World op de iPad (18 okt uit de App Store gehaald). Het start met svip.bobo-world.com,
    www.bobo-world.com en www.kalegames.com tegelijk en meldt tijdens het spelen elke ~4 min cp.papoworld.com. Zelf leren zag die
    drie adressen als "vast hulpje" en verborg het spel (stond als "Spel (naam onbekend)" of TutoTOONS). Nu een eigen app.
@@ -151,6 +158,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Instagram gestart (www.instagram.com, nooit 's nachts) zonder foto's: onzeker tonen. Bij de ontgrendel-golf (WhatsApp 07:24)
    telde ik eerder Facebook en Instagram als twee apps en www.google.com als Google; dat laatste vraagt WhatsApp zelf op.
 
+   Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
+   ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
+   komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen
+   zekere algemene regel; blijven verzamelen.
    Nog uitzoeken: bij NPO (Zappelin) en Videoland herkent Klaro het beeld nog niet volledig: licentie- en video-adressen
    (drm.npoplayer.nl, fairplay.npo.nl, download.cdn.streamgate.nl, drm.videoland.bedrock.tech) tellen niet als beeld.
    Uitzoeken over alle dagen of die altijd en alleen bij kijken voorkomen; dan als beeld laten tellen (net als bij Netflix).

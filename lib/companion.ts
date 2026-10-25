@@ -154,6 +154,10 @@ export function assignGameSdk(ev: { t: number; game?: string; nav?: boolean; sdk
     if (e.other) { if (cur && e.t - cur.last > 1_500) cur = null; continue; }
     if ((e.sdk || (e.navSdk && cur?.nav)) && cur && e.t - cur.last <= keep) { out.set(e.t, cur.site); cur.last = e.t; }
   }
+  // De spel-motor die in hetzelfde moment (1,5 s) vlak vóór het eigen adres van een spel opstart, hoort bij dat spel: bij het
+  // opstarten komt de motor soms een fractie eerder (25 okt My Little Princess: config.uca.cloud.unity3d.com tegelijk met r2.).
+  const sorted = [...ev].sort((a, b) => a.t - b.t);
+  for (const g of sorted) if (g.game && !g.nav) for (const e of sorted) if (e.sdk && e.t < g.t && g.t - e.t <= 1_500) out.set(e.t, g.game);
   return out;
 }
 
