@@ -1590,7 +1590,7 @@ export default function Home() {
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
-                            if (!device) parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>); // apparaat gekozen: staat al bovenaan
+                            parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             if (bgOnly) parts.push(<span key="b">achtergrond</span>);
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
