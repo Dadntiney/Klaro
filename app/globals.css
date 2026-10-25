@@ -580,8 +580,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .wb:last-child .wb-d { color:var(--fg); font-weight:700; }
 /* Staat de regel erboven open (details), dan geen verbindingslijntje: het zou in de details steken. */
 .list > div:has(> .detail) + div.together > .item::before { display:none; }
-/* Lichte of doorzichtige logo's: licht vlakje met een dun randje, zodat ze niet wegvallen op de witte kaart. */
-.fav.ok.light { background:var(--head); box-shadow:inset 0 0 0 1px var(--line); padding:3px; box-sizing:border-box; object-fit:contain; }
 /* Altijd getoond, maar alleen een vaste melding (Philips Hue zonder openen): lichter. */
 .item.bgonly .name, .item.bgonly .fav { opacity:.6; }
 /* Totaal van vandaag: tik voor de minuten per apparaat. */

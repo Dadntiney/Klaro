@@ -63,31 +63,6 @@ function WhatsAppIcon() {
   );
 }
 
-/**
- * Logo met een doorzichtige of bijna witte rand (happywithyoga.com: lichtgroen op wit) valt weg op de kaart: dan krijgt het een
- * licht vlakje met een dun randje. Kijkt naar de rand van het plaatje (het komt van de eigen server, dus de browser mag het lezen).
- */
-function isLightIcon(img: HTMLImageElement): boolean {
-  try {
-    const n = 16, c = document.createElement("canvas");
-    c.width = c.height = n;
-    const ctx = c.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return false;
-    ctx.drawImage(img, 0, 0, n, n);
-    const px = ctx.getImageData(0, 0, n, n).data;
-    let light = 0, all = 0;
-    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-      if (x > 0 && x < n - 1 && y > 0 && y < n - 1) continue; // alleen de rand
-      const i = (y * n + x) * 4, a = px[i + 3];
-      all++;
-      if (a < 40 || (px[i] > 225 && px[i + 1] > 225 && px[i + 2] > 225)) light++;
-    }
-    return light / all > 0.6;
-  } catch {
-    return false;
-  }
-}
-
 /** Naam zonder "(spel)"/"(leren)": dat staat als woordje in de tweede regel, zodat de naam niet afgekapt wordt. */
 const shortName = (name: string) => name.replace(/ \((spel|leren)\)$/, "");
 const kindOf = (name: string) => / \((spel|leren)\)$/.exec(name)?.[1];
@@ -141,7 +116,6 @@ function GameGlyph() {
  */
 function Favicon({ domain, name, app }: { domain: string; name: string; app?: boolean }) {
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
-  const [light, setLight] = useState(false);
   const initial = (name.replace(/^www\./, "")[0] ?? "?").toUpperCase();
   if (/(^|\.)whatsapp\.(com|net)$/.test(domain)) return <WhatsAppIcon />;
   return (
@@ -150,14 +124,14 @@ function Favicon({ domain, name, app }: { domain: string; name: string; app?: bo
       {state !== "none" && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          className={state === "ok" ? "fav ok" + (light ? " light" : "") : "fav-hidden"}
+          className={state === "ok" ? "fav ok" : "fav-hidden"}
           alt=""
           width={28}
           height={28}
           loading="lazy"
           // Via de eigen server (api/icon.php). Heeft een site geen icoon, dan is het een wereldbolletje van 16x16: dat tonen we niet.
           src={`/api/icon.php?d=${encodeURIComponent(domain)}&s=64${app ? `&n=${encodeURIComponent(name)}` : ""}`}
-          onLoad={(e) => { const img = e.currentTarget; setState(img.naturalWidth > 16 ? "ok" : "none"); if (img.naturalWidth > 16) setLight(isLightIcon(img)); }}
+          onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
           onError={() => setState("none")}
         />
       )}
