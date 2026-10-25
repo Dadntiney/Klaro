@@ -578,3 +578,5 @@ h2 .livedot { margin:0 2px 0 12px; }
 .wb-v { font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; min-height:13px; }
 .wb-d { font-size:11px; color:var(--muted); font-weight:500; }
 .wb:last-child .wb-d { color:var(--fg); font-weight:700; }
+/* Staat de regel erboven open (details), dan geen verbindingslijntje: het zou in de details steken. */
+.list > div:has(> .detail) + div.together > .item::before { display:none; }
