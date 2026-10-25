@@ -1340,20 +1340,23 @@ export default function Home() {
   const chipsRef = useRef<HTMLDivElement>(null);
   const [devOpen, setDevOpen] = useState(false); // totaal per apparaat onder "Vandaag"
   // Het dagdeel (Ochtend, Middag, ...) waar je doorheen scrolt: in de vaste dagkop, zodra het eigen label onder de kop verdwenen is.
-  const [stuckPart, setStuckPart] = useState<{ d: string; p: number } | null>(null);
+  // p: null = de lijst schuift al onder de kop, maar er is (nog) geen dagdeel voorbij; dan alleen de afgeronde bovenrand.
+  const [stuckPart, setStuckPart] = useState<{ d: string; p: number | null } | null>(null);
   useEffect(() => {
     let raf = 0;
     const check = () => {
       raf = 0;
-      let found: { d: string; p: number } | null = null;
+      let found: { d: string; p: number | null } | null = null;
       for (const sec of document.querySelectorAll<HTMLElement>("section[data-day]")) {
         const h = sec.querySelector("h2");
         if (!h) continue;
         const hb = h.getBoundingClientRect(), sb = sec.getBoundingClientRect();
         if (sb.top > hb.top - 1 || sb.bottom < hb.bottom) continue; // deze kop staat niet vast bovenaan
+        const list = sec.querySelector(".list.day");
+        if (!list || list.getBoundingClientRect().top >= hb.bottom - 2) continue; // de lijst zit nog niet onder de kop
         let p: number | null = null;
         for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) if (m.getBoundingClientRect().bottom <= hb.bottom + 4) p = Number(m.dataset.part);
-        if (p !== null) found = { d: sec.dataset.day!, p };
+        found = { d: sec.dataset.day!, p };
       }
       setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p ? v : found));
     };
@@ -1465,7 +1468,7 @@ export default function Home() {
             return (
             <section key={d} data-day={d}>
               <h2
-                className={recent ? "" : "fold"}
+                className={(recent ? "" : "fold") + (stuckPart?.d === d ? " stuck" : "")}
                 onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })}
                 role={recent ? undefined : "button"}
                 aria-expanded={recent ? undefined : isDayOpen}
@@ -1487,7 +1490,7 @@ export default function Home() {
                   <span className="dstat">{liveStatus}</span>
                   </span>
                 )}
-                {stuckPart && stuckPart.d === d && <span className="dh-part" aria-hidden><PartIcon p={stuckPart.p} />{PARTS[stuckPart.p]}</span>}
+                {stuckPart && stuckPart.d === d && stuckPart.p !== null && <span className="dh-part" aria-hidden><PartIcon p={stuckPart.p} />{PARTS[stuckPart.p]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {recent && devOpen && !device && devMins.length > 1 && (
