@@ -608,3 +608,5 @@ section > h2 .dh-part { z-index:2; }
 section > h2.open { padding-bottom:18px; }
 section > .partcap { margin-top:6px; }
 section > .list.day:not(.capped) { margin-top:6px; }
+/* Het bovenste dagdeel staat al in de dagkop (zie .dh-part); dit label houdt alleen zijn plek en de markering voor het scrollen. */
+section > .partcap span { visibility:hidden; }

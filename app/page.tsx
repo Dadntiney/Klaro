@@ -1465,6 +1465,9 @@ export default function Home() {
             const autoOpen = di === 0 && !recent;
             const key = autoOpen ? d + "!" : d; // eigen sleutel: dichtklappen nu laat de dag later niet ineens open staan
             const isDayOpen = recent || (autoOpen ? !openDays.has(key) : openDays.has(key));
+            // Het dagdeel bovenaan de lijst staat in de (vaste) dagkop; tijdens het scrollen wisselt het mee (Middag → Ochtend).
+            const topPart = isDayOpen && rows[0]?.t && rows.some((r) => r.t && partOf(r.t) !== partOf(rows[0].t)) ? partOf(rows[0].t) : null;
+            const shownPart = stuckPart?.d === d && stuckPart.p !== null ? stuckPart.p : topPart;
             return (
             <section key={d} data-day={d}>
               <h2
@@ -1490,7 +1493,7 @@ export default function Home() {
                   <span className="dstat">{liveStatus}</span>
                   </span>
                 )}
-                {stuckPart && stuckPart.d === d && stuckPart.p !== null && <span className="dh-part" aria-hidden><PartIcon p={stuckPart.p} />{PARTS[stuckPart.p]}</span>}
+                {shownPart !== null && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {recent && devOpen && !device && devMins.length > 1 && (
