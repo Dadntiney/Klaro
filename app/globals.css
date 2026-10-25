@@ -564,8 +564,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .chips.fr { -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); }
 .chips.fl { -webkit-mask-image:linear-gradient(to right, transparent, #000 36px); mask-image:linear-gradient(to right, transparent, #000 36px); }
 .chips.fl.fr { -webkit-mask-image:linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
-/* Kort geopend, meerdere keren in een uur: het aantal rechts, rustig. */
-.item .tdur.cnt { color:var(--muted); font-weight:500; }
 /* Afgelopen 7 dagen van een app (in de details). */
 .week { margin:4px 0 10px; }
 .week .dh { display:flex; justify-content:space-between; align-items:baseline; }

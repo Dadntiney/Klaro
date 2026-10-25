@@ -1317,9 +1317,7 @@ export default function Home() {
                 return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
               })
               // Alles op begintijd, nieuwste eerst; wat nu bezig is blijft op zijn eigen tijd staan (groene zweem en "nu" vallen genoeg op).
-              .sort((a, b) => b.t - a.t),
-            // Alleen even geopend (geen minuten, niet onzeker, geen vangnet): binnen een uur één regel met het aantal keer.
-            (r) => !r.g.flag && !r.g.susp && r.ss.every((x) => minutes(x) === 0 && !x.uz)
+              .sort((a, b) => b.t - a.t)
           ),
         };
       })
@@ -1605,7 +1603,7 @@ export default function Home() {
                           })()}
                         </div>
                         <div className="time">
-                          {nowRow ? <span className="tdur nowtag">{mins > 0 ? `nu · ${dur(mins)}` : "nu"}</span> : mins > 0 ? <span className="tdur">{dur(mins)}</span> : rss.length > 1 ? <span className="tdur cnt" title={`${rss.length} keer kort geopend`}>{rss.length}×</span> : null}
+                          {nowRow ? <span className="tdur nowtag">{mins > 0 ? `nu · ${dur(mins)}` : "nu"}</span> : mins > 0 ? <span className="tdur">{dur(mins)}</span> : null}
                         </div>
                       </div>
                       {isOpen && (() => {
