@@ -18,7 +18,7 @@ draait in de browser met precies dezelfde code als voorheen. De server (map `php
 | `api/_private/` | instellingen en lijsten, via `.htaccess` nooit van buitenaf te openen |
 
 ## Inloggen en automatisch uitloggen
-- Na **60 minuten zonder echt gebruik** (op geen enkel apparaat) zijn alle sessies ongeldig en is opnieuw inloggen nodig. De
+- Na **30 dagen zonder echt gebruik** (op geen enkel apparaat) zijn alle sessies ongeldig en is opnieuw inloggen nodig. De
   server dwingt dit af; live bijwerken, alles ophalen en andere automatische verzoeken verlengen niets.
 - Gebruik op het ene apparaat of tabblad houdt de andere geldig (één eigenaar, één wachtwoord).
 - Scripts (dagelijkse controle) loggen per verzoek in met het wachtwoord (basic-auth); dat maakt of verlengt geen sessie.

@@ -21,8 +21,8 @@ foreach ([$a, $b] as $sid) sessions_with(function (array &$s) use ($sid) { $s['s
 use_cookie($a);
 check('ingelogd: geldig', session_state(null) === 'ok');
 check('het cookie zelf staat niet op de server', strpos((string)file_get_contents(SESSIONS), $a) === false);
-setLast(59 * 60); $last = S()['last'];
-check('59 minuten niet gebruikt: nog geldig', session_state(null) === 'ok');
+setLast(29 * 86400); $last = S()['last'];
+check('29 dagen niet gebruikt: nog geldig', session_state(null) === 'ok');
 check('automatisch verkeer verlengt niets', S()['last'] === $last);
 check('gebruik reset de timer', session_state(0) === 'ok' && time() - S()['last'] <= 1);
 setLast(30 * 60); session_state(20);
@@ -30,8 +30,8 @@ check('gebruik van 20 s geleden telt vanaf dat moment', abs(time() - 20 - S()['l
 check('"geleden" kan niet verder terug dan 60 s', (function () { setLast(30 * 60); session_state(99999); return abs(time() - 60 - S()['last']) <= 1; })());
 use_cookie($b); session_state(0); use_cookie($a); setLast(10);
 check('gebruik op apparaat B houdt apparaat A geldig', session_state(null) === 'ok');
-setLast(60 * 60);
-check('60 minuten niet gebruikt: verlopen', session_state(null) === 'verlopen');
+setLast(30 * 86400);
+check('30 dagen niet gebruikt: verlopen', session_state(null) === 'verlopen');
 check('alle sessies (alle apparaten) ongeldig', S()['s'] === []);
 use_cookie($b);
 check('ook het andere apparaat ziet "verlopen"', session_state(0) === 'verlopen');
@@ -66,6 +66,23 @@ auth_failed();
 check('20 fouten in 15 min: dicht', auth_blocked());
 file_put_contents(FAILS, json_encode(array_fill(0, 30, time() - 901)));
 check('oude fouten (> 15 min) tellen niet', !auth_blocked());
+@unlink(FAILS);
+
+// Wachtwoord wijzigen: alleen met het juiste huidige wachtwoord; andere apparaten worden uitgelogd, dit apparaat niet.
+@unlink(FAILS);
+$conf = ['key' => str_repeat('k', 30), 'profile' => 'abc123', 'password' => 'oud-wachtwoord-1'];
+file_put_contents(PRIV . '/config.php', "<?php\nreturn " . var_export($conf, true) . ";\n");
+$a = bin2hex(random_bytes(32)); $b = bin2hex(random_bytes(32));
+foreach ([$a, $b] as $sid) sessions_with(function (array &$s) use ($sid) { $s['s'][hash('sha256', $sid)] = ['c' => time(), 'a' => time()]; $s['last'] = time(); });
+use_cookie($a);
+check('fout huidig wachtwoord: geweigerd', password_change($conf, 'fout', 'nieuw-wachtwoord-12') !== null && klaro_config()['password'] === 'oud-wachtwoord-1');
+check('te kort nieuw wachtwoord: geweigerd', password_change($conf, 'oud-wachtwoord-1', 'kort') !== null);
+check('wijzigen lukt', password_change($conf, 'oud-wachtwoord-1', 'nieuw-wachtwoord-12') === null);
+$new = include PRIV . '/config.php';
+check('nieuw wachtwoord opgeslagen, sleutel en profiel blijven', $new['password'] === 'nieuw-wachtwoord-12' && $new['key'] === $conf['key'] && $new['profile'] === 'abc123');
+check('dit apparaat blijft ingelogd', session_state(null) === 'ok');
+use_cookie($b);
+check('het andere apparaat is uitgelogd', session_state(null) !== 'ok');
 @unlink(FAILS);
 
 array_map('unlink', glob(PRIV . '/*')); rmdir(PRIV);

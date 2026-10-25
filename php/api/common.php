@@ -9,7 +9,7 @@ if (!defined('PRIV')) define('PRIV', __DIR__ . '/_private'); // tests gebruiken 
 const OLD_COOKIE = 'klaro_auth'; // oud cookie (vóór 16 okt 2026): wordt niet meer geaccepteerd en bij inloggen opgeruimd
 const SID_COOKIE = 'klaro_sid';
 /** Na zoveel seconden zonder gebruik (op geen enkel apparaat) is iedereen uitgelogd. */
-const IDLE = 3600;
+const IDLE = 30 * 86400; // 30 dagen niet gebruikt (op geen enkel apparaat): opnieuw inloggen (was 60 minuten; wens eigenaar 25 okt)
 const SESSIONS = PRIV . '/sessions.json';
 
 function klaro_config(): ?array {
@@ -62,7 +62,7 @@ function set_sid_cookie(string $value, int $expires): void {
 }
 
 /**
- * Is deze sessie geldig? 'ok', 'verlopen' (60 minuten niet gebruikt: dan zijn alle sessies ongeldig gemaakt) of 'geen'.
+ * Is deze sessie geldig? 'ok', 'verlopen' (30 dagen niet gebruikt: dan zijn alle sessies ongeldig gemaakt) of 'geen'.
  * $used: dit verzoek is echt gebruik (seconden geleden, 0 = nu); null = automatisch verzoek, verlengt niets.
  */
 function session_state(?int $used = null): string {
@@ -96,7 +96,7 @@ function session_start_new(): void {
     $s['s'][hash('sha256', $sid)] = ['c' => $now, 'a' => $now, 'ua' => $ua];
     $s['last'] = $now;
   });
-  set_sid_cookie($sid, time() + 30 * 86400); // het cookie mag blijven; de server bepaalt of de sessie nog geldt
+  set_sid_cookie($sid, time() + 400 * 86400); // het cookie mag blijven; de server bepaalt of de sessie nog geldt
   setcookie(OLD_COOKIE, '', ['expires' => 1, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
 }
 
@@ -163,5 +163,25 @@ function require_login(): array {
   $state = session_state(null);
   if ($state === 'ok') return $cfg;
   header('X-Klaro-Login: ' . ($state === 'verlopen' ? 'verlopen' : 'nodig'));
-  json_out(401, ['error' => $state === 'verlopen' ? 'Automatisch uitgelogd: de app is 60 minuten niet gebruikt.' : 'Inloggen vereist.']);
+  json_out(401, ['error' => $state === 'verlopen' ? 'Automatisch uitgelogd: de app is 30 dagen niet gebruikt.' : 'Inloggen vereist.']);
+}
+
+/**
+ * Nieuw inlogwachtwoord opslaan (sleutel en profiel blijven). Alle andere sessies vervallen (wie het oude wachtwoord kende,
+ * is overal uitgelogd); deze sessie blijft. Geeft een foutmelding terug, of null als het gelukt is.
+ */
+function password_change(array $cfg, string $current, string $new): ?string {
+  if (!password_ok($cfg, $current)) { auth_failed(); return 'Het huidige wachtwoord klopt niet.'; }
+  if (strlen($new) < 12) return 'Kies een nieuw wachtwoord van minstens 12 tekens.';
+  if (hash_equals((string)$cfg['password'], $new)) return 'Het nieuwe wachtwoord is hetzelfde als het oude.';
+  $cfg['password'] = $new;
+  $f = PRIV . '/config.php';
+  if (@file_put_contents($f . '.tmp', "<?php\nreturn " . var_export($cfg, true) . ";\n", LOCK_EX) === false || !@rename($f . '.tmp', $f)) return 'Opslaan lukt niet op de server.';
+  @chmod($f, 0600);
+  if (function_exists('opcache_invalidate')) @opcache_invalidate($f, true);
+  $h = sid_hash();
+  sessions_with(function (array &$s) use ($h) {
+    foreach ($s['s'] as $k => $_) if ($k !== $h) { $s['gone'][$k] = time(); unset($s['s'][$k]); }
+  });
+  return null;
 }
