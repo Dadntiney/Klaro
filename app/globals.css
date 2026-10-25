@@ -600,8 +600,8 @@ h2 .dpair { order:2; } h2 .fold-chev { order:3; }
    achtergrond in de hoeken). Het dagdeel staat daar bovenop. */
 section > h2.stuck::before, section > h2.stuck::after { content:""; position:absolute; left:0; right:0; pointer-events:none; }
 section > h2.stuck::before { top:100%; height:22px; background:var(--bg); z-index:0; }
-section > h2.stuck::after { top:calc(100% + 8px); height:14px; }
-section > h2.stuck::after { background:var(--card); border:1px solid var(--line); border-bottom:0; border-radius:12px 12px 0 0; z-index:1; }
+section > h2.stuck::after { top:calc(100% + 8px); height:26px; } /* bovenste deel wit, daarna kort zacht naar doorzichtig */
+section > h2.stuck::after { background:linear-gradient(var(--card) 45%, color-mix(in srgb, var(--card) 0%, transparent)); border:1px solid var(--line); border-bottom:0; border-radius:12px 12px 0 0; z-index:1; }
 section > h2 .dh-part { z-index:2; }
 /* Vaste ruimte onder de dagkop (ook bij ingeklapte dagen), zodat het dagdeel midden op de bovenrand van de lijst staat met lucht
    boven en onder; de marges van de lijst zijn daarvoor kleiner, zodat de lijst op dezelfde plek blijft. */
