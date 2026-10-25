@@ -1572,8 +1572,6 @@ export default function Home() {
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
                   const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
-                  // Altijd getoond op wens (Philips Hue, eufy, GoFiev), maar zonder echt gebruik: een vaste melding, geen gebruik.
-                  const bgOnly = ALWAYS_SHOW.has(g.site) && !rss.some((x) => isHuman(x) || x.op);
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   // Tegelijk gebruikt op hetzelfde apparaat (Spotify tijdens een rit met Waze): met een lijntje aan de regel erboven
                   // vast, zodat het niet lijkt alsof de minuten bij elkaar opgeteld moeten worden. Alleen bij minstens een minuut overlap.
@@ -1584,7 +1582,7 @@ export default function Home() {
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
                       {partStart ? <div className="partmark" data-part={partOf(t)}><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
-                        className={"item clickable" + (brief ? " brief" : "") + (bgOnly ? " bgonly" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
+                        className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
                         onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
                         role="button"
                         aria-expanded={isOpen}
@@ -1597,7 +1595,6 @@ export default function Home() {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
-                            if (bgOnly) parts.push(<span key="b">achtergrond</span>);
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
