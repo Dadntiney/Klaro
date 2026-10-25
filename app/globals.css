@@ -616,3 +616,5 @@ section > .partcap span { visibility:hidden; }
    Een nieuw dagdeel (Ochtend, Middag, ...) houdt zijn label. */
 .list > div > .hourmark { display:none; }
 .list > div.hourstart:not(:has(> .partmark)):has(.tstart)::before { display:block; }
+/* Ruimte onder het labeltje als binnenruimte van de bovenste regel (niet als rand): dan loopt de groene "nu"-zweem door tot boven. */
+.list.day > div:first-child > .item { border-top:0; padding-top:20px; }
