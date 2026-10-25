@@ -89,7 +89,7 @@ function WeekBars({ name, data }: { name: string; data?: Map<string, { mins: num
             <div className="wb-col">
               {x.v && x.v.mins > 0 ? <span className="wb-bar" style={{ height: `${Math.max(8, Math.round((x.v.mins / max) * 100))}%` }} /> : x.v ? <span className="wb-dot" /> : null}
             </div>
-            <span className="wb-v">{x.v ? (x.v.mins > 0 ? (x.v.mins >= 60 ? `${Math.round(x.v.mins / 6) / 10}u` : `${x.v.mins}m`) : "kort") : ""}</span>
+            <span className="wb-v">{x.v ? (x.v.mins > 0 ? (x.v.mins >= 60 ? `${String(Math.round(x.v.mins / 6) / 10).replace(".", ",")} u` : `${x.v.mins}m`) : "kort") : ""}</span>
             <span className="wb-d">{x.wd}</span>
           </div>
         ))}
