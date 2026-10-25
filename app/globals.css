@@ -594,3 +594,5 @@ section > h2 { position:sticky; top:var(--barh, 52px); z-index:2; background:var
 /* Het dagdeel waar je doorheen scrolt: midden onder de vaste dagkop, op de bovenrand van de lijst (zoals het label bovenaan). */
 section > h2 .dh-part { position:absolute; left:50%; bottom:-2px; transform:translate(-50%, 50%); display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border:1px solid var(--line); border-radius:99px; background:var(--card); color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; white-space:nowrap; }
 h2 .dpair { order:2; } h2 .fold-chev { order:3; }
+/* De apparaatknoppen boven de vaste dagkop (anders snijdt de kop de onderkant van de knoppen af). */
+.bar { z-index:3; }
