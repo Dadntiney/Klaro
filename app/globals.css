@@ -594,3 +594,4 @@ h2 .livedot { margin:0 2px 0 12px; }
 .devtot-m { font-weight:600; font-variant-numeric:tabular-nums; }
 /* De dagkop blijft tijdens het scrollen bovenaan staan, onder de apparaatknoppen. */
 section > h2 { position:sticky; top:var(--barh, 52px); z-index:1; background:var(--bg); padding:6px 0; margin-top:22px; margin-bottom:2px; }
+.devtot-row .mdev { display:inline-flex; align-items:center; gap:8px; }
