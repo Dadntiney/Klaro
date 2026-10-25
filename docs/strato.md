@@ -7,7 +7,7 @@ draait in de browser met precies dezelfde code als voorheen. De server (map `php
 |---|---|
 | `api/nd.php` | doorgeefluik naar NextDNS met de geheime sleutel (`?q=` voor /logs, `?download=1` voor alles uit de kopie, `&oud=1` = rechtstreeks de hele download) |
 | `api/store.php` | eigen kopie van het logboek (`_private/logs.sqlite`): eens per minuut alleen nieuwe regels (raw /logs), gelijk aan de download; test: `php tests/store.php` |
-| `api/alert.php` | voor de waarschuw-taak (GitHub, elke 5 min, `scripts/waarschuw.ts`): nieuwe regels + abonnementen, `?week=1` de laatste 8 dagen voor de schermtijd in het weekbericht; alleen met de taaksleutel (hash in `_private/alert.key`) |
+| `api/alert.php` | voor de waarschuw-taak (GitHub, elke 5 min, `scripts/waarschuw.ts`): nieuwe regels + abonnementen; alleen met de taaksleutel (hash in `_private/alert.key`) |
 | `api/push.php` | meldingen aan/uit op dit toestel (na inloggen); abonnementen in `_private/push.json` |
 | `api/lists.php` | welke adressen op de 18+/datinglijst staan (lijsten per vakje in `api/_private/lists/`) |
 | `api/login.php` | inloggen: nieuwe sessie per apparaat (willekeurig cookie; op de server alleen de hash in `_private/sessions.json`) |
@@ -42,11 +42,11 @@ berekent; daarna `scripts/referentie.ts` en `scripts/gemist.ts` erop.
 - `.github/workflows/waarschuw.yml` draait elke 5 minuten `scripts/waarschuw.ts` (één run loopt ~50 min en start dan zijn opvolger, ook na
   vastlopen; het GitHub-schema start in deze repository niet, het uurschema is alleen reserve): dezelfde herkenning als de pagina (lib/sites.ts,
   data/-lijsten). Rood (18+, dating, VPN/proxy, door NextDNS geblokkeerde porno/dating) = melding, één keer per apparaat + site per 3 uur.
-- Op de iPhone komt alleen een neutrale tekst ("Er is iets om te bekijken", "Weekoverzicht staat klaar"): meekijkers zien niets
+- Op de iPhone komt alleen een neutrale tekst ("Er is iets om te bekijken"): meekijkers zien niets
   (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen" (api/push.php, na inloggen; laatste 50, 30 dagen).
 - Sleutels (`lib/webpush.ts`) worden afgeleid van het geheim `STRATO_SFTP_PASSWORD`; bij het live zetten komen alleen de openbare
   push-sleutel en de hash van de taaksleutel op de server (`scripts/sleutels.ts`). Verandert dat geheim, dan meldingen opnieuw aanzetten.
 - Ook: "apparaat stil" (langer dan 2× de langste pauze van 14 dagen en minstens 3 uur, alleen apparaten die bijna dagelijks actief
-  zijn; hooguit eens per dag) en een weekbericht op zondag 19-21 uur ("Waarschuwen werkt"). Draaide de taak een uur niet goed, dan
+  zijn; hooguit eens per dag). Het weekbericht is op wens van de eigenaar weg (25 okt). Draaide de taak een uur niet goed, dan
   staat dat onderaan in Klaro (rood); de dagelijkse controle kijkt het ook na.
 - Op de iPhone: Klaro op het beginscherm zetten, daar openen, onderaan "Meldingen aan". Binnen ~15 min komt een proefmelding.

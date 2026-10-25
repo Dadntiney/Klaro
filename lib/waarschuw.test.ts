@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findAlerts, flagOf, pushText, screenTime, silentAlerts, weeklyAlert, type DevStat } from "../scripts/waarschuw.ts";
+import { findAlerts, flagOf, pushText, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
 
 test("waarschuwen: 18+, dating, VPN en door NextDNS geblokkeerde porno worden gemeld", () => {
   assert.equal(flagOf("www.pornhub.com", "", ""), "18+");
@@ -45,47 +45,10 @@ test("apparaat stil: geen vals alarm bij een iPad die vaker lang stil is, een Ma
   assert.equal(silentAlerts([dev({ first: NOW - 3 * DAY, last: NOW - 5 * H })], NOW).length, 0);
 });
 
-test("weekbericht alleen op zondagavond, met aantallen en apparaten (soort, geen naam)", () => {
-  const sun = Date.parse("2026-10-25T18:30:00Z"); // zondag 19:30 in Nederland
-  const devs = [dev({ last: sun - 60_000 }), dev({ id: "B2", name: "Iemands iPad", last: sun - 3 * DAY })];
-  const w = weeklyAlert(devs, sun, 0)!;
-  assert.equal(w.key, "week|2026-10-25");
-  assert.match(w.body, /^Geen waarschuwingen deze week\. Actief: iPhone\. Al langer stil: iPad \(3 dagen\)\. Waarschuwen werkt\.$/);
-  assert.equal(weeklyAlert(devs, sun - 3 * H, 0), undefined); // zondagmiddag
-  assert.equal(weeklyAlert(devs, Date.parse("2026-10-24T18:30:00Z"), 0), undefined); // zaterdag
-  assert.match(weeklyAlert(devs, sun, 2)!.body, /^2 waarschuwingen/);
-});
-
-test("weekbericht met schermtijd: per apparaat gemiddeld per dag, in plaats van alleen 'actief'", () => {
-  const sun = Date.parse("2026-10-25T18:30:00Z");
-  const w = weeklyAlert([dev({ last: sun - 60_000 })], sun, 0, "iPhone 1u 5m (vooral YouTube)")!;
-  assert.match(w.body, /^Geen waarschuwingen deze week\. Schermtijd per dag: iPhone 1u 5m \(vooral YouTube\)\. Waarschuwen werkt\.$/);
-});
-
-const week = (rows: [number, string][]) => {
-  const head = "timestamp\tdomain\tstatus\treasons\tdestination_country\tclient_ip\tdevice_id\tdevice_name\tdevice_model";
-  const T = Date.parse("2026-10-25T10:00:00Z");
-  return { now: T + 3 * H, tsv: [head, ...rows.map(([t, h]) => [new Date(T + t).toISOString(), h, "", "", "", "10.0.0.1", "P1", "iPhone", ""].join("\t")).reverse()].join("\n") };
-};
-
-test("schermtijd: 35 minuten YouTube in een week is 5 minuten per dag (zelfde telling als de pagina)", async () => {
-  const rows: [number, string][] = [];
-  for (let t = 0; t <= 35 * 60_000; t += 20_000) rows.push([t, t % 60_000 ? "i.ytimg.com" : "www.youtube.com"]);
-  const { tsv, now } = week(rows);
-  assert.equal(await screenTime(tsv, now), "iPhone 5m (vooral YouTube)");
-});
-
-test("schermtijd: alleen achtergrondverkeer telt niet mee", async () => {
-  const rows: [number, string][] = [];
-  for (let t = 0; t <= 60 * 60_000; t += 60_000) rows.push([t, "gateway.icloud.com"]);
-  const { tsv, now } = week(rows);
-  assert.equal(await screenTime(tsv, now), "");
-});
-
 test("pushmelding op het scherm zegt niets over wat er gebeurde (meekijkers), de echte tekst staat in Klaro", () => {
   const [a] = findAlerts(["timestamp", "domain", "status", "reasons", "device_id", "device_name", "device_model"], ["2026-10-20T10:00:00Z\twww.pornhub.com\t\t\tA1\tiPhone\t"]);
   assert.match(a.body, /pornhub/); // in Klaro (na inloggen) wel
-  for (const key of [a.key, "stil|A1", "week|2026-10-25", "proef"]) {
+  for (const key of [a.key, "stil|A1", "proef"]) {
     const m = pushText(key);
     assert.ok(m.title && m.body);
     assert.doesNotMatch(m.title + m.body + m.tag, /18\+|porn|dating|vpn|iphone|ipad|A1|stil/i, key);

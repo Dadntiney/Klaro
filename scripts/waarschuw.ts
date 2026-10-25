@@ -8,8 +8,6 @@ import { classify } from "../lib/sites.ts";
 import { extractHost } from "../lib/parse.ts";
 import { deviceType, labelDevices } from "../lib/names.ts";
 import { keysFrom, sendPush, type Keys, type Sub } from "../lib/webpush.ts";
-import { buildOverview } from "../lib/overview.ts";
-import { activeMinutes, usage, type UseGroup } from "../lib/usage.ts";
 
 export type Alert = { key: string; title: string; body: string; t: number };
 
@@ -64,62 +62,12 @@ export function silentAlerts(devs: DevStat[], now: number): Alert[] {
     .map((d) => ({ key: `stil|${d.id}`, t: d.last, title: "Klaro: apparaat stil", body: `${name[d.id]} is al ${uren(now - d.last)} stil (normaal hooguit ${uren(d.maxGap)}). Uit, VPN aan, of NextDNS-profiel weg?` }));
 }
 
-const hmin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}u${m % 60 ? ` ${m % 60}m` : ""}` : `${m}m`);
-const dayKey = (t: number) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(t);
-
-/**
- * Schermtijd van de laatste 7 dagen (vandaag meegeteld), gemiddeld per dag per apparaat, met de app waar de meeste tijd in zat.
- * Precies de telling van de pagina (lib/overview.ts + lib/usage.ts): de minuten zijn dezelfde als de dagtotalen in Klaro.
- */
-export async function screenTime(tsv: string, now: number): Promise<string> {
-  const res = { ok: true, status: 200, text: async () => tsv, json: async () => ({}) };
-  const client = { logs: async () => res, download: async () => res } as unknown as Parameters<typeof buildOverview>[0];
-  const body = (await buildOverview(client, { todayOnly: false })).body as { groups?: UseGroup[]; auto?: string[]; followers?: Record<string, string> };
-  const days = new Set(Array.from({ length: 7 }, (_, i) => dayKey(now - i * 86_400_000)));
-  const groups = (body.groups ?? []).filter((g) => days.has(g.d));
-  const { listed, shown } = usage(groups, { auto: new Set(body.auto ?? []), followers: body.followers ?? {} });
-  const perDay = new Map<string, Map<string, ReturnType<typeof shown>>>(); // apparaat -> dag -> sessies
-  const perApp = new Map<string, Map<string, number>>(); // apparaat -> app -> minuten
-  for (const g of groups) {
-    if (!listed(g)) continue;
-    const ss = shown(g);
-    if (!ss.length) continue;
-    const dm = perDay.get(g.dev) ?? perDay.set(g.dev, new Map()).get(g.dev)!;
-    dm.set(g.d, [...(dm.get(g.d) ?? []), ...ss]);
-    const am = perApp.get(g.dev) ?? perApp.set(g.dev, new Map()).get(g.dev)!;
-    const app = g.name.replace(/ \([^)]*\)$/, ""); // "Toca Boca (spel)" -> "Toca Boca"
-    am.set(app, (am.get(app) ?? 0) + activeMinutes(ss));
-  }
-  const out = [...perDay].map(([dev, dm]) => {
-    const total = [...dm.values()].reduce((n, ss) => n + activeMinutes(ss), 0);
-    const top = [...(perApp.get(dev) ?? [])].sort((a, b) => b[1] - a[1])[0];
-    return { dev, avg: Math.round(total / 7), top: top && top[1] >= 1 ? top[0] : "" };
-  }).filter((x) => x.avg >= 1).sort((a, b) => b.avg - a.avg);
-  return out.map((x) => `${x.dev} ${hmin(x.avg)}${x.top ? ` (vooral ${x.top})` : ""}`).join(", ");
-}
-
-/** Weekbericht op zondag tussen 19 en 21 uur: dat waarschuwen werkt, hoeveel meldingen er waren, welke apparaten actief zijn en hun schermtijd. */
-export function weeklyAlert(devs: DevStat[], now: number, week: number, use?: string): Alert | undefined {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(now);
-  const wd = parts.find((p) => p.type === "weekday")?.value, h = Number(parts.find((p) => p.type === "hour")?.value);
-  if (wd !== "Sun" || h < 19 || h > 20) return undefined;
-  const name = labels(devs);
-  const active = devs.filter((d) => now - d.last < 24 * HOUR).map((d) => name[d.id]).sort();
-  const quiet = devs.filter((d) => now - d.last >= 24 * HOUR).map((d) => `${name[d.id]} (${uren(now - d.last)})`).sort();
-  const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" }).format(now);
-  return {
-    key: `week|${day}`, t: now, title: "Klaro: weekoverzicht",
-    body: `${week === 0 ? "Geen waarschuwingen" : week === 1 ? "1 waarschuwing" : `${week} waarschuwingen`} deze week.${use ? ` Schermtijd per dag: ${use}.` : ` Actief: ${active.join(", ") || "geen"}.`}${quiet.length ? ` Al langer stil: ${quiet.join(", ")}.` : ""} Waarschuwen werkt.`,
-  };
-}
-
 /**
  * Wat er op het scherm van de iPhone komt: nooit wat er gebeurde (geen 18+, site of apparaat), zodat een meekijker niets
  * ziet (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen", pas na inloggen.
  */
 export function pushText(key: string): { title: string; body: string; tag: string } {
   // De iPhone zet er zelf "from Klaro" onder; de titel is dus de boodschap (anders staat er twee keer Klaro).
-  if (key.startsWith("week|")) return { title: "Weekoverzicht staat klaar", body: "Tik om het te bekijken.", tag: "week" };
   if (key === "proef") return { title: "Meldingen staan aan", body: "Je krijgt hier bericht als er iets is.", tag: "proef" };
   return { title: "Er is iets om te bekijken", body: "Tik om het te bekijken.", tag: "melding" };
 }
@@ -144,15 +92,7 @@ async function main() {
   const got = await api(url, k);
   const devs = (got.devices ?? []) as DevStat[];
   const now = Number(got.now) || Date.now();
-  let week = weeklyAlert(devs, now, Number(got.week) || 0);
-  // Schermtijd alleen ophalen als het weekbericht nu echt verstuurd wordt (één keer per zondag); lukt het niet, dan zonder.
-  if (week && !((got.sent ?? []) as string[]).includes(week.key)) {
-    const use = await fetch(url + "?week=1", { headers: { "X-Klaro-Sleutel": k.alertKey }, signal: AbortSignal.timeout(110_000) })
-      .then(async (r) => (r.ok ? screenTime(await r.text(), now) : ""))
-      .catch(() => "");
-    week = weeklyAlert(devs, now, Number(got.week) || 0, use);
-  }
-  const alerts = [...findAlerts(got.cols as string[], got.rows as string[]), ...silentAlerts(devs, now), ...(week ? [week] : [])];
+  const alerts = [...findAlerts(got.cols as string[], got.rows as string[]), ...silentAlerts(devs, now)];
   // Geen namen of adressen in het logboek van GitHub (openbaar): alleen aantallen.
   console.log(`${(got.rows as string[]).length} nieuwe regels, ${alerts.length} melding(en) gevonden, ${devs.length} apparaten, ${got.subs} abonnement(en)`);
   if (proef) return;

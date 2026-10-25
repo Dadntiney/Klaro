@@ -1,6 +1,6 @@
 /**
- * Wat er als echt gebruik in de lijst komt, en hoeveel minuten dat per apparaat is. Eén plek voor de pagina (app/page.tsx) en
- * het weekbericht (scripts/waarschuw.ts), zodat de minuten overal precies hetzelfde zijn.
+ * Wat er als echt gebruik in de lijst komt, en hoeveel minuten dat per apparaat is. Eén plek voor de pagina (app/page.tsx),
+ * zodat de minuten overal precies hetzelfde zijn.
  */
 import { isHuman, type Session } from "./sessions.ts";
 import { HEARTBEAT_GAP, NAV_APPS, NAV_GAP } from "./sites.ts";

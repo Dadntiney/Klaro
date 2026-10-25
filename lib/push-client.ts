@@ -66,5 +66,6 @@ export type SentAlert = { t: number; title: string; body: string };
 /** De laatste meldingen met de echte tekst (op de iPhone zelf staat alleen "Er is iets om te bekijken"). */
 export async function pushHistory(): Promise<SentAlert[]> {
   const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { meldingen?: SentAlert[] };
-  return r.meldingen ?? [];
+  // Het weekoverzicht bestaat niet meer (wens eigenaar, 25 okt): oude weekberichten ook niet meer tonen.
+  return (r.meldingen ?? []).filter((m) => !/weekoverzicht/i.test(m.title));
 }
