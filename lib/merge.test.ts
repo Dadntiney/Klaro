@@ -36,3 +36,19 @@ test("hetzelfde spel twee keer met een uur ertussen: twee rijen, ook als ze dire
   const out = mergeRows([mk(731, 762), mk(643, 663)]); // 12:11-12:42 en 10:43-11:03
   assert.equal(out.length, 2);
 });
+
+test("korte rijen van dezelfde app binnen een uur worden één regel; met echt gebruik of over meer dan een uur niet", () => {
+  const ig = { n: "instagram" };
+  const wa = { n: "whatsapp" };
+  const min = 60_000;
+  const mk = (g: object, s: number, d = 0) => ({ g, t: s * min, ss: [{ s: s * min, e: s * min + d }], first: false, newest: false });
+  const brief = (r: { ss: { s: number; e: number }[] }) => r.ss.every((x) => x.e - x.s < min);
+  // nieuwste eerst: Instagram 10:50, WhatsApp 10:40, Instagram 10:20, Instagram 09:30 (10 min lang), Instagram 08:30
+  const out = mergeRows([mk(ig, 650), mk(wa, 640), mk(ig, 620), mk(ig, 570, 10 * min), mk(ig, 510)], brief);
+  const rows = out.filter((r) => r.g === ig);
+  assert.equal(rows[0].ss.length, 2); // 10:20 en 10:50 samen (30 min, allebei kort)
+  assert.equal(rows[0].t, 620 * min);
+  assert.equal(rows.length, 3); // het lange gebruik blijft een eigen regel, 08:30 ook (meer dan een uur eerder)
+  // Zonder `brief`: zoals altijd (alleen binnen 15 minuten).
+  assert.equal(mergeRows([mk(ig, 650), mk(ig, 620)]).length, 2);
+});

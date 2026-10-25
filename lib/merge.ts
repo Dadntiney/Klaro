@@ -7,12 +7,20 @@ export const MERGE_GAP = 15 * 60_000;
  * Dezelfde site (zelfde apparaat) binnen MERGE_GAP na elkaar (ook met andere regels ertussen) wordt één
  * regel: bezoeken bij elkaar, tijd van het eerste bezoek. Uitklappen laat de losse bezoeken nog zien. `rows`: nieuwste eerst.
  */
-export function mergeRows<G, T extends { g: G; t: number; ss: Session[]; first: boolean; newest: boolean }>(rows: T[]): T[] {
+/** Korte rijen (alleen even geopend) van dezelfde app binnen dit venster worden één regel: "Instagram · 3×". */
+export const BRIEF_SPAN = 60 * 60_000;
+
+/**
+ * Daarnaast (met `brief`): rijen die alleen uit korte bezoeken bestaan, van dezelfde site op hetzelfde apparaat, worden één regel
+ * zolang alles binnen BRIEF_SPAN valt (van het eerste tot het laatste bezoek). Zo staat Instagram niet zeven keer los op een dag.
+ */
+export function mergeRows<G, T extends { g: G; t: number; ss: Session[]; first: boolean; newest: boolean }>(rows: T[], brief?: (r: T) => boolean): T[] {
   const out: T[] = [];
   for (const r of rows) {
     const rEnd = Math.max(...r.ss.map((x) => x.e));
+    const short = !!brief && brief(r);
     // Alleen binnen MERGE_GAP, ook als ze direct onder elkaar staan (een uur later spelen is een nieuwe keer).
-    const p = out.find((o) => o.g === r.g && Math.min(...o.ss.map((x) => x.s)) - rEnd <= MERGE_GAP);
+    const p = out.find((o) => o.g === r.g && (Math.min(...o.ss.map((x) => x.s)) - rEnd <= MERGE_GAP || (short && brief!(o) && Math.max(...o.ss.map((x) => x.s)) - r.t <= BRIEF_SPAN)));
     if (p) {
       p.ss = [...p.ss, ...r.ss];
       p.t = Math.min(p.t, r.t);

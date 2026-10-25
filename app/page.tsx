@@ -63,6 +63,41 @@ function WhatsAppIcon() {
   );
 }
 
+/** Naam zonder "(spel)"/"(leren)": dat staat als woordje in de tweede regel, zodat de naam niet afgekapt wordt. */
+const shortName = (name: string) => name.replace(/ \((spel|leren)\)$/, "");
+const kindOf = (name: string) => / \((spel|leren)\)$/.exec(name)?.[1];
+
+/**
+ * De laatste 7 dagen van één app: een staafje per dag (minuten), een stipje als hij alleen even open was. Zo zie je of iets nieuw
+ * is of een gewoonte wordt.
+ */
+function WeekBars({ name, data }: { name: string; data?: Map<string, { mins: number; n: number }> }) {
+  const list = Array.from({ length: 7 }, (_, i) => {
+    const t = Date.now() - (6 - i) * 86_400_000;
+    const d = dayKeyFmt.format(t);
+    return { d, wd: new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "short" }).format(t).slice(0, 2), v: data?.get(d) };
+  });
+  const max = Math.max(1, ...list.map((x) => x.v?.mins ?? 0));
+  const total = list.reduce((n, x) => n + (x.v?.mins ?? 0), 0);
+  const daysUsed = list.filter((x) => x.v).length;
+  return (
+    <div className="week" aria-label={`${name}: afgelopen 7 dagen`}>
+      <div className="dh">Afgelopen 7 dagen<span className="week-sum">{daysUsed === 0 ? "" : `${daysUsed} ${daysUsed === 1 ? "dag" : "dagen"}${total > 0 ? ` · ${dur(total)}` : ""}`}</span></div>
+      <div className="week-bars">
+        {list.map((x) => (
+          <div key={x.d} className="wb" title={x.v ? `${dayLabel(x.d)}: ${x.v.mins > 0 ? dur(x.v.mins) : `${x.v.n}× kort`}` : `${dayLabel(x.d)}: niet gebruikt`}>
+            <div className="wb-col">
+              {x.v && x.v.mins > 0 ? <span className="wb-bar" style={{ height: `${Math.max(8, Math.round((x.v.mins / max) * 100))}%` }} /> : x.v ? <span className="wb-dot" /> : null}
+            </div>
+            <span className="wb-v">{x.v ? (x.v.mins > 0 ? (x.v.mins >= 60 ? `${Math.round(x.v.mins / 6) / 10}u` : `${x.v.mins}m`) : "kort") : ""}</span>
+            <span className="wb-d">{x.wd}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Spelletje (handcontroller), voor een spel of leer-app zonder logo: rustiger dan een losse letter. */
 function GameGlyph() {
   return (
@@ -1223,6 +1258,22 @@ export default function Home() {
 
   // Los van het apparaat-filter: zo hoeft een tik op een chip dit niet opnieuw uit te rekenen.
   const use = useMemo(() => usage(groups, { auto, followers: followOf.current, mailT, cut }), [groups, mailT, cut, auto]);
+  // Per app (apparaat|site): minuten en keren per dag, voor het weekje in de details. Zelfde telling als de lijst (lib/usage.ts).
+  const perDay = useMemo(() => {
+    const m = new Map<string, Map<string, { mins: number; n: number }>>();
+    for (const g of groups) {
+      if (!use.listed(g)) continue;
+      const ss = use.shown(g);
+      if (!ss.length) continue;
+      const k = g.dev + "|" + g.site;
+      const byD = m.get(k) ?? m.set(k, new Map()).get(k)!;
+      const v = byD.get(g.d) ?? { mins: 0, n: 0 };
+      v.mins += ss.reduce((n, x) => n + minutes(x), 0);
+      v.n += ss.length;
+      byD.set(g.d, v);
+    }
+    return m;
+  }, [groups, use]);
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     const mainByDay = new Map<string, Group[]>(); // voor "niet getoond": per dag, in plaats van per dag alle groepen door te lopen
@@ -1264,7 +1315,9 @@ export default function Home() {
                 return ss.map((x) => ({ g, t: x.s, ss: [x], compact: false, first: x.s === oldest && (g.sc ?? all.length) <= all.length, newest: x.e === Math.max(...ss.map((y) => y.e)) }));
               })
               // Alles op begintijd, nieuwste eerst; wat nu bezig is blijft op zijn eigen tijd staan (groene zweem en "nu" vallen genoeg op).
-              .sort((a, b) => b.t - a.t)
+              .sort((a, b) => b.t - a.t),
+            // Alleen even geopend (geen minuten, niet onzeker, geen vangnet): binnen een uur één regel met het aantal keer.
+            (r) => !r.g.flag && !r.g.susp && r.ss.every((x) => minutes(x) === 0 && !x.uz)
           ),
         };
       })
@@ -1384,7 +1437,7 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{!recent && <> <span className="muted dh-m"><span className="dh-dot">· </span>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? dur(dm) : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</>}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
@@ -1487,11 +1540,12 @@ export default function Home() {
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
-                          <div className="name">{g.name}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
+                            if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
@@ -1501,7 +1555,7 @@ export default function Home() {
                           })()}
                         </div>
                         <div className="time">
-                          {nowRow ? <span className="tdur nowtag">{mins > 0 ? `nu · ${dur(mins)}` : "nu"}</span> : mins > 0 ? <span className="tdur">{dur(mins)}</span> : null}
+                          {nowRow ? <span className="tdur nowtag">{mins > 0 ? `nu · ${dur(mins)}` : "nu"}</span> : mins > 0 ? <span className="tdur">{dur(mins)}</span> : rss.length > 1 ? <span className="tdur cnt" title={`${rss.length} keer kort geopend`}>{rss.length}×</span> : null}
                         </div>
                       </div>
                       {isOpen && (() => {
@@ -1511,6 +1565,7 @@ export default function Home() {
                         return (
                           <div className="detail">
                             <div className="why">Waarom: {whyShown(g, rss)}</div>
+                            <WeekBars name={shortName(g.name)} data={perDay.get(g.dev + "|" + g.site)} />
                             <a
                               className="open-link"
                               href={`https://${g.site}`}
