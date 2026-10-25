@@ -1468,7 +1468,7 @@ export default function Home() {
             return (
             <section key={d} data-day={d}>
               <h2
-                className={(recent ? "" : "fold") + (stuckPart?.d === d ? " stuck" : "")}
+                className={(recent ? "" : "fold") + (isDayOpen ? " open" : "") + (stuckPart?.d === d ? " stuck" : "")}
                 onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })}
                 role={recent ? undefined : "button"}
                 aria-expanded={recent ? undefined : isDayOpen}

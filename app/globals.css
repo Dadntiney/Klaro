@@ -592,13 +592,19 @@ h2 .livedot { margin:0 2px 0 12px; }
 section > h2 { position:sticky; top:var(--barh, 52px); z-index:2; background:var(--bg); box-shadow:0 -14px 0 var(--bg); padding:6px 0; margin-top:22px; margin-bottom:2px; }
 .devtot-row .mdev { display:inline-flex; align-items:center; gap:8px; }
 /* Het dagdeel waar je doorheen scrolt: midden onder de vaste dagkop, op de bovenrand van de lijst (zoals het label bovenaan). */
-section > h2 .dh-part { position:absolute; left:50%; bottom:-2px; transform:translate(-50%, 50%); display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border:1px solid var(--line); border-radius:99px; background:var(--card); color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; white-space:nowrap; }
+section > h2 .dh-part { position:absolute; left:50%; bottom:-8px; transform:translate(-50%, 50%); display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border:1px solid var(--line); border-radius:99px; background:var(--card); color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; white-space:nowrap; }
 h2 .dpair { order:2; } h2 .fold-chev { order:3; }
 /* De apparaatknoppen boven de vaste dagkop (anders snijdt de kop de onderkant van de knoppen af). */
 .bar { z-index:3; }
 /* Lijst die onder de vaste dagkop schuift: de bovenrand houdt zijn afgeronde hoeken (een stukje kaart onder de kop, met de
    achtergrond in de hoeken). Het dagdeel staat daar bovenop. */
-section > h2.stuck::before, section > h2.stuck::after { content:""; position:absolute; left:0; right:0; top:100%; height:14px; pointer-events:none; }
-section > h2.stuck::before { background:var(--bg); z-index:0; }
+section > h2.stuck::before, section > h2.stuck::after { content:""; position:absolute; left:0; right:0; pointer-events:none; }
+section > h2.stuck::before { top:100%; height:22px; background:var(--bg); z-index:0; }
+section > h2.stuck::after { top:calc(100% + 8px); height:14px; }
 section > h2.stuck::after { background:var(--card); border:1px solid var(--line); border-bottom:0; border-radius:12px 12px 0 0; z-index:1; }
 section > h2 .dh-part { z-index:2; }
+/* Vaste ruimte onder de dagkop (ook bij ingeklapte dagen), zodat het dagdeel midden op de bovenrand van de lijst staat met lucht
+   boven en onder; de marges van de lijst zijn daarvoor kleiner, zodat de lijst op dezelfde plek blijft. */
+section > h2.open { padding-bottom:18px; }
+section > .partcap { margin-top:6px; }
+section > .list.day:not(.capped) { margin-top:6px; }
