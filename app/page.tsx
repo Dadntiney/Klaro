@@ -63,14 +63,29 @@ function WhatsAppIcon() {
   );
 }
 
-/** Favicon; heeft een site er geen, dan een rustig grijs vakje met de beginletter (zo blijft alles uitgelijnd). */
-function Favicon({ domain, name }: { domain: string; name: string }) {
+/** Spelletje (handcontroller), voor een spel of leer-app zonder logo: rustiger dan een losse letter. */
+function GameGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z" />
+      <path d="M7 11v3M5.5 12.5h3" />
+      <circle cx="16" cy="12" r=".6" fill="currentColor" />
+      <circle cx="18" cy="13.5" r=".6" fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * Favicon; heeft een site er geen, dan een rustig grijs vakje (een spelletje bij een spel, anders de beginletter), zodat alles
+ * uitgelijnd blijft. Bij een app (eigen naam in Klaro) zoekt de server zonder logo op de website het icoon in de App Store.
+ */
+function Favicon({ domain, name, app }: { domain: string; name: string; app?: boolean }) {
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
   const initial = (name.replace(/^www\./, "")[0] ?? "?").toUpperCase();
   if (/(^|\.)whatsapp\.(com|net)$/.test(domain)) return <WhatsAppIcon />;
   return (
     <>
-      {state !== "ok" && <span className="fav ph" aria-hidden>{initial}</span>}
+      {state !== "ok" && <span className="fav ph" aria-hidden>{/ \((spel|leren)\)$/.test(name) ? <GameGlyph /> : initial}</span>}
       {state !== "none" && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -80,7 +95,7 @@ function Favicon({ domain, name }: { domain: string; name: string }) {
           height={28}
           loading="lazy"
           // Via de eigen server (api/icon.php). Heeft een site geen icoon, dan is het een wereldbolletje van 16x16: dat tonen we niet.
-          src={`/api/icon.php?d=${encodeURIComponent(domain)}&s=64`}
+          src={`/api/icon.php?d=${encodeURIComponent(domain)}&s=64${app ? `&n=${encodeURIComponent(name)}` : ""}`}
           onLoad={(e) => setState(e.currentTarget.naturalWidth > 16 ? "ok" : "none")}
           onError={() => setState("none")}
         />
@@ -1268,6 +1283,22 @@ export default function Home() {
     rowsSeen.current = full ? { key, counts: rowCounts(rows) } : null;
   }, [days, device, full, beep]);
 
+  // Apparaatknoppen die niet allemaal passen: zacht vervagen aan de kant waar er nog meer staat (dan zie je dat je kunt schuiven).
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const [chipFade, setChipFade] = useState("");
+  const updateChipFade = useCallback(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4, right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    const next = (left ? " fl" : "") + (right ? " fr" : "");
+    setChipFade((v) => (v === next ? v : next));
+  }, []);
+  useEffect(() => {
+    updateChipFade();
+    window.addEventListener("resize", updateChipFade);
+    return () => window.removeEventListener("resize", updateChipFade);
+  }, [updateChipFade, devices, state]);
+
   // Binnenhalen (ring met percentage) en daarna het live-bolletje: rechts naast de knopjes van de bovenste dag, zodat de chips doorlopen.
   const liveStatus = !full && !histErr ? <LoadRing start={loadStart.current} /> : <LiveDot />;
   return (
@@ -1304,7 +1335,7 @@ export default function Home() {
         <>
           <div className="bar">
             <div className="bar-in">
-            <div className="chips">
+            <div className={"chips" + chipFade} ref={chipsRef} onScroll={updateChipFade}>
               <button className={"chip" + (deviceNow === null ? " on" : "")} onClick={() => setDevice(null)}>Alle</button>
               {/* Apparaten die in gebruik zijn staan links (naast Alle), de rest rechts; binnen elke groep blijft de volgorde gelijk. */}
               {[...devices.filter((d) => activeNow(d.name)), ...devices.filter((d) => !activeNow(d.name))].map((d) => (
@@ -1439,8 +1470,13 @@ export default function Home() {
                   const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
+                  // Tegelijk gebruikt op hetzelfde apparaat (Spotify tijdens een rit met Waze): met een lijntje aan de regel erboven
+                  // vast, zodat het niet lijkt alsof de minuten bij elkaar opgeteld moeten worden. Alleen bij minstens een minuut overlap.
+                  const prev = ri > 0 && !hourStart && !partStart ? rows[ri - 1] : undefined;
+                  const together = !!prev && prev.g.dev === g.dev && mins > 0 && prev.ss.reduce((n, x) => n + minutes(x), 0) > 0 &&
+                    Math.min(Math.max(...prev.ss.map((x) => x.e)), Math.max(...rss.map((x) => x.e))) - Math.max(Math.min(...prev.ss.map((x) => x.s)), Math.min(...rss.map((x) => x.s))) >= 60_000;
                   return (
-                    <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "")}>
+                    <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
                       {partStart ? <div className="partmark"><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
@@ -1449,13 +1485,14 @@ export default function Home() {
                         aria-expanded={isOpen}
                       >
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
-                        <Favicon domain={g.icon} name={g.name} />
+                        <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
                           <div className="name">{g.name}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
+                            if (together && prev) parts.push(<span key="t" className="with">tegelijk met {prev.g.name}</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
