@@ -126,7 +126,12 @@ const CASES: Case[] = [
   { day: "2026-10-24", dev: "iPhone", site: "happinez.nl", at: "11:39", want: true, why: "vanuit een nieuwsbrief naar de site getikt (www.email. → www., hele pagina geladen)" },
   { day: "2026-10-15", dev: "iPhone", site: "marktplaats.nl", at: "12:44", want: true, why: "Marktplaats-app geopend vlak na het lezen van mail (app.marktplaats.nl en de hele app laadde)" },
   { day: "2026-10-26", dev: "iPhone", site: "whale.camera", at: "06:56", want: false, why: "video-onderdeel van een Shopify-winkel (8 van 8 keer met de winkel), geen eigen bezoek" },
-  { day: "2026-10-26", dev: "iPhone", site: "blakelyclothing.com", at: "06:56", want: "onzeker", why: "winkel geopend vlak na Facebook: echt aangetikt of door de app alvast geladen (reclame), niet te onderscheiden" },
+  { day: "2026-10-26", dev: "iPhone", site: "blakelyclothing.com", at: "*", want: true, why: "winkel die dag echt bekeken (hele pagina laadde); de losse momenten vallen weg zodra de site vaker dan 4 keer los opduikt (zie Nog uitzoeken)" },
+  { day: "2026-10-26", dev: "iPhone", site: "cloudflare.com", at: "*", want: false, why: "netwerk en meting die winkels en iCloud meeladen, geen bezoek" },
+  { day: "2026-10-26", dev: "iPhone", site: "sovendus-connect.com", at: "14:27", want: false, why: "kortingsbon-widget na het afrekenen" },
+  { day: "2026-10-26", dev: "iPhone", site: "redbrain.shop", at: "*", want: false, why: "doorstuur-link van een prijsvergelijker naar de winkel" },
+  { day: "2026-10-26", dev: "iPad", site: "pubmetric.com", at: "*", want: false, why: "advertentieteller" },
+  { day: "2026-10-26", dev: "MacBook", site: "closersuite.io", at: "09:04", want: false, why: "script dat met een webinarpagina meelaadt" },
   { day: "2026-10-25", dev: "iPad", site: "my-little-princess.net", at: "08:38", want: true, why: "kinderspel (Unity) na Netflix gestart; tot 09:01 gespeeld (motor meldt elke 5 min)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));

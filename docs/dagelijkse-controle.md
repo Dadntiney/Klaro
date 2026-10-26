@@ -178,6 +178,15 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nog uitzoeken (26 okt): zelf leren koppelde a1556.dscapi9.akamai.net aan Buienradar, maar dat adres komt maar 44 van de 94 keer
    binnen een minuut bij Buienradar voor (ook bij Apple-verkeer). De leerregel kijkt alleen naar samen voorkomen met apps, niet
    met al het andere verkeer. Nagaan of een strengere regel (meestal bij de app) over alle dagen niets echts weghaalt.
+   Geleerd (26 okt, hele dag): cloudflare.com (cp4, apple-relay, radar, www.) is netwerk en meting die winkels en iCloud
+   meeladen, geen bezoek (stond in de systeemlijst, maar als "eigen" adres werd het toch een rij); sovendus(-connect) is een
+   kortingsbon-widget na het afrekenen, redbrain.shop een doorstuur-link van een prijsvergelijker, pubmetric.com een
+   advertentieteller, closersuite.io een script bij een webinarpagina. Alle vijf naar de achtergrondlijst: 14 rijen weg, verder
+   niets veranderd over alle dagen; de echte site op die momenten blijft staan. warp.cloudflare.com blijft VPN (die regel gaat voor).
+   Nog uitzoeken (26 okt): een winkel die op één dag vaker dan 4 keer los opduikt telt als open tabblad/widget, ook als de hele
+   pagina laadt (blakelyclothing.com 06:56 en 12:31; 12:51 blijft wel staan). Uitgeprobeerd: alleen "kale" momenten tellen (74
+   rijen erbij, 2 referentiegevallen om: dewerkendewebsite.nl, leukerecepten.nl) en winkel-onderdelen niet meetellen (8 losse
+   partywinkel.nl-rijen erbij). Beide teruggezet. Nodig: een kenmerk dat een herladend tabblad onderscheidt van opnieuw kijken.
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen
