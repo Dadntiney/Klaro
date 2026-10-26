@@ -1474,7 +1474,9 @@ export default function Home() {
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
             // Nog niets vandaag (net na middernacht): de bovenste dag blijft gewoon open staan; inklappen kan wel.
-            const autoOpen = di === 0 && !recent;
+            // 's Nachts (tot 06:00) blijft gisteren ook open als er vandaag al iets is (tv na middernacht): de avond hoort er nog bij.
+            const yesterdayIdx = days[0]?.d === today ? 1 : 0;
+            const autoOpen = !recent && (di === 0 || (hourOf(Date.now()) < 6 && di === yesterdayIdx));
             const key = autoOpen ? d + "!" : d; // eigen sleutel: dichtklappen nu laat de dag later niet ineens open staan
             const isDayOpen = recent || (autoOpen ? !openDays.has(key) : openDays.has(key));
             // Het dagdeel bovenaan de lijst staat in de (vaste) dagkop; tijdens het scrollen wisselt het mee (Middag → Ochtend).
