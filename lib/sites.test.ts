@@ -380,6 +380,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   for (const h of ["widget.youshouldask.ai", "js.hcaptcha.com", "www.wepowerconnections.com", "placehold.co", "placeholder.com"]) assert.equal(classify(h).bg, true, h); // chatknop, captcha en affiliateteller in andere sites (22 okt)
   for (const h of ["www.go-kids.nl", "www.darwin.nl"]) assert.notEqual(classify(h).bg, true, h); // de winkel zelf, en een naam die op dwin lijkt
   for (const h of ["shop.app", "server.shop.app", "api.judge.me", "tracking.aws.judge.me"]) assert.equal(classify(h).bg, true, h); // onderdelen van Shopify-winkels
+  for (const h of ["whale.camera", "api.whaledb.io"]) assert.equal(classify(h).bg, true, h); // video-onderdeel van een Shopify-winkel (26 okt)
+  for (const h of ["www.whale.com", "whalewatching.nl"]) assert.notEqual(classify(h).bg, true, h); // geen vals alarm op een gelijkende naam
   assert.equal(classify("www.shopapotheke.com").bg, false); // geen vals alarm
   assert.equal(classify("www.chatbaas.nl").bg, false); // geen vals alarm
   for (const h of ["ipapi.co", "api.ipify.org"]) assert.equal(classify(h).bg, true, h); // IP/land-opzoekdienst van apps

@@ -622,3 +622,10 @@ section > .partcap span { visibility:hidden; }
 .pwfield { position:relative; display:block; }
 .pwfield input { width:100%; box-sizing:border-box; padding-right:46px !important; }
 .login-card .pwfield .pweye, .pwfield .pweye { position:absolute; right:4px; top:50%; transform:translateY(-50%); width:40px; height:40px; padding:0; display:grid; place-items:center; background:transparent !important; color:var(--muted) !important; border:0; border-radius:8px; cursor:pointer; font-weight:400; }
+/* Nakijken: duidelijke knop in de details van een regel; daarna "wordt nagekeken" en later het antwoord. */
+.review { margin:10px 0 12px; display:grid; gap:8px; }
+.review-btn { font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:10px; border:0; background:var(--fg); color:var(--bg); cursor:pointer; }
+.review-btn:disabled { opacity:.6; }
+.review-wait { margin:0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, #f59e0b 14%, var(--card)); font-size:14px; }
+.review-ans { margin:0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, #22c55e 12%, var(--card)); font-size:14px; }
+.review-err { margin:0; color:#dc2626; font-size:14px; }

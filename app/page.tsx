@@ -13,6 +13,7 @@ import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, superseded } fro
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
+import { askReview, listReviews, type NakijkItem } from "@/lib/nakijken-client";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
@@ -673,6 +674,16 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [insights, setInsights] = useState<Insights | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // "Nakijken": verzoeken en antwoorden (api/nakijken.php), per apparaat|site|begintijd.
+  const [reviews, setReviews] = useState<NakijkItem[]>([]);
+  const [reviewBusy, setReviewBusy] = useState<string | null>(null);
+  const [reviewErr, setReviewErr] = useState<string | null>(null);
+  const loadReviews = useCallback(() => { listReviews().then(setReviews, () => {}); }, []);
+  useEffect(() => {
+    loadReviews();
+    const t = setInterval(() => { if (document.visibilityState === "visible") loadReviews(); }, 120_000);
+    return () => clearInterval(t);
+  }, [loadReviews]);
   const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
   const [showOther, setShowOther] = useState<Set<string>>(new Set());
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
@@ -1617,6 +1628,37 @@ export default function Home() {
                         return (
                           <div className="detail">
                             <div className="why">Waarom: {whyShown(g, rss)}</div>
+                            {(() => {
+                              // Nakijken: het verzoek (en later het antwoord) hoort bij dit bezoek (apparaat, site, begintijd).
+                              const s0 = Math.min(...rss.map((x) => x.s)), e0 = Math.max(...rss.map((x) => x.e));
+                              const mine = reviews.filter((r) => r.dev === g.dev && r.site === g.site && r.s === s0);
+                              const open = mine.find((r) => !r.done), done = mine.find((r) => r.done);
+                              return (
+                                <div className="review">
+                                  {done && <p className="review-ans"><b>Nagekeken:</b> {done.antwoord}</p>}
+                                  {open ? (
+                                    <p className="review-wait">Wordt nagekeken. Het antwoord komt hier te staan.</p>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="review-btn"
+                                      disabled={reviewBusy === rowKey}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setReviewBusy(rowKey);
+                                        setReviewErr(null);
+                                        askReview({ d: g.d, dev: g.dev, site: g.site, name: g.name, s: s0, e: e0 })
+                                          .then(loadReviews, (er) => setReviewErr(er instanceof Error ? er.message : "Versturen lukte niet."))
+                                          .finally(() => setReviewBusy(null));
+                                      }}
+                                    >
+                                      {reviewBusy === rowKey ? "Bezig…" : done ? "Opnieuw nakijken" : "Nakijken"}
+                                    </button>
+                                  )}
+                                  {reviewErr && reviewBusy === null && <p className="review-err">{reviewErr}</p>}
+                                </div>
+                              );
+                            })()}
                             <WeekBars name={shortName(g.name)} data={perDay.get(g.dev + "|" + g.site)} />
                             <a
                               className="open-link"
