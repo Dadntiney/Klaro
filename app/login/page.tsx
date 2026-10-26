@@ -20,7 +20,6 @@ export default function Login() {
     <main className="login">
       <form className="login-card" method="post" action="/api/login.php">
         <h1>Inloggen</h1>
-        <p className="muted">Je blijft ingelogd zolang je de app gebruikt; na 2 uur zonder gebruik vraagt hij weer om je wachtwoord.</p>
         {reden === "verlopen" && <p className="login-note">Je bent automatisch uitgelogd. Log opnieuw in.</p>}
         {reden === "uit" && <p className="login-note">Je bent uitgelogd.</p>}
         <PasswordField name="password" autoComplete="current-password" placeholder="Wachtwoord" show={show} onToggle={() => setShow((v) => !v)} autoFocus />
