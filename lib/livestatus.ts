@@ -57,7 +57,8 @@ export type DeviceUse<G extends LiveGroup> = ReturnType<typeof deviceUse<G>>;
 export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
   const hits = new Map<string, { t: number; site: string; fgApp: boolean }[]>();
   const media = new Map<string, number>(); // beeld/geluid van adressen die zelf geen regel worden (bijv. Conviva zonder app)
-  const latest = new Map<string, { g: G; x: Session }>(); // laatst begonnen echte sessie per apparaat (zoals de lijst)
+  const latest = new Map<string, { g: G; x: Session }>(); // de echte sessie die nu het laatst bezig was, per apparaat (zoals de lijst)
+  const cands = new Map<string, { g: G; x: Session }[]>();
   const blip = tvBlipper(groups);
   // Zichtbare echte sessies per apparaat: een app zonder eigen website telt (net als in de lijst) alleen als er niets anders speelde.
   const vis = new Map<string, Session[]>();
@@ -78,8 +79,7 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
         : standalone
         ? (x.n ?? 0) >= 3 && !x.ml && !x.res && !(vis.get(g.dev) ?? []).some((v) => v.s <= x.e + 60_000 && v.e >= x.s - 60_000)
         : isHuman(x) && !blip(g, x) && !(x.pv && !x.lg && auto.has(g.dev + "|" + g.site));
-      const cur2 = latest.get(g.dev);
-      if (real && (!cur2 || x.s > cur2.x.s || (x.s === cur2.x.s && x.e > cur2.x.e))) latest.set(g.dev, { g, x });
+      if (real) (cands.get(g.dev) ?? cands.set(g.dev, []).get(g.dev)!).push({ g, x });
     }
     // Losse opvragingen: alleen van gewone sites en apps. Apps met een eigen inhoud-regel (Facebook, Instagram, WhatsApp, Google)
     // verversen op de achtergrond vaak samen; hun echte gebruik telt hierboven al.
@@ -87,6 +87,16 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
     const a = hits.get(g.dev) ?? [];
     for (const t of g.ts ?? []) a.push({ t, site: g.site, fgApp });
     hits.set(g.dev, a);
+  }
+  // Welke sessie telt: niet een die voorbij is doordat daarna een andere app begon die ook doorliep (superseded, zoals de rij "nu");
+  // daarvan de laatst bezig geweest (bij gelijk einde de laatst begonnen). Zo blijft Disney+ "nu" na even langs het tv-beginscherm.
+  for (const [dev, list] of cands) {
+    let best: { g: G; x: Session } | undefined;
+    for (const c of list) {
+      if (superseded(c.x, list.filter((o) => o !== c).map((o) => o.x))) continue;
+      if (!best || c.x.e > best.x.e || (c.x.e === best.x.e && c.x.s > best.x.s)) best = c;
+    }
+    if (best) latest.set(dev, best);
   }
   // Op een tv: het laatste stukje telt samen met de stukjes ervoor, net als in de lijst.
   // Ook losse beeldmomenten van de app tellen mee als brug of verlenging (zelfde regel als lib/usage.ts), en het aantal
@@ -144,4 +154,14 @@ export function isActiveNow<G extends LiveGroup>(use: DeviceUse<G>, name: string
 export function activeWhat<G extends LiveGroup & { name?: string }>(use: DeviceUse<G>, name: string, clock: number): string | undefined {
   const l = use.latest.get(name);
   return l && isNow(clock, l.x, l.g) ? l.g.name ?? l.g.site : undefined;
+}
+
+/**
+ * Is dit bezoek "nu" voorbij omdat er op hetzelfde apparaat daarna een andere app begon? Alleen als die latere app ook minstens zo
+ * lang doorliep: even langs andere apps op het beginscherm van de Apple TV (25 okt 19:30: Netflix, Max, Prime Video 1-2 min)
+ * terwijl Disney+ nog 2 uur doorliep, maakt Disney+ niet "niet meer nu" (de chip zei terecht groen). `others`: de echte-gebruik-
+ * sessies van de andere regels van dat apparaat.
+ */
+export function superseded(x: { s: number; e: number }, others: { s: number; e: number }[]): boolean {
+  return others.some((o) => o.s > x.s && o.e >= x.e);
 }

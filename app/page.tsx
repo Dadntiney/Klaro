@@ -9,7 +9,7 @@ import { isSilent } from "@/lib/devstats";
 import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
-import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv } from "@/lib/livestatus";
+import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, superseded } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
@@ -1455,10 +1455,10 @@ export default function Home() {
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, devMins, rows: trows, hidden }, di) => {
             if (rawView) return null;
-            // Per apparaat: wanneer begon het laatste bezoek? Een app waarna al een andere app begon, is niet meer "nu".
-            const lastStart = new Map<string, number>();
+            // Per apparaat de echte-gebruik-sessies: een app waarna een andere app begon die ook doorliep, is niet meer "nu" (superseded).
+            const humanSes = new Map<string, { s: number; e: number; r: unknown }[]>();
             // Alleen regels van echt gebruik (niet de altijd-getoonde regels van achtergrondverkeer, zoals Philips Hue).
-            for (const r of trows) for (const x of r.ss) if (r.g.flag || isHuman(x)) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, x.s));
+            for (const r of trows) for (const x of r.ss) if (r.g.flag || isHuman(x)) (humanSes.get(r.g.dev) ?? humanSes.set(r.g.dev, []).get(r.g.dev)!).push({ s: x.s, e: x.e, r });
             const rows = trows;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
@@ -1571,7 +1571,7 @@ export default function Home() {
                   // Duur is het belangrijkste (waar ging de tijd heen): rechts groot. Daaronder klein wanneer het was.
                   const mins = rss.reduce((n, x) => n + minutes(x), 0);
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
-                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !((lastStart.get(g.dev) ?? 0) > lastS.s);
+                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !superseded(lastS, (humanSes.get(g.dev) ?? []).filter((o) => o.r !== rows[ri]));
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   // Tegelijk gebruikt op hetzelfde apparaat (Spotify tijdens een rit met Waze): met een lijntje aan de regel erboven

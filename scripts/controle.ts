@@ -29,7 +29,7 @@ import { isPlainSite, isSystemSite } from "../lib/system.ts";
 import { isHuman, type Session } from "../lib/sessions.ts";
 import { usage } from "../lib/usage.ts";
 import { isNow } from "../lib/play.ts";
-import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, type LiveGroup } from "../lib/livestatus.ts";
+import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, superseded, type LiveGroup } from "../lib/livestatus.ts";
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 let text: string;
@@ -280,11 +280,10 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
     if (!listed(g as never)) continue;
     for (const x of shown(g as never)) rowsT.push({ g, x });
   }
-  const lastStart = new Map<string, number>();
-  for (const r of rowsT) if (r.g.flag || isHuman(r.x)) lastStart.set(r.g.dev, Math.max(lastStart.get(r.g.dev) ?? 0, r.x.s));
+  const human = rowsT.filter((r) => r.g.flag || isHuman(r.x));
   for (const dev of new Set(groups.filter((g) => g.d === today(T)).map((g) => g.dev))) {
     checks++;
-    const nu = rowsT.filter((r) => r.g.dev === dev && (r.g.flag || isHuman(r.x)) && isNow(T, r.x, r.g) && !((lastStart.get(dev) ?? 0) > r.x.s));
+    const nu = rowsT.filter((r) => r.g.dev === dev && (r.g.flag || isHuman(r.x)) && isNow(T, r.x, r.g) && !superseded(r.x, human.filter((o) => o.g.dev === dev && o !== r).map((o) => o.x)));
     const chip = isActiveNow(use, dev, T);
     if (chip !== nu.length > 0) mism.push(`${hm(T)} ${dev}: chip ${chip ? "groen" : "uit"}, rij "nu": ${nu.map((r) => r.g.name).join(", ") || "geen"}`);
   }

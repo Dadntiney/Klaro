@@ -129,6 +129,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    (START_BURST in lib/overview.ts, 14 opstarts over alle dagen erbij).
    Facebook-pixel-venster bewust 3 s gelaten: 5 s haalde echte Instagram-momenten weg (4 dagen).
    Brainy Trainee bewust nog als gewone naam: de app opent soms met maar één eigen adres (dan zou een app-regel het missen).
+   Geleerd (26 okt): "nu" bij de rij en het groene bolletje gebruikten "de laatst begonnen app". Op de Apple TV kwamen bij het kiezen
+   (beginscherm) Netflix, Max en Prime Video 1-2 min langs terwijl Disney+ nog 2 uur doorliep: bolletje groen, geen rij "nu"
+   (9 keer op 25 okt). Nu: een app is pas niet meer "nu" als een later begonnen app ook minstens zo lang doorliep (superseded in
+   lib/livestatus.ts), en het bolletje kiest daaruit de laatst bezig geweest app. Chip en rij: 811 van 812 momenten gelijk (48 uur);
+   het ene verschil valt midden in het zappen (19:31).
    Geleerd (25 okt, controle op verzoek): nieuw kinderspel My Little Princess op de iPad (sinds 19 okt). Start met r2.my-little-princess.net
    en de Unity-motor in dezelfde seconde, daarna toca010-r2.; tijdens het spelen meldt Unity zich elke 5 min. Klaro kende het niet,
    dus 13 speelbeurten in 5 dagen ontbraken (25 okt 06:23 34 min, 08:38 24 min). Nu een eigen app. Daarbij: de spel-motor die in
@@ -158,6 +163,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Instagram gestart (www.instagram.com, nooit 's nachts) zonder foto's: onzeker tonen. Bij de ontgrendel-golf (WhatsApp 07:24)
    telde ik eerder Facebook en Instagram als twee apps en www.google.com als Google; dat laatste vraagt WhatsApp zelf op.
 
+   Nog uitzoeken (26 okt): zelf leren koppelde a1556.dscapi9.akamai.net aan Buienradar, maar dat adres komt maar 44 van de 94 keer
+   binnen een minuut bij Buienradar voor (ook bij Apple-verkeer). De leerregel kijkt alleen naar samen voorkomen met apps, niet
+   met al het andere verkeer. Nagaan of een strengere regel (meestal bij de app) over alle dagen niets echts weghaalt.
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen
