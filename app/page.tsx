@@ -1625,43 +1625,17 @@ export default function Home() {
                         const near = around(g);
                         const redNear = near.some((o) => o.flag);
                         const showNear = redNear;
+                        // Nakijken: het verzoek (en later het antwoord) hoort bij dit bezoek (apparaat, site, begintijd).
+                        const s0 = Math.min(...rss.map((x) => x.s)), e0 = Math.max(...rss.map((x) => x.e));
+                        const mine = reviews.filter((r) => r.dev === g.dev && r.site === g.site && r.s === s0);
+                        const reviewOpen = mine.find((r) => !r.done), reviewDone = mine.find((r) => r.done);
                         return (
                           <div className="detail">
                             <div className="why">Waarom: {whyShown(g, rss)}</div>
-                            {(() => {
-                              // Nakijken: het verzoek (en later het antwoord) hoort bij dit bezoek (apparaat, site, begintijd).
-                              const s0 = Math.min(...rss.map((x) => x.s)), e0 = Math.max(...rss.map((x) => x.e));
-                              const mine = reviews.filter((r) => r.dev === g.dev && r.site === g.site && r.s === s0);
-                              const open = mine.find((r) => !r.done), done = mine.find((r) => r.done);
-                              return (
-                                <div className="review">
-                                  {done && <p className="review-ans"><b>Nagekeken:</b> {done.antwoord}</p>}
-                                  {open ? (
-                                    <p className="review-wait">Wordt nagekeken. Het antwoord komt hier te staan.</p>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      className="review-btn"
-                                      disabled={reviewBusy === rowKey}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setReviewBusy(rowKey);
-                                        setReviewErr(null);
-                                        askReview({ d: g.d, dev: g.dev, site: g.site, name: g.name, s: s0, e: e0 })
-                                          .then(loadReviews, (er) => setReviewErr(er instanceof Error ? er.message : "Versturen lukte niet."))
-                                          .finally(() => setReviewBusy(null));
-                                      }}
-                                    >
-                                      {reviewBusy === rowKey ? "Bezig…" : done ? "Opnieuw nakijken" : "Nakijken"}
-                                    </button>
-                                  )}
-                                  {reviewErr && reviewBusy === null && <p className="review-err">{reviewErr}</p>}
-                                </div>
-                              );
-                            })()}
-                            <WeekBars name={shortName(g.name)} data={perDay.get(g.dev + "|" + g.site)} />
+                            {reviewDone && <p className="review-ans"><b>Nagekeken:</b> {reviewDone.antwoord}</p>}
+                            {reviewOpen && <p className="review-wait">Wordt nagekeken. Het antwoord komt hier te staan.</p>}
                             <a
-                              className="open-link"
+                              className="open-btn"
                               href={`https://${g.site}`}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -1674,6 +1648,7 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
+                            <WeekBars name={shortName(g.name)} data={perDay.get(g.dev + "|" + g.site)} />
                             {!compact && rss.length > 1 && (
                               <>
                                 <div className="dh">Bezoeken</div>
@@ -1731,6 +1706,26 @@ export default function Home() {
                                   </div>
                                 ))}
                               </>
+                            )}
+                            {!reviewOpen && (
+                              <div className="review">
+                                <button
+                                  type="button"
+                                  className="review-btn"
+                                  disabled={reviewBusy === rowKey}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReviewBusy(rowKey);
+                                    setReviewErr(null);
+                                    askReview({ d: g.d, dev: g.dev, site: g.site, name: g.name, s: s0, e: e0 })
+                                      .then(loadReviews, (er) => setReviewErr(er instanceof Error ? er.message : "Versturen lukte niet."))
+                                      .finally(() => setReviewBusy(null));
+                                  }}
+                                >
+                                  {reviewBusy === rowKey ? "Bezig…" : reviewDone ? "Opnieuw nakijken" : "Nakijken"}
+                                </button>
+                                {reviewErr && reviewBusy === null && <p className="review-err">{reviewErr}</p>}
+                              </div>
                             )}
                           </div>
                         );

@@ -117,8 +117,6 @@ h2.fold .muted { text-transform:none; letter-spacing:0; font-weight:400; }
 .fold-chev { margin-left:auto; color:var(--muted); font-size:18px; line-height:1; transition:transform .15s; }
 .fold-chev.up { transform:rotate(90deg); }
 h2 .muted { text-transform:none; letter-spacing:0; }
-.open-link { display:inline-block; margin:2px 0 4px; font-size:14px; color:var(--accent); text-decoration:none; font-weight:500; }
-.open-link:active { opacity:.6; }
 /* Inzichten in kindertaal: grote vragen, korte antwoorden, duidelijke kleuren. */
 
 /* Ga naar dag en tijd */
@@ -623,9 +621,12 @@ section > .partcap span { visibility:hidden; }
 .pwfield input { width:100%; box-sizing:border-box; padding-right:46px !important; }
 .login-card .pwfield .pweye, .pwfield .pweye { position:absolute; right:4px; top:50%; transform:translateY(-50%); width:40px; height:40px; padding:0; display:grid; place-items:center; background:transparent !important; color:var(--muted) !important; border:0; border-radius:8px; cursor:pointer; font-weight:400; }
 /* Nakijken: duidelijke knop in de details van een regel; daarna "wordt nagekeken" en later het antwoord. */
-.review { margin:10px 0 12px; display:grid; gap:8px; }
-.review-btn { font:inherit; font-size:16px; font-weight:600; padding:12px; border-radius:10px; border:0; background:var(--fg); color:var(--bg); cursor:pointer; }
+/* Grote witte knop: de website openen. Nakijken staat rustiger onderaan (wens eigenaar). */
+.open-btn { display:block; margin:10px 0 12px; padding:12px; border-radius:10px; background:var(--fg); color:var(--bg); text-align:center; font-size:16px; font-weight:600; text-decoration:none; }
+.open-btn:active { opacity:.7; }
+.review { margin:14px 0 4px; display:grid; gap:8px; }
+.review-btn { font:inherit; font-size:15px; font-weight:500; padding:10px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--fg); cursor:pointer; }
 .review-btn:disabled { opacity:.6; }
-.review-wait { margin:0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, #f59e0b 14%, var(--card)); font-size:14px; }
-.review-ans { margin:0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, #22c55e 12%, var(--card)); font-size:14px; }
+.review-wait { margin:10px 0 0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, #f59e0b 14%, var(--card)); font-size:14px; }
+.review-ans { margin:10px 0 0; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, #22c55e 12%, var(--card)); font-size:14px; }
 .review-err { margin:0; color:#dc2626; font-size:14px; }
