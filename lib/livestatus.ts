@@ -1,7 +1,7 @@
 import { isHuman, type Session } from "./sessions.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { isNow, tvStart } from "./play.ts";
-import { HEARTBEAT_GAP } from "./sites.ts";
+import { GAME_GAP } from "./sites.ts";
 
 /**
  * Live-status per apparaat (de groene chip). Gedeeld door de pagina en scripts/controle.ts, zodat de dagelijkse controle
@@ -115,7 +115,7 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
     const n = pieces.filter((p) => p.s >= s && p.s <= e).reduce((a, p) => a + (p.n ?? 1), 0);
     latest.set(dev, { g: l.g, x: { ...l.x, s, e, n } });
   }
-  // Een spel dat echt opstartte (gs): stukjes met hooguit HEARTBEAT_GAP ertussen zijn één keer spelen, net als in de lijst
+  // Een spel dat echt opstartte (gs): stukjes met hooguit GAME_GAP ertussen zijn één keer spelen, net als in de lijst
   // (lib/usage.ts); anders zei de chip na 3 min "uit" terwijl de rij van het hele spel nog "nu" zei.
   for (const [dev, l] of latest) {
     if (isTv(dev) || !(l.g.ss ?? []).some((x) => x.gs)) continue;
@@ -123,8 +123,8 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
     const i = all.findIndex((x) => x.s === l.x.s);
     if (i < 0) continue;
     let a = i, b = i;
-    while (a > 0 && all[a].s - all[a - 1].e <= HEARTBEAT_GAP) a--;
-    while (b < all.length - 1 && all[b + 1].s - all[b].e <= HEARTBEAT_GAP) b++;
+    while (a > 0 && all[a].s - all[a - 1].e <= GAME_GAP) a--;
+    while (b < all.length - 1 && all[b + 1].s - all[b].e <= GAME_GAP) b++;
     const span = all.slice(a, b + 1);
     latest.set(dev, { g: l.g, x: { ...l.x, s: span[0].s, e: Math.max(...span.map((x) => x.e)), n: span.reduce((n, x) => n + (x.n ?? 1), 0) } });
   }

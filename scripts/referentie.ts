@@ -78,7 +78,7 @@ const CASES: Case[] = [
   { day: "2026-10-11", dev: "iPhone", site: "trivago.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "allcamps.nl", at: "17:09", want: false, why: "tabblad opnieuw geladen (tien sites in 17 s)" },
   { day: "2026-10-11", dev: "iPhone", site: "ravensburger.nl", at: "16:01", want: true, why: "winkel echt geopend (hele pagina geladen); het 'scrollen in Facebook' erna was de Facebook-pixel van een andere site" },
-  { day: "2026-10-19", dev: "iPad", site: "tutotoons.com", at: "08:04", want: true, why: "TutoTOONS volledig opgestart (apps./tutoclub./tutopulse./h-kafka in één moment), daarna 9 min stil spelen" },
+  { day: "2026-10-19", dev: "iPad", site: "tutotoons.com", at: "08:04", want: true, why: "TutoTOONS volledig opgestart (apps./tutoclub./tutopulse./h-kafka in één moment)" },
   { day: "2026-10-19", dev: "iPhone", site: "buienradar.nl", at: "14:58", want: true, why: "Buienradar-app even geopend (9 eigen adressen, toestemmingsscherm en advertenties in dezelfde seconden)" },
   { day: "2026-10-19", dev: "iPhone", site: "xenos.nl", at: "10:30", want: true, why: "in de nieuwsbrief getikt (url861.xenos.nl), winkel 28 s later geopend; leukerecepten.nl herlaadde toevallig tegelijk" },
   { day: "2026-10-20", dev: "iPhone", site: "happywithyoga.com", at: "11:44", until: "12:09", want: true, why: "yogales: Wistia-filmpje op de cursussite speelde 25 min (Google laadde als teller mee en kreeg eerst de tijd)" },
@@ -134,7 +134,7 @@ const CASES: Case[] = [
   { day: "2026-10-26", dev: "MacBook", site: "closersuite.io", at: "09:04", want: false, why: "script dat met een webinarpagina meelaadt" },
   { day: "2026-10-26", dev: "iPhone", site: "paypal.com", at: "16:08", want: false, why: "PayPal-knop op een winkelpagina (eigenaar: nakijken), geen betaling" },
   { day: "2026-10-26", dev: "iPhone", site: "paypal.com", at: "14:27", want: true, why: "echt met PayPal betaald (inlogscherm van PayPal laadde)" },
-  { day: "2026-10-26", dev: "iPad", site: "lprastudio.net", at: "15:51", want: true, why: "kinderspel van LPRA Studio gespeeld (eigenaar: nakijken)" },
+  { day: "2026-10-26", dev: "iPad", site: "lprastudio.net", at: "15:51", want: true, why: "kinderspel van LPRA Studio gespeeld, kort (tot 15:54; daarna 10 min stil, eigenaar: nakijken)" },
   { day: "2026-10-25", dev: "iPad", site: "my-little-princess.net", at: "08:38", want: true, why: "kinderspel (Unity) na Netflix gestart; tot 09:01 gespeeld (motor meldt elke 5 min)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));

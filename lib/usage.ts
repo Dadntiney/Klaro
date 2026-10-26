@@ -3,7 +3,7 @@
  * zodat de minuten overal precies hetzelfde zijn.
  */
 import { isHuman, type Session } from "./sessions.ts";
-import { HEARTBEAT_GAP, NAV_APPS, NAV_GAP } from "./sites.ts";
+import { GAME_GAP, HEARTBEAT_GAP, NAV_APPS, NAV_GAP } from "./sites.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { isMailSession } from "./mail.ts";
 import { ALWAYS_SHOW, ALWAYS_SHOW_OPEN, isTv, tvBlipper, type LiveGroup } from "./livestatus.ts";
@@ -53,7 +53,7 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     // Ook een spel of leer-app die die dag echt opstartte (gs): de spelmotor meldt zich tijdens het spelen elke ~5 min, en op die
     // grens vielen de stukjes uit elkaar (24 okt: Piknik 08:06-08:47 als 3 stukjes van samen 26 min).
     const game = (g.ss ?? []).some((x) => x.gs);
-    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : followed.has(g.dev + "|" + g.site) || game ? HEARTBEAT_GAP : 0;
+    const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : followed.has(g.dev + "|" + g.site) ? HEARTBEAT_GAP : game ? GAME_GAP : 0;
     if (joinGap && all.length > 1) {
       const m: Session[] = [];
       for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }

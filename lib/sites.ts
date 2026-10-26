@@ -154,6 +154,10 @@ export const NAV_GAP = 20 * 60_000;
 /** Apps die tijdens gebruik een vaste melding sturen via een doorverwijs-adres (zie followers() in lib/companion.ts): meestal elke
  * 1 tot 5 minuten, soms tot 10 (over alle dagen bij Toca Boca); langer is een echte pauze. */
 export const HEARTBEAT_GAP = 10 * 60_000;
+/** Spel dat echt opstartte: de spelmotor meldt zich tijdens het spelen elke 5 min (gemeten: bijna alle gaten precies 5,0 min, hooguit
+ *  6,8). Een gat van 8-10 min betekent dat er een melding mist: dan lag het spel stil (26 okt LPRA 15:54-16:04: iPad ververste
+ *  ondertussen widgets op de achtergrond). Dus stukjes met hooguit 7 min ertussen zijn één keer spelen. */
+export const GAME_GAP = 7 * 60_000;
 export const TV_APPS = new Set(["disneyplus.com", "ziggogo.tv", "npo.nl", "kijk.nl", "videoland.com", "primevideo.com", "max.com", "viaplay.com", "skyshowtime.com", "pathe-thuis.nl", "formula1.com", "dazn.com", "nlziet.nl", "discoveryplus.com", "ziggosport.nl", "espn.com"]);
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();

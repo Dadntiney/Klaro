@@ -34,7 +34,7 @@ test("geen vals kijken: los beeldmoment zonder echt kijkstuk ernaast wordt geen 
   assert.equal(usage([far] as never[], { auto: new Set(), followers: {} }).shown(far as never)[0].e, 3 * M);
 });
 
-test("spel dat echt opstartte: stukjes met hooguit 10 min ertussen (spelmotor meldt elke 5 min) zijn één keer spelen", () => {
+test("spel dat echt opstartte: stukjes met hooguit 7 min ertussen (spelmotor meldt elke 5 min) zijn één keer spelen", () => {
   const g = { d: "2026-10-24", dev: "iPad", site: "spelvoorbeeld.com", name: "Spel (spel)", main: true, bg: false, n: 10, last: 41 * M,
     ss: [{ s: 0, e: 5 * M, n: 3, gs: 1 }, { s: 10 * M, e: 15 * M, n: 2 }, { s: 20 * M, e: 20 * M, n: 1 }, { s: 25 * M, e: 41 * M, n: 5, gs: 1 }] };
   const ss = usage([g] as never[], { auto: new Set(), followers: {} }).shown(g as never);
@@ -43,4 +43,8 @@ test("spel dat echt opstartte: stukjes met hooguit 10 min ertussen (spelmotor me
   // geen spel-opstart (gs) die dag: niet samenvoegen
   const site = { ...g, site: "website.nl", name: "website.nl", ss: g.ss.map(({ gs: _g, ...x }) => ({ ...x, n: 3 })) };
   assert.equal(usage([site] as never[], { auto: new Set(), followers: {} }).shown(site as never).length, 4);
+  // een gat van bijna 10 min: er mist een melding van de spelmotor, het spel lag stil (26 okt LPRA 15:54-16:04)
+  const paused = { ...g, ss: [{ s: 0, e: 3 * M, n: 3, gs: 1 }, { s: 13 * M, e: 13 * M, n: 1 }] };
+  const ps = usage([paused] as never[], { auto: new Set(), followers: {} }).shown(paused as never);
+  assert.ok(ps.every((x) => x.e - x.s <= 3 * M), "niet doorgetrokken over het stille gat");
 });

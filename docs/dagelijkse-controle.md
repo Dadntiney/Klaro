@@ -193,6 +193,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Een algemene regel (elk www.-adres zo vlak na een pagina) was te breed: 13 rijen anders en een referentiegeval om.
    lprastudio.net = LPRA Studio, maker van kinderspellen met Google-reclame (app. + www. met app-measurement en googleads): nu
    "LPRA Studio (spel)". Een los moment zonder opstarten (18:34) blijft weg, zoals bij elke app.
+   Geleerd (26 okt, Nakijken 2e keer): de LPRA-rij liep 15:51-16:04, maar het spel lag 15:54-16:04 stil (geen enkele melding;
+   de iPad ververste widgets op de achtergrond). Spellen melden zich tijdens het spelen elke 5,0 min (bijna alle gaten, hooguit
+   6,8); stukjes worden nu alleen samengevoegd bij hooguit 7 min ertussen (GAME_GAP, ook voor het groene bolletje). Over alle dagen
+   3 rijen korter: LPRA 13 -> 3 min, My Little Princess 23 okt 17 -> 8 min, TutoTOONS 19 okt 20 min -> 08:04 kort + 08:13 11 min
+   (daar was het eerder "9 min stil spelen" genoemd; die 9 min waren helemaal zonder verkeer, dus niet aantoonbaar gespeeld).
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen
