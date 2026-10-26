@@ -132,6 +132,9 @@ const CASES: Case[] = [
   { day: "2026-10-26", dev: "iPhone", site: "redbrain.shop", at: "*", want: false, why: "doorstuur-link van een prijsvergelijker naar de winkel" },
   { day: "2026-10-26", dev: "iPad", site: "pubmetric.com", at: "*", want: false, why: "advertentieteller" },
   { day: "2026-10-26", dev: "MacBook", site: "closersuite.io", at: "09:04", want: false, why: "script dat met een webinarpagina meelaadt" },
+  { day: "2026-10-26", dev: "iPhone", site: "paypal.com", at: "16:08", want: false, why: "PayPal-knop op een winkelpagina (eigenaar: nakijken), geen betaling" },
+  { day: "2026-10-26", dev: "iPhone", site: "paypal.com", at: "14:27", want: true, why: "echt met PayPal betaald (inlogscherm van PayPal laadde)" },
+  { day: "2026-10-26", dev: "iPad", site: "lprastudio.net", at: "15:51", want: true, why: "kinderspel van LPRA Studio gespeeld (eigenaar: nakijken)" },
   { day: "2026-10-25", dev: "iPad", site: "my-little-princess.net", at: "08:38", want: true, why: "kinderspel (Unity) na Netflix gestart; tot 09:01 gespeeld (motor meldt elke 5 min)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));

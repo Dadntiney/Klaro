@@ -187,6 +187,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    pagina laadt (blakelyclothing.com 06:56 en 12:31; 12:51 blijft wel staan). Uitgeprobeerd: alleen "kale" momenten tellen (74
    rijen erbij, 2 referentiegevallen om: dewerkendewebsite.nl, leukerecepten.nl) en winkel-onderdelen niet meetellen (8 losse
    partywinkel.nl-rijen erbij). Beide teruggezet. Nodig: een kenmerk dat een herladend tabblad onderscheidt van opnieuw kijken.
+   Geleerd (26 okt, Nakijken): de PayPal-knop in een webwinkel vraagt www.paypal.com en paypalobjects op, soms in twee momenten.
+   Echt betalen laadt het inlogscherm (c./pics./t./ddbm2.paypal.com; alle 4 echte betalingen in okt). Alleen knop-adressen binnen
+   3 s na een andere pagina die nog laadt = knop, geen bezoek (PAY_BUTTON in lib/overview.ts): over alle dagen 1 rij weg (16:08).
+   Een algemene regel (elk www.-adres zo vlak na een pagina) was te breed: 13 rijen anders en een referentiegeval om.
+   lprastudio.net = LPRA Studio, maker van kinderspellen met Google-reclame (app. + www. met app-measurement en googleads): nu
+   "LPRA Studio (spel)". Een los moment zonder opstarten (18:34) blijft weg, zoals bij elke app.
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen

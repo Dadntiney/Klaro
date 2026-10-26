@@ -369,6 +369,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   assert.equal(classify("force-public-alb-production-688060324.eu-central-1.elb.amazonaws.com").name, "Pathé Thuis");
   assert.equal(classify("other-alb-production-1.eu-central-1.elb.amazonaws.com").bg, true); // andere Amazon-servers blijven achtergrond
   assert.equal(classify("apps.tutotoons.com").name, "TutoTOONS (spel)");
+  for (const h of ["app.lprastudio.net", "www.lprastudio.net"]) assert.equal(classify(h).name, "LPRA Studio (spel)", h); // kinderspel op de iPad (26 okt)
+  assert.notEqual(classify("www.lpstudio.nl").name, "LPRA Studio (spel)"); // geen vals alarm op een gelijkende naam
   assert.equal(classify("vast.tutoads.tv").name, "TutoTOONS (spel)");
   for (const h of ["svip.bobo-world.com", "www.kalegames.com", "cp.papoworld.com"]) assert.equal(classify(h).name, "BoBo World (spel)", h);
   assert.notEqual(classify("www.bobo.com").name, "BoBo World (spel)"); // geen vals alarm op een gelijkende naam

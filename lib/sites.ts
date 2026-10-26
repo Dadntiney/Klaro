@@ -46,6 +46,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "My Little Princess (spel)", icon: "my-little-princess.net", domains: ["my-little-princess.net"] }, // kinderspel (Unity) op de iPad sinds 19 okt: start met r2. + de Unity-spelmotor, daarna toca010-r2.; 25 okt 08:38-09:01 gespeeld maar nergens getoond
   { name: "Piknik (spel)", icon: "playpiknik.com", domains: ["playpiknik.com"] }, // kinderapp met Toca Boca- en Sago Mini-spellen (Unity); 22 okt 18:39 iPad: account-api.playpiknik.com bij het starten
   { name: "Amaya Kids (leren)", icon: "amayakids.com", domains: ["amayakids.com"] },
+  { name: "LPRA Studio (spel)", icon: "lprastudio.net", domains: ["lprastudio.net"] }, // kinderspellen (prinsessen, opruimen, wassen) met Google-reclame; op de iPad sinds 26 okt: app. + www. samen met de reclame-onderdelen van een app (app-measurement, googleads)
   { name: "TutoTOONS (spel)", icon: "tutotoons.com", domains: ["tutotoons.com", "tutoads.tv"] }, // kinderspellen; tijdens het spelen elke paar minuten reclame/gegevens
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is

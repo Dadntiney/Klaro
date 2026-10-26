@@ -158,6 +158,8 @@ export async function fetchToday(client: NextDNSClient, hours = 0): Promise<{ ro
 }
 
 /** Zoekmachines: daarna een site openen is op een resultaat tikken. */
+/** Betaalknoppen: alleen deze adressen = de knop in een winkel, nog geen betaling (zie hieronder). */
+const PAY_BUTTON: Record<string, RegExp> = { "paypal.com": /^(www\.)?paypal(objects)?\.com$/ };
 const SEARCH = new Set(["google.com", "bing.com", "duckduckgo.com", "ecosia.org"]);
 
 /** Social-apps waarin advertenties en links staan die de app alvast "aanklopt". */
@@ -827,6 +829,21 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // onderdelen pas na zichzelf. (24 okt: app.varify.io, chat.stackflowaisolutions.com en placehold.co in webwinkels.)
         const lead = pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 15_000);
         if (lead && busyBefore(g.dev, x.s, g.site) >= 3) { delete x.pv; delete x.ck; x.emb = 1; }
+      }
+    }
+    // Betaalknop in een webwinkel: de winkelpagina laadt de PayPal-knop (www.paypal.com en paypalobjects), soms in twee momenten.
+    // Wie echt met PayPal betaalt, krijgt het inlogscherm: dan komen c./pics./t./ddbm2.paypal.com mee (gemeten: alle 4 echte
+    // betalingen in okt). Alleen knop-adressen, begonnen binnen 3 s na de pagina van een andere site die nog volop laadt: knop.
+    // (26 okt 16:08: oliviakate.nl met Klarna- en PayPal-knop, eigenaar: "nakijken".)
+    for (const [gkey, g] of groups) {
+      const button = PAY_BUTTON[g.site];
+      if (!button || !g.main || g.bg || g.flag) continue;
+      const pg = pages.get(g.dev) ?? [];
+      for (const x of g.ss) {
+        if (x.e - x.s >= 60_000) continue;
+        const hs = (siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 60_000).map((h) => h.host);
+        if (!hs.length || !hs.every((h) => button.test(h))) continue;
+        if (pg.some((p) => p.site !== g.site && x.s > p.t && x.s - p.t <= 3_000) && busyBefore(g.dev, x.s, g.site) >= 3) { delete x.pv; delete x.ck; delete x.uz; delete x.lg; x.emb = 1; }
       }
     }
     // Een site die elke keer (minstens 2 momenten) tegelijk met een pagina van een andere site opduikt (hooguit 5 s erna), en nooit

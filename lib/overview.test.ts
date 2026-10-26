@@ -575,6 +575,17 @@ test("onderdeel dat later komt terwijl de pagina nog volop laadt (A/B-test, chat
   assert.equal(shown(o, "voorbeeldchatbot.com").length, 0);
 });
 
+test("PayPal-knop in een webwinkel is geen betaling; echt betalen (inlogscherm van PayPal) blijft", async () => {
+  // Echt voorbeeld 26 okt 16:08: winkelpagina met Klarna- en PayPal-knop; www.paypal.com 3 s na de pagina, paypalobjects 6 s later.
+  const shop = (t: number, site: string): R[] => [[t, site], [t + 200, "cdn.shopify.com"], [t + 1_000, "widget.faslet.net"], [t + 2_000, "js.klarna.com"], [t + 2_500, "app.kiwisizing.com"], [t + 2_800, "cdn.jsdelivr.net"]]; // de pagina laadt nog volop
+  const o = await overview([
+    [0, "www.youtube.com"], ...shop(37_000, "winkelvoorbeeld.nl"), [40_000, "www.paypal.com"], [46_000, "www.paypalobjects.com"],
+    ...shop(600_000, "anderewinkel.nl"), [602_000, "www.paypal.com"], [602_100, "c.paypal.com"], [602_200, "pics.paypal.com"], [610_000, "t.paypal.com"],
+  ]);
+  assert.equal(shown(o, "winkelvoorbeeld.nl").length, 1);
+  assert.equal(shown(o, "paypal.com").length, 1, "alleen de echte betaling");
+});
+
 test("geen vals weglaten: een site die na een rustige pagina geopend wordt blijft een bezoek, ook binnen 15 s", async () => {
   const o = await overview([
     [0, "www.youtube.com"], [37_000, "winkelvoorbeeld.nl"], [37_500, "cdn.weglot.com"], [37_600, "fonts.gstatic.com"], [37_700, "cdn-cookieyes.com"],
