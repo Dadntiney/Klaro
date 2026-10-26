@@ -21,8 +21,8 @@ foreach ([$a, $b] as $sid) sessions_with(function (array &$s) use ($sid) { $s['s
 use_cookie($a);
 check('ingelogd: geldig', session_state(null) === 'ok');
 check('het cookie zelf staat niet op de server', strpos((string)file_get_contents(SESSIONS), $a) === false);
-setLast(29 * 86400); $last = S()['last'];
-check('29 dagen niet gebruikt: nog geldig', session_state(null) === 'ok');
+setLast(119 * 60); $last = S()['last'];
+check('1 uur 59 niet gebruikt: nog geldig', session_state(null) === 'ok');
 check('automatisch verkeer verlengt niets', S()['last'] === $last);
 check('gebruik reset de timer', session_state(0) === 'ok' && time() - S()['last'] <= 1);
 setLast(30 * 60); session_state(20);
@@ -30,8 +30,8 @@ check('gebruik van 20 s geleden telt vanaf dat moment', abs(time() - 20 - S()['l
 check('"geleden" kan niet verder terug dan 60 s', (function () { setLast(30 * 60); session_state(99999); return abs(time() - 60 - S()['last']) <= 1; })());
 use_cookie($b); session_state(0); use_cookie($a); setLast(10);
 check('gebruik op apparaat B houdt apparaat A geldig', session_state(null) === 'ok');
-setLast(30 * 86400);
-check('30 dagen niet gebruikt: verlopen', session_state(null) === 'verlopen');
+setLast(2 * 3600);
+check('2 uur niet gebruikt: verlopen', session_state(null) === 'verlopen');
 check('alle sessies (alle apparaten) ongeldig', S()['s'] === []);
 use_cookie($b);
 check('ook het andere apparaat ziet "verlopen"', session_state(0) === 'verlopen');

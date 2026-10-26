@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { wipeLocal } from "@/lib/wipe";
 import { PasswordField } from "../pwfield";
 
-/** Inlogscherm. Het wachtwoord controleert de eigen server (api/login.php); pas na 30 dagen zonder gebruik is opnieuw inloggen nodig. */
+/** Inlogscherm. Het wachtwoord controleert de eigen server (api/login.php); na 2 uur zonder gebruik is opnieuw inloggen nodig. */
 export default function Login() {
   const [reden, setReden] = useState<"fout" | "dicht" | "verlopen" | "uit" | null>(null);
   const [show, setShow] = useState(false);
@@ -20,7 +20,7 @@ export default function Login() {
     <main className="login">
       <form className="login-card" method="post" action="/api/login.php">
         <h1>Inloggen</h1>
-        <p className="muted">Je blijft op dit toestel ingelogd. Alleen als je de app 30 dagen niet gebruikt, vraagt hij weer om je wachtwoord.</p>
+        <p className="muted">Je blijft ingelogd zolang je de app gebruikt; na 2 uur zonder gebruik vraagt hij weer om je wachtwoord.</p>
         {reden === "verlopen" && <p className="login-note">Je bent automatisch uitgelogd. Log opnieuw in.</p>}
         {reden === "uit" && <p className="login-note">Je bent uitgelogd.</p>}
         <PasswordField name="password" autoComplete="current-password" placeholder="Wachtwoord" show={show} onToggle={() => setShow((v) => !v)} autoFocus />

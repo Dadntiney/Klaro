@@ -679,7 +679,7 @@ export default function Home() {
   // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet.
   const [rawView, setRawView] = useState(false);
   // Klaro opent altijd in het gewone overzicht; de NextDNS-lijst is een uitstapje (wens eigenaar), dus de keuze wordt niet onthouden.
-  // Echt gebruik (tikken, scrollen, typen) aan de server melden: na 30 dagen zonder gebruik logt de server iedereen uit.
+  // Echt gebruik (tikken, scrollen, typen) aan de server melden: na 2 uur zonder gebruik logt de server iedereen uit.
   useEffect(() => startActivityReporting(checkLogin), []);
   const toggleRaw = () => setRawView((v) => !v);
   const [rawLog, setRawLog] = useState<Event[]>([]);
@@ -1754,7 +1754,7 @@ export default function Home() {
           <section className="settings">
             <PushToggle />
           </section>
-          {/* Uitloggen: na 30 dagen zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
+          {/* Uitloggen: na 2 uur zonder gebruik gebeurt dat vanzelf. "Overal" sluit ook andere apparaten af (telefoon kwijt). */}
           <form className="logout" method="post" action="/api/logout.php" onSubmit={(e) => {
             // Eerst de bewaarde kopie van het logboek op dit toestel weghalen (lib/wipe.ts), dan pas uitloggen. De gekozen knop
             // (dit toestel of overal) gaat als verborgen veld mee, want submit() neemt de knop zelf niet mee.

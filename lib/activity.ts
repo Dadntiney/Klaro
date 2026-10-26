@@ -1,7 +1,7 @@
 /**
  * Meldt echt gebruik aan de server (api/activity.php): tikken, klikken, scrollen of typen, alleen in een tabblad dat in beeld is
  * en focus heeft. Hooguit eens per minuut; gebruik binnen die minuut wordt achteraf gemeld met hoe lang geleden het was, zodat
- * de server precies weet wanneer de app voor het laatst gebruikt is. Live bijwerken meldt nooit iets: na 30 dagen zonder echt
+ * de server precies weet wanneer de app voor het laatst gebruikt is. Live bijwerken meldt nooit iets: na 2 uur zonder echt
  * gebruik (op geen enkel apparaat) logt de server iedereen uit. Zie php/api/common.php.
  */
 export const ACTIVITY_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "scroll"] as const;

@@ -9,7 +9,7 @@ if (!defined('PRIV')) define('PRIV', __DIR__ . '/_private'); // tests gebruiken 
 const OLD_COOKIE = 'klaro_auth'; // oud cookie (vóór 16 okt 2026): wordt niet meer geaccepteerd en bij inloggen opgeruimd
 const SID_COOKIE = 'klaro_sid';
 /** Na zoveel seconden zonder gebruik (op geen enkel apparaat) is iedereen uitgelogd. */
-const IDLE = 30 * 86400; // 30 dagen niet gebruikt (op geen enkel apparaat): opnieuw inloggen (was 60 minuten; wens eigenaar 25 okt)
+const IDLE = 2 * 3600; // 2 uur niet gebruikt (op geen enkel apparaat): opnieuw inloggen (wens eigenaar 26 okt; was 60 min, toen even 30 dagen)
 const SESSIONS = PRIV . '/sessions.json';
 
 function klaro_config(): ?array {
@@ -62,7 +62,7 @@ function set_sid_cookie(string $value, int $expires): void {
 }
 
 /**
- * Is deze sessie geldig? 'ok', 'verlopen' (30 dagen niet gebruikt: dan zijn alle sessies ongeldig gemaakt) of 'geen'.
+ * Is deze sessie geldig? 'ok', 'verlopen' (2 uur niet gebruikt: dan zijn alle sessies ongeldig gemaakt) of 'geen'.
  * $used: dit verzoek is echt gebruik (seconden geleden, 0 = nu); null = automatisch verzoek, verlengt niets.
  */
 function session_state(?int $used = null): string {
@@ -163,6 +163,6 @@ function require_login(): array {
   $state = session_state(null);
   if ($state === 'ok') return $cfg;
   header('X-Klaro-Login: ' . ($state === 'verlopen' ? 'verlopen' : 'nodig'));
-  json_out(401, ['error' => $state === 'verlopen' ? 'Automatisch uitgelogd: de app is 30 dagen niet gebruikt.' : 'Inloggen vereist.']);
+  json_out(401, ['error' => $state === 'verlopen' ? 'Automatisch uitgelogd: de app is 2 uur niet gebruikt.' : 'Inloggen vereist.']);
 }
 
