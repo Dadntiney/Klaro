@@ -68,6 +68,28 @@ test("onderdelen van een pagina na zoeken (rond een geopende nieuwsbrief): allee
   assert.equal(shown(o, "youshouldask.ai").length, 0);
 });
 
+// Zoeken op Google, ruim anderhalve minuut lang (elke 15 s een nieuwe zoekopdracht of resultaatpagina).
+const search: R[] = [0, 15, 30, 45, 60, 75, 90, 105, 112].flatMap((s): R[] => [[s * 1_000, "www.google.nl"], [s * 1_000 + 400, "encrypted-tbn0.gstatic.com"]]);
+
+test("zoeken terwijl de Mail-app een reeks mails ophaalt: een site die daarin meelaadt is geen geklikt zoekresultaat", async () => {
+  // Echt voorbeeld 26 okt 19:52: Google open, en in dezelfde seconde plaatjes uit mails van andere merken, met 4kmedia-market.com.
+  const o = await overview([
+    ...search, [0, "imap.mail.me.com"],
+    [115_000, "subscriptions.indeed.com"], [115_050, "us.list-manage.com"], [115_100, "cdn.klaviyomail.com"], [115_200, "spamplaatje-voorbeeld.com"],
+    [115_300, "afzender-a.nl"], [115_350, "afzender-b.online"],
+  ]);
+  assert.equal(shown(o, "spamplaatje-voorbeeld.com").length, 0);
+});
+
+test("geen vals weglaten: winkel na zoeken die zelf code van een mailbedrijf laadt (Copernica, Klaviyo) blijft een bezoek", async () => {
+  // Echt voorbeeld 26 okt 14:18: Google, dan www.shoesme.nl met sdk.copernica.com en ingress4.copernica.net op de pagina.
+  const o = await overview([
+    ...search,
+    [115_000, "www.winkelvoorbeeld.nl"], [116_000, "sdk.copernica.com"], [116_000, "ingress4.copernica.net"], [116_200, "consent.cookiebot.eu"], [116_400, "static-forms.klaviyo.com"],
+  ]);
+  assert.equal(shown(o, "winkelvoorbeeld.nl").length, 1);
+});
+
 test("site die altijd samen met een andere site opduikt (maker van de website) is een onderdeel; de site zelf blijft", async () => {
   const day = 86_400_000;
   const rows: R[] = [];

@@ -198,6 +198,13 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    6,8); stukjes worden nu alleen samengevoegd bij hooguit 7 min ertussen (GAME_GAP, ook voor het groene bolletje). Over alle dagen
    3 rijen korter: LPRA 13 -> 3 min, My Little Princess 23 okt 17 -> 8 min, TutoTOONS 19 okt 20 min -> 08:04 kort + 08:13 11 min
    (daar was het eerder "9 min stil spelen" genoemd; die 9 min waren helemaal zonder verkeer, dus niet aantoonbaar gespeeld).
+   Geleerd (26 okt, Nakijken): 4kmedia-market.com (plaatje uit spam, 7 keer sinds 1 okt, altijd met mailplaatjes) stond toch als
+   rij: er werd op dat moment gezocht, en "zoeken, dan de site" telde als een geklikt zoekresultaat. Nu niet als er in dezelfde
+   seconden (5 s ervoor tot 3 s erna) een mail-adres van een ánder merk laadt (subscriptions.indeed.com, email.mail.merk.nl):
+   dan haalt de Mail-app mails op. Code van een mailbedrijf zelf (Copernica, Klaviyo) telt niet: die laden winkels ook op hun
+   pagina. Uitgeprobeerd en te breed: elk mailbedrijf (14 rijen weg, 2 referentiegevallen om) en 2+ mailbedrijven (shoesme.nl
+   weg). Over alle dagen: 4kmedia 2x weg, lijstje.nl 11 okt 17:09 weg (tabbladen herladen + mails van Indeed/Pinterest),
+   allcamps.nl 22 okt 09:44 nu onzeker (tijdens Facebook; stond eerst verborgen als "onderdeel" door toeval met lijstje.nl).
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen

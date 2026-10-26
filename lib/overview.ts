@@ -1,7 +1,7 @@
 import { baseDomain, detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { ALWAYS_SHOW_OPEN } from "./livestatus.ts";
-import { clickBefore, isClickHost, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
+import { clickBefore, isClickHost, isEspDomain, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
 import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
@@ -239,6 +239,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const loginTimes = new Map<string, number[]>(); // inlog-/bankierpagina's (bankieren., mijn., login.): altijd bewust geopend
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
+  const devMailBrand = new Map<string, { t: number; b: string }[]>(); // mail-adressen van merken (subscriptions.indeed.com, email.mail.merk.nl), met het merk
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
   const devSearch = new Map<string, number[]>(); // momenten met een zoekopdracht (Google/Bing/...)
   const devYtApp = new Map<string, number[]>(); // adressen die alleen de YouTube-app zelf gebruikt (zie lib/clip.ts)
@@ -481,7 +482,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
       (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push(blocked ? { t, b: baseDomain(host), bl: 1 } : { t, b: baseDomain(host) });
-      if (isEspHost(host)) (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t);
+      if (isEspHost(host)) { (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t); if (!isEspDomain(host)) (devMailBrand.get(dev) ?? devMailBrand.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) }); }
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
       if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devSearch.get(dev) ?? devSearch.set(dev, []).get(dev)!).push(t);
@@ -726,7 +727,12 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => !r.bl && r.t >= x.s && r.t <= x.s + 3_000).map((r) => r.b)).size;
         if (loaded < 6 && others.filter(mailish).length >= 3 && !others.some((y) => !mailish(y) && isHuman(y))) continue;
         const q = (devSearch.get(g.dev) ?? []).filter((t) => t >= x.s - 60_000 && t <= x.s + 1_000);
-        if (q.length && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
+        // Niet als in dezelfde seconden een mail-adres van een ánder merk binnenkomt (subscriptions.indeed.com, email.mail.merk.nl):
+        // dan haalde de Mail-app een reeks mails op en laadde de site daarin mee, ook al werd er toevallig net gezocht (26 okt 19:52:
+        // 4kmedia-market.com met list-manage, klaviyomail en indeed). Een winkelpagina laadt wel code van een mailbedrijf (Klaviyo,
+        // Copernica), maar nooit de mail-adressen van andere merken.
+        const batch = (devMailBrand.get(g.dev) ?? []).some((r) => r.t >= x.s - 5_000 && r.t <= x.s + 3_000 && r.b !== baseDomain(g.site));
+        if (q.length && !batch && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
       }
     }
     // Vanuit een mail naar de site zelf (www.) en daar laadt meteen een hele pagina (onderdelen van 9+ andere domeinen binnen 3 s):
