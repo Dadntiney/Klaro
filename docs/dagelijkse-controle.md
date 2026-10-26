@@ -167,6 +167,14 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Instagram gestart (www.instagram.com, nooit 's nachts) zonder foto's: onzeker tonen. Bij de ontgrendel-golf (WhatsApp 07:24)
    telde ik eerder Facebook en Instagram als twee apps en www.google.com als Google; dat laatste vraagt WhatsApp zelf op.
 
+   Nog uitzoeken (26 okt, middag, vraag eigenaar "gaat dit goed?"): Google-tijd telt alleen www.google.nl e.d. als "inhoud", niet
+   www.google.com. Websites vragen zelf vaak www.google.nl op (meetcode): 26 okt 13:03 only.com, 4 s na het laden; daardoor bleef
+   Google 10 min "nu". Omgekeerd telt een echte zoekopdracht met resultaat-plaatjes (www.google.com + t0-t3.gstatic.com, 5 okt
+   08:08) niet mee. Uitgeprobeerd: kale www.google.* alleen als zoeken bij een zoekpagina-onderdeel binnen 3 s, of zonder dat maar
+   niet binnen 5 s na een andere website: Google-minuten 884 -> 926 over alle dagen, maar 2 referentiegevallen vielen om
+   (getdrezzed.nl "geopend vanuit Google", blakelyclothing.com 26 okt) omdat "geopend vanuit Google" de Google-rij gebruikt. Eerst die
+   koppeling uitzoeken, dan pas invoeren. Ook: asosglobal.com laadt in dezelfde seconde als asos.com (eigen domein van het merk) en
+   stond als aparte "Nieuw"-rij; nagaan of "merk + achtervoegsel" (asosglobal, asosservices) algemeen bij het merk hoort.
    Nog uitzoeken (26 okt): zelf leren koppelde a1556.dscapi9.akamai.net aan Buienradar, maar dat adres komt maar 44 van de 94 keer
    binnen een minuut bij Buienradar voor (ook bij Apple-verkeer). De leerregel kijkt alleen naar samen voorkomen met apps, niet
    met al het andere verkeer. Nagaan of een strengere regel (meestal bij de app) over alle dagen niets echts weghaalt.
