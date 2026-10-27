@@ -1649,13 +1649,6 @@ export default function Home() {
                               );
                               return (
                                 <>
-                                  {dd.matched.length > 0 && (
-                                    <>
-                                      <div className="dh">Wat er binnen {g.name} gebeurde</div>
-                                      {dd.matched.map(row)}
-                                      {dd.matchedTotal > dd.matched.length && <div className="sub hosthint">+ {dd.matchedTotal - dd.matched.length} andere adressen</div>}
-                                    </>
-                                  )}
                                   {dd.other.length > 0 && (
                                     <>
                                       <button className="more-link" onClick={() => setShowOther((p) => { const n = new Set(p); if (n.has(rowKey)) n.delete(rowKey); else n.add(rowKey); return n; })}>
