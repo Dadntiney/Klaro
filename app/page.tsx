@@ -1433,7 +1433,8 @@ export default function Home() {
             const key = autoOpen ? d + "!" : d; // eigen sleutel: dichtklappen nu laat de dag later niet ineens open staan
             const isDayOpen = recent || (autoOpen ? !openDays.has(key) : openDays.has(key));
             // Het dagdeel bovenaan de lijst staat in de (vaste) dagkop; tijdens het scrollen wisselt het mee (Middag → Ochtend).
-            const topPart = isDayOpen && rows[0]?.t && rows.some((r) => r.t && partOf(r.t) !== partOf(rows[0].t)) ? partOf(rows[0].t) : null;
+            // Ook als alles in één dagdeel valt (iPhone 's ochtends): het label staat er altijd, zodat elke dag er hetzelfde uitziet.
+            const topPart = isDayOpen && rows[0]?.t ? partOf(rows[0].t) : null;
             const shownPart = stuckPart?.d === d && stuckPart.p !== null ? stuckPart.p : topPart;
             return (
             <section key={d} data-day={d}>
