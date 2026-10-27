@@ -562,18 +562,6 @@ h2 .livedot { margin:0 2px 0 12px; }
 .chips.fr { -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 36px), transparent); }
 .chips.fl { -webkit-mask-image:linear-gradient(to right, transparent, #000 36px); mask-image:linear-gradient(to right, transparent, #000 36px); }
 .chips.fl.fr { -webkit-mask-image:linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image:linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
-/* Afgelopen 7 dagen van een app (in de details). */
-.week { margin:4px 0 10px; }
-.week .dh { display:flex; justify-content:space-between; align-items:baseline; }
-.week-sum { font-weight:400; color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; }
-.week-bars { display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; margin-top:6px; }
-.wb { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
-.wb-col { height:44px; width:100%; max-width:26px; display:flex; align-items:flex-end; justify-content:center; border-radius:5px; background:color-mix(in srgb, var(--muted) 9%, transparent); }
-.wb-bar { display:block; width:100%; border-radius:5px; background:color-mix(in srgb, var(--accent) 75%, transparent); }
-.wb-dot { display:block; width:6px; height:6px; border-radius:50%; margin-bottom:5px; background:color-mix(in srgb, var(--accent) 75%, transparent); }
-.wb-v { font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; min-height:13px; }
-.wb-d { font-size:11px; color:var(--muted); font-weight:500; }
-.wb:last-child .wb-d { color:var(--fg); font-weight:700; }
 /* Staat de regel erboven open (details), dan geen verbindingslijntje: het zou in de details steken. */
 .list > div:has(> .detail) + div.together > .item::before { display:none; }
 /* Totaal van vandaag: tik voor de minuten per apparaat. */

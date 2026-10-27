@@ -68,37 +68,6 @@ function WhatsAppIcon() {
 const shortName = (name: string) => name.replace(/ \((spel|leren)\)$/, "");
 const kindOf = (name: string) => / \((spel|leren)\)$/.exec(name)?.[1];
 
-/**
- * De laatste 7 dagen van één app: een staafje per dag (minuten), een stipje als hij alleen even open was. Zo zie je of iets nieuw
- * is of een gewoonte wordt.
- */
-function WeekBars({ name, data }: { name: string; data?: Map<string, { mins: number; n: number }> }) {
-  const list = Array.from({ length: 7 }, (_, i) => {
-    const t = Date.now() - (6 - i) * 86_400_000;
-    const d = dayKeyFmt.format(t);
-    return { d, wd: new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "short" }).format(t).slice(0, 2), v: data?.get(d) };
-  });
-  const max = Math.max(1, ...list.map((x) => x.v?.mins ?? 0));
-  const total = list.reduce((n, x) => n + (x.v?.mins ?? 0), 0);
-  const daysUsed = list.filter((x) => x.v).length;
-  return (
-    <div className="week" aria-label={`${name}: afgelopen 7 dagen`}>
-      <div className="dh">Afgelopen 7 dagen<span className="week-sum">{daysUsed === 0 ? "" : `${daysUsed} ${daysUsed === 1 ? "dag" : "dagen"}${total > 0 ? ` · ${dur(total)}` : ""}`}</span></div>
-      <div className="week-bars">
-        {list.map((x) => (
-          <div key={x.d} className="wb" title={x.v ? `${dayLabel(x.d)}: ${x.v.mins > 0 ? dur(x.v.mins) : `${x.v.n}× kort`}` : `${dayLabel(x.d)}: niet gebruikt`}>
-            <div className="wb-col">
-              {x.v && x.v.mins > 0 ? <span className="wb-bar" style={{ height: `${Math.max(8, Math.round((x.v.mins / max) * 100))}%` }} /> : x.v ? <span className="wb-dot" /> : null}
-            </div>
-            <span className="wb-v">{x.v ? (x.v.mins > 0 ? (x.v.mins >= 60 ? `${String(Math.round(x.v.mins / 6) / 10).replace(".", ",")} u` : `${x.v.mins}m`) : "kort") : ""}</span>
-            <span className="wb-d">{x.wd}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /** Spelletje (handcontroller), voor een spel of leer-app zonder logo: rustiger dan een losse letter. */
 function GameGlyph() {
   return (
@@ -1269,22 +1238,6 @@ export default function Home() {
 
   // Los van het apparaat-filter: zo hoeft een tik op een chip dit niet opnieuw uit te rekenen.
   const use = useMemo(() => usage(groups, { auto, followers: followOf.current, mailT, cut }), [groups, mailT, cut, auto]);
-  // Per app (apparaat|site): minuten en keren per dag, voor het weekje in de details. Zelfde telling als de lijst (lib/usage.ts).
-  const perDay = useMemo(() => {
-    const m = new Map<string, Map<string, { mins: number; n: number }>>();
-    for (const g of groups) {
-      if (!use.listed(g)) continue;
-      const ss = use.shown(g);
-      if (!ss.length) continue;
-      const k = g.dev + "|" + g.site;
-      const byD = m.get(k) ?? m.set(k, new Map()).get(k)!;
-      const v = byD.get(g.d) ?? { mins: 0, n: 0 };
-      v.mins += ss.reduce((n, x) => n + minutes(x), 0);
-      v.n += ss.length;
-      byD.set(g.d, v);
-    }
-    return m;
-  }, [groups, use]);
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     const mainByDay = new Map<string, Group[]>(); // voor "niet getoond": per dag, in plaats van per dag alle groepen door te lopen
@@ -1650,7 +1603,6 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
-                            <WeekBars name={shortName(g.name)} data={perDay.get(g.dev + "|" + g.site)} />
                             {!compact && rss.length > 1 && (
                               <>
                                 <div className="dh">Bezoeken</div>
