@@ -22,6 +22,12 @@ push_remove([$apple['endpoint']]);
 check('uitzetten haalt het abonnement weg', push_subs() === []);
 check('geen openbare sleutel zolang de server niet klaar is', push_public_key() === '');
 
+$now = 100 * 86_400_000;
+$h = [['t' => $now - 31 * 86_400_000, 'title' => 'oud', 'body' => ''], ['t' => $now - 86_400_000, 'title' => 'a', 'body' => ''], ['t' => $now - 1000, 'title' => 'b', 'body' => '']];
+check('laatste meldingen: ouder dan 30 dagen weg, nieuwste eerst', array_column(push_hist_visible($h, $now), 'title') === ['b', 'a']);
+check('melding wegtikken haalt alleen die ene weg', array_column(push_hist_without($h, $now - 86_400_000, 'a'), 'title') === ['oud', 'b']);
+check('wegtikken met verkeerde titel laat alles staan', count(push_hist_without($h, $now - 86_400_000, 'x')) === 3);
+
 // Het PHP-sluitteken (vraagteken + groter-dan) in een opmerking beëindigt PHP: de rest wordt dan als tekst getoond (20 okt, push.php). Alleen setup.php mag het (HTML).
 foreach (glob(__DIR__ . '/../php/api/*.php') as $f) if (basename($f) !== 'setup.php') check(basename($f) . ' bevat geen "?>"', strpos((string)file_get_contents($f), '?' . '>') === false);
 

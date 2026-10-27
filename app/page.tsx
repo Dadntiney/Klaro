@@ -17,7 +17,7 @@ import { askReview, listReviews, type NakijkItem } from "@/lib/nakijken-client";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
-import { pushHealth, pushHistory, pushOff, pushOn, pushState, pushTest, type PushState, type SentAlert } from "@/lib/push-client";
+import { pushDismiss, pushHealth, pushHistory, pushOff, pushOn, pushState, pushTest, type PushState, type SentAlert } from "@/lib/push-client";
 import { baseDomain } from "@/lib/parse";
 import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Device, Event, Group, Insights } from "./types";
@@ -571,9 +571,11 @@ function PushToggle() {
             {hist.length === 0 ? <p className="muted">Nog geen meldingen in de laatste 30 dagen.</p> : (
               <ul className="setlist">
                 {hist.slice(0, 20).map((m, i) => (
-                  <li key={m.t + ":" + i}>
+                  <li key={m.t + ":" + i} className="histitem">
                     <span className="muted">{dayLabel(dayKeyFmt.format(m.t))} {timeFmt.format(m.t)}</span>
                     <span>{m.title.replace(/^(Klaro|Dobber): /, "")}: {m.body}</span>
+                    {/* Wegtikken: weg op alle toestellen. Anders verdwijnt een melding na 30 dagen vanzelf. */}
+                    <button type="button" className="hist-x" aria-label="Melding weghalen" onClick={() => { setHist((h) => h.filter((x) => x !== m)); pushDismiss(m).catch(() => pushHistory().then(setHist, () => {})); }}>×</button>
                   </li>
                 ))}
               </ul>

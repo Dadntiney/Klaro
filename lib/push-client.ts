@@ -63,6 +63,11 @@ export async function pushHealth(): Promise<{ laatst: number | null; aantal: num
 
 export type SentAlert = { t: number; title: string; body: string };
 
+/** Eén melding uit "Laatste meldingen" wegtikken (verdwijnt op alle toestellen). */
+export async function pushDismiss(m: SentAlert): Promise<boolean> {
+  return (await post({ weg: { t: m.t, title: m.title } })).ok;
+}
+
 /** De laatste meldingen met de echte tekst (op de iPhone zelf staat alleen "Er is iets om te bekijken"). */
 export async function pushHistory(): Promise<SentAlert[]> {
   const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { meldingen?: SentAlert[] };

@@ -68,3 +68,16 @@ function push_take_tests(): array {
 function push_public_key(): string {
   return is_file(PRIV . '/vapid.pub') ? trim((string)file_get_contents(PRIV . '/vapid.pub')) : '';
 }
+
+const PUSH_HIST_DAYS = 30; // meldingen blijven 30 dagen in "Laatste meldingen", tenzij de eigenaar ze eerder wegtikt
+
+/** De meldingen die de pagina toont: van de laatste 30 dagen, nieuwste eerst. */
+function push_hist_visible(array $hist, int $now): array {
+  return array_values(array_reverse(array_filter($hist, fn($m) => is_array($m) && $now - (int)($m['t'] ?? 0) < PUSH_HIST_DAYS * 86_400_000)));
+}
+
+/** Eén melding weggetikt (tijdstip + titel, zodat twee meldingen op dezelfde ms niet allebei verdwijnen). */
+function push_hist_without(array $hist, int $t, string $title): array {
+  return array_values(array_filter($hist, fn($m) => !(is_array($m) && (int)($m['t'] ?? 0) === $t && (string)($m['title'] ?? '') === $title)));
+}
+
