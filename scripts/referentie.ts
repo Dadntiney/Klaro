@@ -139,6 +139,7 @@ const CASES: Case[] = [
   { day: "2026-10-26", dev: "iPhone", site: "shoesme.nl", at: "14:18", want: true, why: "winkel geopend na zoeken; de winkel laadt zelf Copernica-code (geen mail)" },
   { day: "2026-10-27", dev: "MacBook", site: "launchdarkly.com", at: "09:45", want: false, why: "instellingen-dienst die raisin.com meelaadt (eigenaar: melden)" },
   { day: "2026-10-27", dev: "MacBook", site: "raisin.com", at: "09:45", want: true, why: "website zelf geopend na zoeken" },
+  { day: "2026-10-27", dev: "iPhone", site: "ampaeservices.com", at: "*", want: false, why: "Apple-onderdeel bij kopen/downloaden in de App Store (eigenaar: melden)" },
   { day: "2026-10-25", dev: "iPad", site: "my-little-princess.net", at: "08:38", want: true, why: "kinderspel (Unity) na Netflix gestart; tot 09:01 gespeeld (motor meldt elke 5 min)" },
 ];
 const d = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
