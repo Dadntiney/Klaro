@@ -934,8 +934,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const byDev = new Map<string, { g: Group; x: Session }[]>();
     for (const [, g] of groups) {
       if (!g.main || g.bg || g.flag || g.susp || !isPlainSite(g)) continue;
-      // Ook een alleen-aangeklopte pagina (pf) telt mee als tabblad dat de browser tegelijk ververste.
-      for (const x of g.ss) if ((isHuman(x) && !x.lg) || x.pf) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push({ g, x });
+      // Ook een alleen-aangeklopte pagina (pf) telt mee als tabblad dat de browser tegelijk ververste, en een pagina die als mail
+      // geteld werd omdat er tegelijk mailplaatjes binnenkwamen (11 okt 17:09: tien tabbladen, met Indeed/Pinterest-mail erbij).
+      for (const x of g.ss) if ((isHuman(x) && !x.lg) || x.pf || (x.ml && (x.mh ?? 0) >= 1)) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push({ g, x });
     }
     const brand = (site: string) => site.split(".")[0];
     for (const [, l] of byDev) {
@@ -943,7 +944,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       for (const a of l) {
         const win = l.filter((b) => b.x.s >= a.x.s && b.x.s - a.x.s <= 20_000);
         if (new Set(win.map((b) => b.g.site)).size < 4) continue;
-        for (const b of win) if ((b.x.n ?? 0) <= 2 && b.x.e - b.x.s <= 5_000) b.x.rl = 1;
+        // Komen de vier pas vol met mail-pagina's erbij, dan telt de zoekmachine niet mee: zoeken en dan twee sites openen terwijl er
+        // net een mail binnenkomt is gewoon zoeken (7 okt 14:21: Google, ggdhvb.nl en ncj.nl, met een LinkedIn-mail).
+        const viaMail = new Set(win.filter((b) => !b.x.ml).map((b) => b.g.site)).size < 4;
+        if (viaMail && new Set(win.filter((b) => !SEARCH.has(b.g.site)).map((b) => b.g.site)).size < 4) continue;
+        // In dat geval blijft een site die zelf 2+ pagina's laadde staan: dat is echt kijken, geen herladen tabblad (24 okt 09:14:
+        // cottonclub.nl via de nieuwsbrief, 20 s later mailplaatjes van andere afzenders).
+        for (const b of win) if ((b.x.n ?? 0) <= 2 && b.x.e - b.x.s <= 5_000 && !(viaMail && (b.x.mh ?? 0) >= 2)) b.x.rl = 1;
       }
       for (const b of l) {
         if (b.x.e - b.x.s > 60_000) continue;

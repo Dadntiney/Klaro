@@ -81,6 +81,21 @@ test("zoeken terwijl de Mail-app een reeks mails ophaalt: een site die daarin me
   assert.equal(shown(o, "spamplaatje-voorbeeld.com").length, 0);
 });
 
+test("tabbladen herladen terwijl er mails binnenkomen: ook dan geen bezoek (de mail-pagina's tellen mee als tabblad)", async () => {
+  // Echt voorbeeld 11 okt 17:09: Safari herlaadt tien tabbladen; tegelijk mailplaatjes van Indeed, dus de meeste tellen als mail.
+  const o = await overview([
+    ...search, [115_000, "www.reis-a.nl"], [117_000, "www.reis-b.nl"], [119_000, "www.reis-c.nl"], [121_000, "www.reis-d.nl"],
+    [119_500, "subscriptions.indeed.com"], [119_600, "post.pinterest.com"],
+  ]);
+  assert.equal(shown(o, "reis-a.nl").length, 0);
+});
+
+test("geen vals weglaten: zoeken en twee sites openen terwijl er een mail binnenkomt blijft een bezoek", async () => {
+  // Echt voorbeeld 7 okt 14:21: Google, ggdhvb.nl en ncj.nl, met een LinkedIn-mail ertussen.
+  const o = await overview([...search, [114_000, "www.zoek-a.nl"], [115_000, "www.linkedin.com"], [115_100, "subscriptions.indeed.com"], [134_000, "www.zoek-b.nl"]]);
+  assert.equal(shown(o, "zoek-a.nl").length + shown(o, "zoek-b.nl").length >= 1, true);
+});
+
 test("geen vals weglaten: winkel na zoeken die zelf code van een mailbedrijf laadt (Copernica, Klaviyo) blijft een bezoek", async () => {
   // Echt voorbeeld 26 okt 14:18: Google, dan www.shoesme.nl met sdk.copernica.com en ingress4.copernica.net op de pagina.
   const o = await overview([
