@@ -1197,7 +1197,7 @@ export default function Home() {
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  const lastUse = useMemo(() => deviceUse(groups, auto), [groups, auto]);
+  const lastUse = useMemo(() => deviceUse(groups, auto, followOf.current), [groups, auto]);
   const activeNow = (name: string) => isActiveNow(lastUse, name, clock);
   const activeApp = (name: string) => activeWhat(lastUse, name, clock);
   // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).

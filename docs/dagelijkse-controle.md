@@ -205,6 +205,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    pagina. Uitgeprobeerd en te breed: elk mailbedrijf (14 rijen weg, 2 referentiegevallen om) en 2+ mailbedrijven (shoesme.nl
    weg). Over alle dagen: 4kmedia 2x weg, lijstje.nl 11 okt 17:09 weg (tabbladen herladen + mails van Indeed/Pinterest),
    allcamps.nl 22 okt 09:44 nu onzeker (tijdens Facebook; stond eerst verborgen als "onderdeel" door toeval met lijstje.nl).
+   Geleerd (27 okt, ochtend): de chip voegde alleen stukjes van spellen samen, de lijst ook die van navigatie en van apps met een
+   vaste melding (NPO, Toca Boca). Daardoor zei de chip 26 okt 16:20-19:00 op de iPad "uit" en de NPO-rij "nu". Nu dezelfde regel
+   (deviceUse krijgt de followers). Vast raster elke 5 min over 26 okt: 8 -> 5 verschillen, niets nieuws erbij.
+   Nog uitzoeken (27 okt): resterende verschillen chip/rij zijn randen bij starten en stoppen: Google op de iPhone (13:30, 14:00),
+   het laatste moment van een spel vlak voor het volgende spel (18:10), en een tv-app die net begint (Ziggo GO 18:55 en 00:05:
+   chip al groen, de rij nog niet).
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen

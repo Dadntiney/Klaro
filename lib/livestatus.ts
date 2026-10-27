@@ -1,7 +1,7 @@
 import { isHuman, type Session } from "./sessions.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { isNow, tvStart } from "./play.ts";
-import { GAME_GAP } from "./sites.ts";
+import { GAME_GAP, HEARTBEAT_GAP, NAV_APPS, NAV_GAP } from "./sites.ts";
 
 /**
  * Live-status per apparaat (de groene chip). Gedeeld door de pagina en scripts/controle.ts, zodat de dagelijkse controle
@@ -54,7 +54,7 @@ export function tvBlipper<G extends LiveGroup>(groups: G[]) {
 export type DeviceUse<G extends LiveGroup> = ReturnType<typeof deviceUse<G>>;
 
 /** Bewijs van gebruik per apparaat: de laatst begonnen echte sessie (zoals de lijst), beeld/geluid zonder eigen regel, losse opvragingen. */
-export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
+export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>, followers: Record<string, string> = {}) {
   const hits = new Map<string, { t: number; site: string; fgApp: boolean }[]>();
   const media = new Map<string, number>(); // beeld/geluid van adressen die zelf geen regel worden (bijv. Conviva zonder app)
   const latest = new Map<string, { g: G; x: Session }>(); // de echte sessie die nu het laatst bezig was, per apparaat (zoals de lijst)
@@ -115,16 +115,20 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>) {
     const n = pieces.filter((p) => p.s >= s && p.s <= e).reduce((a, p) => a + (p.n ?? 1), 0);
     latest.set(dev, { g: l.g, x: { ...l.x, s, e, n } });
   }
-  // Een spel dat echt opstartte (gs): stukjes met hooguit GAME_GAP ertussen zijn één keer spelen, net als in de lijst
-  // (lib/usage.ts); anders zei de chip na 3 min "uit" terwijl de rij van het hele spel nog "nu" zei.
+  // Stukjes samenvoegen precies zoals de lijst (lib/usage.ts): navigatie (NAV_GAP), apps met een vaste melding via een
+  // doorverwijs-adres (HEARTBEAT_GAP, zoals NPO en Toca Boca) en een spel dat echt opstartte (gs, GAME_GAP). Anders zei de chip na
+  // 3 min "uit" terwijl de rij van het geheel nog "nu" zei (26 okt 16:21-16:41: NPO op de iPad).
+  const followed = new Set(Object.entries(followers).map(([k, site]) => k.slice(0, k.indexOf("|")) + "|" + site));
   for (const [dev, l] of latest) {
-    if (isTv(dev) || !(l.g.ss ?? []).some((x) => x.gs)) continue;
+    if (isTv(dev)) continue;
+    const gap = NAV_APPS.has(l.g.site) ? NAV_GAP : followed.has(dev + "|" + l.g.site) ? HEARTBEAT_GAP : (l.g.ss ?? []).some((x) => x.gs) ? GAME_GAP : 0;
+    if (!gap) continue;
     const all = [...(l.g.ss ?? [])].sort((a, b) => a.s - b.s);
     const i = all.findIndex((x) => x.s === l.x.s);
     if (i < 0) continue;
     let a = i, b = i;
-    while (a > 0 && all[a].s - all[a - 1].e <= GAME_GAP) a--;
-    while (b < all.length - 1 && all[b + 1].s - all[b].e <= GAME_GAP) b++;
+    while (a > 0 && all[a].s - all[a - 1].e <= gap) a--;
+    while (b < all.length - 1 && all[b + 1].s - all[b].e <= gap) b++;
     const span = all.slice(a, b + 1);
     latest.set(dev, { g: l.g, x: { ...l.x, s: span[0].s, e: Math.max(...span.map((x) => x.e)), n: span.reduce((n, x) => n + (x.n ?? 1), 0) } });
   }

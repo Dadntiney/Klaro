@@ -45,3 +45,11 @@ test("niet meer 'nu' als er daarna een andere app begon die ook doorliep; wel no
   assert.equal(superseded({ s: m(0), e: m(10) }, [{ s: m(9), e: m(25) }]), true); // gewoon overgestapt naar een andere app
   assert.equal(superseded({ s: m(5), e: m(10) }, [{ s: m(0), e: m(20) }]), false); // de andere begon eerder
 });
+
+test("app met een vaste melding (NPO op de iPad): de chip voegt de stukjes samen zoals de rij, anders zei hij te vroeg 'uit'", () => {
+  // Echt voorbeeld 26 okt 16:12-16:37: NPO opent, daarna alleen de vaste melding via het doorverwijs-adres (stukjes zonder eigen gebruik).
+  const npo = g({ dev: "iPad", site: "npo.nl", name: "NPO", ss: [{ s: m(14), e: m(14), n: 1 }, { s: m(6), e: m(6), n: 1 }, { s: m(0), e: m(0.3), n: 4 }], ts: [m(14)] });
+  assert.equal(isActiveNow(deviceUse([npo], new Set(), { "iPad|npo-volger.nl": "npo.nl" }), "iPad", m(16)), true);
+  // zonder vaste melding: alleen het eerste stukje telt, en dat is na 16 min voorbij
+  assert.equal(isActiveNow(deviceUse([npo], new Set()), "iPad", m(16)), false);
+});
