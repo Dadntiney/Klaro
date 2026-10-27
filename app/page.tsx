@@ -1603,6 +1603,26 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
+                            {!reviewOpen && (
+                              <div className="review">
+                                <button
+                                  type="button"
+                                  className="review-btn"
+                                  disabled={reviewBusy === rowKey}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReviewBusy(rowKey);
+                                    setReviewErr(null);
+                                    askReview({ d: g.d, dev: g.dev, site: g.site, name: g.name, s: s0, e: e0 })
+                                      .then(loadReviews, (er) => setReviewErr(er instanceof Error ? er.message : "Versturen lukte niet."))
+                                      .finally(() => setReviewBusy(null));
+                                  }}
+                                >
+                                  {reviewBusy === rowKey ? "Bezig…" : reviewDone ? "Opnieuw nakijken" : "Nakijken"}
+                                </button>
+                                {reviewErr && reviewBusy === null && <p className="review-err">{reviewErr}</p>}
+                              </div>
+                            )}
                             {!compact && rss.length > 1 && (
                               <>
                                 <div className="dh">Bezoeken</div>
@@ -1660,26 +1680,6 @@ export default function Home() {
                                   </div>
                                 ))}
                               </>
-                            )}
-                            {!reviewOpen && (
-                              <div className="review">
-                                <button
-                                  type="button"
-                                  className="review-btn"
-                                  disabled={reviewBusy === rowKey}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setReviewBusy(rowKey);
-                                    setReviewErr(null);
-                                    askReview({ d: g.d, dev: g.dev, site: g.site, name: g.name, s: s0, e: e0 })
-                                      .then(loadReviews, (er) => setReviewErr(er instanceof Error ? er.message : "Versturen lukte niet."))
-                                      .finally(() => setReviewBusy(null));
-                                  }}
-                                >
-                                  {reviewBusy === rowKey ? "Bezig…" : reviewDone ? "Opnieuw nakijken" : "Nakijken"}
-                                </button>
-                                {reviewErr && reviewBusy === null && <p className="review-err">{reviewErr}</p>}
-                              </div>
                             )}
                           </div>
                         );
