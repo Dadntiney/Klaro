@@ -1543,7 +1543,7 @@ export default function Home() {
                         return (
                           <div className="detail">
                             {reviewDone && <p className="review-ans"><b>Nagekeken:</b> {reviewDone.antwoord}</p>}
-                            {reviewOpen && <p className="review-wait">Wordt nagekeken. Het antwoord komt hier te staan.</p>}
+                            {reviewOpen && <p className="review-wait">Gemeld, wordt nagekeken. Het antwoord komt hier te staan.</p>}
                             <a
                               className="open-btn"
                               href={`https://${g.site}`}
@@ -1573,7 +1573,7 @@ export default function Home() {
                                       .finally(() => setReviewBusy(null));
                                   }}
                                 >
-                                  {reviewBusy === rowKey ? "Bezig…" : reviewDone ? "Opnieuw nakijken" : "Nakijken"}
+                                  {reviewBusy === rowKey ? "Bezig…" : reviewDone ? "Opnieuw melden" : "Melden"}
                                 </button>
                                 {reviewErr && reviewBusy === null && <p className="review-err">{reviewErr}</p>}
                               </div>
