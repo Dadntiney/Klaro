@@ -379,15 +379,6 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
   );
 }
 
-interface DetailData {
-  matched: { h: string; n: number; b: number }[];
-  matchedTotal: number;
-  other: { h: string; n: number; b: number }[];
-  otherTotal: number;
-  total: number;
-  capped: boolean;
-}
-
 /**
  * Klein draaicirkeltje rechts in de balk: laat zien dat het live ophalen (elke 1,5 sec.) echt loopt.
  * Grijs en draait zolang er antwoorden komen; oranje en stil als er even geen antwoord kwam; rood als het misgaat.
@@ -476,25 +467,6 @@ const UNSURE = {
   opstart: "Onzeker: de app is gestart, maar er laadde geen inhoud (geen foto's of berichten). Misschien alleen even open, of vanzelf gestart.",
   ontgrendel: "Onzeker: begon op hetzelfde moment als andere apps, zoals bij het ontgrendelen of op wifi komen. Of deze app echt geopend werd, is niet te zien.",
 } as const;
-
-function whyShown(g: Group, ss: Session[]): string {
-  if (g.flag) return `Staat op de vangnet-lijst (${g.flag}).`;
-  if (g.susp) return "Verdacht adres: lijkt op een bekende site of komt uit een spam-hoek.";
-  const w = ss.every((x) => x.uz) ? ss.find((x) => x.uw)?.uw : undefined;
-  if (w) return UNSURE[w];
-  const x = ss.reduce((a, b) => ((b.n ?? 0) > (a.n ?? 0) ? b : a), ss[0]);
-  if (!x) return "";
-  const mins = Math.round(ss.reduce((n, y) => n + (y.e - y.s), 0) / 60_000);
-  if (x.lg) return "Inlog- of bankierpagina geopend.";
-  if (ss.every((y) => y.ao)) return "Onzeker: de app is gestart, maar er is geen teken dat hij daarna gebruikt werd. Misschien even geopend, misschien vanzelf ververst.";
-  if (ss.every((y) => y.uz)) return "Onzeker: één adres terwijl in X/Facebook gescrold werd. Misschien een advertentie die de app alvast aanklopte, misschien echt geopend.";
-  if (x.ck) return "Geopend via een link (in een mail of na zoeken).";
-  if ((x.m ?? 0) >= 2) return `Video of geluid afgespeeld${mins ? `, ongeveer ${mins} min` : ""}.`;
-  if ((x.f ?? 0) >= 2) return `App geopend en inhoud geladen (${x.f}× nieuw).`;
-  if (x.pv) return "Website geopend: een pagina met meerdere onderdelen geladen.";
-  if (ALWAYS_SHOW.has(g.site)) return "Staat op de lijst 'altijd tonen'.";
-  return `Steeds nieuwe inhoud geladen (${x.n ?? 1} momenten${mins ? `, ${mins} min` : ""}).`;
-}
 
 /** Waarom een sessie bewust niet getoond wordt. */
 function whyHidden(x: Session, auto: boolean, tvShort: boolean): string {
@@ -653,8 +625,6 @@ export default function Home() {
     const t = setInterval(() => { if (document.visibilityState === "visible") loadReviews(); }, 120_000);
     return () => clearInterval(t);
   }, [loadReviews]);
-  const [details, setDetails] = useState<Record<string, { state: "loading" | "ok" | "err"; data?: DetailData }>>({}); // wat er rond een bezoek gebeurde, per geopende regel
-  const [showOther, setShowOther] = useState<Set<string>>(new Set());
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
   // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet.
   const [rawView, setRawView] = useState(false);
@@ -1169,21 +1139,6 @@ export default function Home() {
   const lastUse = useMemo(() => deviceUse(groups, auto, followOf.current), [groups, auto]);
   const activeNow = (name: string) => isActiveNow(lastUse, name, clock);
   const activeApp = (name: string) => activeWhat(lastUse, name, clock);
-  // Haal op wat er rond dit bezoek gebeurde (alle adressen van het apparaat in dat tijdvak).
-  const loadDetail = (g: Group, rss: Session[], rk: string) => {
-    if (details[rk]) return;
-    const from = Math.min(...rss.map((x) => x.s)) - 30_000;
-    const to = Math.max(...rss.map((x) => x.e)) + 30_000;
-    const devId = Object.entries(deviceMap.current).find(([, label]) => label === g.dev)?.[0] ?? "";
-    setDetails((d) => ({ ...d, [rk]: { state: "loading" } }));
-    apiFetch(`/api/nextdns/detail?site=${encodeURIComponent(g.site)}&dev=${encodeURIComponent(devId)}&from=${from}&to=${to}`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "mislukt");
-        setDetails((d) => ({ ...d, [rk]: { state: "ok", data } }));
-      })
-      .catch(() => setDetails((d) => ({ ...d, [rk]: { state: "err" } })));
-  };
 
   // Waarschuwingen die de eigenaar als gezien heeft afgevinkt (alleen in deze browser). De sleutel bevat het tijdstip: een nieuw
   // 18+-bezoek of een nieuwe stilte na gebruik is een nieuwe melding en komt dus gewoon weer terug.
@@ -1551,7 +1506,7 @@ export default function Home() {
                       {partStart ? <div className="partmark" data-part={partOf(t)}><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
-                        onClick={() => { setExpanded(isOpen ? null : rowKey); if (!isOpen) loadDetail(g, rss, rowKey); }}
+                        onClick={() => setExpanded(isOpen ? null : rowKey)}
                         role="button"
                         aria-expanded={isOpen}
                       >
@@ -1587,7 +1542,6 @@ export default function Home() {
                         const reviewOpen = mine.find((r) => !r.done), reviewDone = mine.find((r) => r.done);
                         return (
                           <div className="detail">
-                            <div className="why">Waarom: {whyShown(g, rss)}</div>
                             {reviewDone && <p className="review-ans"><b>Nagekeken:</b> {reviewDone.antwoord}</p>}
                             {reviewOpen && <p className="review-wait">Wordt nagekeken. Het antwoord komt hier te staan.</p>}
                             <a
@@ -1635,33 +1589,6 @@ export default function Home() {
                                 ))}
                               </>
                             )}
-                            {(() => {
-                              const det = details[rowKey];
-                              if (!det || det.state === "loading") return <div className="sub hosthint">Laden…</div>;
-                              if (det.state === "err" || !det.data) return <div className="sub hosthint">Details laden lukt nu niet.</div>;
-                              const dd = det.data;
-                              const more = showOther.has(rowKey);
-                              const row = (x: { h: string; n: number; b: number }) => (
-                                <div className="hostrow" key={x.h}>
-                                  <span className="hn">{x.h}</span>
-                                  <span className="hc">{x.b >= x.n ? "geblokkeerd" : `${x.n}×${x.b > 0 ? ` (${x.b} geblokkeerd)` : ""}`}</span>
-                                </div>
-                              );
-                              return (
-                                <>
-                                  {dd.other.length > 0 && (
-                                    <>
-                                      <button className="more-link" onClick={() => setShowOther((p) => { const n = new Set(p); if (n.has(rowKey)) n.delete(rowKey); else n.add(rowKey); return n; })}>
-                                        Ook op dat moment ({dd.otherTotal}) {more ? "‹" : "›"}
-                                      </button>
-                                      {more && dd.other.map(row)}
-                                      {more && dd.otherTotal > dd.other.length && <div className="sub hosthint">+ {dd.otherTotal - dd.other.length} andere adressen</div>}
-                                    </>
-                                  )}
-                                  {dd.capped && <div className="sub hosthint">Alleen een deel van de verzoeken getoond (lang bezoek).</div>}
-                                </>
-                              );
-                            })()}
                             {showNear && (
                               <>
                                 <div className="dh">Let op: op hetzelfde moment (±30 sec.) op de lijst</div>
