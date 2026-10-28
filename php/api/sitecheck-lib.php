@@ -28,6 +28,9 @@ function sitecheck_verdict(string $host, int $code, string $ctype, string $final
   $finalHost = strtolower((string)parse_url($finalUrl, PHP_URL_HOST));
   $v = ['code' => $code];
   if ($finalHost !== '' && sitecheck_base($finalHost) !== sitecheck_base($host)) $v['naar'] = $finalHost;
+  // Afgeschermd tegen robots (403, 401, 429, 503: Cloudflare e.d.) zegt niets over de site zelf: onbekend, niet "geen pagina"
+  // (28 okt: deviantart.com en coloriage.info zijn echte sites maar geven een robot 403).
+  if (in_array($code, [401, 403, 429, 503], true)) return $v + ['soort' => 'afgeschermd', 'uitleg' => "foutcode $code (weert robots)"];
   if ($code >= 400) return $v + ['soort' => 'geen pagina', 'uitleg' => "foutcode $code"];
   if (!str_contains(strtolower($ctype), 'html')) return $v + ['soort' => 'techniek', 'uitleg' => $ctype !== '' ? $ctype : 'geen soort'];
   $title = '';

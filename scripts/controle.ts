@@ -289,3 +289,32 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
   }
 }
 section(`Chip en rij nagespeeld (${checks} momenten, laatste ${hours} uur)`, mism, "Chip en rij zeggen steeds hetzelfde.");
+
+// Nieuwe adressen (laatste 24 uur voor het eerst gezien): staat er een echte website? (websitecontrole via de server, zie
+// scripts/sitecheck.ts). Nalopen: ⚠ getoond maar geen echte website (onderdeel?) of een echte website met eigen pagina die niet
+// getoond wordt (gemist?). 18+/dating/VPN wordt nooit opgehaald.
+{
+  const pw = process.env.KLARO_PW;
+  const first = new Map<string, number>();
+  for (const r of rows) { const b = baseDomain(r.h); if (!LOCAL.test(r.h) && !first.has(b)) first.set(b, r.t); }
+  const fresh = [...first].filter(([, t]) => t >= now - 24 * 3_600_000).map(([b]) => b);
+  const out: string[] = [];
+  if (pw && fresh.length) {
+    const site = process.env.KLARO_SITE ?? "https://pichya.nl";
+    const auth = { Authorization: "Basic " + Buffer.from("klaro:" + pw).toString("base64") };
+    for (const b of fresh.slice(0, 60)) {
+      const hs = [...new Set(rows.filter((r) => baseDomain(r.h) === b).map((r) => r.h))];
+      if (hs.some((h) => classify(h).flag || inAdultList(h) || inDatingList(h))) continue; // vangnet: niet ophalen
+      const page = hs.some((h) => isMainHost(h, b));
+      const site0 = classify(hs[0]).site;
+      const shown = ov.groups.some((g) => g.site === site0 && g.main && !g.bg && (g.ss ?? []).some((x) => isHuman(x)));
+      if (!page && !shown) continue; // alleen onderdelen: daar zegt een voorpagina weinig
+      const v = await fetch(`${site}/api/sitecheck.php?host=${encodeURIComponent(hs.find((h) => isMainHost(h, b)) ?? b)}`, { headers: auth, signal: AbortSignal.timeout(20_000) }).then((r) => r.json()).catch(() => null) as { soort?: string; titel?: string; naar?: string } | null;
+      const echt = v?.soort === "website" || v?.soort === "doorsturen";
+      const geen = v?.soort === "techniek" || v?.soort === "geen pagina" || v?.soort === "leeg";
+      const warn = (shown && geen) || (!shown && page && echt);
+      out.push(`${warn ? "⚠ " : "  "}${b}  ${shown ? "getoond" : "niet getoond"}  ${v?.soort ?? "?"}${v?.titel ? ` "${v.titel}"` : ""}${v?.naar ? ` -> ${v.naar}` : ""}`);
+    }
+  }
+  section("Nieuwe adressen (24 uur): echte website? (⚠ = nalopen)", out.sort(), pw ? "Geen nieuwe adressen met een eigen pagina." : "Overgeslagen (geen KLARO_PW).");
+}

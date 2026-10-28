@@ -14,6 +14,7 @@ import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
 import { askReview, listReviews, type NakijkItem } from "@/lib/nakijken-client";
 import { netInfo, netNames, netText, setNetName, type NetInfo } from "@/lib/netinfo-client";
+import { noRealSite, siteCheck, type SiteCheck } from "@/lib/sitecheck-client";
 import { netKey } from "@/lib/network";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
@@ -465,11 +466,12 @@ function aroundIn(g: Group, list: Group[]) {
 
 /** Waarom een regel als echt gebruik telt, in één zin. */
 /** Waarom een regel onzeker is (lib/overview.ts zet de reden in x.uw): kort in het label, uitgebreid bij "Waarom". */
-const UNSURE_KORT = { reclame: "misschien reclame", opstart: "alleen gestart", ontgrendel: "bij ontgrendelen" } as const;
+const UNSURE_KORT = { reclame: "misschien reclame", opstart: "alleen gestart", ontgrendel: "bij ontgrendelen", geensite: "geen echte website" } as const;
 const UNSURE = {
   reclame: "Onzeker: één los adres terwijl een social-app (zoals Instagram, Facebook of X) open was. Kan een advertentie of voorvertoning zijn die de app alvast laadde, of echt geopend.",
   opstart: "Onzeker: de app is gestart, maar er laadde geen inhoud (geen foto's of berichten). Misschien alleen even open, of vanzelf gestart.",
   ontgrendel: "Onzeker: begon op hetzelfde moment als andere apps, zoals bij het ontgrendelen of op wifi komen. Of deze app echt geopend werd, is niet te zien.",
+  geensite: "Onzeker: op dit adres staat geen echte website (alleen techniek, een foutmelding of een lege pagina). Waarschijnlijk een onderdeel van een andere site of app, geen bezoek.",
 } as const;
 
 /** Waarom een sessie bewust niet getoond wordt. */
@@ -613,6 +615,7 @@ export default function Home() {
   const [devices, setDevices] = useState<Device[]>([]);
   // Soort netwerk per adres (mobiel internet / andere wifi), voor regels buiten het thuisnetwerk.
   const [nets, setNets] = useState<Record<string, NetInfo | null>>({});
+  const [siteChk, setSiteChk] = useState<Record<string, SiteCheck | null>>({}); // websitecontrole van nieuwe sites
   const [netNamen, setNetNamen] = useState<Record<string, string>>({}); // eigen namen voor netwerken ("werk")
   useEffect(() => { netNames().then(setNetNamen); }, []);
   const netOf = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
@@ -1111,6 +1114,15 @@ export default function Home() {
     (async () => { for (const ip of ips) { const v = await netInfo(ip); if (stop) return; setNets((n) => ({ ...n, [ip]: v })); } })();
     return () => { stop = true; };
   }, [devices, nets]);
+  // Nieuwe sites (eerste keer gezien): één keer laten nakijken of er wel een echte website staat (de server onthoudt het 30 dagen).
+  // Geen echte website = de regel wordt onzeker, nooit verborgen. Rood (18+, dating, VPN) nooit: de server haalt dat ook niet op.
+  useEffect(() => {
+    const hosts = [...new Set(groups.filter((g) => g.isNew && g.main && !g.bg && !g.flag && isPlainSite(g)).map((g) => g.site))].filter((h) => !(h in siteChk)).slice(0, 30);
+    if (!hosts.length) return;
+    let stop = false;
+    (async () => { for (const h of hosts) { const v = await siteCheck(h); if (stop) return; setSiteChk((c) => ({ ...c, [h]: v })); } })();
+    return () => { stop = true; };
+  }, [groups, siteChk]);
   /** Was dit apparaat op dit moment buiten het thuisnetwerk? Dan de periode (met het adres), anders niets. */
   const awayAt = (dev: string, t: number) => devices.find((d) => d.name === dev)?.away?.runs.find((r) => t >= r.s - 60_000 && t <= r.e + 60_000);
   const awayRaw = useCallback((dev: string, t: number) => !!devices.find((d) => d.name === dev)?.away?.runs.some((r) => t >= r.s - 60_000 && t <= r.e + 60_000), [devices]);
@@ -1523,7 +1535,8 @@ export default function Home() {
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             // Het streepje tussen de icoontjes laat al zien dat twee dingen tegelijk liepen (geen woord "tegelijk" meer).
                             // Onzeker: kort; de uitleg staat in de details.
-                            if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>onzeker</span>); }
+                            const geenSite = !!g.isNew && !g.flag && isPlainSite(g) && noRealSite(siteChk[g.site]); // websitecontrole: geen echte website
+                            if (geenSite || rss.every((x) => x.uz)) { const w = geenSite ? "geensite" : rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>onzeker</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
@@ -1546,7 +1559,7 @@ export default function Home() {
                         const reviewOpen = mine.find((r) => !r.done), reviewDone = mine.find((r) => r.done);
                         return (
                           <div className="detail">
-                            {rss.every((x) => x.uz) && (() => { const w = rss.find((x) => x.uw)?.uw; return <p className="unsure-why">Onzeker{w ? `: ${UNSURE_KORT[w]}` : ""}. {w ? UNSURE[w] : "DNS kan niet zien of dit echt gebruikt is."}</p>; })()}
+                            {(rss.every((x) => x.uz) || (!!g.isNew && !g.flag && isPlainSite(g) && noRealSite(siteChk[g.site]))) && (() => { const w = !!g.isNew && !g.flag && isPlainSite(g) && noRealSite(siteChk[g.site]) ? "geensite" : rss.find((x) => x.uw)?.uw; return <p className="unsure-why">Onzeker{w ? `: ${UNSURE_KORT[w]}` : ""}. {w ? UNSURE[w] : "DNS kan niet zien of dit echt gebruikt is."}</p>; })()}
                             {reviewDone && <p className="review-ans"><b>Nagekeken:</b> {reviewDone.antwoord}</p>}
                             {reviewOpen && <p className="review-wait">Gemeld, wordt nagekeken. Het antwoord komt hier te staan.</p>}
                             <a

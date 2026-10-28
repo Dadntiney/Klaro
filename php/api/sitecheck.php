@@ -20,7 +20,8 @@ for ($i = 0; $i < count($parts) - 1; $i++) {
 }
 $file = PRIV . '/sitecheck.json';
 $cache = is_file($file) ? (json_decode((string)file_get_contents($file), true) ?: []) : [];
-if (isset($cache[$host]) && time() - (int)$cache[$host]['t'] < 30 * 86400) json_out(200, $cache[$host]['v']);
+const SITECHECK_VERSIE = 2; // hoger = oude oordelen opnieuw bepalen (2: "afgeschermd" apart van "geen pagina")
+if (isset($cache[$host]) && time() - (int)$cache[$host]['t'] < 30 * 86400 && ($cache[$host]['r'] ?? 1) === SITECHECK_VERSIE) json_out(200, $cache[$host]['v']);
 
 $body = '';
 $ch = curl_init('https://' . $host . '/');
@@ -35,6 +36,6 @@ curl_setopt_array($ch, [
 curl_exec($ch);
 $v = sitecheck_verdict($host, (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE), (string)curl_getinfo($ch, CURLINFO_EFFECTIVE_URL), $body, curl_errno($ch) && $body === '' ? curl_error($ch) : '');
 curl_close($ch);
-$cache[$host] = ['t' => time(), 'v' => $v];
+$cache[$host] = ['t' => time(), 'v' => $v, 'r' => SITECHECK_VERSIE];
 file_put_contents($file, json_encode($cache), LOCK_EX);
 json_out(200, $v);

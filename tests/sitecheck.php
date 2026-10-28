@@ -11,6 +11,7 @@ check('doorsturen naar een ander domein', sitecheck_verdict('kort.link', 200, 't
 check('zelfde domein (www.) is geen doorsturen', sitecheck_verdict('voorbeeld.nl', 200, 'text/html', 'https://www.voorbeeld.nl/', $page)['soort'] === 'website');
 check('script of data is techniek', sitecheck_verdict('cdn.voorbeeld.nl', 200, 'application/javascript', 'https://cdn.voorbeeld.nl/', 'var x')['soort'] === 'techniek');
 check('foutcode: geen pagina', sitecheck_verdict('api.voorbeeld.nl', 404, 'text/html', 'https://api.voorbeeld.nl/', 'Not found')['soort'] === 'geen pagina');
+check('robot geweerd (403/503): afgeschermd, niet "geen pagina"', sitecheck_verdict('www.grote-site.com', 403, 'text/html', 'https://www.grote-site.com/', 'Just a moment...')['soort'] === 'afgeschermd' && sitecheck_verdict('x.nl', 503, 'text/html', 'https://x.nl/', '')['soort'] === 'afgeschermd');
 check('lege pagina', sitecheck_verdict('widget.voorbeeld.nl', 200, 'text/html', 'https://widget.voorbeeld.nl/', '<html><body></body></html>')['soort'] === 'leeg');
 check('geen antwoord: onbereikbaar', sitecheck_verdict('weg.voorbeeld.nl', 0, '', '', '', 'timeout')['soort'] === 'onbereikbaar');
 check('geldig adres', sitecheck_host('Www.Voorbeeld.NL') === 'www.voorbeeld.nl');

@@ -307,10 +307,15 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
 
-4b. Twijfel of een adres echt een website is (onderdeel, widget, doorstuur-link)? Laat de server de voorpagina ophalen:
-       node --experimental-strip-types scripts/sitecheck.ts adres1 adres2
-   Uitkomst: website (met titel) / doorsturen (naar ander domein) / leeg / techniek (script, data) / geen pagina / onbereikbaar.
+4b. Websitecontrole (sinds 28 okt): de server haalt de voorpagina op (scripts/sitecheck.ts adres1 adres2; api/sitecheck.php).
+   Uitkomst: website / doorsturen / leeg / techniek / geen pagina / afgeschermd (weert robots: onbekend) / onbereikbaar.
+   - Live: een NIEUWE site waar geen echte website staat (techniek, geen pagina, leeg) krijgt "onzeker" (nooit verborgen).
+   - Dagelijks: scripts/controle.ts toont alle nieuwe adressen van de laatste 24 uur met hun oordeel; ⚠ = nalopen (getoond
+     zonder echte website, of een echte website met eigen pagina die niet getoond wordt).
    Alleen een aanwijzing naast de ruwe regels (ook advertentiebedrijven hebben een site); 18+/dating wordt nooit opgehaald.
+   Geleerd (28 okt): veel echte sites weren robots (403/503: deviantart, coloriage.info) = afgeschermd, niet "geen pagina".
+   Geleerd (28 okt): een blog met een lijst links laat de browser die adressen vooruit opzoeken (10 blogs in dezelfde seconde,
+   waaronder een verlopen blognaam die nu naar een gok-site doorstuurt): niet geopend, terecht niet getoond.
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.
 6. Geleerde kennis vastleggen (blijft ook als het NextDNS-logboek wordt leeggemaakt):
