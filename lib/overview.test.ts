@@ -400,15 +400,14 @@ test("geen vals Instagram: echt Facebook (chat, lookaside, eigen foto-servers) b
   assert.equal(shown(o, "instagram.com").length, 0);
 });
 
-test("Instagram gestart (www.instagram.com) zonder foto's: tonen als onzeker; alleen achtergrondverkeer niet", async () => {
+test("Instagram geopend (www.instagram.com) zonder foto's: tonen (niet onzeker); alleen achtergrondverkeer niet", async () => {
   const o = await overview([
     [0, "www.instagram.com"], [300, "i.instagram.com"], [400, "gateway.instagram.com"], [500, "test-gateway.instagram.com"], [11_000, "graph.instagram.com"],
     [3_600_000, "i.instagram.com"], [3_600_300, "gateway.instagram.com"], [3_600_400, "test-gateway.instagram.com"], [3_610_000, "graph.instagram.com"],
   ]);
   const ig = shown(o, "instagram.com") as { uz?: 1; ao?: 1; uw?: string }[];
   assert.equal(ig.length, 1);
-  assert.equal(ig[0].uz, 1);
-  assert.equal(ig[0].uw, "opstart");
+  assert.equal(ig[0].uz, undefined);
   assert.equal(ig[0].ao, 1);
 });
 
@@ -684,4 +683,19 @@ test("Google-app die op de achtergrond ververst rekt een zoekopdracht niet op; z
   const g = shown(o, "google.com").sort((a, b) => a.s - b.s);
   assert.ok(g[0].e - g[0].s < 3 * min, "eerste zoekopdracht niet tot de app-verversing");
   assert.ok(g.some((x) => x.s >= T0 + 14 * min), "zoekpagina met plaatjes is een rij");
+});
+
+test("website tijdens een social-app: teller van de pagina of niet aan het scrollen = bezoek; tijdens scrollen zonder teller onzeker", async () => {
+  const min = 60_000;
+  const feed = (t: number): R[] => [[t, "scontent-ams2-1.cdninstagram.com"], [t + 200, "instagram.c10r.instagram.com"]];
+  const o = await overview([
+    ...feed(0), ...feed(20_000), ...feed(40_000), // scrollen in Instagram
+    [41_000, "www.winkel-a.nl"], [41_500, "fonts.winkel-a-cdn.nl"], // tijdens scrollen, zonder teller: misschien reclame
+    ...feed(5 * min), [5 * min + 1000, "www.winkel-b.nl"], [5 * min + 1500, "fonts.b-cdn.nl"], [5 * min + 4000, "region1.google-analytics.com"], // teller: pagina draaide
+    ...feed(9 * min), [9 * min + 60_000, "www.winkel-c.nl"], [9 * min + 60_500, "fonts.c-cdn.nl"], // 60 s na het scrollen: gewoon bezoek
+  ]);
+  const one = (s: string) => shown(o, s)[0] as { uz?: 1; uw?: string } | undefined;
+  assert.equal(one("winkel-a.nl")?.uw, "reclame");
+  assert.equal(one("winkel-b.nl")?.uz, undefined);
+  assert.equal(one("winkel-c.nl")?.uz, undefined);
 });

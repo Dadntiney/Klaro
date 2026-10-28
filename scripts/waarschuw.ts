@@ -5,7 +5,9 @@
 // Gebruik: KLARO_GEHEIM=... node --experimental-strip-types scripts/waarschuw.ts   (KLARO_GEHEIM = het bestaande deploy-geheim)
 //          ... scripts/waarschuw.ts --proef   (alleen kijken wat er gemeld zou worden, niets versturen of bijwerken)
 import { classify } from "../lib/sites.ts";
-import { extractHost } from "../lib/parse.ts";
+import { baseDomain, extractHost } from "../lib/parse.ts";
+import { isPlainSite } from "../lib/system.ts";
+import { isMainHost } from "../lib/sites.ts";
 import { deviceType, labelDevices } from "../lib/names.ts";
 import { keysFrom, sendPush, type Keys, type Sub } from "../lib/webpush.ts";
 
@@ -66,6 +68,21 @@ export function silentAlerts(devs: DevStat[], now: number): Alert[] {
  * Nieuw apparaat: een apparaat dat NextDNS de laatste 30 min voor het eerst zag (bijvoorbeeld een nieuwe telefoon met hetzelfde
  * NextDNS-profiel), terwijl de kopie al minstens 2 dagen loopt (anders is alles "nieuw").
  */
+/** Adressen in de nieuwe regels die op een eigen pagina lijken (www. of de kale naam van een gewone site, niet rood): die laat de
+ *  server meteen nakijken (websitecontrole), zodat het oordeel klaarligt als de pagina opent. */
+export function siteCandidates(cols: string[], rows: string[]): string[] {
+  const ci = cols.indexOf("domain");
+  const out = new Set<string>();
+  for (const r of rows) {
+    const h = extractHost(r.split("\t")[ci] ?? "");
+    if (!h) continue;
+    const c = classify(h);
+    if (c.flag || c.bg || !c.main || !isPlainSite(c) || !isMainHost(h, baseDomain(h))) continue;
+    out.add(h);
+  }
+  return [...out];
+}
+
 export function newDeviceAlerts(devs: DevStat[], now: number): Alert[] {
   if (!devs.length || now - Math.min(...devs.map((d) => d.first)) < 2 * 86_400_000) return [];
   const name = labels(devs);
@@ -108,7 +125,7 @@ async function main() {
   // Geen namen of adressen in het logboek van GitHub (openbaar): alleen aantallen.
   console.log(`${(got.rows as string[]).length} nieuwe regels, ${alerts.length} melding(en) gevonden, ${devs.length} apparaten, ${got.subs} abonnement(en)`);
   if (proef) return;
-  const res = await api(url, k, { until: got.until, alerts: alerts.map(({ key, title, body }) => ({ key, title, body })) });
+  const res = await api(url, k, { until: got.until, alerts: alerts.map(({ key, title, body }) => ({ key, title, body })), check: siteCandidates(got.cols as string[], got.rows as string[]) });
   const subs = res.subs as Sub[];
   const send = res.send as { title: string; body: string; tag: string }[];
   const tests = new Set(res.test as string[]);

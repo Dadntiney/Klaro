@@ -217,6 +217,15 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nu tellen mail-pagina's mee als tabblad; komt de vier alleen zo vol, dan telt de zoekmachine niet mee (7 okt ggdhvb.nl/ncj.nl
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
+   Geleerd (28 okt, wens eigenaar "te veel onzeker, live beter controleren"): onzeker van 197 naar 30 regels (30 dagen), geen
+   regel erbij of weg. (1) www.instagram.com = Instagram geopend: 166 keer, nooit 22-07 uur, terwijl de app 's nachts wel ververst
+   (test-gateway/i. om 1-4 uur); geen foto's = 0 min, niet onzeker. (2) Website tijdens een social-app: een teller die pas draait
+   als de pagina echt open staat (PAGE_BEACON: region1.google-analytics, stats.g.doubleclick, ct.pinterest, x.clarity.ms) binnen
+   15 s = getoond (58 van 101). Geen teller zegt niets (telefoon onthoudt adressen: ook bij echte bezoeken maar ~50%). (3) Een
+   advertentie laadt tijdens het scrollen: alleen onzeker als er binnen 15 s tijdlijn-inhoud laadde (bekende X-advertenties 0-7 s;
+   pakketdiensten, ouderportaal, winkels 18-180 s van het scrollen = gewoon bezoek). Over: X-advertenties, Meditopia-opstart.
+   Live vanaf nu: deze regels draaien in de browser bij elke berekening; de taak van elke 5 minuten (scripts/waarschuw.ts) laat de
+   server nieuwe adressen met een eigen pagina meteen nakijken (websitecontrole, hooguit 4 per keer).
    Geleerd (28 okt, middag, schermafbeelding eigenaar "Google 27 min"): de Google-app ververst op de achtergrond (meldingen,
    Foto's, account: GOOGLE_APP_BG) en vraagt daarbij www.google.com op in dezelfde seconde. Zonder zoekbalk/plaatjes binnen 10 s
    telt dat niet als zoeken; dl.google.com (downloads/updates) is achtergrond. Andersom: Google-balk + plaatjes van resultaten

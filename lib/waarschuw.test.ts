@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findAlerts, flagOf, newDeviceAlerts, pushText, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
+import { findAlerts, flagOf, newDeviceAlerts, pushText, siteCandidates, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
 
 test("waarschuwen: 18+, dating, VPN en door NextDNS geblokkeerde porno worden gemeld", () => {
   assert.equal(flagOf("www.pornhub.com", "", ""), "18+");
@@ -64,4 +64,11 @@ test("nieuw apparaat: melden als NextDNS het de laatste 30 min voor het eerst za
   assert.match(a[0].body, /voor het eerst/);
   assert.equal(newDeviceAlerts([oud, dev({ id: "B", first: NOW - 2 * H })], NOW).length, 0); // al eerder gezien
   assert.equal(newDeviceAlerts([dev({ id: "A", first: NOW - H }), nieuw], NOW).length, 0); // kopie loopt nog maar net
+});
+
+test("websitecontrole bij binnenkomst: alleen de eigen pagina van gewone sites, nooit rood, achtergrond of apps", () => {
+  const cols = ["timestamp", "domain", "status", "reasons", "destination_country", "client_ip", "device_id", "device_name", "device_model"];
+  const row = (h: string) => ["2026-10-28T10:00:00Z", h, "", "", "", "", "A", "x", ""].join("\t");
+  const c = siteCandidates(cols, ["www.kleurplaten-site.nl", "cdn.kleurplaten-site.nl", "www.pornhub.com", "www.googletagmanager.com", "graph.instagram.com", "nieuwe-winkel.nl"].map(row));
+  assert.deepEqual(c.sort(), ["nieuwe-winkel.nl", "www.kleurplaten-site.nl"]);
 });

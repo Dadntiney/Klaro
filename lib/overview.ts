@@ -170,6 +170,10 @@ const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", 
 /** Meetadressen van een site zelf (telemetry., ct., ...): een open tabblad meldt zich daar, ook als niemand kijkt. */
 const GA_HOST = /(^|\.)analytics\.google\.com$/;
 const GA_NEAR = 60_000;
+/** Tellers die een pagina pas verstuurt als hij echt draait (het script is uitgevoerd): een app die een link alleen alvast ophaalt
+ *  (advertentie, voorvertoning) voert geen scripts uit. Bewust geen script-adressen (googletagmanager, connect.facebook.net): die kan
+ *  een app ook vooraf laden. Geen www.facebook.com: dat vraagt de Facebook-app zelf ook op. */
+const PAGE_BEACON = /^(region1\.google-analytics\.com|region1\.analytics\.google\.com|stats\.g\.doubleclick\.net|ct\.pinterest\.com|[a-z]\.clarity\.ms)$/;
 /** Achtergrondverkeer van de Google-app zelf (meldingen, Foto's, contacten, account); niet Firebase of onderdelen van webpagina's. */
 const GOOGLE_APP_BG = /^((notifications|photosdata|people|photos)-pa\.googleapis\.com|oauthaccountmanager\.googleapis\.com)$/;
 /** Adressen van een echte zoekpagina: Google-balk, Play-knop en plaatjes van resultaten. */
@@ -249,6 +253,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devMailBrand = new Map<string, { t: number; b: string }[]>(); // mail-adressen van merken (subscriptions.indeed.com, email.mail.merk.nl), met het merk
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
   const devGapi = new Map<string, number[]>(); // achtergrondverkeer van de Google-app (zie GOOGLE_APP_BG)
+  const devBeacon = new Map<string, number[]>(); // tellers die pas versturen als een pagina echt draait (zie PAGE_BEACON)
   const devSearch = new Map<string, number[]>(); // momenten met een zoekopdracht (Google/Bing/...)
   const devYtApp = new Map<string, number[]>(); // adressen die alleen de YouTube-app zelf gebruikt (zie lib/clip.ts)
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
@@ -510,6 +515,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (isEspHost(host)) { (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t); if (!isEspDomain(host)) (devMailBrand.get(dev) ?? devMailBrand.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) }); }
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
+      if (PAGE_BEACON.test(host)) (devBeacon.get(dev) ?? devBeacon.set(dev, []).get(dev)!).push(t);
       if (GOOGLE_APP_BG.test(host)) (devGapi.get(dev) ?? devGapi.set(dev, []).get(dev)!).push(t);
       if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devSearch.get(dev) ?? devSearch.set(dev, []).get(dev)!).push(t);
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
@@ -718,7 +724,15 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const before = new Set(near.filter((r) => r.t >= x.s - 60_000 && r.t < x.s - 500).map((r) => r.b));
         return !near.some((r) => r.t >= x.s - 500 && r.t <= x.s + 8_000 && r.b !== own && !before.has(r.b));
       };
-      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) { if (nothingLoaded(x)) { delete x.pv; x.res = 1; x.pf = 1; } else { x.uz = 1; x.uw = "reclame"; } } }
+      // Draaide er binnen 15 s een teller van de pagina (PAGE_BEACON), dan stond de pagina echt open: geen aangeklopte advertentie.
+      // Over 32 dagen: 58 van de 101 "misschien reclame"-regels hadden zo'n teller. Zonder teller blijft het onzeker (de telefoon
+      // onthoudt het teller-adres vaak, ook bij echte bezoeken zie je hem maar in de helft van de keren).
+      // Een advertentie of voorvertoning laadt de app terwijl er gescrold wordt: tijdlijn-inhoud in dezelfde 15 s. Ligt het scrollen
+      // verder weg (binnen het ruime venster van 3 min, maar niet op dat moment), dan is er niet gescrold en is het een gewoon bezoek
+      // (28 okt over 32 dagen: bekende advertenties in X lagen 0-7 s van het scrollen; pakketdiensten, ouderportaal e.d. 18-180 s).
+      const scrolling = (x: Session) => fgDev.some((t) => t >= x.s - 15_000 && t <= x.e + 15_000);
+      const pageRan = (x: Session) => (devBeacon.get(g.dev) ?? []).some((t) => t >= x.s && t <= x.s + 15_000);
+      if (cand.length <= 4) for (const x of cand) { x.pv = 1; if (hostsIn(x) < 2 && inSocial(x) && !shopLoaded(x)) { if (nothingLoaded(x)) { delete x.pv; x.res = 1; x.pf = 1; } else if (!pageRan(x) && scrolling(x)) { x.uz = 1; x.uw = "reclame"; } } }
       // Laadt de site die dag vaker dan 4 keer los (open tabblad dat Safari herlaadt), dan is een inlog-adres in zo'n los moment
       // geen inloggen maar een vast onderdeel van de pagina (19 okt leukerecepten.nl: mijn. bij elke pagina, ook bij herladen).
       else for (const x of cand) delete x.lg;
@@ -1017,7 +1031,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const hs = siteHosts.get(g.d + "|" + g.dev + "|" + g.site) ?? [];
     for (const x of g.ss) {
       if (isHuman(x) || x.emb || x.res || x.rf || x.rl) continue;
-      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) { x.ao = 1; x.uz = 1; x.uw = "opstart"; }
+      // 28 okt opnieuw gemeten (32 dagen): www.instagram.com 166 keer, nooit tussen 22:00 en 07:00, terwijl de app 's nachts wel op
+      // de achtergrond ververst (test-gateway/i.instagram om 1-4 uur). Dit adres betekent dus: Instagram is geopend. Hoe lang is niet
+      // te zien (geen foto's geladen), dát het open was wel: tonen, niet meer als onzeker.
+      if (hs.some((y) => y.host === "www.instagram.com" && y.t >= x.s - MOMENT && y.t <= x.e + MOMENT)) x.ao = 1;
     }
   }
 

@@ -108,7 +108,7 @@ const CASES: Case[] = [
   { day: "2026-10-17", dev: "iPhone", site: "instagram.com", at: "13:42", want: true, why: "Instagram: vier foto's van cdninstagram (gedeelde Meta-adressen horen hierbij)" },
   { day: "2026-10-17", dev: "iPhone", site: "facebook.com", at: "13:42", want: false, why: "was Instagram (netwerkmeting en graph.facebook.com gedeeld)" },
   { day: "2026-10-17", dev: "iPhone", site: "instagram.com", at: "08:59", want: true, why: "Instagram gebruikt, daarna via een link naar een webwinkel" },
-  { day: "2026-10-17", dev: "iPhone", site: "instagram.com", at: "14:50", want: "onzeker", why: "Instagram gestart (www.instagram.com), geen foto's geladen" },
+  { day: "2026-10-17", dev: "iPhone", site: "instagram.com", at: "14:50", want: true, why: "Instagram geopend (www.instagram.com: in 32 dagen nooit 's nachts, dus altijd openen), geen foto's geladen" },
   { day: "2026-10-16", dev: "iPhone", site: "facebook.com", at: "11:57", want: true, why: "echt Facebook: chat, lookaside en eigen foto-servers" },
   { day: "2026-10-17", dev: "iPhone", site: "facebook.com", at: "20:23", want: false, why: "Facebook-pixel op een website (vanuit Google geopend)" },
   { day: "2026-10-17", dev: "iPhone", site: "neoseum.com", at: "20:24", want: true, why: "echt bezocht (eigenaar bevestigt); de Facebook-pixel van de site maakte hem eerder onzeker" },
