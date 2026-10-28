@@ -449,3 +449,8 @@ test("Shopify is het platform onder een webwinkel, geen eigen bezoek", () => {
   for (const h of ["cdn.shopify.com", "pay.shopify.com", "checkout.shopify.com", "shopify-assets.shopifycdn.com", "forms.shopifyapps.com"]) assert.equal(classify(h).bg, true, h);
   assert.equal(classify("www.laraboutique.nl").bg, false);
 });
+
+test("advertentiesysteem Ezoic in blogs is achtergrond, de blog zelf niet", () => {
+  for (const h of ["www.ezojs.com", "go.ezodn.com", "g.ezoic.net"]) assert.equal(classify(h).bg, true, h);
+  assert.equal(classify("kleur-v-kind.com").bg, false);
+});

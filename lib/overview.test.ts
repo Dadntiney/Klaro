@@ -661,3 +661,15 @@ test("Google Analytics van een webwinkel houdt de Google-regel niet open (twee k
   assert.ok(g[0].e - g[0].s < 60_000, "eerste zoekopdracht kort, niet 28 min");
   assert.ok(shown(o, "winkel.nl").length >= 1);
 });
+
+test("teller van ChatGPT op een webwinkel is geen ChatGPT-gebruik; in de app zelf telt hij wel mee", async () => {
+  const min = 60_000;
+  const o = await overview([
+    [1000, "www.winkel.nl"], [1500, "bzrcdn.openai.com"], [2000, "bzr.openai.com"], // teller op de winkelpagina
+    [10 * min, "ios.chat.openai.com"], [10 * min + 1000, "ws.chatgpt.com"], [13 * min, "bzrcdn.openai.com"], [16 * min, "ios.chat.openai.com"], // in de app
+  ]);
+  const c = o.groups.filter((g) => g.site === "chatgpt.com").flatMap((g) => g.ss).sort((a, b) => a.s - b.s);
+  assert.ok(c.every((x) => x.s >= T0 + 10 * min), "geen ChatGPT bij de winkel");
+  assert.equal(c.length, 1);
+  assert.ok(c[0].e - c[0].s >= 5 * min, "teller in de app houdt de sessie vast");
+});

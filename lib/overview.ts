@@ -2,7 +2,7 @@ import { baseDomain, detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { ALWAYS_SHOW_OPEN } from "./livestatus.ts";
 import { clickBefore, isClickHost, isEspDomain, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind } from "./sites.ts";
+import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind, isAppTracker } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
@@ -305,6 +305,23 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const c = classify(host!);
     return c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site) ? [{ t, dev: deviceMap[idOf(r)], host: host!, page: true }] : [];
   }));
+  // Teller van een app (bzr.openai.com, ads-twitter.com) in dezelfde seconden als een webpagina: hoort bij die pagina, geen gebruik
+  // van de app (27 okt: "ChatGPT 12:05" door de teller op bever.nl; de app ging pas om 12:07 open). In de app zelf (winkelkaartjes in
+  // ChatGPT) laadt geen andere pagina mee: daar blijft het een teken van gebruik.
+  const appPixel = new Set<string>();
+  {
+    const pagesBy = new Map<string, number[]>(), hits: { t: number; dev: string; host: string }[] = [];
+    for (const r of body) {
+      const host = extractHost(r[hostCol] ?? "");
+      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+      if (!t) continue;
+      const dev = deviceMap[idOf(r)];
+      if (isAppTracker(host!)) { hits.push({ t, dev, host: host! }); continue; }
+      const c = classify(host!);
+      if (c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site)) (pagesBy.get(dev) ?? pagesBy.set(dev, []).get(dev)!).push(t);
+    }
+    for (const h of hits) if ((pagesBy.get(h.dev) ?? []).some((p) => Math.abs(p - h.t) <= 3_000)) appPixel.add(h.dev + "|" + h.t + "|" + h.host);
+  }
   // Afspeelsignalen zonder eigen app (Conviva) horen bij de tv-app waarmee hun reeks begon, zie lib/play.ts.
   const playOf = new Map<string, string>(); // apparaat|tijdstip -> site van de tv-app
   {
@@ -494,6 +511,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
     if (SHOP_ASSET.test(host)) (devShop.get(dev) ?? devShop.set(dev, []).get(dev)!).push(t);
     if (isQuietHost(host)) continue; // verbinding openhouden: geen bezoek, geen sessie
+    if (t && appPixel.has(dev + "|" + t + "|" + host)) continue; // teller van een app op een webpagina: geen gebruik van die app
     if (t && fbPixel.has(dev + "|" + t + "|" + host)) continue; // Facebook-pixel van de website ervoor: geen Facebook-gebruik
 
     const gkey = `${d}|${dev}|${info.site}`;

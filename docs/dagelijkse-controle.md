@@ -217,6 +217,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nu tellen mail-pagina's mee als tabblad; komt de vier alleen zo vol, dan telt de zoekmachine niet mee (7 okt ggdhvb.nl/ncj.nl
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
+   Geleerd (28 okt, middag): de ChatGPT-teller (bzr./bzrcdn.openai.com) zit in webwinkels (bever.nl) en in de ChatGPT-app zelf
+   (winkelkaartjes in een chat). Binnen 3 s van een webpagina hoort hij bij die pagina; anders blijft hij een teken van gebruik.
+   Over de hele CSV: 11 ChatGPT-regels weg die alleen uit die teller bestonden (bv. 26 okt 15:01, 16:04), en het begin klopt nu
+   (27 okt "12:05" -> 12:07, toen de app echt openging). Geldt voor alle APP_TRACKERS (ook X/Reddit), alleen ChatGPT veranderde.
+   Geleerd (28 okt, melding eigenaar): Ezoic (ezojs.com, ezodn.com, ezoic.net) is het advertentiesysteem van blogs: achtergrond.
    Geleerd (28 okt, middag): shopify.com (cdn., pay., checkout.), shopifycdn.com en shopifyapps.com zijn het platform onder een
    webwinkel, geen bezoek: nu achtergrond (zoals shopifycloud/shopifysvc al waren). Over de hele CSV: 10 regels "shopify.com" weg
    (bijna altijd in dezelfde seconde als partywinkel.nl, laraboutique.nl e.d.); 27 okt 08:14 staan bever.nl en laraboutique.nl er

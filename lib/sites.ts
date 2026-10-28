@@ -170,7 +170,7 @@ const BACKGROUND = new Set([
   "stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
   "ift.tt", "bit.ly", "tinyurl.com", "awin1.com", "tradetracker.net", "go2cloud.org", "bigspark.link", // ook affiliate-links
-   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com", "shopify.com", "shopifycdn.com", "shopifyapps.com", // Shopify is het platform onder een webwinkel (plaatjes, afrekenen): de winkel zelf is het bezoek (27 okt: "shopify.com 8 min" naast laraboutique.nl; 3-6 okt partywinkel.nl)
+   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com", "shopify.com", "shopifycdn.com", "shopifyapps.com", "ezojs.com", "ezodn.com", "ezoic.net", // ezojs/ezodn/ezoic: advertentiesysteem Ezoic dat blogs meeladen (28 okt: 7 s na een kleurplaten-site, eigenaar: melden); // Shopify is het platform onder een webwinkel (plaatjes, afrekenen): de winkel zelf is het bezoek (27 okt: "shopify.com 8 min" naast laraboutique.nl; 3-6 okt partywinkel.nl)
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
   "tm-azurefd.net", "azurefd.net", "t-msedge.net", "fastly-masque.net", "impervadns.net", "akaquill.net", "visualwebsiteoptimizer.com", "at-o.net", "wt-eu02.net", "snplow.net", "nr-data.net", "marketingcloudapis.com", "rudderlabs.com", "ecomm.events", "kameleoon.eu", "tealiumiq.com", "contentsquare.net", "blueconic.net", "mparticle.com", "dynatrace.com", "usabilla.com", "typekit.net", "addthis.com", "privacy-center.org", "tuyaeu.com", "tuyaus.com", "tuyacn.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
@@ -213,6 +213,8 @@ const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitt
   "bzr.openai.com", "bzrcdn.openai.com", // advertentie-teller van OpenAI op webwinkels (ook in de ChatGPT-app, maar daar komen altijd eigen adressen mee)
   // bestanden van cursusplatform Thinkific in de eigen cursus-site (academy.merk.nl): die site is het bezoek, niet Thinkific
   "cdn.thinkific.com", "assets.thinkific.com", "cdn-internal.thinkific.com", "cdn-themes.thinkific.com"];
+/** Teller van een app die in andere sites en apps zit (zie APP_TRACKERS). */
+export function isAppTracker(host: string): boolean { return APP_TRACKERS.some((t) => host === t || host.endsWith("." + t)); }
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
   "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com",
   // onderdelen van WordPress-sites (plaatjes, statistiek, inlog, like-knop) en van blog-widgets (pzz.*: laden in dezelfde seconde als de blog, 28 okt); een blog zelf (naam.wordpress.com) blijft gewoon zichtbaar
