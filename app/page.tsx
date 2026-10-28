@@ -638,7 +638,6 @@ export default function Home() {
   const [devices, setDevices] = useState<Device[]>([]);
   // Soort netwerk per adres (mobiel internet / andere wifi), voor regels buiten het thuisnetwerk.
   const [nets, setNets] = useState<Record<string, NetInfo | null>>({});
-  const viaGoogle = new WeakSet<object>(); // regels die na een korte zoekopdracht opende (de Google-regel zelf is dan weg)
   const [netNamen, setNetNamen] = useState<Record<string, string>>({}); // eigen namen voor netwerken ("werk")
   useEffect(() => { netNames().then(setNetNamen); }, []);
   const netOf = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
@@ -1431,7 +1430,7 @@ export default function Home() {
             // Filter "buiten de deur": alleen regels van momenten buiten het thuisnetwerk (mobiel internet of een andere wifi).
             const rows0 = outside ? trows.filter((r) => r.t && awayAt(r.g.dev, r.t)) : trows;
             // Een korte zoekopdracht bij Google (hooguit 2 min) waarna op hetzelfde apparaat een site opende (binnen 1 min na het
-            // zoeken): samen één regel, "site · via Google". De minuten van de dag blijven hetzelfde.
+            // zoeken): alleen de site blijft staan (tekst "via Google" weg: wens eigenaar). De minuten van de dag blijven hetzelfde.
             const hideG = new Set<number>();
             for (let i = 0; i < rows0.length; i++) {
               const r = rows0[i];
@@ -1440,7 +1439,7 @@ export default function Home() {
               for (let j = i - 1; j >= 0; j--) {
                 const o = rows0[j];
                 if (!o.t || o.t > gEnd + 60_000) break;
-                if (o.g.dev === r.g.dev && o.g.site !== "google.com" && isPlainSite(o.g) && o.t >= r.t) { hideG.add(i); viaGoogle.add(o); break; }
+                if (o.g.dev === r.g.dev && o.g.site !== "google.com" && isPlainSite(o.g) && o.t >= r.t) { hideG.add(i); break; }
               }
             }
             const rows = hideG.size ? rows0.filter((_, i) => !hideG.has(i)) : rows0;
@@ -1602,7 +1601,6 @@ export default function Home() {
                             const ar = t ? awayAt(g.dev, t) : undefined;
                             if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const nt = netText(ni, { naam: ar.ip ? netNamen[netOf(ar.ip)] : undefined, hotspot: ar.hotspot }); parts.push(<span key="n" className="netw" title={nt.uitleg}><NetIcon soort={nt.icon} />{nt.text}</span>); }
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
-                            if (viaGoogle.has(rows[ri])) parts.push(<span key="g">via Google</span>);
                             // Het streepje tussen de icoontjes laat al zien dat twee dingen tegelijk liepen (geen woord "tegelijk" meer).
                             // Onzeker: kort; de uitleg staat in de details.
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>onzeker</span>); }
