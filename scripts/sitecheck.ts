@@ -1,3 +1,4 @@
+export {}; // module (voor await bovenaan)
 // Is een adres echt een website? Laat de server (pichya.nl) de voorpagina ophalen; een aanwijzing bij twijfelgevallen, geen bewijs.
 // Gebruik: KLARO_PW=... node --experimental-strip-types scripts/sitecheck.ts adres1 adres2 ...
 // 18+/dating haalt de server nooit op. Uitkomst wordt 30 dagen bewaard (zelfde adres = geen nieuw bezoek).
