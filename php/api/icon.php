@@ -13,7 +13,7 @@ if (!preg_match('/^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2
 if (mb_strlen($n, 'UTF-8') > 60 || preg_match('/[\x00-\x1f]/', $n)) { http_response_code(400); exit; }
 $dir = PRIV . '/icons';
 if (!is_dir($dir)) @mkdir($dir, 0700);
-$f = $dir . '/' . md5($d . '|' . $sz . ($n !== '' ? '|' . $n : ''));
+$f = $dir . '/' . md5('v2|' . $d . '|' . $sz . ($n !== '' ? '|' . $n : '')); // v2: met de extra pogingen hieronder (28 okt)
 // Een logo 30 dagen; "geen logo" maar 1 dag (misschien was de site of de verbinding even weg).
 $fresh = is_file($f) && time() - filemtime($f) < (filesize($f) > 0 ? 30 : 1) * 86400;
 if (!$fresh) {
@@ -25,8 +25,21 @@ if (!$fresh) {
   curl_close($ch);
   // Alleen echte plaatjes bewaren (png/ico/gif/jpeg/webp, hooguit 200 kB); anders leeg bewaren, zodat we niet blijven vragen.
   $ok = $img !== false && ($code === 200 || $code === 404) && strlen($img) > 0 && strlen($img) < 200_000 && preg_match('#^image/(png|x-icon|vnd\.microsoft\.icon|gif|jpeg|webp)#', $type);
-  // Google geeft bij "geen logo" een wereldbolletje van 16x16. Voor een app dan de App Store proberen.
+  // Google geeft bij "geen logo" een wereldbolletje van 16x16. Dan eerst de www-versie bij Google, daarna het eigen icoon van de
+  // site (apple-touch-icon), en voor een app de App Store (28 okt: digid.nl en webinargeek.com kregen anders een letter).
   $tiny = $ok && (($sizes = @getimagesizefromstring($img)) === false || $sizes[0] <= 16);
+  foreach (['https://www.google.com/s2/favicons?domain=' . rawurlencode('www.' . preg_replace('/^www\./', '', $d)) . '&sz=' . $sz, 'https://www.' . preg_replace('/^www\./', '', $d) . '/apple-touch-icon.png', 'https://' . $d . '/apple-touch-icon.png'] as $alt) {
+    if ($img !== false && $ok && !$tiny) break;
+    $ch = curl_init($alt);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 6, CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS]);
+    $a = curl_exec($ch);
+    $ac = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $at = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    curl_close($ch);
+    if ($a === false || $ac !== 200 || strlen($a) === 0 || strlen($a) >= 200_000 || !preg_match('#^image/(png|x-icon|vnd\.microsoft\.icon|gif|jpeg|webp)#', $at)) continue;
+    $as = @getimagesizefromstring($a);
+    if ($as !== false && $as[0] > 16) { $img = $a; $ok = true; $tiny = false; }
+  }
   if ($n !== '' && $img !== false && (!$ok || $tiny)) {
     $app = appstore_icon($n, $d);
     if ($app !== null) { $img = $app; $ok = true; }

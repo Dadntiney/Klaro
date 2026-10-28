@@ -631,3 +631,5 @@ section > .partcap span { visibility:hidden; }
 /* Per apparaat: van wanneer tot wanneer echt gebruikt; laat op de avond of 's nachts in oranje. */
 .devtot-t { margin-left:auto; margin-right:12px; color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
 .devtot-t.late { color:#d97706; font-weight:600; }
+/* Uitleg bij "onzeker" in de details (op de regel zelf staat alleen het woord). */
+.unsure-why { margin:10px 0 0; font-size:14px; color:var(--muted); }

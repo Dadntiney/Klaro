@@ -638,6 +638,7 @@ export default function Home() {
   const [devices, setDevices] = useState<Device[]>([]);
   // Soort netwerk per adres (mobiel internet / andere wifi), voor regels buiten het thuisnetwerk.
   const [nets, setNets] = useState<Record<string, NetInfo | null>>({});
+  const viaGoogle = new WeakSet<object>(); // regels die na een korte zoekopdracht opende (de Google-regel zelf is dan weg)
   const [netNamen, setNetNamen] = useState<Record<string, string>>({}); // eigen namen voor netwerken ("werk")
   useEffect(() => { netNames().then(setNetNamen); }, []);
   const netOf = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
@@ -1428,7 +1429,24 @@ export default function Home() {
             // Alleen regels van echt gebruik (niet de altijd-getoonde regels van achtergrondverkeer, zoals Philips Hue).
             for (const r of trows) for (const x of r.ss) if (r.g.flag || isHuman(x)) (humanSes.get(r.g.dev) ?? humanSes.set(r.g.dev, []).get(r.g.dev)!).push({ s: x.s, e: x.e, r });
             // Filter "buiten de deur": alleen regels van momenten buiten het thuisnetwerk (mobiel internet of een andere wifi).
-            const rows = outside ? trows.filter((r) => r.t && awayAt(r.g.dev, r.t)) : trows;
+            const rows0 = outside ? trows.filter((r) => r.t && awayAt(r.g.dev, r.t)) : trows;
+            // Een korte zoekopdracht bij Google (hooguit 2 min) waarna op hetzelfde apparaat een site opende (binnen 1 min na het
+            // zoeken): samen één regel, "site · via Google". De minuten van de dag blijven hetzelfde.
+            const hideG = new Set<number>();
+            for (let i = 0; i < rows0.length; i++) {
+              const r = rows0[i];
+              if (r.g.site !== "google.com" || r.g.flag || !r.t || r.ss.reduce((n, x) => n + minutes(x), 0) > 2) continue;
+              const gEnd = Math.max(...r.ss.map((x) => x.e));
+              for (let j = i - 1; j >= 0; j--) {
+                const o = rows0[j];
+                if (!o.t || o.t > gEnd + 60_000) break;
+                if (o.g.dev === r.g.dev && o.g.site !== "google.com" && isPlainSite(o.g) && o.t >= r.t) { hideG.add(i); viaGoogle.add(o); break; }
+              }
+            }
+            const rows = hideG.size ? rows0.filter((_, i) => !hideG.has(i)) : rows0;
+            // "Nieuw" alleen bij de allereerste keer die dag (over alle apparaten), niet bij elk apparaat of elk volgend bezoek.
+            const firstNew = new Map<string, number>();
+            for (const r of rows) if (r.g.isNew && r.first && r.t && (firstNew.get(r.g.site) ?? Infinity) > r.t) firstNew.set(r.g.site, r.t);
             if (outside && di > 0 && !rows.length) return null;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
@@ -1575,7 +1593,7 @@ export default function Home() {
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
-                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && firstNew.get(g.site) === t && <span className="newtag">Nieuw</span>}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
@@ -1584,8 +1602,10 @@ export default function Home() {
                             const ar = t ? awayAt(g.dev, t) : undefined;
                             if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const nt = netText(ni, { naam: ar.ip ? netNamen[netOf(ar.ip)] : undefined, hotspot: ar.hotspot }); parts.push(<span key="n" className="netw" title={nt.uitleg}><NetIcon soort={nt.icon} />{nt.text}</span>); }
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
-                            if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
-                            if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
+                            if (viaGoogle.has(rows[ri])) parts.push(<span key="g">via Google</span>);
+                            // Het streepje tussen de icoontjes laat al zien dat twee dingen tegelijk liepen (geen woord "tegelijk" meer).
+                            // Onzeker: kort; de uitleg staat in de details.
+                            if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>onzeker</span>); }
                             if (g.flag && (g.bl ?? 0) > 0) parts.push(<span key="f">{g.bl}× geblokkeerd</span>); // het soort (18+, VPN, ...) staat als label achter de naam
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
@@ -1607,6 +1627,7 @@ export default function Home() {
                         const reviewOpen = mine.find((r) => !r.done), reviewDone = mine.find((r) => r.done);
                         return (
                           <div className="detail">
+                            {rss.every((x) => x.uz) && (() => { const w = rss.find((x) => x.uw)?.uw; return <p className="unsure-why">Onzeker{w ? `: ${UNSURE_KORT[w]}` : ""}. {w ? UNSURE[w] : "DNS kan niet zien of dit echt gebruikt is."}</p>; })()}
                             {reviewDone && <p className="review-ans"><b>Nagekeken:</b> {reviewDone.antwoord}</p>}
                             {reviewOpen && <p className="review-wait">Gemeld, wordt nagekeken. Het antwoord komt hier te staan.</p>}
                             <a
