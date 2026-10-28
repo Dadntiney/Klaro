@@ -2,6 +2,10 @@
 
 Automatisch bijgehouden door scripts/update-lists.ts (nieuwste bovenaan). Terugdraaien: git revert van die commit.
 
+## 2026-10-28
+- adult: 979390 → 979946 (+557). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 90849; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 021tuku.com, 024sj.com, 0919hi.com, 0yuanke.com, 100essay.com, ...
+- dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
+
 ## 2026-10-27
 - adult: 978556 → 979390 (+834). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 90426; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 0701cs.com, 0807g.com, 18puss.buzz, 24pron.online, 31soo.com, ...
 - dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
