@@ -646,3 +646,5 @@ section.goopen > .partcap span { visibility:visible; }
 section.goopen > .partcap { margin-top:22px; }
 /* Iets minder lucht rond een nieuw dagdeel: valt anders erg op bij regels met één tekstregel (apparaatfilter aan). */
 .partmark { padding-top:22px; padding-bottom:8px; }
+/* Regel met maar één tekstregel (apparaatfilter aan, dus geen apparaat eronder): evenveel ruimte boven als onder, niet hoog en leeg. */
+.list .item:not(:has(.meta)) { padding-top:12px; padding-bottom:12px; align-items:center; }
