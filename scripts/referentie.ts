@@ -146,6 +146,8 @@ const CASES: Case[] = [
   { day: "2026-10-27", dev: "iPhone", site: "chatgpt.com", at: "12:07", want: true, why: "ChatGPT-app echt geopend (ios.chat, ws.chatgpt); de teller om 12:05 hoort bij bever.nl" },
   { day: "2026-10-28", dev: "iPhone", site: "ezojs.com", at: "*", want: false, why: "advertentiesysteem Ezoic van een kleurplaten-site (eigenaar: melden)" },
   { day: "2026-10-01", dev: "iPhone", site: "knab.nl", at: "13:16", want: true, why: "betaalverzoek geopend (link uit WhatsApp)" },
+  { day: "2026-10-22", dev: "iPhone", site: "google.com", at: "19:59", want: true, why: "zoekpagina met Google-balk en plaatjes (www.google onthouden)" },
+  { day: "2026-10-22", dev: "iPhone", site: "google.com", at: "19:50", until: "19:52", want: true, why: "gezocht tot 19:52; om 19:57 ververste de Google-app op de achtergrond" },
   { day: "2026-10-25", dev: "iPhone", site: "picnic.app", at: "14:17", want: true, why: "Picnic-app geopend (winkel in de app)" },
   { day: "2026-10-06", dev: "MacBook", site: "outlook.live.com", at: "09:31", want: true, why: "mail gelezen in de browser (outlook.live.com)" },
   { day: "2026-10-03", dev: "iPhone", site: "cleansizecharts.com", at: "*", want: false, why: "maattabel-knop in een webwinkel" },

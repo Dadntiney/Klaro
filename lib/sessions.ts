@@ -19,6 +19,7 @@ export interface Session {
   pv?: 1;
   bn?: 1; // live: de kale naam van de app (opstart) is in deze sessie gezien
   op?: 1; // de app is echt geopend (vaste start-adressen, zie ALWAYS_SHOW_OPEN in lib/livestatus.ts)
+  zp?: 1; // zoekpagina: Google-balk en plaatjes van resultaten samen (ook zonder www.google.*), zie lib/overview.ts
   gs?: 1; // spel of leer-app opgestart: 3+ eigen adressen in één moment (daarna soms minuten zonder verkeer), zie lib/overview.ts
   ao?: 1; // app gestart (eigen startadres), maar geen inhoud gezien: tonen als onzeker (zie lib/overview.ts)
   pf?: 1; // alleen het adres opgevraagd, niets van de pagina geladen (voorvertoning of aangeklopte advertentie): geen bezoek
@@ -156,6 +157,7 @@ export function isHuman(x: Session): boolean {
   if (x.emb || x.res || x.rf || x.rl) return false;
   if (x.ml && x.e - x.s <= 90_000) return false; // uit een e-mail (tenzij er daarna echt verder gekeken is)
   if (x.gs) return true; // spel of leer-app volledig opgestart: echt geopend
+  if (x.zp) return true; // zoekpagina met resultaten
   if (x.ao) return true; // app gestart zonder zichtbare inhoud: wel tonen, maar als onzeker (x.uz)
   // App met een inhoud-regel (Google, Facebook, ...) en niets van die inhoud geladen: één los adres is dan geen bezoek, ook niet als
   // losse pagina (Google: een spel of app vraagt bij het opstarten www.google.com op; een echte zoekopdracht laadt ook resultaten).

@@ -170,6 +170,10 @@ const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", 
 /** Meetadressen van een site zelf (telemetry., ct., ...): een open tabblad meldt zich daar, ook als niemand kijkt. */
 const GA_HOST = /(^|\.)analytics\.google\.com$/;
 const GA_NEAR = 60_000;
+/** Achtergrondverkeer van de Google-app zelf (meldingen, Foto's, contacten, account); niet Firebase of onderdelen van webpagina's. */
+const GOOGLE_APP_BG = /^((notifications|photosdata|people|photos)-pa\.googleapis\.com|oauthaccountmanager\.googleapis\.com)$/;
+/** Adressen van een echte zoekpagina: Google-balk, Play-knop en plaatjes van resultaten. */
+const SEARCH_PAGE = /^(ogads-pa\.clients6\.google\.com|play\.google\.com|encrypted-tbn\d\.gstatic\.com)$/;
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
 /** `known`: wat een eerdere berekening over alle dagen leerde (widgets, hulpjes, doorverwijs-adressen), voor het snelle herberekenen van alleen de laatste uren. */
@@ -244,6 +248,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devEsp = new Map<string, number[]>(); // verkeer van mailbedrijven per apparaat (nieuwsbrief geopend)
   const devMailBrand = new Map<string, { t: number; b: string }[]>(); // mail-adressen van merken (subscriptions.indeed.com, email.mail.merk.nl), met het merk
   const devClick = new Map<string, number[]>(); // per apparaat: momenten waarop op een link in een mail werd getikt
+  const devGapi = new Map<string, number[]>(); // achtergrondverkeer van de Google-app (zie GOOGLE_APP_BG)
   const devSearch = new Map<string, number[]>(); // momenten met een zoekopdracht (Google/Bing/...)
   const devYtApp = new Map<string, number[]>(); // adressen die alleen de YouTube-app zelf gebruikt (zie lib/clip.ts)
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
@@ -505,6 +510,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (isEspHost(host)) { (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t); if (!isEspDomain(host)) (devMailBrand.get(dev) ?? devMailBrand.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) }); }
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
+      if (GOOGLE_APP_BG.test(host)) (devGapi.get(dev) ?? devGapi.set(dev, []).get(dev)!).push(t);
       if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devSearch.get(dev) ?? devSearch.set(dev, []).get(dev)!).push(t);
       else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
     }
@@ -582,6 +588,17 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (ga?.length) {
       const gs = new Set(ga), own = mainTimes.get(gkey) ?? []; // de Google-pagina zelf (www.google.*)
       all = all.filter((t) => !gs.has(t) || own.some((o) => Math.abs(o - t) <= GA_NEAR));
+    }
+    // www.google.* in dezelfde seconden als het achtergrondverkeer van de Google-app (GOOGLE_APP_BG) en zonder iets van een
+    // zoekpagina erbij: de app ververst, er wordt niet gezocht (28 okt: zo liep "Google" door van 11 naar 27 min, om 10:59 en 11:04).
+    if (g.site === "google.com") {
+      const gapi = devGapi.get(g.dev) ?? [];
+      if (gapi.length) {
+        const hs = siteHosts.get(gkey) ?? [];
+        const sig = hs.filter((h) => SEARCH_PAGE.test(h.host)).map((h) => h.t);
+        const drop = new Set(hs.filter((h) => /^www\.google\.[a-z.]+$/.test(h.host) && gapi.some((t) => Math.abs(t - h.t) <= 2_000) && !sig.some((t) => Math.abs(t - h.t) <= 10_000)).map((h) => h.t));
+        if (drop.size) all = all.filter((t) => !drop.has(t));
+      }
     }
     let sessions = allSessions(all);
     // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit (zie NAV_APPS).
@@ -1044,6 +1061,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if ((x.n ?? 0) > 1 || x.lg || x.ck) continue;
       const hs = (siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 1_500 && h.t <= x.e + 1_500);
       if (hs.length && hs.every((h) => /^www\.google\.[a-z.]+$/.test(h.host))) { delete x.pv; delete x.uz; x.emb = 1; }
+    }
+    // Andersom: Google-balk en plaatjes van resultaten samen is altijd een zoekpagina, ook als www.google.* zelf niet opnieuw
+    // opgevraagd werd (de telefoon onthoudt dat adres). 22 okt 19:59: ogads + play + 4 plaatjes, voorheen "te weinig" voor een rij.
+    for (const x of g.ss) {
+      if (x.emb || x.ml || x.rl) continue;
+      const hs = (siteHosts.get(gkey) ?? []).filter((h) => h.t >= x.s - 1_500 && h.t <= x.e + 1_500).map((h) => h.host);
+      if (hs.some((h) => /^ogads-pa\./.test(h)) && hs.some((h) => /^encrypted-tbn\d\./.test(h))) x.zp = 1;
     }
   }
 

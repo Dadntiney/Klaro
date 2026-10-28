@@ -218,7 +218,7 @@ const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitt
 /** Teller van een app die in andere sites en apps zit (zie APP_TRACKERS). */
 export function isAppTracker(host: string): boolean { return APP_TRACKERS.some((t) => host === t || host.endsWith("." + t)); }
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
-  "neoseum-widget.pages.dev", "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com",
+  "neoseum-widget.pages.dev", "dl.google.com", "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com",
   // onderdelen van WordPress-sites (plaatjes, statistiek, inlog, like-knop) en van blog-widgets (pzz.*: laden in dezelfde seconde als de blog, 28 okt); een blog zelf (naam.wordpress.com) blijft gewoon zichtbaar
   "jetpack.wordpress.com", "public-api.wordpress.com", "r-login.wordpress.com", "files.wordpress.com", "wp.com", "pzz.to", "pzz.io", "pzz.events"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);

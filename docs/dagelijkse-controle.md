@@ -217,6 +217,15 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nu tellen mail-pagina's mee als tabblad; komt de vier alleen zo vol, dan telt de zoekmachine niet mee (7 okt ggdhvb.nl/ncj.nl
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
+   Geleerd (28 okt, middag, schermafbeelding eigenaar "Google 27 min"): de Google-app ververst op de achtergrond (meldingen,
+   Foto's, account: GOOGLE_APP_BG) en vraagt daarbij www.google.com op in dezelfde seconde. Zonder zoekbalk/plaatjes binnen 10 s
+   telt dat niet als zoeken; dl.google.com (downloads/updates) is achtergrond. Andersom: Google-balk + plaatjes van resultaten
+   is altijd een zoekpagina (x.zp), ook als www.google.* niet opnieuw opgevraagd werd (telefoon onthoudt het adres). Let op:
+   google.com staat per apparaat op de lijst "ververst zichzelf" (losse www.google van apps), die haalt pv weg; daarom een eigen
+   merkje. Over de hele CSV: 2 Google-regels korter (27->11, 9->3 min), 6 echte zoekopdrachten erbij, niets anders.
+   Algemene les: een groot merk (Google) heeft adressen van drie soorten in één groep: de pagina zelf, meetcode die andere sites
+   meeladen (analytics, www.google als tracker) en de eigen app op de achtergrond. Alleen de pagina telt als gebruik; de rest mag
+   een sessie nooit verlengen. Bij een "te lange" rij eerst kijken welk adres het gat overbrugt.
    Geleerd (28 okt, alle 1.746 domeinen van 32 dagen één voor één nagelopen: getoond / nooit getoond / achtergrond / onderdeel):
    - Betaalverzoek geopend (betaalverzoek.knab.nl, link uit WhatsApp) = bezoek + betaalmoment (PORTAL "betaalverzoek", payKind).
    - Picnic-app (storefront-/pages-prod.nl.picnicinternational.com) en Outlook in de browser (outlook.live.com, www.hotmail.com;

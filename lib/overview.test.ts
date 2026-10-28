@@ -673,3 +673,15 @@ test("teller van ChatGPT op een webwinkel is geen ChatGPT-gebruik; in de app zel
   assert.equal(c.length, 1);
   assert.ok(c[0].e - c[0].s >= 5 * min, "teller in de app houdt de sessie vast");
 });
+
+test("Google-app die op de achtergrond ververst rekt een zoekopdracht niet op; zoekpagina zonder www.google telt wel", async () => {
+  const min = 60_000;
+  const o = await overview([
+    [1000, "www.google.nl"], [1500, "ogads-pa.clients6.google.com"], [3000, "encrypted-tbn0.gstatic.com"], [2 * min, "www.google.nl"], // echt gezocht
+    [6 * min, "notifications-pa.googleapis.com"], [6 * min + 300, "photosdata-pa.googleapis.com"], [6 * min + 500, "www.google.com"], // app ververst
+    [14 * min, "ogads-pa.clients6.google.com"], [14 * min + 800, "encrypted-tbn1.gstatic.com"], // zoekpagina uit het geheugen
+  ]);
+  const g = shown(o, "google.com").sort((a, b) => a.s - b.s);
+  assert.ok(g[0].e - g[0].s < 3 * min, "eerste zoekopdracht niet tot de app-verversing");
+  assert.ok(g.some((x) => x.s >= T0 + 14 * min), "zoekpagina met plaatjes is een rij");
+});

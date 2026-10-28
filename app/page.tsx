@@ -6,7 +6,6 @@ import { activeMinutes, usage } from "@/lib/usage";
 import { HEARTBEAT_GAP, setLearnedFg } from "@/lib/sites";
 import { isPlainSite } from "@/lib/system";
 import { isSilent } from "@/lib/devstats";
-import { hasNewRow, rowCounts } from "@/lib/sound";
 import { companionFor } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
 import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, superseded } from "@/lib/livestatus";
@@ -30,30 +29,6 @@ const isSearch = (site: string) => /^google\.[a-z.]+$/.test(site) || ["bing.com"
 
 
 /** Favicon, of niets (een leeg vakje voor de uitlijning) als de site er geen heeft. */
-/** Twee korte tonen (660 en 880 Hz) als WAV, zodat er geen geluidsbestand nodig is. */
-function beepDataUri(urgent = false): string {
-  const rate = 22050;
-  const tone = (f: number, sec: number) =>
-    Array.from({ length: Math.floor(rate * sec) }, (_, i) => {
-      const t = i / rate;
-      const env = Math.min(1, t / 0.01, (sec - t) / 0.03); // korte in- en uitfade tegen klikjes
-      return Math.sin(2 * Math.PI * f * t) * 0.6 * Math.max(0, env);
-    });
-  const gap = () => new Array(Math.floor(rate * 0.04)).fill(0);
-  // Gewoon: twee tonen omhoog. Alarm (rood): drie snelle, hogere tonen.
-  const samples = urgent ? [...tone(988, 0.12), ...gap(), ...tone(988, 0.12), ...gap(), ...tone(1319, 0.22)] : [...tone(660, 0.14), ...gap(), ...tone(880, 0.18)];
-  const buf = new ArrayBuffer(44 + samples.length * 2);
-  const v = new DataView(buf);
-  const str = (o: number, t: string) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
-  str(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); str(8, "WAVE"); str(12, "fmt ");
-  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
-  v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, samples.length * 2, true);
-  samples.forEach((x, i) => v.setInt16(44 + i * 2, Math.round(x * 32767), true));
-  let bin = "";
-  new Uint8Array(buf).forEach((b) => (bin += String.fromCharCode(b)));
-  return "data:audio/wav;base64," + btoa(bin);
-}
-
 /** WhatsApp zoals het app-icoon: groen vlak met wit logo. Het favicon (groen lijntje op wit) is in donker slecht te zien. */
 function WhatsAppIcon() {
   return (
@@ -679,8 +654,6 @@ export default function Home() {
   const [goTime, setGoTime] = useState("10:00");
   const [gotoKey, setGotoKey] = useState<string | null>(null);
   const [openDays, setOpenDays] = useState<Set<string>>(new Set()); // oudere dagen die de gebruiker heeft opengeklapt
-  const sound = useRef<HTMLAudioElement | null>(null);
-  const alarm = useRef<HTMLAudioElement | null>(null);
   const [clock, setClock] = useState(() => Date.now()); // elke 20 sec: "nu actief" opnieuw beoordelen
   const [tick, setTick] = useState(0); // elke minuut: "ongewoon stil" opnieuw beoordelen
   const [full, setFull] = useState(false);
@@ -829,48 +802,6 @@ export default function Home() {
   }, [state]);
 
 
-  // Geluid staat altijd aan. Een gewoon <audio>-element (met een zelfgemaakte piep) is op iPhone betrouwbaarder dan
-  // Web Audio: het wordt niet gedempt door de stilteschakelaar en blijft na één ontgrendeling bruikbaar.
-  const unlocked = useRef(false);
-  useEffect(() => {
-    try {
-      // iOS 16.4+: geluid van de pagina telt als "afspelen" (niet als beltoon), dus ook hoorbaar met stille modus.
-      (navigator as unknown as { audioSession?: { type: string } }).audioSession && ((navigator as unknown as { audioSession: { type: string } }).audioSession.type = "playback");
-    } catch {}
-    const el = new Audio(beepDataUri());
-    const al = new Audio(beepDataUri(true));
-    el.preload = al.preload = "auto";
-    sound.current = el;
-    alarm.current = al;
-    const unlock = () => {
-      if (unlocked.current) return;
-      // Moet binnen een klik/aanraking: één keer stil afspelen, daarna mag de pagina zelf geluid starten.
-      for (const a of [el, al]) {
-        a.muted = true;
-        a.play()
-          .then(() => {
-            a.pause();
-            a.currentTime = 0;
-            a.muted = false;
-            unlocked.current = true;
-          })
-          .catch(() => { a.muted = false; });
-      }
-    };
-    // iOS telt alleen touchend/click/keydown als gebaar (niet touchstart/pointerdown).
-    const events = ["click", "touchend", "keydown"] as const;
-    events.forEach((ev) => window.addEventListener(ev, unlock, { passive: true }));
-    return () => events.forEach((ev) => window.removeEventListener(ev, unlock));
-  }, []);
-
-  const beep = useCallback((urgent = false) => {
-    const el = urgent ? alarm.current : sound.current;
-    if (!el) return;
-    el.muted = false;
-    el.currentTime = 0;
-    el.play().catch(() => {});
-  }, []);
-
   const seen = useRef<Set<string>>(new Set());
   const lastHost = useRef<Map<string, number>>(new Map());
   const [mailT, setMailT] = useState<Map<string, { esp: number[]; mc: number[]; ck?: number[] }>>(new Map());
@@ -912,9 +843,7 @@ export default function Home() {
     if (!events.length) return;
     lastSeen.current = Math.max(lastSeen.current, ...events.map((e) => e.t));
     setUpdated(new Date());
-    // Rood (18+, dating, VPN, geblokkeerd) klinkt altijd meteen, ongeacht filter, met een ander, dringender geluid.
-    // Het gewone geluid klinkt pas als er een nieuwe regel in de lijst komt (zie hieronder bij `days`).
-    if (events.some((e) => e.flag)) beep(true);
+    // Geen geluid op de pagina (wens eigenaar); rood komt als pushmelding op de iPhone (scripts/waarschuw.ts).
     setTotal((n) => n + events.length);
     // Label per apparaat: bekende apparaten uit de eerste lading, nieuwe krijgen hun soort (met nummer bij dubbelen).
     for (const e of events) {
@@ -970,7 +899,7 @@ export default function Home() {
       }
       return next;
     });
-  }, [beep, addRaw]);
+  }, [addRaw]);
 
   // Bij het openen van de NextDNS-weergave meteen de laatste 200 regels, daarna komen ze live binnen.
   useEffect(() => {
@@ -1293,16 +1222,6 @@ export default function Home() {
   }, [groups, device, use, auto]);
 
   // Geluid alleen bij een nieuwe regel van vandaag (nieuwe app, site of game), niet bij elke opvraging.
-  // Pas na het volledig laden, en opnieuw beginnen bij een ander apparaat-filter: dan is alles "nieuw" maar niet gebeurd.
-  const rowsSeen = useRef<{ key: string; counts: Map<string, number> } | null>(null);
-  useEffect(() => {
-    const today = dayKeyFmt.format(Date.now());
-    const rows = days.find((d) => d.d === today)?.rows ?? [];
-    const key = `${device ?? ""}|${today}`;
-    const prev = rowsSeen.current;
-    if (full && prev && prev.key === key && hasNewRow(prev.counts, rows, Date.now())) beep();
-    rowsSeen.current = full ? { key, counts: rowCounts(rows) } : null;
-  }, [days, device, full, beep]);
 
   // Apparaatknoppen die niet allemaal passen: zacht vervagen aan de kant waar er nog meer staat (dan zie je dat je kunt schuiven).
   const chipsRef = useRef<HTMLDivElement>(null);
