@@ -1610,7 +1610,8 @@ export default function Home() {
                             if (ctx.has(key)) parts.push(<span key="c">⚠ rond dit bezoek: {ctx.get(key)}</span>);
                             else if (soft.has(key)) parts.push(<span key="s">⚠ rond 18+: {soft.get(key)}</span>);
                             if (!parts.length) return null;
-                            return <div className="sub meta">{parts.flatMap((x, i) => (i ? [<span key={"s" + i} className="msep">·</span>, x] : [x]))}</div>;
+                            // Elk stukje blijft heel (met zijn puntje ervoor); past het niet, dan gaat het naar een tweede regel in plaats van afgekapt.
+                            return <div className="sub meta">{parts.map((x, i) => (i ? <span key={"p" + i} className="mpart"><span className="msep">·</span>{x}</span> : x))}</div>;
                           })()}
                         </div>
                         <div className="time">
