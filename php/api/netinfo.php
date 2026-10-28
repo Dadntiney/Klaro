@@ -1,5 +1,6 @@
 <?php
-// Soort netwerk bij een internetadres (alleen na inloggen): GET ?ip=1.2.3.4 -> {soort: "mobiel"|"vast"|null, naam}.
+// Soort netwerk bij een internetadres (alleen na inloggen): GET ?ip=1.2.3.4 -> {soort: "mobiel"|"vast"|null, naam, merk, land}.
+// land: landcode van het adres (RIPEstat geolocatie), bijv. "DE" = op een netwerk in Duitsland.
 // Uitkomst 30 dagen bewaard in _private/netinfo.json; zo wordt het register maar één keer per adres gevraagd.
 require __DIR__ . '/common.php';
 require __DIR__ . '/netinfo-lib.php';
@@ -13,7 +14,7 @@ if (str_contains($ip, ':')) { $bin = inet_pton($ip); $key = inet_ntop(substr($bi
 $file = PRIV . '/netinfo.json';
 $cache = is_file($file) ? (json_decode((string)file_get_contents($file), true) ?: []) : [];
 $now = time();
-if (isset($cache[$key]) && $now - (int)$cache[$key]['t'] < 30 * 86400) json_out(200, $cache[$key]['v']);
+if (isset($cache[$key]) && $now - (int)$cache[$key]['t'] < 30 * 86400 && array_key_exists('land', $cache[$key]['v'])) json_out(200, $cache[$key]['v']);
 
 $ch = curl_init('https://stat.ripe.net/data/whois/data.json?sourceapp=klaro&resource=' . rawurlencode($key));
 curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 8, CURLOPT_PROTOCOLS => CURLPROTO_HTTPS]);
@@ -24,6 +25,12 @@ $whois = is_string($body) && $code === 200 ? json_decode($body, true) : null;
 if (!is_array($whois)) json_out(502, ['error' => 'Register nu niet bereikbaar.']);
 $fields = netinfo_fields($whois);
 $v = netinfo_classify($fields);
+// Land van het adres (geolocatie van RIPEstat); lukt het niet, dan onbekend (null), nooit raden.
+$ch = curl_init('https://stat.ripe.net/data/maxmind-geo-lite/data.json?sourceapp=klaro&resource=' . rawurlencode($key));
+curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 8, CURLOPT_PROTOCOLS => CURLPROTO_HTTPS]);
+$geo = json_decode((string)curl_exec($ch), true);
+curl_close($ch);
+$v['land'] = netinfo_country(is_array($geo) ? $geo : []);
 if (isset($_GET['ruw'])) $v['ruw'] = $fields; // alleen om de herkenning na te kijken
 else { $cache[$key] = ['t' => $now, 'v' => $v]; file_put_contents($file, json_encode($cache), LOCK_EX); }
 json_out(200, $v);

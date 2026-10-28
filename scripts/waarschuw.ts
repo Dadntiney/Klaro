@@ -63,6 +63,18 @@ export function silentAlerts(devs: DevStat[], now: number): Alert[] {
 }
 
 /**
+ * Nieuw apparaat: een apparaat dat NextDNS de laatste 30 min voor het eerst zag (bijvoorbeeld een nieuwe telefoon met hetzelfde
+ * NextDNS-profiel), terwijl de kopie al minstens 2 dagen loopt (anders is alles "nieuw").
+ */
+export function newDeviceAlerts(devs: DevStat[], now: number): Alert[] {
+  if (!devs.length || now - Math.min(...devs.map((d) => d.first)) < 2 * 86_400_000) return [];
+  const name = labels(devs);
+  return devs
+    .filter((d) => now - d.first < 30 * 60_000)
+    .map((d) => ({ key: `nieuw|${d.id}`, t: d.first, title: "Klaro: nieuw apparaat", body: `${name[d.id]}${d.model ? ` (${d.model})` : ""} gebruikt NextDNS voor het eerst, sinds ${hm(d.first)}.` }));
+}
+
+/**
  * Wat er op het scherm van de iPhone komt: nooit wat er gebeurde (geen 18+, site of apparaat), zodat een meekijker niets
  * ziet (wens eigenaar). De echte tekst staat in Klaro onder "Laatste meldingen", pas na inloggen.
  */
@@ -92,7 +104,7 @@ async function main() {
   const got = await api(url, k);
   const devs = (got.devices ?? []) as DevStat[];
   const now = Number(got.now) || Date.now();
-  const alerts = [...findAlerts(got.cols as string[], got.rows as string[]), ...silentAlerts(devs, now)];
+  const alerts = [...findAlerts(got.cols as string[], got.rows as string[]), ...silentAlerts(devs, now), ...newDeviceAlerts(devs, now)];
   // Geen namen of adressen in het logboek van GitHub (openbaar): alleen aantallen.
   console.log(`${(got.rows as string[]).length} nieuwe regels, ${alerts.length} melding(en) gevonden, ${devs.length} apparaten, ${got.subs} abonnement(en)`);
   if (proef) return;

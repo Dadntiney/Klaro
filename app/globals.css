@@ -624,3 +624,10 @@ section > .partcap span { visibility:hidden; }
 .hist-x:active { background:color-mix(in srgb, var(--muted) 15%, transparent); }
 /* Netwerk buiten de wifi thuis: icoontje + provider, net zo rustig als het apparaat ervoor. */
 .item .meta .netw { display:inline-flex; align-items:center; gap:4px; flex:none; }
+/* Eigen naam voor een netwerk buiten de deur (in de details). */
+.netname { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; font-size:14px; }
+.netname .muted { display:inline-flex; align-items:center; gap:5px; min-width:0; }
+.netname-btn { font:inherit; font-size:14px; padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--fg); cursor:pointer; flex:none; }
+/* Per apparaat: van wanneer tot wanneer echt gebruikt; laat op de avond of 's nachts in oranje. */
+.devtot-t { margin-left:auto; margin-right:12px; color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
+.devtot-t.late { color:#d97706; font-weight:600; }

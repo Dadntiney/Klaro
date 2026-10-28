@@ -67,3 +67,13 @@ test("telefoon thuis die een deel via mobiel internet stuurt is thuis; alleen mo
   assert.equal(wifi.ip, "203.0.113.5");
   assert.equal(analyzeNetwork(rows).get("Apple TV")!.runs.length, 0);
 });
+
+test("hotspot: laptop buiten de deur op hetzelfde adres als de telefoon op hetzelfde moment", () => {
+  const m = 60_000;
+  const rows: { dev: string; t: number; ip: string }[] = [];
+  for (let i = 0; i < 30; i++) rows.push({ dev: "Apple TV", t: i * m, ip: "2001:db8:1:2::99" }, { dev: "iPhone", t: i * m, ip: "2001:db8:1:2::5" }, { dev: "MacBook", t: i * m, ip: "2001:db8:1:2::7" });
+  for (let i = 40; i < 60; i++) rows.push({ dev: "iPhone", t: i * m, ip: "198.51.100.7" }, { dev: "MacBook", t: i * m + 5_000, ip: "198.51.100.7" });
+  const net = analyzeNetwork(rows);
+  assert.equal(net.get("MacBook")!.runs[0].hotspot, "iPhone");
+  assert.equal(net.get("iPhone")!.runs[0].hotspot, undefined); // de telefoon zelf niet
+});

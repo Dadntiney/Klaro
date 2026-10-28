@@ -234,6 +234,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    splitst als het netwerk echt wisselt (3 opvragingen op rij). Gemeten: iPad en Apple TV nooit weg; MacBook alleen 27 okt
    (Odido); iPhone mobiel op veel dagen, 27 okt 18:48 mobiel, 19:11-21:47 Odido-wifi, daarna weer mobiel. Filter "buiten de
    deur" (speldje) toont alleen die regels.
+   Nieuw (28 okt, wens eigenaar): (1) eigen naam voor een netwerk (details van een regel: "Naam geven"; api/netnames.php);
+   (2) hotspot: laptop/tablet buiten de deur op hetzelfde mobiele adres als een telefoon (binnen 2 min) = "hotspot iPhone";
+   (3) land van het adres (RIPEstat geolocatie) als het niet NL is: " · Duitsland" (let op: mobiel roamen in de EU gaat vaak
+   via Nederland, dan is het buitenland niet te zien); (4) melding "nieuw apparaat" als NextDNS een apparaat de laatste 30 min
+   voor het eerst zag (scripts/waarschuw.ts newDeviceAlerts); (5) per apparaat van wanneer tot wanneer echt gebruikt, bij elke
+   dag onder de minuten; na 23:00 of voor 06:00 in oranje.
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen

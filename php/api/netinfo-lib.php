@@ -32,3 +32,13 @@ function netinfo_classify(array $records): array {
   foreach (['VODAFONE' => 'Vodafone', 'ZIGGO' => 'Ziggo', 'UPC' => 'Ziggo', 'TMONL' => 'Odido', 'TMNL' => 'Odido', 'TMOBILE' => 'Odido', 'ODIDO' => 'Odido', 'KPN' => 'KPN', 'TELE2' => 'Odido', 'DELTA' => 'Delta', 'CAIW' => 'Caiway', 'SIMYO' => 'KPN', 'LYCA' => 'Lyca'] as $k => $v) if (str_contains($net, $k)) { $merk = $v; break; }
   return ['soort' => $soort, 'naam' => mb_substr(trim($name), 0, 60), 'merk' => $merk];
 }
+
+/** Landcode (2 letters) uit de geolocatie van RIPEstat, of null. */
+function netinfo_country(array $geo): ?string {
+  foreach (($geo['data']['located_resources'] ?? []) as $res) foreach (($res['locations'] ?? []) as $loc) {
+    $c = strtoupper((string)($loc['country'] ?? ''));
+    if (preg_match('/^[A-Z]{2}$/', $c)) return $c;
+  }
+  return null;
+}
+

@@ -14,7 +14,8 @@ import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
 import { askReview, listReviews, type NakijkItem } from "@/lib/nakijken-client";
-import { netInfo, netLabel, type NetInfo } from "@/lib/netinfo-client";
+import { netInfo, netNames, netText, setNetName, type NetInfo } from "@/lib/netinfo-client";
+import { netKey } from "@/lib/network";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
@@ -637,6 +638,9 @@ export default function Home() {
   const [devices, setDevices] = useState<Device[]>([]);
   // Soort netwerk per adres (mobiel internet / andere wifi), voor regels buiten het thuisnetwerk.
   const [nets, setNets] = useState<Record<string, NetInfo | null>>({});
+  const [netNamen, setNetNamen] = useState<Record<string, string>>({}); // eigen namen voor netwerken ("werk")
+  useEffect(() => { netNames().then(setNetNamen); }, []);
+  const netOf = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
   const [total, setTotal] = useState(0);
   const [deviceNow, setDevice] = useState<string | null>(null);
   // De chip licht meteen op; de lijst volgt een tel later (zwaarder werk mag de tik niet ophouden).
@@ -1254,8 +1258,9 @@ export default function Home() {
         const byDev = new Map<string, Session[]>();
         for (const { g, ss } of per) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push(...ss);
         let mins = 0;
-        const devMins: { dev: string; mins: number }[] = [];
-        for (const [dev, ss] of byDev) { const m = activeMinutes(ss); mins += m; devMins.push({ dev, mins: Math.round(m) }); }
+        const devMins: { dev: string; mins: number; s?: number; e?: number }[] = [];
+        // Ook wanneer het apparaat die dag voor het eerst en het laatst echt gebruikt werd (niet de altijd-getoonde regels zoals Hue).
+        for (const [dev, ss] of byDev) { const m = activeMinutes(ss); mins += m; const real = ss.filter((x) => isHuman(x)); devMins.push({ dev, mins: Math.round(m), s: real.length ? Math.min(...real.map((x) => x.s)) : undefined, e: real.length ? Math.max(...real.map((x) => x.e)) : undefined }); }
         return {
           d,
           list: per.map((x) => x.g),
@@ -1301,7 +1306,7 @@ export default function Home() {
 
   // Apparaatknoppen die niet allemaal passen: zacht vervagen aan de kant waar er nog meer staat (dan zie je dat je kunt schuiven).
   const chipsRef = useRef<HTMLDivElement>(null);
-  const [devOpen, setDevOpen] = useState(false); // totaal per apparaat onder "Vandaag"
+  const [devOpen, setDevOpen] = useState<string | null>(null); // totaal per apparaat onder een dag (welke dag)
   // Het dagdeel (Ochtend, Middag, ...) waar je doorheen scrolt: in de vaste dagkop, zodra het eigen label onder de kop verdwenen is.
   // p: null = de lijst schuift al onder de kop, maar er is (nog) geen dagdeel voorbij; dan alleen de afgeronde bovenrand.
   const [stuckPart, setStuckPart] = useState<{ d: string; p: number | null } | null>(null);
@@ -1437,6 +1442,9 @@ export default function Home() {
             // Ook als alles in één dagdeel valt (iPhone 's ochtends): het label staat er altijd, zodat elke dag er hetzelfde uitziet.
             const topPart = isDayOpen && rows[0]?.t ? partOf(rows[0].t) : null;
             const shownPart = stuckPart?.d === d && stuckPart.p !== null ? stuckPart.p : topPart;
+            // Tik op de minuten: per apparaat de minuten, en van wanneer tot wanneer het echt gebruikt werd.
+            const canTot = !device && devMins.length > 1 && dm > 0;
+            const totBtn = canTot ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => (v === d ? null : d)); }} aria-expanded={devOpen === d} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen === d ? " up" : "")} aria-hidden>›</span></button> : dur(dm);
             return (
             <section key={d} data-day={d}>
               <h2
@@ -1446,7 +1454,7 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? (!device && devMins.length > 1 ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => !v); }} aria-expanded={devOpen} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen ? " up" : "")} aria-hidden>›</span></button> : dur(dm)) : (outside ? <>{rows.length}× buiten de deur</> : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</>)}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? totBtn : (outside ? <>{rows.length}× buiten de deur</> : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? <> · {totBtn}</> : ""}</>)}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
@@ -1466,13 +1474,19 @@ export default function Home() {
                 {shownPart !== null && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
-          {recent && devOpen && !device && devMins.length > 1 && (
+          {devOpen === d && canTot && (
             <div className="devtot">
-              {devMins.map((x) => (
-                <button key={x.dev} className="devtot-row" onClick={() => { setDevice(x.dev); setDevOpen(false); }} title={`Alleen ${x.dev}`}>
-                  <span className="mdev"><DevIcon name={x.dev} />{x.dev}</span><span className="devtot-m">{dur(x.mins)}</span>
-                </button>
-              ))}
+              {devMins.map((x) => {
+                // Laat op de avond of 's nachts nog gebruikt (na 23:00 of voor 06:00): opvallend gemaakt.
+                const late = x.e !== undefined && isNight(x.e);
+                return (
+                  <button key={x.dev} className="devtot-row" onClick={() => { setDevice(x.dev); setDevOpen(null); }} title={`Alleen ${x.dev}`}>
+                    <span className="mdev"><DevIcon name={x.dev} />{x.dev}</span>
+                    {x.s !== undefined && x.e !== undefined && <span className={"devtot-t" + (late ? " late" : "")}>{timeFmt.format(x.s)}–{timeFmt.format(x.e)}</span>}
+                    <span className="devtot-m">{dur(x.mins)}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
           {di === 0 && goOpen && (
@@ -1568,7 +1582,7 @@ export default function Home() {
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             // Niet thuis: mobiel internet of een andere wifi (uit het internetadres; 4G of 5G is niet te zien).
                             const ar = t ? awayAt(g.dev, t) : undefined;
-                            if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const lb = netLabel(ni); parts.push(<span key="n" className="netw" title={lb + (ni?.naam ? ` (${ni.naam})` : "")}><NetIcon soort={ni?.soort} />{ni?.merk ?? (ni?.soort === "mobiel" ? "mobiel" : ni?.soort === "vast" ? "wifi" : "niet thuis")}</span>); }
+                            if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const nt = netText(ni, { naam: ar.ip ? netNamen[netOf(ar.ip)] : undefined, hotspot: ar.hotspot }); parts.push(<span key="n" className="netw" title={nt.uitleg}><NetIcon soort={nt.icon} />{nt.text}</span>); }
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }
@@ -1609,6 +1623,23 @@ export default function Home() {
                             >
                               Open {g.site} ↗
                             </a>
+                            {(() => {
+                              // Netwerk buiten de deur: een eigen naam geven (bijv. "werk"); daarna staat die naam bij de regels.
+                              const ar = t ? awayAt(g.dev, t) : undefined;
+                              if (!ar?.ip || (ar.hotspot && nets[ar.ip]?.soort === "mobiel")) return null;
+                              const key = netOf(ar.ip), cur = netNamen[key];
+                              const nt = netText(nets[ar.ip], { naam: cur });
+                              return (
+                                <div className="netname">
+                                  <span className="muted"><NetIcon soort={nt.icon} /> {nt.uitleg}</span>
+                                  <button type="button" className="netname-btn" onClick={(e) => {
+                                    e.stopPropagation();
+                                    const naam = window.prompt("Naam voor dit netwerk (bijvoorbeeld werk of opa en oma). Leeg = geen naam.", cur ?? "");
+                                    if (naam !== null) setNetName(key, naam).then(setNetNamen, () => window.alert("Opslaan lukte niet."));
+                                  }}>{cur ? "Naam wijzigen" : "Naam geven"}</button>
+                                </div>
+                              );
+                            })()}
                             {!reviewOpen && (
                               <div className="review">
                                 <button

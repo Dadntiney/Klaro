@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findAlerts, flagOf, pushText, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
+import { findAlerts, flagOf, newDeviceAlerts, pushText, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
 
 test("waarschuwen: 18+, dating, VPN en door NextDNS geblokkeerde porno worden gemeld", () => {
   assert.equal(flagOf("www.pornhub.com", "", ""), "18+");
@@ -53,4 +53,15 @@ test("pushmelding op het scherm zegt niets over wat er gebeurde (meekijkers), de
     assert.ok(m.title && m.body);
     assert.doesNotMatch(m.title + m.body + m.tag, /18\+|porn|dating|vpn|iphone|ipad|A1|stil/i, key);
   }
+});
+
+test("nieuw apparaat: melden als NextDNS het de laatste 30 min voor het eerst zag; niet bij de eerste dagen van de kopie", () => {
+  const oud = dev({ id: "A", first: NOW - 20 * DAY });
+  const nieuw = dev({ id: "B", name: "Voorbeeld-telefoon", model: "iPhone 16", first: NOW - 10 * 60_000, last: NOW });
+  const a = newDeviceAlerts([oud, nieuw], NOW);
+  assert.equal(a.length, 1);
+  assert.equal(a[0].key, "nieuw|B");
+  assert.match(a[0].body, /voor het eerst/);
+  assert.equal(newDeviceAlerts([oud, dev({ id: "B", first: NOW - 2 * H })], NOW).length, 0); // al eerder gezien
+  assert.equal(newDeviceAlerts([dev({ id: "A", first: NOW - H }), nieuw], NOW).length, 0); // kopie loopt nog maar net
 });

@@ -17,5 +17,7 @@ check('leeg antwoord: niets', netinfo_classify(netinfo_fields([]))['soort'] === 
 check('merk uit de netwerknaam', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'VODAFONE-NL', 'descr' => 'Mobile Office Service'])))['merk'] === 'Vodafone');
 check('echt voorbeeld (28 okt): Vodafone "Mobile Office Service" is mobiel', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'VODAFONE-NL', 'descr' => 'Mobile Office Service'])))['soort'] === 'mobiel');
 check('echt voorbeeld (28 okt): "Pool for fixed WBA users" is vast', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'TMONL-NET', 'descr' => 'Pool for fixed WBA users'])))['soort'] === 'vast');
+check('land uit de geolocatie', netinfo_country(['data' => ['located_resources' => [['locations' => [['country' => 'de', 'city' => 'x']]]]]]) === 'DE');
+check('geen land: null', netinfo_country([]) === null && netinfo_country(['data' => ['located_resources' => [['locations' => [['country' => '??']]]]]]) === null);
 echo "\n$ok goed, $bad fout\n";
 exit($bad ? 1 : 0);

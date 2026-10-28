@@ -13,7 +13,7 @@ export interface AwayInfo {
 }
 
 /** Een periode buiten het thuisnetwerk, met het adres dat het apparaat toen het meest gebruikte (voor mobiel of andere wifi). */
-export type AwayRun = Session & { ip?: string };
+export type AwayRun = Session & { ip?: string; hotspot?: string }; // hotspot: telefoon waarvan het apparaat toen het internet deelde
 
 /** IPv6: het netwerkdeel (eerste 64 bits, dat wisselt niet mee met de privacy-adressen); IPv4: het hele adres. */
 export function netKey(ip: string): string {
@@ -40,6 +40,7 @@ function nearest(sorted: number[], t: number): number {
 }
 
 const RUN_GAP = 20 * 60_000;
+const PHONE = /iphone|android|telefoon|phone/i;
 
 /**
  * Thuis of onderweg per apparaat. Thuis = het IPv6-netwerk waar het meeste verkeer vandaan komt, plus elk IPv4-adres dat
@@ -78,6 +79,8 @@ export function analyzeNetwork(rows: NetRow[]): Map<string, AwayInfo> {
     (byDev.get(r.dev) ?? byDev.set(r.dev, []).get(r.dev)!).push([r.t, away, r.ip]);
   }
 
+  const byIp = new Map<string, { dev: string; t: number }[]>();
+  for (const r of rows) if (r.ip) (byIp.get(r.ip) ?? byIp.set(r.ip, []).get(r.ip)!).push({ dev: r.dev, t: r.t });
   const out = new Map<string, AwayInfo>();
   for (const [dev, list] of byDev) {
     list.sort((a, b) => a[0] - b[0]);
@@ -113,6 +116,14 @@ export function analyzeNetwork(rows: NetRow[]): Map<string, AwayInfo> {
       since = list[i][0];
     }
     // Zonder bekend thuisnetwerk voor dit apparaat kunnen we niets zinnigs zeggen over onderweg zijn.
+    // Hotspot: een laptop of tablet buiten de deur op precies hetzelfde adres als een telefoon, op hetzelfde moment (binnen 2 min):
+    // dan deelde die telefoon zijn internet. (Op een gedeelde wifi elders hebben ze ook hetzelfde adres; of het mobiel internet was,
+    // zegt het register; de pagina toont "hotspot" alleen bij mobiel internet.)
+    if (!PHONE.test(dev)) for (const r of runs) {
+      if (!r.ip) continue;
+      const hit = (byIp.get(r.ip) ?? []).find((x) => x.dev !== dev && PHONE.test(x.dev) && x.t >= r.s - 120_000 && x.t <= r.e + 120_000);
+      if (hit) r.hotspot = hit.dev;
+    }
     out.set(dev, { now, since, runs: known ? runs.reverse().slice(0, 300) : [] });
   }
   return out;
