@@ -218,7 +218,7 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
    Geleerd (28 okt, eigenaar): mobiele data betekent niet "weg": thuis schakelt de iPhone ook over als de wifi even slecht is.
-   Daarom alleen het netwerk tonen, niet de plek: "Mobiel (Vodafone)", "Andere wifi (Odido)" (dat is wel een andere plek);
+   Daarom alleen het netwerk tonen, niet de plek: "Mobiel" (provider bij aantikken; nooit "5G": niet te zien), wifi met de naam "Odido" (een andere plek);
    filter heet "Niet via thuis-wifi". Nooit "onderweg" of "buiten de deur" als feit.
    Geleerd (28 okt, wens eigenaar "te veel onzeker, live beter controleren"): onzeker van 197 naar 30 regels (30 dagen), geen
    regel erbij of weg. (1) www.instagram.com = Instagram geopend: 166 keer, nooit 22-07 uur, terwijl de app 's nachts wel ververst

@@ -27,7 +27,7 @@ export function netLabel(info: NetInfo | null | undefined): string {
 const landNaam = (code: string) => { try { return new Intl.DisplayNames(["nl"], { type: "region" }).of(code) ?? code; } catch { return code; } };
 
 /**
- * Wat er bij een regel die niet via de wifi thuis ging staat ("Mobiel (Vodafone)", "Andere wifi (Odido)"): icoontje + korte tekst, en een uitleg (tooltip).
+ * Wat er bij een regel die niet via de wifi thuis ging staat ("Mobiel", of bij wifi de naam: "Odido", "werk"): icoontje + korte tekst, en een uitleg (tooltip).
  * - eigen naam van het netwerk (door de eigenaar gegeven) gaat voor de provider;
  * - laptop/tablet op het mobiele internet van een telefoon: "hotspot iPhone";
  * - een netwerk in een ander land: " · Duitsland" erachter.
@@ -35,8 +35,9 @@ const landNaam = (code: string) => { try { return new Intl.DisplayNames(["nl"], 
 export function netText(info: NetInfo | null | undefined, opts: { naam?: string; hotspot?: string } = {}): { icon: "mobiel" | "vast" | "hotspot" | null; text: string; uitleg: string } {
   const hot = !!opts.hotspot && info?.soort === "mobiel";
   const icon = hot ? "hotspot" : info?.soort ?? null;
-  const merk = info?.merk ? ` (${info.merk})` : "";
-  const base = hot ? `hotspot ${opts.hotspot}` : opts.naam ?? (info?.soort === "mobiel" ? `Mobiel${merk}` : info?.soort === "vast" ? `Andere wifi${merk}` : "Niet via thuis-wifi");
+  // Kort (wens eigenaar): mobiel alleen "Mobiel" (provider in de uitleg; 4G of 5G is niet te zien, dus nooit "5G"), wifi met de
+  // naam van het netwerk (eigen naam, anders de provider); het icoontje ervoor zegt al of het mobiel of wifi is.
+  const base = hot ? `hotspot ${opts.hotspot}` : info?.soort === "mobiel" ? opts.naam ?? "Mobiel" : opts.naam ?? (info?.soort === "vast" ? info?.merk ?? "Andere wifi" : "Niet via thuis-wifi");
   const land = info?.land && info.land !== "NL" ? landNaam(info.land) : "";
   const text = land ? `${base} · ${land}` : base;
   const uitleg = (hot ? `via de hotspot van ${opts.hotspot} (mobiel internet)` : netLabel(info)) + (opts.naam && info?.merk ? ` (${info.merk})` : "") + (land ? `, in ${land}` : "");
