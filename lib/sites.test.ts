@@ -437,3 +437,10 @@ test("advertentie-teller van OpenAI op een webwinkel is geen ChatGPT-gebruik; de
 test("Meditopia (meditatie-app) is een app", () => {
   for (const h of ["api.meditopia.com", "media.meditopia.com", "images.meditationapp.co"]) { assert.equal(classify(h).name, "Meditopia", h); assert.equal(classify(h).main && !classify(h).bg, true, h); }
 });
+
+test("onderdelen van WordPress-sites en blog-widgets zijn achtergrond, een blog zelf niet", () => {
+  for (const h of ["jetpack.wordpress.com", "public-api.wordpress.com", "r-login.wordpress.com", "x.files.wordpress.com", "i0.wp.com", "widgets.wp.com", "pzz.to", "www.pzz.io", "pzz.events"])
+    assert.equal(classify(h).bg, true, h);
+  assert.equal(classify("mijnblog.wordpress.com").bg, false);
+  assert.equal(classify("wordpress.com").bg, false);
+});
