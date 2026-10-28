@@ -1515,7 +1515,8 @@ export default function Home() {
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
-                            parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
+                            // Apparaat alleen bij "Alle": met een apparaat-filter aan staat het al bovenin (wens eigenaar).
+                            if (!device) parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             // Niet thuis: mobiel internet of een andere wifi (uit het internetadres; 4G of 5G is niet te zien).
                             const ar = t ? awayAt(g.dev, t) : undefined;
                             if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const nt = netText(ni, { naam: ar.ip ? netNamen[netOf(ar.ip)] : undefined, hotspot: ar.hotspot }); parts.push(<span key="n" className="netw" title={nt.uitleg}><NetIcon soort={nt.icon} />{nt.text}</span>); }

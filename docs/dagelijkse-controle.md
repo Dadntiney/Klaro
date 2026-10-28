@@ -306,6 +306,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
 
+4b. Twijfel of een adres echt een website is (onderdeel, widget, doorstuur-link)? Laat de server de voorpagina ophalen:
+       node --experimental-strip-types scripts/sitecheck.ts adres1 adres2
+   Uitkomst: website (met titel) / doorsturen (naar ander domein) / leeg / techniek (script, data) / geen pagina / onbereikbaar.
+   Alleen een aanwijzing naast de ruwe regels (ook advertentiebedrijven hebben een site); 18+/dating wordt nooit opgehaald.
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.
 6. Geleerde kennis vastleggen (blijft ook als het NextDNS-logboek wordt leeggemaakt):
