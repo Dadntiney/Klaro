@@ -641,8 +641,8 @@ section.goopen > .partcap { margin-top:22px; }
 /* Zelfde idee voor het dagdeel-label: in een lijst zonder tweede regels (apparaatfilter aan) minder lucht erboven en eronder. */
 .list.day:not(:has(.meta)) .partmark { padding-top:10px; padding-bottom:2px; }
 /* Live: ringetje dat ronddraait zolang het werkt (wens eigenaar 28 okt). */
-.livedot .ring-bg { stroke:color-mix(in srgb, currentColor 22%, transparent); }
+.livedot .live-bg { stroke:color-mix(in srgb, currentColor 22%, transparent); }
 .livedot.ok svg { animation:spin 1.6s linear infinite; transform-origin:50% 50%; }
 .livedot.ok.blink svg { animation:spin .6s linear 2, spin 1.6s linear .12s infinite; }
-.livedot.slow .ring-arc, .livedot.fail .ring-arc { opacity:.9; }
+.livedot.slow .live-arc, .livedot.fail .live-arc { opacity:.9; }
 @media (prefers-reduced-motion: reduce) { .livedot.ok svg { animation-duration:4s; } }

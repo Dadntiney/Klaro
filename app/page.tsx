@@ -442,8 +442,8 @@ function LiveDot() {
       onClick={kind === "fail" ? () => window.dispatchEvent(new Event("klaro-retry")) : undefined}
     >
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-        <circle className="ring-bg" cx="12" cy="12" r="8" />
-        <path className="ring-arc" d="M12 4a8 8 0 0 1 8 8" />
+        <circle className="live-bg" cx="12" cy="12" r="8" />
+        <path className="live-arc" d="M12 4a8 8 0 0 1 8 8" />
         {kind === "fail" && <path d="M6 6l12 12" />}
       </svg>
     </span>
