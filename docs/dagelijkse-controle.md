@@ -217,6 +217,13 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nu tellen mail-pagina's mee als tabblad; komt de vier alleen zo vol, dan telt de zoekmachine niet mee (7 okt ggdhvb.nl/ncj.nl
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
+   Geleerd (28 okt, middag): shopify.com (cdn., pay., checkout.), shopifycdn.com en shopifyapps.com zijn het platform onder een
+   webwinkel, geen bezoek: nu achtergrond (zoals shopifycloud/shopifysvc al waren). Over de hele CSV: 10 regels "shopify.com" weg
+   (bijna altijd in dezelfde seconde als partywinkel.nl, laraboutique.nl e.d.); 27 okt 08:14 staan bever.nl en laraboutique.nl er
+   nu wel; 27 okt 16:44 decathlon.nl valt weg (Safari herlaadde 3 tabbladen binnen 4 s na ontgrendelen).
+   Nog uitzoeken (28 okt): www.google.* in dezelfde seconden als de tellers van een andere site (27 okt 08:14:30, 2 s na bever.nl)
+   is advertentiecode, maar plakt aan een echte zoekopdracht 3 min later ("Google 3 min"). Regel "0-3 s na een andere pagina en
+   geen zoekbalk/plaatjes" geprobeerd: te breed (haalde ook zoek-kliks weg: happinez, aboutyou, coolblue). Meer gevallen verzamelen.
    Geleerd (28 okt, middag): Google Analytics (region1.analytics.google.com) valt onder google.com, maar elke webwinkel laadt het
    mee (elke 1-3 min). Het hield de Google-regel open tijdens winkelen/afrekenen (28 okt: 28 min Google, echt gezocht om 09:14,
    09:28 en 09:36). Nu telt zo'n melding alleen binnen 60 s van een Google-pagina zelf (www.google.*). En een Google-sessie met

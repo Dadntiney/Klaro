@@ -170,7 +170,7 @@ const BACKGROUND = new Set([
   "stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
   "ift.tt", "bit.ly", "tinyurl.com", "awin1.com", "tradetracker.net", "go2cloud.org", "bigspark.link", // ook affiliate-links
-   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com",
+   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com", "shopify.com", "shopifycdn.com", "shopifyapps.com", // Shopify is het platform onder een webwinkel (plaatjes, afrekenen): de winkel zelf is het bezoek (27 okt: "shopify.com 8 min" naast laraboutique.nl; 3-6 okt partywinkel.nl)
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
   "tm-azurefd.net", "azurefd.net", "t-msedge.net", "fastly-masque.net", "impervadns.net", "akaquill.net", "visualwebsiteoptimizer.com", "at-o.net", "wt-eu02.net", "snplow.net", "nr-data.net", "marketingcloudapis.com", "rudderlabs.com", "ecomm.events", "kameleoon.eu", "tealiumiq.com", "contentsquare.net", "blueconic.net", "mparticle.com", "dynatrace.com", "usabilla.com", "typekit.net", "addthis.com", "privacy-center.org", "tuyaeu.com", "tuyaus.com", "tuyacn.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
