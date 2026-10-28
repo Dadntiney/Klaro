@@ -1550,7 +1550,7 @@ export default function Home() {
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
                             // Niet thuis: mobiel internet of een andere wifi (uit het internetadres; 4G of 5G is niet te zien).
                             const ar = t ? awayAt(g.dev, t) : undefined;
-                            if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const lb = netLabel(ni); parts.push(<span key="n" className="netw" title={ni?.naam ? `${lb} (${ni.naam})` : lb}>{lb}</span>); }
+                            if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const lb = netLabel(ni); parts.push(<span key="n" className="netw" title={(ni?.soort === "mobiel" ? "mobiel internet" : ni?.soort === "vast" ? "andere wifi (niet thuis)" : "niet thuis") + (ni?.naam ? ` (${ni.naam})` : "")}>{lb}</span>); }
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }

@@ -15,8 +15,9 @@ export function netInfo(ip: string): Promise<NetInfo | null> {
   return p;
 }
 
-/** Korte tekst bij een regel buiten het thuisnetwerk, met de provider als die bekend is ("mobiel internet · Vodafone"). */
+/** Korte tekst bij een regel buiten het thuisnetwerk, met de provider als die bekend is ("mobiel · Vodafone"). Kort, want hij staat
+ *  naast het apparaat op één regel. Thuis (op de eigen wifi) staat er niets. */
 export function netLabel(info: NetInfo | null | undefined): string {
-  const soort = info?.soort === "mobiel" ? "mobiel internet" : info?.soort === "vast" ? "andere wifi" : "niet thuis";
+  const soort = info?.soort === "mobiel" ? "mobiel" : info?.soort === "vast" ? "wifi" : "niet thuis";
   return info?.merk ? `${soort} · ${info.merk}` : soort;
 }
