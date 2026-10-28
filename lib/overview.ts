@@ -168,6 +168,8 @@ const SOCIAL = new Set(["x.com", "facebook.com", "instagram.com", "tiktok.com", 
 
 /** Het overzicht van alle (of alleen vandaag de) logs: precies dezelfde berekening op de server, in scripts en in de browser. */
 /** Meetadressen van een site zelf (telemetry., ct., ...): een open tabblad meldt zich daar, ook als niemand kijkt. */
+const GA_HOST = /(^|\.)analytics\.google\.com$/;
+const GA_NEAR = 60_000;
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
 /** `known`: wat een eerdere berekening over alle dagen leerde (widgets, hulpjes, doorverwijs-adressen), voor het snelle herberekenen van alleen de laatste uren. */
@@ -235,6 +237,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const embedGen = new Map<string, number[]>(); // alleen embed.*-adressen (algemene ingebouwde onderdelen)
   const resTimes = new Map<string, number[]>(); // losse onderdelen (tellers, plaatjes, advertenties)
   const meterTimes = new Map<string, number[]>(); // meetadressen van de site zelf (zie METER)
+  const gaTimes = new Map<string, number[]>(); // Google Analytics onder google.com (zie hieronder bij de sessies)
   const siteHosts = new Map<string, { t: number; host: string }[]>(); // welke adressen van de site wanneer (een echte pagina laadt er meerdere)
   const loginTimes = new Map<string, number[]>(); // inlog-/bankierpagina's (bankieren., mijn., login.): altijd bewust geopend
   const mainTimes = new Map<string, number[]>(); // verzoeken naar de site zelf (www., nl., ...): bij een mail komt die er niet aan te pas // ingesloten videospeler (Vimeo/YouTube op een andere site) // inhoud geladen (bij apps met veel achtergrondverkeer) // alleen beeld/geluid-verkeer per groep
@@ -518,6 +521,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       times.set(gkey, [t]);
     }
     if (isResourceHost(host)) (resTimes.get(gkey) ?? resTimes.set(gkey, []).get(gkey)!).push(t);
+    if (GA_HOST.test(host)) (gaTimes.get(gkey) ?? gaTimes.set(gkey, []).get(gkey)!).push(t);
     if (METER.test(host)) (meterTimes.get(gkey) ?? meterTimes.set(gkey, []).get(gkey)!).push(t);
     if (info.main && !info.flag) (mainTimes.get(gkey) ?? mainTimes.set(gkey, []).get(gkey)!).push(t);
     if (!info.bg) (siteHosts.get(gkey) ?? siteHosts.set(gkey, []).get(gkey)!).push({ t, host });
@@ -552,7 +556,15 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     return fgByDev.get(dev) ?? [];
   };
   for (const [gkey, g] of groups) {
-    const all = times.get(gkey) ?? [];
+    let all = times.get(gkey) ?? [];
+    // Google Analytics (region1.analytics.google.com) valt onder google.com, maar elke webwinkel laadt het mee en het meldt zich
+    // daar elke 1-3 minuten. Alleen een melding vlak bij een Google-pagina zelf (www.google.*) telt mee; anders hield het de Google-regel "open"
+    // tijdens winkelen (28 okt: 28 min Google, terwijl er alleen om 09:14, 09:28 en 09:36 gezocht werd).
+    const ga = gaTimes.get(gkey);
+    if (ga?.length) {
+      const gs = new Set(ga), own = mainTimes.get(gkey) ?? []; // de Google-pagina zelf (www.google.*)
+      all = all.filter((t) => !gs.has(t) || own.some((o) => Math.abs(o - t) <= GA_NEAR));
+    }
     let sessions = allSessions(all);
     // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit (zie NAV_APPS).
     // Apps met een vaste melding via een doorverwijs-adres (Toca Boca: elke 2 tot 10 minuten): stukjes met hooguit HEARTBEAT_GAP
@@ -637,6 +649,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       }
       if (esp.length) for (const x of sessions) {
         const mh = mt.filter((t) => t >= x.s && t <= x.e).length, mc = devMailClient.get(g.dev) ?? [], ck = devClick.get(g.dev) ?? [];
+        // Plaatjes van zoekresultaten (encrypted-tbn) bij Google: er stond echt een zoekpagina open, geen plaatje uit een mail.
+        if (g.site === "google.com" && (siteHosts.get(gkey) ?? []).some((h) => h.t >= x.s && h.t <= x.e + 5_000 && /^encrypted-tbn\d\./.test(h.host))) continue;
         if (isMailSession(x, esp, mc, mh, ck)) x.ml = 1;
         // Alleen een bezoek dankzij een klik in de mail: onthouden, want één klik leidt naar één site (zie hieronder).
         else if (isMailSession(x, esp, mc, mh)) clickVisits.push({ g, x, click: clickBefore(x, ck)! });

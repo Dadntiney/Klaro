@@ -649,3 +649,15 @@ test("geen vals bezoek: een geopende nieuwsbrief (alleen plaatjes en tellers) bl
   ]);
   assert.equal(shown(o, "magazinevoorbeeld.nl").length, 0);
 });
+
+test("Google Analytics van een webwinkel houdt de Google-regel niet open (twee korte zoekopdrachten, geen 28 min)", async () => {
+  const min = 60_000;
+  const rows: R[] = [[1000, "www.google.nl"], [1500, "ogads-pa.clients6.google.com"], [4000, "encrypted-tbn0.gstatic.com"], [21_000, "region1.analytics.google.com"], [26_000, "www.winkel.nl"]];
+  for (let m = 2; m <= 26; m += 2) rows.push([m * min, "region1.analytics.google.com"], [m * min + 300, "www.winkel.nl"]); // winkelen en afrekenen
+  rows.push([28 * min, "www.google.nl"], [28 * min + 2000, "encrypted-tbn1.gstatic.com"]); // later weer gezocht
+  const o = await overview(rows);
+  const g = shown(o, "google.com").sort((a, b) => a.s - b.s);
+  assert.equal(g.length, 2);
+  assert.ok(g[0].e - g[0].s < 60_000, "eerste zoekopdracht kort, niet 28 min");
+  assert.ok(shown(o, "winkel.nl").length >= 1);
+});

@@ -217,6 +217,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nu tellen mail-pagina's mee als tabblad; komt de vier alleen zo vol, dan telt de zoekmachine niet mee (7 okt ggdhvb.nl/ncj.nl
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
+   Geleerd (28 okt, middag): Google Analytics (region1.analytics.google.com) valt onder google.com, maar elke webwinkel laadt het
+   mee (elke 1-3 min). Het hield de Google-regel open tijdens winkelen/afrekenen (28 okt: 28 min Google, echt gezocht om 09:14,
+   09:28 en 09:36). Nu telt zo'n melding alleen binnen 60 s van een Google-pagina zelf (www.google.*). En een Google-sessie met
+   zoekplaatjes (encrypted-tbn) is nooit een mail-plaatje. Over de hele CSV: 38 regels anders, allemaal Google korter of
+   gesplitst; losse www.google-momenten zonder zoekbalk/plaatjes vallen weg (geen zoekpagina); geen andere site weg.
    Geleerd (28 okt, middag): onderdelen van WordPress-sites (jetpack./public-api./r-login./files.wordpress.com, *.wp.com) en
    blog-widgets (pzz.to/.io/.events, zelfde seconde als de blog) zijn achtergrond, geen bezoek. Een blog zelf (naam.wordpress.com)
    blijft zichtbaar. Over de hele CSV: alleen 2 rijen weg (28 okt), de echte blog kwam ervoor in de plaats.

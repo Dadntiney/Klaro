@@ -140,6 +140,8 @@ const CASES: Case[] = [
   { day: "2026-10-27", dev: "MacBook", site: "launchdarkly.com", at: "09:45", want: false, why: "instellingen-dienst die raisin.com meelaadt (eigenaar: melden)" },
   { day: "2026-10-27", dev: "MacBook", site: "raisin.com", at: "09:45", want: true, why: "website zelf geopend na zoeken" },
   { day: "2026-10-27", dev: "iPhone", site: "ampaeservices.com", at: "*", want: false, why: "Apple-onderdeel bij kopen/downloaden in de App Store (eigenaar: melden)" },
+  { day: "2026-10-28", dev: "MacBook", site: "google.com", at: "09:13", want: false, why: "geen half uur Google: Google Analytics van een webwinkel tijdens afrekenen hield de regel open; echt gezocht om 09:36" },
+  { day: "2026-10-28", dev: "MacBook", site: "google.com", at: "09:35", until: "09:41", want: true, why: "echt gezocht (zoekbalk, plaatjes), daarna sites geopend" },
   { day: "2026-10-28", dev: "MacBook", site: "jetpack.wordpress.com", at: "*", want: false, why: "onderdeel van een WordPress-site (statistiek/like-knop), geen eigen bezoek" },
   { day: "2026-10-28", dev: "MacBook", site: "pzz.to", at: "*", want: false, why: "widget die met een blog meelaadt (zelfde seconde als de blog)" },
   { day: "2026-10-25", dev: "iPad", site: "my-little-princess.net", at: "08:38", want: true, why: "kinderspel (Unity) na Netflix gestart; tot 09:01 gespeeld (motor meldt elke 5 min)" },
