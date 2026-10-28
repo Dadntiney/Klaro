@@ -18,6 +18,7 @@ import { noRealSite, siteCheck, type SiteCheck } from "@/lib/sitecheck-client";
 import { netKey } from "@/lib/network";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
+import { startHaptics } from "@/lib/haptic";
 import { checkLogin } from "@/lib/php-client";
 import { pushDismiss, pushHealth, pushHistory, pushOff, pushOn, pushState, pushTest, type PushState, type SentAlert } from "@/lib/push-client";
 import { baseDomain } from "@/lib/parse";
@@ -650,6 +651,7 @@ export default function Home() {
   // Klaro opent altijd in het gewone overzicht; de NextDNS-lijst is een uitstapje (wens eigenaar), dus de keuze wordt niet onthouden.
   // Echt gebruik (tikken, scrollen, typen) aan de server melden: na 2 uur zonder gebruik logt de server iedereen uit.
   useEffect(() => startActivityReporting(checkLogin), []);
+  useEffect(() => startHaptics(), []); // korte tik bij knoppen en menu's (iPhone met iOS 18+, Android)
   const toggleRaw = () => setRawView((v) => !v);
   const [rawLog, setRawLog] = useState<Event[]>([]);
   const rawSeen = useRef<Set<string>>(new Set());
