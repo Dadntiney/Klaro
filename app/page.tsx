@@ -287,7 +287,7 @@ function RawLog({ rows, devName, devIds, device, onClose, status, outside, onOut
         <span className="dh-t"><span className="dh-d">{at === null ? "Live van NextDNS" : "NextDNS"}</span></span>
         <span className="dpair">
           <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><LogIcon /></button>
-          <button className={"dview icon" + (outside ? " on" : "")} onClick={onOutside} aria-pressed={outside} aria-label="Alleen buiten de deur (mobiel internet of andere wifi)" title="Alleen buiten de deur"><OutIcon /></button>
+          <button className={"dview icon" + (outside ? " on" : "")} onClick={onOutside} aria-pressed={outside} aria-label="Alleen niet via thuis-wifi (mobiele data of een andere wifi)" title="Alleen niet via thuis-wifi"><OutIcon /></button>
           <button className={"dview icon" + (calOpen ? " on" : "")} onClick={() => setCalOpen((v) => !v)} aria-expanded={calOpen} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
           <span className="dstat">{status}</span>
         </span>
@@ -1402,11 +1402,11 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? totBtn : (outside ? <>{rows.length}× buiten de deur</> : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? <> · {totBtn}</> : ""}</>)}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? totBtn : (outside ? <>{rows.length}× niet via thuis-wifi</> : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? <> · {totBtn}</> : ""}</>)}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
-                  <button className={"dview icon" + (outside ? " on" : "")} onClick={(e) => { e.stopPropagation(); setOutside((v) => !v); }} aria-pressed={outside} aria-label="Alleen buiten de deur (mobiel internet of andere wifi)" title="Alleen buiten de deur"><OutIcon /></button>
+                  <button className={"dview icon" + (outside ? " on" : "")} onClick={(e) => { e.stopPropagation(); setOutside((v) => !v); }} aria-pressed={outside} aria-label="Alleen niet via thuis-wifi (mobiele data of een andere wifi)" title="Alleen niet via thuis-wifi"><OutIcon /></button>
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}
                     onClick={(e) => { e.stopPropagation(); setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
@@ -1475,7 +1475,7 @@ export default function Home() {
               <button type="submit">Ga</button>
             </form>
           )}
-              {outside && isDayOpen && !rows.length && <p className="muted pad">Vandaag nog niet buiten de deur (alleen thuis op de wifi).</p>}
+              {outside && isDayOpen && !rows.length && <p className="muted pad">Vandaag alles via de wifi thuis.</p>}
               {isDayOpen && (() => {
                 // Dagdelen: alleen als de dag er meer dan één heeft; een label bovenaan elk dagdeel.
                 // Het bovenste label staat rustig óp de bovenrand van de lijst (half grijs, half wit), niet als extra regel erin.

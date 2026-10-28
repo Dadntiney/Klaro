@@ -15,16 +15,19 @@ export function netInfo(ip: string): Promise<NetInfo | null> {
   return p;
 }
 
-/** Uitleg bij een regel buiten het thuisnetwerk (als tooltip; op de regel zelf staat een icoontje met de provider). Thuis: niets. */
+/** Uitleg bij een regel die niet via de wifi thuis ging (tooltip). Alleen wat zeker is: het netwerk, niet de plek. Mobiele data kan
+ *  ook thuis zijn (de iPhone schakelt over als de wifi even slecht is, wens eigenaar 28 okt); een andere wifi is wel een andere plek. */
 export function netLabel(info: NetInfo | null | undefined): string {
-  const soort = info?.soort === "mobiel" ? "mobiel internet" : info?.soort === "vast" ? "andere wifi" : "niet thuis";
-  return info?.merk ? `${soort} · ${info.merk}` : soort;
+  const merk = info?.merk ? ` · ${info.merk}` : "";
+  if (info?.soort === "mobiel") return `mobiele data${merk} (kan ook thuis zijn, als de wifi even wegvalt)`;
+  if (info?.soort === "vast") return `andere wifi${merk} (een andere plek)`;
+  return `niet via de wifi thuis${merk}`;
 }
 
 const landNaam = (code: string) => { try { return new Intl.DisplayNames(["nl"], { type: "region" }).of(code) ?? code; } catch { return code; } };
 
 /**
- * Wat er bij een regel buiten de wifi thuis staat: icoontje + korte tekst, en een uitleg (tooltip).
+ * Wat er bij een regel die niet via de wifi thuis ging staat ("Mobiele data (Vodafone)", "Andere wifi (Odido)"): icoontje + korte tekst, en een uitleg (tooltip).
  * - eigen naam van het netwerk (door de eigenaar gegeven) gaat voor de provider;
  * - laptop/tablet op het mobiele internet van een telefoon: "hotspot iPhone";
  * - een netwerk in een ander land: " · Duitsland" erachter.
@@ -32,7 +35,8 @@ const landNaam = (code: string) => { try { return new Intl.DisplayNames(["nl"], 
 export function netText(info: NetInfo | null | undefined, opts: { naam?: string; hotspot?: string } = {}): { icon: "mobiel" | "vast" | "hotspot" | null; text: string; uitleg: string } {
   const hot = !!opts.hotspot && info?.soort === "mobiel";
   const icon = hot ? "hotspot" : info?.soort ?? null;
-  const base = hot ? `hotspot ${opts.hotspot}` : opts.naam ?? info?.merk ?? (info?.soort === "mobiel" ? "mobiel" : info?.soort === "vast" ? "wifi" : "niet thuis");
+  const merk = info?.merk ? ` (${info.merk})` : "";
+  const base = hot ? `hotspot ${opts.hotspot}` : opts.naam ?? (info?.soort === "mobiel" ? `Mobiele data${merk}` : info?.soort === "vast" ? `Andere wifi${merk}` : "Niet via thuis-wifi");
   const land = info?.land && info.land !== "NL" ? landNaam(info.land) : "";
   const text = land ? `${base} · ${land}` : base;
   const uitleg = (hot ? `via de hotspot van ${opts.hotspot} (mobiel internet)` : netLabel(info)) + (opts.naam && info?.merk ? ` (${info.merk})` : "") + (land ? `, in ${land}` : "");
