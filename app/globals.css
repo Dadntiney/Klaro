@@ -648,3 +648,5 @@ section.goopen > .partcap { margin-top:22px; }
 .partmark { padding-top:22px; padding-bottom:8px; }
 /* Regel met maar één tekstregel (apparaatfilter aan, dus geen apparaat eronder): evenveel ruimte boven als onder, niet hoog en leeg. */
 .list .item:not(:has(.meta)) { padding-top:12px; padding-bottom:12px; align-items:center; }
+/* Zelfde idee voor het dagdeel-label: in een lijst zonder tweede regels (apparaatfilter aan) minder lucht erboven en eronder. */
+.list.day:not(:has(.meta)) .partmark { padding-top:10px; padding-bottom:2px; }
