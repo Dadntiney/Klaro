@@ -230,7 +230,7 @@ function fallbackCopy(text: string) {
   ta.remove();
 }
 
-function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void; status?: React.ReactNode }) {
+function RawLog({ rows, devName, devIds, device, onClose, status, outside, onOutside, awayAt }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void; status?: React.ReactNode; outside: boolean; onOutside: () => void; awayAt: (dev: string, t: number) => boolean }) {
   const [q, setQ] = useState("");
   const [at, setAt] = useState<number | null>(null); // gesprongen naar dit moment: regels van daarvoor
   const [calOpen, setCalOpen] = useState(false);
@@ -286,8 +286,9 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
       seen.add(k);
       out.push(e);
     }
-    return out.sort((a, b) => b.t - a.t);
-  }, [rows, older, at, device, devName, needle]);
+    // Filter "buiten de deur" (zelfde als in het overzicht): alleen regels van momenten buiten de wifi thuis.
+    return (outside ? out.filter((e) => awayAt(devName(e.devId), e.t)) : out).sort((a, b) => b.t - a.t);
+  }, [rows, older, at, device, devName, needle, outside, awayAt]);
   const oldest = shown.length ? shown[shown.length - 1].t : null;
   return (
     <section>
@@ -295,6 +296,7 @@ function RawLog({ rows, devName, devIds, device, onClose, status }: { rows: Even
         <span className="dh-t"><span className="dh-d">{at === null ? "Live van NextDNS" : "NextDNS"}</span></span>
         <span className="dpair">
           <button className="dview icon on" onClick={onClose} aria-label="Terug naar het overzicht" title="Terug naar het overzicht"><LogIcon /></button>
+          <button className={"dview icon" + (outside ? " on" : "")} onClick={onOutside} aria-pressed={outside} aria-label="Alleen buiten de deur (mobiel internet of andere wifi)" title="Alleen buiten de deur"><OutIcon /></button>
           <button className={"dview icon" + (calOpen ? " on" : "")} onClick={() => setCalOpen((v) => !v)} aria-expanded={calOpen} aria-label="Ga naar dag en tijd" title="Ga naar dag en tijd"><CalendarIcon /></button>
           <span className="dstat">{status}</span>
         </span>
@@ -1164,6 +1166,7 @@ export default function Home() {
   }, [devices, nets]);
   /** Was dit apparaat op dit moment buiten het thuisnetwerk? Dan de periode (met het adres), anders niets. */
   const awayAt = (dev: string, t: number) => devices.find((d) => d.name === dev)?.away?.runs.find((r) => t >= r.s - 60_000 && t <= r.e + 60_000);
+  const awayRaw = useCallback((dev: string, t: number) => !!devices.find((d) => d.name === dev)?.away?.runs.some((r) => t >= r.s - 60_000 && t <= r.e + 60_000), [devices]);
   const activeNow = (name: string) => isActiveNow(lastUse, name, clock);
   const activeApp = (name: string) => activeWhat(lastUse, name, clock);
 
@@ -1397,7 +1400,7 @@ export default function Home() {
             </div>
           )}
 
-          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} />}
+          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} outside={outside} onOutside={() => setOutside((v) => !v)} awayAt={awayRaw} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, devMins, rows: trows, hidden }, di) => {
             if (rawView) return null;
