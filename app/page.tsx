@@ -430,8 +430,8 @@ function LiveDot() {
   const quiet = now - last.at;
   const kind = last.fails >= 3 || quiet > 30_000 ? "fail" : last.fails > 0 || quiet > 10_000 ? "slow" : "ok";
   const label = kind === "ok" ? "Live: werkt" : kind === "slow" ? "Live: even geen antwoord" : "Live: lukt nu niet (tik om opnieuw te proberen)";
-  // Zelfde lijnstijl als de knopjes ernaast: een middelpunt met twee boogjes ("uitzenden"); bij nieuwe regels lichten de boogjes
-  // even na elkaar op; rood krijgt een streep erdoor.
+  // Ringetje dat rustig ronddraait zolang live binnenhalen werkt (wens eigenaar 28 okt: duidelijker dat het loopt); bij nieuwe regels
+  // even een tikje sneller; oranje en stil als er even geen antwoord komt; rood met een streep erdoor als het niet lukt.
   return (
     <span
       key={kind === "ok" ? blink : kind}
@@ -442,10 +442,9 @@ function LiveDot() {
       onClick={kind === "fail" ? () => window.dispatchEvent(new Event("klaro-retry")) : undefined}
     >
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-        <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
-        <path className="w1" d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7" />
-        <path className="w2" d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
-        {kind === "fail" && <path d="M4 4l16 16" />}
+        <circle className="ring-bg" cx="12" cy="12" r="8" />
+        <path className="ring-arc" d="M12 4a8 8 0 0 1 8 8" />
+        {kind === "fail" && <path d="M6 6l12 12" />}
       </svg>
     </span>
   );
