@@ -635,3 +635,9 @@ section > .partcap span { visibility:hidden; }
 .unsure-why { margin:10px 0 0; font-size:14px; color:var(--muted); }
 .item .meta { flex-wrap:wrap; row-gap:1px; }
 .item .meta .mpart { display:inline-flex; align-items:center; gap:6px; }
+/* Rustiger (wens eigenaar): "onzeker" als gewoon grijs schuin woord, "Nieuw" als klein blauw puntje, dagdelen met meer ruimte. */
+.item .meta .unsure { border:0; padding:0; border-radius:0; font-size:13px; font-style:italic; }
+.newdot { display:inline-block; width:8px; height:8px; margin-left:7px; border-radius:50%; background:#2563eb; vertical-align:2px; flex:none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .newdot { background:#60a5fa; } }
+:root[data-theme="dark"] .newdot { background:#60a5fa; }
+.partmark { padding:30px 14px 10px; font-size:13px; color:color-mix(in srgb, var(--fg) 70%, var(--muted)); }

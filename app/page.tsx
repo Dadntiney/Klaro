@@ -1592,7 +1592,7 @@ export default function Home() {
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
-                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && firstNew.get(g.site) === t && <span className="newtag">Nieuw</span>}</div>
+                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && firstNew.get(g.site) === t && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
