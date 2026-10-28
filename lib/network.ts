@@ -9,8 +9,11 @@ export interface NetRow {
 export interface AwayInfo {
   now: boolean | null; // laatste verzoek van buiten het thuisnetwerk? (null = onbekend)
   since: number; // sinds wanneer (alleen als now)
-  runs: Session[]; // periodes buiten het thuisnetwerk, nieuwste eerst
+  runs: AwayRun[]; // periodes buiten het thuisnetwerk, nieuwste eerst
 }
+
+/** Een periode buiten het thuisnetwerk, met het adres dat het apparaat toen het meest gebruikte (voor mobiel of andere wifi). */
+export type AwayRun = Session & { ip?: string };
 
 /** IPv6: het netwerkdeel (eerste 64 bits, dat wisselt niet mee met de privacy-adressen); IPv4: het hele adres. */
 export function netKey(ip: string): string {
@@ -59,30 +62,32 @@ export function analyzeNetwork(rows: NetRow[]): Map<string, AwayInfo> {
     if (a && nearest(a, r.t) <= 120_000) homeV4.add(r.ip);
   }
 
-  const byDev = new Map<string, [number, boolean][]>();
+  const byDev = new Map<string, [number, boolean, string][]>();
   for (const r of rows) {
     if (!r.ip) continue;
     const away = r.ip.includes(":") ? !homeV6.has(netKey(r.ip)) : !homeV4.has(r.ip);
-    (byDev.get(r.dev) ?? byDev.set(r.dev, []).get(r.dev)!).push([r.t, away]);
+    (byDev.get(r.dev) ?? byDev.set(r.dev, []).get(r.dev)!).push([r.t, away, r.ip]);
   }
 
   const out = new Map<string, AwayInfo>();
   for (const [dev, list] of byDev) {
     list.sort((a, b) => a[0] - b[0]);
     const known = homeTimes.has(dev) || list.some(([, a]) => !a);
-    const runs: Session[] = [];
-    let cur: { s: number; e: number; n: number } | null = null;
-    for (const [t, away] of list) {
+    const runs: AwayRun[] = [];
+    let cur: { s: number; e: number; n: number; ips: Map<string, number> } | null = null;
+    const done = (c: NonNullable<typeof cur>) => { if (c.n >= 3) runs.push({ s: c.s, e: c.e, ip: [...c.ips].sort((a, b) => b[1] - a[1])[0]?.[0] }); };
+    for (const [t, away, ip] of list) {
       if (!away) continue;
       if (cur && t - cur.e <= RUN_GAP) {
         cur.e = t;
         cur.n++;
       } else {
-        if (cur && cur.n >= 3) runs.push({ s: cur.s, e: cur.e });
-        cur = { s: t, e: t, n: 1 };
+        if (cur) done(cur);
+        cur = { s: t, e: t, n: 1, ips: new Map() };
       }
+      cur.ips.set(ip, (cur.ips.get(ip) ?? 0) + 1);
     }
-    if (cur && cur.n >= 3) runs.push({ s: cur.s, e: cur.e });
+    if (cur) done(cur);
     const last = list[list.length - 1];
     const now = known && last ? last[1] : null;
     // sinds wanneer buiten: begin van de laatste periode die tot het einde doorloopt
@@ -93,7 +98,7 @@ export function analyzeNetwork(rows: NetRow[]): Map<string, AwayInfo> {
       since = list[i][0];
     }
     // Zonder bekend thuisnetwerk voor dit apparaat kunnen we niets zinnigs zeggen over onderweg zijn.
-    out.set(dev, { now, since, runs: known ? runs.reverse().slice(0, 8) : [] });
+    out.set(dev, { now, since, runs: known ? runs.reverse().slice(0, 300) : [] });
   }
   return out;
 }

@@ -224,6 +224,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Ook (28 okt): zelf leren wilde tui.nl vastleggen als "hulpje" (dan zouden echte bezoeken verdwijnen). Oorzaak: elke keer laadde
    vlak ervoor imgcy.trivago.com (eerst op trivago vergeleken, dan doorgeklikt) en mwa.tui.com (eigen merk, andere extensie). Nu
    telt een onderdeel van hetzelfde merk of van een site die je net zelf open had niet als hulpadres. Hulpjes blijven verder gelijk.
+   Nieuw (28 okt, wens eigenaar): bij een regel buiten het thuisnetwerk staat "mobiel internet", "andere wifi" of "niet thuis".
+   Uit het internetadres van die periode (lib/network.ts, runs[].ip) en het RIPE-register (api/netinfo.php, 30 dagen bewaard;
+   IPv6 alleen het netwerkdeel). Gemeten: thuis Ziggo; alleen-iPhone-adressen Vodafone "Mobile Office Service" (mobiel); een
+   Odido "Pool for fixed WBA users" (vast = andere wifi). 4G of 5G is niet te zien; geen trefwoord = "niet thuis" (nooit raden).
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen

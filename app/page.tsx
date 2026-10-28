@@ -14,6 +14,7 @@ import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
 import { askReview, listReviews, type NakijkItem } from "@/lib/nakijken-client";
+import { netInfo, netLabel, type NetInfo } from "@/lib/netinfo-client";
 import { amsterdamMidnight } from "@/lib/nextdns";
 import { startActivityReporting } from "@/lib/activity";
 import { checkLogin } from "@/lib/php-client";
@@ -607,6 +608,8 @@ function FoldRow({ label, value, open, onToggle, children }: { label: string; va
 export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
+  // Soort netwerk per adres (mobiel internet / andere wifi), voor regels buiten het thuisnetwerk.
+  const [nets, setNets] = useState<Record<string, NetInfo | null>>({});
   const [total, setTotal] = useState(0);
   const [deviceNow, setDevice] = useState<string | null>(null);
   // De chip licht meteen op; de lijst volgt een tel later (zwaarder werk mag de tik niet ophouden).
@@ -1139,6 +1142,16 @@ export default function Home() {
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const lastUse = useMemo(() => deviceUse(groups, auto, followOf.current), [groups, auto]);
+  // Adressen van de periodes buiten het thuisnetwerk: één keer opvragen welk soort netwerk het was.
+  useEffect(() => {
+    const ips = [...new Set(devices.flatMap((d) => (d.away?.runs ?? []).map((r) => r.ip).filter((ip): ip is string => !!ip)))].filter((ip) => !(ip in nets));
+    if (!ips.length) return;
+    let stop = false;
+    (async () => { for (const ip of ips) { const v = await netInfo(ip); if (stop) return; setNets((n) => ({ ...n, [ip]: v })); } })();
+    return () => { stop = true; };
+  }, [devices, nets]);
+  /** Was dit apparaat op dit moment buiten het thuisnetwerk? Dan de periode (met het adres), anders niets. */
+  const awayAt = (dev: string, t: number) => devices.find((d) => d.name === dev)?.away?.runs.find((r) => t >= r.s - 60_000 && t <= r.e + 60_000);
   const activeNow = (name: string) => isActiveNow(lastUse, name, clock);
   const activeApp = (name: string) => activeWhat(lastUse, name, clock);
 
@@ -1520,6 +1533,9 @@ export default function Home() {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
                             parts.push(<span key="d" className="mdev" title={g.dev}><DevIcon name={g.dev} />{g.dev}</span>);
+                            // Niet thuis: mobiel internet of een andere wifi (uit het internetadres; 4G of 5G is niet te zien).
+                            const ar = t ? awayAt(g.dev, t) : undefined;
+                            if (ar) { const ni = ar.ip ? nets[ar.ip] : undefined; const lb = netLabel(ni); parts.push(<span key="n" className="netw" title={ni?.merk ? `${lb} (${ni.merk})` : lb}>{lb}</span>); }
                             if (kindOf(g.name)) parts.push(<span key="k">{kindOf(g.name)}</span>);
                             if (together && prev) parts.push(<span key="t" className="with" title={`Tegelijk met ${prev.g.name}`}>tegelijk</span>);
                             if (rss.every((x) => x.uz)) { const w = rss.find((x) => x.uw)?.uw; parts.push(<span key="u" className="unsure" title={w ? UNSURE[w] : undefined}>{w ? `onzeker: ${UNSURE_KORT[w]}` : "onzeker"}</span>); }

@@ -36,3 +36,15 @@ test("apparaat zonder bekend thuisnetwerk: geen onderweg-meldingen", () => {
   assert.equal(r.now, null);
   assert.equal(r.runs.length, 0);
 });
+
+test("periode buiten het thuisnetwerk onthoudt het adres dat toen het meest gebruikt werd (voor mobiel of andere wifi)", () => {
+  const m = 60_000;
+  const rows = [
+    ...[0, 1, 2, 3].map((i) => ({ dev: "iPhone", t: i * m, ip: "2001:db8:1:2::" + (i + 1) })), // thuis
+    ...[10, 11, 12, 13].map((i) => ({ dev: "iPhone", t: i * m, ip: i === 13 ? "203.0.113.9" : "203.0.113.5" })), // onderweg
+    ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ dev: "Apple TV", t: i * m, ip: "2001:db8:1:2::99" })),
+  ];
+  const a = analyzeNetwork(rows).get("iPhone")!;
+  assert.equal(a.runs.length, 1);
+  assert.equal(a.runs[0].ip, "203.0.113.5");
+});

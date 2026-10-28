@@ -26,5 +26,9 @@ function netinfo_classify(array $records): array {
   $soort = null;
   if (preg_match('/\b(mobile|mobiel|gprs|umts|lte|cellular|gsm|3g|4g|5g|cgnat-mobile|mobility)\b/i', $text)) $soort = 'mobiel';
   elseif (preg_match('/\b(fiber|fibre|glasvezel|ftth|dsl|adsl|vdsl|cable|kabel|broadband|residential|fixed|thuis)\b/i', $text)) $soort = 'vast';
-  return ['soort' => $soort, 'naam' => mb_substr(trim($name), 0, 60)];
+  // Merknaam van de provider uit de netwerknaam (VODAFONE-NL, TMONL-NET, ZIGGO-CM, UPC-NL, KPN-...).
+  $net = strtoupper(implode(' ', array_merge(...array_map(fn($f) => $f['netname'] ?? [], $records ?: [[]]))));
+  $merk = null;
+  foreach (['VODAFONE' => 'Vodafone', 'ZIGGO' => 'Ziggo', 'UPC' => 'Ziggo', 'TMONL' => 'Odido', 'TMNL' => 'Odido', 'TMOBILE' => 'Odido', 'ODIDO' => 'Odido', 'KPN' => 'KPN', 'TELE2' => 'Odido', 'DELTA' => 'Delta', 'CAIW' => 'Caiway', 'SIMYO' => 'KPN', 'LYCA' => 'Lyca'] as $k => $v) if (str_contains($net, $k)) { $merk = $v; break; }
+  return ['soort' => $soort, 'naam' => mb_substr(trim($name), 0, 60), 'merk' => $merk];
 }

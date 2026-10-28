@@ -14,5 +14,8 @@ $u = netinfo_classify(netinfo_fields($rec(['inetnum' => '10.0.2.0 - 10.0.2.255',
 check('niet zeker: geen soort (nooit raden)', $u['soort'] === null && $u['naam'] === 'Provider BV');
 check('"automobile" is geen mobiel netwerk', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'AUTOMOBILECLUB'])))['soort'] === null);
 check('leeg antwoord: niets', netinfo_classify(netinfo_fields([]))['soort'] === null);
+check('merk uit de netwerknaam', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'VODAFONE-NL', 'descr' => 'Mobile Office Service'])))['merk'] === 'Vodafone');
+check('echt voorbeeld (28 okt): Vodafone "Mobile Office Service" is mobiel', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'VODAFONE-NL', 'descr' => 'Mobile Office Service'])))['soort'] === 'mobiel');
+check('echt voorbeeld (28 okt): "Pool for fixed WBA users" is vast', netinfo_classify(netinfo_fields($rec(['inetnum' => 'x', 'netname' => 'TMONL-NET', 'descr' => 'Pool for fixed WBA users'])))['soort'] === 'vast');
 echo "\n$ok goed, $bad fout\n";
 exit($bad ? 1 : 0);

@@ -61,7 +61,7 @@ export interface Device {
   avg?: number; // gemiddeld aantal actieve minuten op eerdere dagen
   blocked?: number; // geblokkeerde 18+/dating-pogingen vandaag
   first?: number; // eerste verzoek ooit in de logs
-  away?: { now: boolean | null; since: number; runs: Session[] }; // thuis of onderweg
+  away?: { now: boolean | null; since: number; runs: (Session & { ip?: string })[] }; // thuis of onderweg (met het adres per periode)
   sleep?: { d: string; first: number; last: number }[]; // eerste en laatste echte activiteit per dag
   dm?: Record<string, number>; // actieve minuten per dag
   threats?: { today: number; week: number; top: { site: string; n: number }[] }; // geblokkeerde bedreigingen
