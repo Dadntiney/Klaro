@@ -1409,7 +1409,8 @@ export default function Home() {
             const topPart = isDayOpen && rows[0]?.t ? partOf(rows[0].t) : null;
             const shownPart = stuckPart?.d === d && stuckPart.p !== null ? stuckPart.p : topPart;
             // Tik op de minuten: per apparaat de minuten, en van wanneer tot wanneer het echt gebruikt werd.
-            const canTot = !device && devMins.length > 1 && dm > 0;
+            const canTot = recent && !device && devMins.length > 1 && dm > 0; // alleen vandaag (zie totBtn)
+            // Totaaltijd met uitklap per apparaat alleen bij vandaag; eerdere dagen tonen alleen het aantal sites (wens eigenaar 28 okt).
             const totBtn = canTot ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => (v === d ? null : d)); }} aria-expanded={devOpen === d} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen === d ? " up" : "")} aria-hidden>›</span></button> : dur(dm);
             return (
             <section key={d} data-day={d} className={(di === 0 && goOpen) || (devOpen === d && canTot) ? "goopen" : undefined}>
@@ -1420,7 +1421,7 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? totBtn : (outside ? <>{rows.length}× niet via thuis-wifi</> : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? <> · {totBtn}</> : ""}</>)}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? totBtn : (outside ? <>{rows.length}× niet via thuis-wifi</> : <>{list.length} {list.length === 1 ? "site" : "sites"}</>)}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
