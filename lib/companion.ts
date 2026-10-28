@@ -67,7 +67,17 @@ export function loadedWith(ev: { t: number; dev: string; host: string; site: str
       last.set(e.site, e.t);
       if (prevT !== undefined && e.t - prevT <= 1_500) continue; // zelfde moment
       const before = new Set<string>();
-      for (let j = i - 1; j >= 0 && list[j].t >= e.t - 10_000; j--) if (list[j].helper && list[j].site !== e.site) before.add(list[j].host);
+      // Een onderdeel van hetzelfde merk met een andere extensie (mwa.tui.com bij tui.nl) hoort bij de site zelf, niet bij een ander
+      // (28 okt: tui.nl werd anders als "hulpje" geleerd, en dan zouden echte bezoeken verdwijnen).
+      // Ook niet: een onderdeel van een site die je net zelf open had (imgcy.trivago.com na trivago.nl, dan naar tui.nl doorgeklikt):
+      // dat is doorklikken. Een echt hulpje is een script van een websitebouwer die je zelf niet bezoekt.
+      const brand = (site: string) => site.split(".")[0];
+      const opened = new Set<string>();
+      for (let j = i - 1; j >= 0 && list[j].t >= e.t - 10_000; j--) if (list[j].page) opened.add(brand(list[j].site));
+      for (let j = i - 1; j >= 0 && list[j].t >= e.t - 10_000; j--) {
+        const b = brand(list[j].site);
+        if (list[j].helper && list[j].site !== e.site && !(b === brand(e.site) && b.length >= 3) && !(opened.has(b) && b.length >= 3)) before.add(list[j].host);
+      }
       const s = st.get(e.site) ?? st.set(e.site, { m: 0, days: new Set(), with: null }).get(e.site)!;
       s.m++;
       s.days.add(new Date(e.t).toISOString().slice(0, 10));

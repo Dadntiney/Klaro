@@ -387,6 +387,7 @@ const BRAND_CANON: Record<string, string> = {
   "rabobank.com": "rabobank.nl",
   "decathlon.net": "decathlon.nl", "decathlon.com": "decathlon.nl",
   "s-bol.com": "bol.com", "bol.nl": "bol.com",
+  "eufylife.com": "eufy.com", // zelfde eufy-camera-app (security-app-eu., care-app-eu.): 89 van 108 keer samen met eufy.com (28 okt)
 };
 const niceName = (site: string) => NICE_NAME[site] ?? site;
 

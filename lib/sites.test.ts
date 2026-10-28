@@ -389,6 +389,8 @@ test("affiliate-links en widgets van andere sites zijn geen bezoek; tv-app- en s
   for (const h of ["app.launchdarkly.com", "clientstream.launchdarkly.com", "events.launchdarkly.com"]) assert.equal(classify(h).bg, true, h); // feature flags in een website (27 okt)
   assert.notEqual(classify("www.darkly.nl").bg, true); // geen vals alarm op een gelijkende naam
   assert.equal(classify("afs.ampaeservices.com").bg, true); // Apple: App Store-onderdeel (27 okt)
+  for (const h of ["security-app-eu.eufylife.com", "care-app-eu.eufylife.com"]) assert.equal(classify(h).site, "eufy.com", h); // zelfde eufy-app (28 okt)
+  assert.notEqual(classify("www.eufylifestyle.nl").site, "eufy.com"); // geen vals alarm op een gelijkende naam
   assert.notEqual(classify("www.ampae.nl").bg, true); // geen vals alarm op een gelijkende naam
   for (const h of ["www.cloudflare-tips.nl", "www.redbrain.nl", "www.closer.nl", "www.pubmet.nl"]) assert.notEqual(classify(h).bg, true, h); // geen vals alarm op een gelijkende naam
   assert.equal(classify("www.shopapotheke.com").bg, false); // geen vals alarm

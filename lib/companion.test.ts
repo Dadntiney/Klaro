@@ -46,6 +46,23 @@ test("loadedWith: alleen sites die elke keer (3 keer, 2 dagen) na hetzelfde hulp
   assert.equal(loadedWith(ev.filter((e) => e.t < 2 * day)).size, 0); // maar 2 keer: te weinig bewijs
 });
 
+test("loadedWith: een onderdeel van hetzelfde merk met een andere extensie maakt een site geen hulpje (tui.nl met mwa.tui.com)", async () => {
+  const { loadedWith } = await import("./companion.ts");
+  const day = 86_400_000;
+  const ev = [0, 1, 2].flatMap((d) => [
+    { t: d * day, dev: "A", host: "mwa.reismerk.com", site: "reismerk.com", helper: true },
+    { t: d * day + 200, dev: "A", host: "www.reismerk.nl", site: "reismerk.nl", page: true },
+  ]);
+  assert.equal(loadedWith(ev).size, 0);
+  // net daarvoor op een vergelijkingssite (plaatje van die site, dan doorgeklikt): ook geen hulpje
+  const ev2 = [0, 1, 2].flatMap((d) => [
+    { t: d * day, dev: "A", host: "www.vergelijk.nl", site: "vergelijk.nl", page: true },
+    { t: d * day + 500, dev: "A", host: "img.vergelijk.com", site: "vergelijk.com", helper: true },
+    { t: d * day + 4_000, dev: "A", host: "www.reisaanbieder.nl", site: "reisaanbieder.nl", page: true },
+  ]);
+  assert.equal(loadedWith(ev2).has("reisaanbieder.nl"), false);
+});
+
 test("gedeelde Meta-adressen: bij Instagram als het dichtstbijzijnde eigen adres van Instagram is, anders Facebook", async () => {
   const { instagramShared } = await import("./companion.ts");
   const ev = [
