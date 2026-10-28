@@ -1393,7 +1393,7 @@ export default function Home() {
             const canTot = !device && devMins.length > 1 && dm > 0;
             const totBtn = canTot ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => (v === d ? null : d)); }} aria-expanded={devOpen === d} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen === d ? " up" : "")} aria-hidden>›</span></button> : dur(dm);
             return (
-            <section key={d} data-day={d}>
+            <section key={d} data-day={d} className={di === 0 && goOpen ? "goopen" : undefined}>
               <h2
                 className={(recent ? "" : "fold") + (isDayOpen ? " open" : "") + (stuckPart?.d === d ? " stuck" : "")}
                 onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })}
@@ -1418,7 +1418,8 @@ export default function Home() {
                   <span className="dstat">{liveStatus}</span>
                   </span>
                 )}
-                {shownPart !== null && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
+                {/* Met het tijdpaneel open hoort het dagdeel bij de lijst eronder, niet half over het paneel (zie .goopen). */}
+                {shownPart !== null && !(di === 0 && goOpen) && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {devOpen === d && canTot && (

@@ -641,3 +641,8 @@ section > .partcap span { visibility:hidden; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .newdot { background:#60a5fa; } }
 :root[data-theme="dark"] .newdot { background:#60a5fa; }
 .partmark { padding:30px 14px 10px; font-size:13px; color:color-mix(in srgb, var(--fg) 70%, var(--muted)); }
+/* Tijdpaneel open: het dagdeel staat dan zichtbaar op de bovenrand van de lijst (niet half over het paneel). */
+section.goopen > .partcap span { visibility:visible; }
+section.goopen > .partcap { margin-top:22px; }
+/* Iets minder lucht rond een nieuw dagdeel: valt anders erg op bij regels met één tekstregel (apparaatfilter aan). */
+.partmark { padding-top:22px; padding-bottom:8px; }
