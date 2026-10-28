@@ -45,14 +45,14 @@ export function dayLabel(d: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/** Netwerk buiten de wifi thuis: zendmast-balkjes (mobiel internet), wifi-teken (andere wifi), golven (hotspot) of balkjes + wifi samen (niet via thuis-wifi, soort onbekend). */
+/** Netwerk buiten de wifi thuis: zendmast-balkjes (mobiel internet), wifi-teken (andere wifi), golven (hotspot) of een wereldbol (niet via thuis-wifi, soort onbekend). */
 export function NetIcon({ soort }: { soort: "mobiel" | "vast" | "hotspot" | null | undefined }) {
   return (
     <svg className="di" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {soort === "hotspot" ? <><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" /><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8" /></>
         : soort === "mobiel" ? <path d="M5 19v-3M10 19v-6M15 19v-9M20 19V7" />
         : soort === "vast" ? <><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.8 16a4.5 4.5 0 0 1 6.4 0" /><circle cx="12" cy="19.2" r="1" fill="currentColor" stroke="none" /></>
-        : <><path d="M3 20v-3M6.5 20v-6.5M10 20V10" /><path d="M12.5 12.5a7 7 0 0 1 9.5 0M14.4 15.4a4.2 4.2 0 0 1 5.7 0" /><circle cx="17.25" cy="18.8" r="1.1" fill="currentColor" stroke="none" /></>}
+        : <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" /></>}
     </svg>
   );
 }
