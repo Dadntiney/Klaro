@@ -1626,7 +1626,7 @@ export default function Home() {
                             {(() => {
                               // Netwerk buiten de deur: een eigen naam geven (bijv. "werk"); daarna staat die naam bij de regels.
                               const ar = t ? awayAt(g.dev, t) : undefined;
-                              if (!ar?.ip || (ar.hotspot && nets[ar.ip]?.soort === "mobiel")) return null;
+                              if (!ar?.ip || nets[ar.ip]?.soort !== "vast") return null; // alleen een andere wifi: een mobiel adres wisselt elke week
                               const key = netOf(ar.ip), cur = netNamen[key];
                               const nt = netText(nets[ar.ip], { naam: cur });
                               return (
