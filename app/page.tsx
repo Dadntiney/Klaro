@@ -134,12 +134,13 @@ function PartIcon({ p }: { p: number }) {
   );
 }
 
-/** Buiten de deur: een locatiespeld (filter op alles buiten de Ziggo-wifi thuis). */
-function PinIcon() {
+/** Buiten de deur: een huisje met een pijl naar buiten (filter op alles buiten de Ziggo-wifi thuis: mobiel internet of andere wifi). */
+function OutIcon() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
-      <circle cx="12" cy="9.5" r="2.5" />
+      <path d="M2.5 11 9 5.5l6.5 5.5" />
+      <path d="M4.5 9.5V19h9" />
+      <path d="M13 15h8.5M18.5 12l3 3-3 3" />
     </svg>
   );
 }
@@ -1432,7 +1433,7 @@ export default function Home() {
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
-                  <button className={"dview icon" + (outside ? " on" : "")} onClick={(e) => { e.stopPropagation(); setOutside((v) => !v); }} aria-pressed={outside} aria-label="Alleen buiten de deur (mobiel internet of andere wifi)" title="Alleen buiten de deur"><PinIcon /></button>
+                  <button className={"dview icon" + (outside ? " on" : "")} onClick={(e) => { e.stopPropagation(); setOutside((v) => !v); }} aria-pressed={outside} aria-label="Alleen buiten de deur (mobiel internet of andere wifi)" title="Alleen buiten de deur"><OutIcon /></button>
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}
                     onClick={(e) => { e.stopPropagation(); setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
