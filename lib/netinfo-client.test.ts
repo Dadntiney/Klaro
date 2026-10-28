@@ -12,11 +12,11 @@ test("netwerk bij een regel: soort plus provider als die bekend is; zonder soort
 test("tekst bij een regel: eigen naam, hotspot en buitenland", async () => {
   const { netText } = await import("./netinfo-client.ts");
   assert.equal(netText({ soort: "vast", merk: "Odido" }).text, "Andere wifi (Odido)");
-  assert.equal(netText({ soort: "mobiel", merk: "Vodafone" }).text, "Mobiele data (Vodafone)"); // geen "onderweg": kan ook thuis zijn
+  assert.equal(netText({ soort: "mobiel", merk: "Vodafone" }).text, "Mobiel (Vodafone)"); // geen "onderweg": kan ook thuis zijn
   assert.equal(netText({ soort: "vast", merk: "Odido" }, { naam: "werk" }).text, "werk");
   assert.equal(netText({ soort: "mobiel", merk: "Vodafone" }, { hotspot: "iPhone" }).text, "hotspot iPhone");
   assert.equal(netText({ soort: "vast", merk: "Odido" }, { hotspot: "iPhone" }).icon, "vast"); // gedeelde wifi elders is geen hotspot
   assert.equal(netText({ soort: "vast", merk: "Telekom", land: "DE" }).text, "Andere wifi (Telekom) · Duitsland");
-  assert.equal(netText({ soort: "mobiel", merk: "Vodafone", land: "NL" }).text, "Mobiele data (Vodafone)");
+  assert.equal(netText({ soort: "mobiel", merk: "Vodafone", land: "NL" }).text, "Mobiel (Vodafone)");
   assert.equal(netText(null).text, "Niet via thuis-wifi");
 });

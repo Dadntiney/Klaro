@@ -27,7 +27,7 @@ export function netLabel(info: NetInfo | null | undefined): string {
 const landNaam = (code: string) => { try { return new Intl.DisplayNames(["nl"], { type: "region" }).of(code) ?? code; } catch { return code; } };
 
 /**
- * Wat er bij een regel die niet via de wifi thuis ging staat ("Mobiele data (Vodafone)", "Andere wifi (Odido)"): icoontje + korte tekst, en een uitleg (tooltip).
+ * Wat er bij een regel die niet via de wifi thuis ging staat ("Mobiel (Vodafone)", "Andere wifi (Odido)"): icoontje + korte tekst, en een uitleg (tooltip).
  * - eigen naam van het netwerk (door de eigenaar gegeven) gaat voor de provider;
  * - laptop/tablet op het mobiele internet van een telefoon: "hotspot iPhone";
  * - een netwerk in een ander land: " · Duitsland" erachter.
@@ -36,7 +36,7 @@ export function netText(info: NetInfo | null | undefined, opts: { naam?: string;
   const hot = !!opts.hotspot && info?.soort === "mobiel";
   const icon = hot ? "hotspot" : info?.soort ?? null;
   const merk = info?.merk ? ` (${info.merk})` : "";
-  const base = hot ? `hotspot ${opts.hotspot}` : opts.naam ?? (info?.soort === "mobiel" ? `Mobiele data${merk}` : info?.soort === "vast" ? `Andere wifi${merk}` : "Niet via thuis-wifi");
+  const base = hot ? `hotspot ${opts.hotspot}` : opts.naam ?? (info?.soort === "mobiel" ? `Mobiel${merk}` : info?.soort === "vast" ? `Andere wifi${merk}` : "Niet via thuis-wifi");
   const land = info?.land && info.land !== "NL" ? landNaam(info.land) : "";
   const text = land ? `${base} · ${land}` : base;
   const uitleg = (hot ? `via de hotspot van ${opts.hotspot} (mobiel internet)` : netLabel(info)) + (opts.naam && info?.merk ? ` (${info.merk})` : "") + (land ? `, in ${land}` : "");
