@@ -3,7 +3,7 @@
 import { OPEN_BURST, extendAll, extendSessions, minutes, type Session, isHuman } from "@/lib/sessions";
 import { mergeRows } from "@/lib/merge";
 import { activeMinutes, usage } from "@/lib/usage";
-import { HEARTBEAT_GAP, setLearnedFg } from "@/lib/sites";
+import { HEARTBEAT_GAP, runsAlongside, setLearnedFg } from "@/lib/sites";
 import { isPlainSite } from "@/lib/system";
 import { isSilent } from "@/lib/devstats";
 import { companionFor } from "@/lib/companion";
@@ -1506,9 +1506,10 @@ export default function Home() {
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   // Tegelijk gebruikt op hetzelfde apparaat (Spotify tijdens een rit met Waze): met een lijntje aan de regel erboven
-                  // vast, zodat het niet lijkt alsof de minuten bij elkaar opgeteld moeten worden. Alleen bij minstens een minuut overlap.
+                  // vast, zodat het niet lijkt alsof de minuten bij elkaar opgeteld moeten worden. Alleen bij minstens een minuut overlap
+                  // én als één van de twee doorloopt (muziek, navigatie); anders is het wisselen (Instagram en Facebook), geen lijntje.
                   const prev = ri > 0 && !hourStart && !partStart ? rows[ri - 1] : undefined;
-                  const together = !!prev && prev.g.dev === g.dev && mins > 0 && prev.ss.reduce((n, x) => n + minutes(x), 0) > 0 &&
+                  const together = !!prev && prev.g.dev === g.dev && (runsAlongside(g.site) || runsAlongside(prev.g.site)) && mins > 0 && prev.ss.reduce((n, x) => n + minutes(x), 0) > 0 &&
                     Math.min(Math.max(...prev.ss.map((x) => x.e)), Math.max(...rss.map((x) => x.e))) - Math.max(Math.min(...prev.ss.map((x) => x.s)), Math.min(...rss.map((x) => x.s))) >= 60_000;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>

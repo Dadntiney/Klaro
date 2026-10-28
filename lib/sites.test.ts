@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost, isNeverFlag } from "./sites.ts";
+import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost, isNeverFlag, runsAlongside } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -481,4 +481,9 @@ test("korte links van een merk horen bij dat merk; websitebouwer, maattabel en Q
   assert.equal(classify("pin.it").site, "pinterest.com");
   assert.equal(classify("www.mediawiki.org").site, "wikipedia.org");
   for (const h of ["app.cleansizecharts.com", "app.phoenixsite.nl", "myqrcode.mobi", "neoseum-widget.pages.dev"]) assert.equal(classify(h).bg, true, h);
+});
+
+test("tegelijk gebruikt: alleen met een app die doorloopt (muziek, navigatie)", () => {
+  for (const s of ["spotify.com", "waze.com", "meditopia.com"]) assert.equal(runsAlongside(s), true, s);
+  for (const s of ["instagram.com", "facebook.com", "google.com", "youtube.com", "netflix.com", "whatsapp.com"]) assert.equal(runsAlongside(s), false, s);
 });

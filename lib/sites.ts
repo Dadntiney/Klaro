@@ -153,6 +153,13 @@ export function isEmbedHost(host: string): boolean {
  */
 export const NAV_APPS = new Set(["waze.com"]);
 export const NAV_GAP = 20 * 60_000;
+/** Apps die doorlopen terwijl je iets anders doet: muziek, navigatie, meditatie (geluid). Alleen daarmee kan een andere app op
+ *  hetzelfde apparaat echt tegelijk gebruikt zijn; twee gewone apps die elkaar overlappen is heen en weer wisselen (gemeten over
+ *  alle dagen: Spotify + Waze en Waze + YouTube tegelijk, verder vrijwel alleen wisselen zoals Google + YouTube of Disney+ + Netflix). */
+export const RUNS_ALONGSIDE = new Set(["spotify.com", ...NAV_APPS, "meditopia.com"]);
+export function runsAlongside(site: string): boolean {
+  return RUNS_ALONGSIDE.has(site);
+}
 /** Apps die tijdens gebruik een vaste melding sturen via een doorverwijs-adres (zie followers() in lib/companion.ts): meestal elke
  * 1 tot 5 minuten, soms tot 10 (over alle dagen bij Toca Boca); langer is een echte pauze. */
 export const HEARTBEAT_GAP = 10 * 60_000;
