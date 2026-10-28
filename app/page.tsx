@@ -230,7 +230,7 @@ function fallbackCopy(text: string) {
   ta.remove();
 }
 
-function RawLog({ rows, devName, devIds, device, onClose, status, outside, onOutside, awayAt }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void; status?: React.ReactNode; outside: boolean; onOutside: () => void; awayAt: (dev: string, t: number) => boolean }) {
+function RawLog({ rows, devName, devIds, device, onClose, status, outside, onOutside, awayAt, lastAway }: { rows: Event[]; devName: (id: string) => string; devIds: string[] | null; device: string | null; onClose: () => void; status?: React.ReactNode; outside: boolean; onOutside: () => void; awayAt: (dev: string, t: number) => boolean; lastAway: number | null }) {
   const [q, setQ] = useState("");
   const [at, setAt] = useState<number | null>(null); // gesprongen naar dit moment: regels van daarvoor
   const [calOpen, setCalOpen] = useState(false);
@@ -290,6 +290,20 @@ function RawLog({ rows, devName, devIds, device, onClose, status, outside, onOut
     return (outside ? out.filter((e) => awayAt(devName(e.devId), e.t)) : out).sort((a, b) => b.t - a.t);
   }, [rows, older, at, device, devName, needle, outside, awayAt]);
   const oldest = shown.length ? shown[shown.length - 1].t : null;
+  // Filter "buiten de deur" aan: meteen naar het laatste moment buiten de deur springen (de nieuwste regels zijn meestal van thuis),
+  // en zolang er weinig te zien is vanzelf oudere regels bijladen (hooguit 10 keer).
+  const fills = useRef(0);
+  useEffect(() => {
+    fills.current = 0;
+    if (outside && lastAway) setAt(lastAway + 60_000);
+    else if (!outside) setAt(null);
+  }, [outside, lastAway]);
+  const oldestAll = older.length ? Math.min(...older.map((e) => e.t)) : null;
+  useEffect(() => {
+    if (!outside || busy || !more || shown.length >= 30 || fills.current >= 10 || oldestAll === null) return;
+    fills.current++;
+    void load(oldestAll, true);
+  }, [outside, busy, more, shown.length, oldestAll, load]);
   return (
     <section>
       <h2>
@@ -381,7 +395,7 @@ function RawLog({ rows, devName, devIds, device, onClose, status, outside, onOut
       {shown.length > 0 && (
         <div className="rawmore">
           {more || (busy && older.length === 0) ? (
-            <button type="button" disabled={busy} onClick={() => oldest !== null && load(oldest, true)}>{busy ? "Laden…" : "Oudere regels laden"}</button>
+            <button type="button" disabled={busy} onClick={() => { const b = outside ? oldestAll : oldest; if (b !== null) void load(b, true); }}>{busy ? "Laden…" : "Oudere regels laden"}</button>
           ) : err ? (
             <span className="muted">{err}</span>
           ) : (
@@ -1400,7 +1414,7 @@ export default function Home() {
             </div>
           )}
 
-          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} outside={outside} onOutside={() => setOutside((v) => !v)} awayAt={awayRaw} />}
+          {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} outside={outside} onOutside={() => setOutside((v) => !v)} awayAt={awayRaw} lastAway={(() => { const ends = devices.filter((d) => !device || d.name === device).flatMap((d) => (d.away?.runs ?? []).map((r) => r.e)); return ends.length ? Math.max(...ends) : null; })()} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
           {days.map(({ d, list, mins: dm, devMins, rows: trows, hidden }, di) => {
             if (rawView) return null;
