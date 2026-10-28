@@ -45,3 +45,14 @@ export function dayLabel(d: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+/** Netwerk buiten de wifi thuis: zendmast-balkjes (mobiel internet), wifi-teken (andere wifi) of huisje met pijl (niet thuis). */
+export function NetIcon({ soort }: { soort: "mobiel" | "vast" | null | undefined }) {
+  return (
+    <svg className="di" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {soort === "mobiel" ? <path d="M5 19v-3M10 19v-6M15 19v-9M20 19V7" />
+        : soort === "vast" ? <><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.8 16a4.5 4.5 0 0 1 6.4 0" /><circle cx="12" cy="19.2" r="1" fill="currentColor" stroke="none" /></>
+        : <><path d="M2.5 11 9 5.5l6.5 5.5" /><path d="M4.5 9.5V19h9" /><path d="M13 15h8.5M18.5 12l3 3-3 3" /></>}
+    </svg>
+  );
+}
+

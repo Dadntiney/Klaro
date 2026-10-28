@@ -622,3 +622,5 @@ section > .partcap span { visibility:hidden; }
 .setlist li.histitem { position:relative; padding-right:44px; }
 .hist-x { position:absolute; top:50%; transform:translateY(-50%); right:0; width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:50%; background:transparent; color:var(--muted); font-size:22px; line-height:1; cursor:pointer; }
 .hist-x:active { background:color-mix(in srgb, var(--muted) 15%, transparent); }
+/* Netwerk buiten de wifi thuis: icoontje + provider, net zo rustig als het apparaat ervoor. */
+.item .meta .netw { display:inline-flex; align-items:center; gap:4px; flex:none; }
