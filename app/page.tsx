@@ -615,6 +615,12 @@ export default function Home() {
   // Soort netwerk per adres (mobiel internet / andere wifi), voor regels buiten het thuisnetwerk.
   const [nets, setNets] = useState<Record<string, NetInfo | null>>({});
   const [siteChk, setSiteChk] = useState<Record<string, SiteCheck | null>>({}); // websitecontrole van nieuwe sites
+  // "Nieuw"-puntje alleen de eerste keer dat de eigenaar de site in het overzicht ziet (wens eigenaar 28 okt): bij een volgende keer
+  // openen is het weg. Onthouden op dit toestel; kan het niet (privévenster), dan gewoon tonen zoals voorheen.
+  const SEEN_KEY = "klaro.nieuwGezien";
+  const [seenBefore] = useState<Set<string>>(() => {
+    try { const m = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<string, number>; return new Set(Object.keys(m)); } catch { return new Set(); }
+  });
   const [netNamen, setNetNamen] = useState<Record<string, string>>({}); // eigen namen voor netwerken ("werk")
   useEffect(() => { netNames().then(setNetNamen); }, []);
   const netOf = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
@@ -1122,6 +1128,19 @@ export default function Home() {
     (async () => { for (const h of hosts) { const v = await siteCheck(h); if (stop) return; setSiteChk((c) => ({ ...c, [h]: v })); } })();
     return () => { stop = true; };
   }, [groups, siteChk]);
+  // Nieuwe sites die nu in beeld zijn als gezien onthouden (pas voor de volgende keer openen; nu blijft het puntje staan).
+  useEffect(() => {
+    if (!full) return;
+    const fresh = groups.filter((g) => g.isNew).map((g) => g.site);
+    if (!fresh.length) return;
+    try {
+      const m = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<string, number>;
+      const now = Date.now();
+      for (const k of Object.keys(m)) if (now - m[k] > 7 * 86_400_000) delete m[k];
+      for (const site of fresh) m[site] ??= now;
+      localStorage.setItem(SEEN_KEY, JSON.stringify(m));
+    } catch {}
+  }, [groups, full]);
   /** Was dit apparaat op dit moment buiten het thuisnetwerk? Dan de periode (met het adres), anders niets. */
   const awayAt = (dev: string, t: number) => devices.find((d) => d.name === dev)?.away?.runs.find((r) => t >= r.s - 60_000 && t <= r.e + 60_000);
   const awayRaw = useCallback((dev: string, t: number) => !!devices.find((d) => d.name === dev)?.away?.runs.some((r) => t >= r.s - 60_000 && t <= r.e + 60_000), [devices]);
@@ -1523,7 +1542,7 @@ export default function Home() {
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
-                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && firstNew.get(g.site) === t && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
+                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && firstNew.get(g.site) === t && !seenBefore.has(g.site) && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
