@@ -134,6 +134,16 @@ function PartIcon({ p }: { p: number }) {
   );
 }
 
+/** Buiten de deur: een locatiespeld (filter op alles buiten de Ziggo-wifi thuis). */
+function PinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
 /** Alle losse DNS-regels (logboek): streepjes met een stipje ervoor. */
 function LogIcon() {
   return (
@@ -631,6 +641,7 @@ export default function Home() {
     return () => clearInterval(t);
   }, [loadReviews]);
   const [goOpen, setGoOpen] = useState(false); // "Ga naar dag en tijd"
+  const [outside, setOutside] = useState(false); // filter: alleen wat buiten het thuisnetwerk gebeurde (mobiel internet of andere wifi)
   // Weergave: het eigen overzicht, of live de regels zoals NextDNS ze ziet.
   const [rawView, setRawView] = useState(false);
   // Klaro opent altijd in het gewone overzicht; de NextDNS-lijst is een uitstapje (wens eigenaar), dus de keuze wordt niet onthouden.
@@ -1393,7 +1404,9 @@ export default function Home() {
             const humanSes = new Map<string, { s: number; e: number; r: unknown }[]>();
             // Alleen regels van echt gebruik (niet de altijd-getoonde regels van achtergrondverkeer, zoals Philips Hue).
             for (const r of trows) for (const x of r.ss) if (r.g.flag || isHuman(x)) (humanSes.get(r.g.dev) ?? humanSes.set(r.g.dev, []).get(r.g.dev)!).push({ s: x.s, e: x.e, r });
-            const rows = trows;
+            // Filter "buiten de deur": alleen regels van momenten buiten het thuisnetwerk (mobiel internet of een andere wifi).
+            const rows = outside ? trows.filter((r) => r.t && awayAt(r.g.dev, r.t)) : trows;
+            if (outside && di > 0 && !rows.length) return null;
             const today = dayKeyFmt.format(Date.now());
             const recent = d === today; // alleen vandaag staat open; gisteren en ouder zijn ingeklapt
             // Nog niets vandaag (net na middernacht): de bovenste dag blijft gewoon open staan; inklappen kan wel.
@@ -1415,10 +1428,11 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? (!device && devMins.length > 1 ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => !v); }} aria-expanded={devOpen} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen ? " up" : "")} aria-hidden>›</span></button> : dur(dm)) : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</>}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? (!device && devMins.length > 1 ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => !v); }} aria-expanded={devOpen} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen ? " up" : "")} aria-hidden>›</span></button> : dur(dm)) : (outside ? <>{rows.length}× buiten de deur</> : <>{list.length} {list.length === 1 ? "site" : "sites"}{dm > 0 ? ` · ${dur(dm)}` : ""}</>)}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
+                  <button className={"dview icon" + (outside ? " on" : "")} onClick={(e) => { e.stopPropagation(); setOutside((v) => !v); }} aria-pressed={outside} aria-label="Alleen buiten de deur (mobiel internet of andere wifi)" title="Alleen buiten de deur"><PinIcon /></button>
                   <button
                     className={"dview icon" + (goOpen ? " on" : "")}
                     onClick={(e) => { e.stopPropagation(); setGoOpen((v) => !v); if (!goDay) setGoDay(days[0].d); }}
@@ -1481,6 +1495,7 @@ export default function Home() {
               <button type="submit">Ga</button>
             </form>
           )}
+              {outside && isDayOpen && !rows.length && <p className="muted pad">Vandaag nog niet buiten de deur (alleen thuis op de wifi).</p>}
               {isDayOpen && (() => {
                 // Dagdelen: alleen als de dag er meer dan één heeft; een label bovenaan elk dagdeel.
                 // Het bovenste label staat rustig óp de bovenrand van de lijst (half grijs, half wit), niet als extra regel erin.
@@ -1633,7 +1648,7 @@ export default function Home() {
               })()}
               {/* Wat er bewust níet staat, met de reden: zo is zelf na te gaan dat er niets gemist is. */}
               {/* Pas als vandaag compleet is (cut = 0): tijdens het snelle eerste beeld groeit de lijst nog, en dan zou dit verspringen. */}
-              {isDayOpen && hidden.length > 0 && !cut && (
+              {isDayOpen && hidden.length > 0 && !cut && !outside && (
                 <details className="hidden-list">
                   <summary>Niet getoond ({hidden.length})</summary>
                   {hidden.map((h, i) => (
