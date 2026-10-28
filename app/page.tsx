@@ -111,14 +111,12 @@ function PartIcon({ p }: { p: number }) {
   );
 }
 
-/** Niet via thuis-wifi (mobiele data of een andere wifi): huisje met een pijl naar buiten (wens eigenaar 28 okt, na wifi-teken en
- *  wereldbol toch dit). De tekst zegt "niet via thuis-wifi": mobiele data kan ook thuis zijn. */
+/** Niet via thuis-wifi (mobiele data of een andere wifi): de streepjes van mobiel, zelfde icoontje als bij de regels (wens
+ *  eigenaar 28 okt, na huisje met pijl, wifi-teken en wereldbol). */
 function OutIcon() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M2.5 11 9 5.5l6.5 5.5" />
-      <path d="M4.5 9.5V19h9" />
-      <path d="M13 15h8.5M18.5 12l3 3-3 3" />
+      <path d="M5 19v-3M10 19v-6M15 19v-9M20 19V7" />
     </svg>
   );
 }
