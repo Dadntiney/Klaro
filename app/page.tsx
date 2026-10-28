@@ -111,13 +111,14 @@ function PartIcon({ p }: { p: number }) {
   );
 }
 
-/** Buiten de deur: een huisje met een pijl naar buiten (filter op alles buiten de Ziggo-wifi thuis: mobiel internet of andere wifi). */
+/** Niet via thuis-wifi: balkjes van mobiele data naast een wifi-teken (= mobiele data of een andere wifi). Bewust geen huisje met
+ *  een pijl: mobiele data kan ook thuis zijn, en een andere wifi is ook gewoon wifi (wens eigenaar 28 okt). */
 function OutIcon() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M2.5 11 9 5.5l6.5 5.5" />
-      <path d="M4.5 9.5V19h9" />
-      <path d="M13 15h8.5M18.5 12l3 3-3 3" />
+      <path d="M3 20v-3M6.5 20v-6.5M10 20V10" />
+      <path d="M12.5 12.5a7 7 0 0 1 9.5 0M14.4 15.4a4.2 4.2 0 0 1 5.7 0" />
+      <circle cx="17.25" cy="18.8" r="1.1" fill="currentColor" stroke="none" />
     </svg>
   );
 }
