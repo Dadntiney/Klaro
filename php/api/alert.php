@@ -86,4 +86,4 @@ foreach (array_slice(is_array($in['check'] ?? null) ? $in['check'] : [], 0, 40) 
   sitecheck_run($h, 6);
   if (++$checked >= 4) break;
 }
-json_out(200, ['send' => $send, 'subs' => push_subs(), 'test' => push_take_tests()]);
+json_out(200, ['send' => $send, 'subs' => push_subs(), 'test' => push_take_tests(), 'checked' => $checked]);

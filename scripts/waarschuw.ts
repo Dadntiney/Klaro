@@ -141,7 +141,7 @@ async function main() {
     }
   }
   if (gone.length) await api(url, k, { gone });
-  console.log(`${send.length} melding(en) nieuw, ${ok} verstuurd, ${fail} mislukt, ${gone.length} abonnement(en) vervallen`);
+  console.log(`${send.length} melding(en) nieuw, ${ok} verstuurd, ${fail} mislukt, ${gone.length} abonnement(en) vervallen, ${Number(res.checked) || 0} websitecontrole(s)`);
   if (fail) process.exitCode = 1;
 }
 
