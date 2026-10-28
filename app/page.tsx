@@ -111,14 +111,15 @@ function PartIcon({ p }: { p: number }) {
   );
 }
 
-/** Niet via thuis-wifi: een wereldbol (ander netwerk: mobiele data of een andere wifi). Geen huisje met pijl (mobiele data kan ook
- *  thuis zijn) en geen balkjes + wifi samen (te druk); wens eigenaar 28 okt. */
+/** Niet via thuis-wifi (mobiele data of een andere wifi): een strak wifi-teken (wens eigenaar 28 okt; huisje met pijl, balkjes +
+ *  wifi en wereldbol waren minder duidelijk). */
 function OutIcon() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18" />
-      <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
+      <path d="M2 8.8a15 15 0 0 1 20 0" />
+      <path d="M5.3 12.6a10 10 0 0 1 13.4 0" />
+      <path d="M8.6 16.3a5 5 0 0 1 6.8 0" />
+      <circle cx="12" cy="20" r="1.3" fill="currentColor" stroke="none" />
     </svg>
   );
 }
