@@ -125,7 +125,8 @@ async function main() {
   // Geen namen of adressen in het logboek van GitHub (openbaar): alleen aantallen.
   console.log(`${(got.rows as string[]).length} nieuwe regels, ${alerts.length} melding(en) gevonden, ${devs.length} apparaten, ${got.subs} abonnement(en)`);
   if (proef) return;
-  const res = await api(url, k, { until: got.until, alerts: alerts.map(({ key, title, body }) => ({ key, title, body })), check: siteCandidates(got.cols as string[], got.rows as string[]) });
+  const check = siteCandidates(got.cols as string[], got.rows as string[]);
+  const res = await api(url, k, { until: got.until, alerts: alerts.map(({ key, title, body }) => ({ key, title, body })), check });
   const subs = res.subs as Sub[];
   const send = res.send as { title: string; body: string; tag: string }[];
   const tests = new Set(res.test as string[]);
@@ -141,7 +142,7 @@ async function main() {
     }
   }
   if (gone.length) await api(url, k, { gone });
-  console.log(`${send.length} melding(en) nieuw, ${ok} verstuurd, ${fail} mislukt, ${gone.length} abonnement(en) vervallen, ${Number(res.checked) || 0} websitecontrole(s)`);
+  console.log(`${send.length} melding(en) nieuw, ${ok} verstuurd, ${fail} mislukt, ${gone.length} abonnement(en) vervallen, websitecontrole: ${check.length} aangeboden, ${Number(res.known) || 0} al bekend, ${Number(res.checked) || 0} nagekeken`);
   if (fail) process.exitCode = 1;
 }
 

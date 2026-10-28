@@ -79,11 +79,12 @@ if (isset($in['until'])) store_meta($db, 'alert_until', (string)(int)$in['until'
 // Nieuwe adressen met een eigen pagina (de taak kiest ze uit de nieuwe regels): meteen de websitecontrole doen, zodat het oordeel
 // al klaarligt als de pagina opent. Hooguit 4 per keer (de taak draait elke 5 minuten); bekende adressen kosten niets.
 require_once __DIR__ . '/sitecheck-lib.php';
-$checked = 0;
+$checked = 0; $known = 0;
 foreach (array_slice(is_array($in['check'] ?? null) ? $in['check'] : [], 0, 40) as $h) {
   $h = sitecheck_host(is_string($h) ? $h : '');
-  if ($h === null || sitecheck_cached($h) !== null) continue;
+  if ($h === null) continue;
+  if (sitecheck_cached($h) !== null) { $known++; continue; }
   sitecheck_run($h, 6);
   if (++$checked >= 4) break;
 }
-json_out(200, ['send' => $send, 'subs' => push_subs(), 'test' => push_take_tests(), 'checked' => $checked]);
+json_out(200, ['send' => $send, 'subs' => push_subs(), 'test' => push_take_tests(), 'checked' => $checked, 'known' => $known]);
