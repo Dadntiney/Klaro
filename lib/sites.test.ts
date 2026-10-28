@@ -454,3 +454,31 @@ test("advertentiesysteem Ezoic in blogs is achtergrond, de blog zelf niet", () =
   for (const h of ["www.ezojs.com", "go.ezodn.com", "g.ezoic.net"]) assert.equal(classify(h).bg, true, h);
   assert.equal(classify("kleur-v-kind.com").bg, false);
 });
+
+test("een geopend betaalverzoek is een bezoek en een betaalmoment; het achterliggende api-adres niet", () => {
+  assert.equal(isMainHost("betaalverzoek.knab.nl", "knab.nl"), true);
+  assert.equal(payKind("betaalverzoek.knab.nl")?.kind, "Betaalverzoek");
+  assert.equal(classify("betaalverzoek-api.knab.nl").bg, true);
+});
+
+test("ouderportaal: elke opvang is een eigen website op het platform (zoals naam.wordpress.com)", () => {
+  assert.equal(classify("korein.ouderportaal.nl").site, "korein.ouderportaal.nl");
+  assert.equal(classify("korein.ouderportaal.nl").main, true);
+  assert.equal(classify("frontend.cluster5.prod.ouderportaal.nl").main, false);
+});
+
+test("Outlook in de browser en de Picnic-app zijn zichtbaar; synchroniseren en nieuwsbrief-links niet", () => {
+  assert.equal(classify("outlook.live.com").name, "Outlook (mail)");
+  assert.equal(classify("www.hotmail.com").name, "Outlook (mail)");
+  assert.notEqual(classify("eas.outlook.com").site, classify("outlook.live.com").site); // sync van de Mail-app: aparte groep
+  assert.equal(classify("login.live.com").bg, true);
+  assert.equal(classify("storefront-prod.nl.picnicinternational.com").name, "Picnic (boodschappen)");
+  assert.notEqual(classify("click.picnic.nl").name, "Picnic (boodschappen)");
+});
+
+test("korte links van een merk horen bij dat merk; websitebouwer, maattabel en QR-doorstuur zijn achtergrond", () => {
+  assert.equal(classify("amzn.eu").site, "amazon.com");
+  assert.equal(classify("pin.it").site, "pinterest.com");
+  assert.equal(classify("www.mediawiki.org").site, "wikipedia.org");
+  for (const h of ["app.cleansizecharts.com", "app.phoenixsite.nl", "myqrcode.mobi", "neoseum-widget.pages.dev"]) assert.equal(classify(h).bg, true, h);
+});

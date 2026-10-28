@@ -217,6 +217,19 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Nu tellen mail-pagina's mee als tabblad; komt de vier alleen zo vol, dan telt de zoekmachine niet mee (7 okt ggdhvb.nl/ncj.nl
    na zoeken blijven) en blijft een site die 2+ eigen pagina's laadde staan (24 okt cottonclub.nl via de nieuwsbrief). Over alle
    dagen: 4 rijen weg (nbo.nl, trivago.nl, kidsvoeding.nl, fashionmusthaves.be), alle vier tegelijk met een reeks mails.
+   Geleerd (28 okt, alle 1.746 domeinen van 32 dagen één voor één nagelopen: getoond / nooit getoond / achtergrond / onderdeel):
+   - Betaalverzoek geopend (betaalverzoek.knab.nl, link uit WhatsApp) = bezoek + betaalmoment (PORTAL "betaalverzoek", payKind).
+   - Picnic-app (storefront-/pages-prod.nl.picnicinternational.com) en Outlook in de browser (outlook.live.com, www.hotmail.com;
+     MacBook, 7 keer) zijn apps; eas.outlook.com (sync van de Mail-app) en click.picnic.nl (nieuwsbrief) blijven buiten.
+   - ouderportaal.nl is een platform: elke opvang een eigen site (zoals naam.wordpress.com, HOSTED in lib/parse.ts). Nu 8 keer
+     getoond (3 onzeker: tijdens scrollen); keren vlak bij binnenkomende mail blijven verborgen (mailregel).
+   - Korte links bij het merk (amzn.eu, pin.it), mediawiki.org bij Wikipedia; achtergrond: cleansizecharts (maattabel),
+     phoenixsite (websitebouwer), myqrcode.mobi (QR-doorstuur), neoseum-widget.
+   - Nagelopen en goed: alle "nooit getoond"-sites met een eigen pagina laden midden in mail-reeksen (nieuwsbrief- en spamplaatjes,
+     ook casino-links); ftmo/starlink in X staan al als onzeker (reclame); yahoo = Aandelen-widget; streamgate = beeld van Pathé.
+   Nog uitzoeken: fnlcontent.nl (23 okt, één los adres, niets erna); dinohero.com op de iPad (11 okt); een site die een dag
+   vaker dan 4 keer los opduikt verdwijnt helemaal, ook het eerste (gezochte) bezoek (12 okt vacaturesite) - "vlak na zoeken"
+   als uitzondering geprobeerd, maar www.google zit ook als meetcode in sites: te onbetrouwbaar.
    Geleerd (28 okt, middag): de ChatGPT-teller (bzr./bzrcdn.openai.com) zit in webwinkels (bever.nl) en in de ChatGPT-app zelf
    (winkelkaartjes in een chat). Binnen 3 s van een webpagina hoort hij bij die pagina; anders blijft hij een teken van gebruik.
    Over de hele CSV: 11 ChatGPT-regels weg die alleen uit die teller bestonden (bv. 26 okt 15:01, 16:04), en het begin klopt nu

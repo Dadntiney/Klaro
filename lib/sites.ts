@@ -46,7 +46,9 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "My Little Princess (spel)", icon: "my-little-princess.net", domains: ["my-little-princess.net"] }, // kinderspel (Unity) op de iPad sinds 19 okt: start met r2. + de Unity-spelmotor, daarna toca010-r2.; 25 okt 08:38-09:01 gespeeld maar nergens getoond
   { name: "Piknik (spel)", icon: "playpiknik.com", domains: ["playpiknik.com"] }, // kinderapp met Toca Boca- en Sago Mini-spellen (Unity); 22 okt 18:39 iPad: account-api.playpiknik.com bij het starten
   { name: "Amaya Kids (leren)", icon: "amayakids.com", domains: ["amayakids.com"] },
-  { name: "LPRA Studio (spel)", icon: "lprastudio.net", domains: ["lprastudio.net"] }, // kinderspellen (prinsessen, opruimen, wassen) met Google-reclame; op de iPad sinds 26 okt: app. + www. samen met de reclame-onderdelen van een app (app-measurement, googleads)
+  { name: "LPRA Studio (spel)", icon: "lprastudio.net", domains: ["lprastudio.net"] },
+  { name: "Picnic (boodschappen)", icon: "picnic.app", domains: ["picnicinternational.com"] }, // storefront-prod./pages-prod.nl.picnicinternational.com: de winkel in de app; niet click.picnic.nl (nieuwsbrief)
+  { name: "Outlook (mail)", icon: "outlook.live.com", domains: ["outlook.live.com", "hotmail.com"] }, // mail lezen in de browser (MacBook: www.hotmail.com -> outlook.live.com); de Mail/Outlook-app op de telefoon synchroniseert via eas.outlook.com en blijft achtergrond // kinderspellen (prinsessen, opruimen, wassen) met Google-reclame; op de iPad sinds 26 okt: app. + www. samen met de reclame-onderdelen van een app (app-measurement, googleads)
   { name: "TutoTOONS (spel)", icon: "tutotoons.com", domains: ["tutotoons.com", "tutoads.tv"] }, // kinderspellen; tijdens het spelen elke paar minuten reclame/gegevens
   { name: "Spel (naam onbekend)", icon: "unity3d.com", domains: ["unity3d.com", "unity.com", "applovin.com", "ironsrc.com", "supersonicads.com", "vungle.com", "adcolony.com", "chartboost.com", "unityads.unity3d.com"] },
   // tv- en streamingapps (Apple TV, smart-tv): eigen servers, zodat kijken zichtbaar is
@@ -170,7 +172,7 @@ const BACKGROUND = new Set([
   "stripe.com", "msidentity.com", "microsoftonline.com", "msauth.net", "msftauth.net",
   // doorstuur-links (je komt er nooit op, je gaat er doorheen) en inlog/privacy van mediabedrijven achter nieuwssites
   "ift.tt", "bit.ly", "tinyurl.com", "awin1.com", "tradetracker.net", "go2cloud.org", "bigspark.link", // ook affiliate-links
-   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com", "shopify.com", "shopifycdn.com", "shopifyapps.com", "ezojs.com", "ezodn.com", "ezoic.net", // ezojs/ezodn/ezoic: advertentiesysteem Ezoic dat blogs meeladen (28 okt: 7 s na een kleurplaten-site, eigenaar: melden); // Shopify is het platform onder een webwinkel (plaatjes, afrekenen): de winkel zelf is het bezoek (27 okt: "shopify.com 8 min" naast laraboutique.nl; 3-6 okt partywinkel.nl)
+   "ow.ly", "buff.ly", "lnkd.in", "goo.gl", "rebrand.ly", "dpgmedia.nl", "dpgmedia.net", "dpgmedia.cloud", "mediahuis.nl", "telegraaf-login.nl", "shopifycloud.com", "shopifysvc.com", "shopify.com", "shopifycdn.com", "shopifyapps.com", "ezojs.com", "ezodn.com", "ezoic.net", "cleansizecharts.com", "phoenixsite.nl", "myqrcode.mobi", // maattabel-knop in webwinkels, websitebouwer onder een site, doorstuur na een QR-code (alle-domeinen-controle 28 okt); // ezojs/ezodn/ezoic: advertentiesysteem Ezoic dat blogs meeladen (28 okt: 7 s na een kleurplaten-site, eigenaar: melden); // Shopify is het platform onder een webwinkel (plaatjes, afrekenen): de winkel zelf is het bezoek (27 okt: "shopify.com 8 min" naast laraboutique.nl; 3-6 okt partywinkel.nl)
   // techniek, meetdiensten en apparaat-clouds die nooit een bewust bezoek zijn
   "tm-azurefd.net", "azurefd.net", "t-msedge.net", "fastly-masque.net", "impervadns.net", "akaquill.net", "visualwebsiteoptimizer.com", "at-o.net", "wt-eu02.net", "snplow.net", "nr-data.net", "marketingcloudapis.com", "rudderlabs.com", "ecomm.events", "kameleoon.eu", "tealiumiq.com", "contentsquare.net", "blueconic.net", "mparticle.com", "dynatrace.com", "usabilla.com", "typekit.net", "addthis.com", "privacy-center.org", "tuyaeu.com", "tuyaus.com", "tuyacn.com", "webwinkelkeur.nl", "kiyoh.com", "trustpilot.com", "trustedshops.com", "trustedshops.nl", "feedbackcompany.com", "thuiswinkel.org", 
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
@@ -216,7 +218,7 @@ const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitt
 /** Teller van een app die in andere sites en apps zit (zie APP_TRACKERS). */
 export function isAppTracker(host: string): boolean { return APP_TRACKERS.some((t) => host === t || host.endsWith("." + t)); }
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
-  "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com",
+  "neoseum-widget.pages.dev", "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com",
   // onderdelen van WordPress-sites (plaatjes, statistiek, inlog, like-knop) en van blog-widgets (pzz.*: laden in dezelfde seconde als de blog, 28 okt); een blog zelf (naam.wordpress.com) blijft gewoon zichtbaar
   "jetpack.wordpress.com", "public-api.wordpress.com", "r-login.wordpress.com", "files.wordpress.com", "wp.com", "pzz.to", "pzz.io", "pzz.events"];
 const BACKGROUND_LABELS = new Set(["telemetry", "metrics", "analytics", "ocsp", "crl", "time", "ntp", "captive", "settings-win", "update", "updates", "stats", "tracking", "events", "log", "logs", "beacon", "adservice", "ads"]);
@@ -334,7 +336,7 @@ export function isMainHost(host: string, base: string): boolean {
   // Bij grote partijen (Apple, Google, Amazon, ...) is alleen www. een echt bezoek; de rest is systeem- of app-verkeer.
   if (APEX_NOISE.test(base)) return false;
   // Adressen waarachter meestal echt een bezoek zit (mijn.postnl.nl, shop.lego.com, webmail.provider.nl), geen hulpdienst; mail.merk.nl is nieuwsbrief-verkeer, geen bezoek.
-  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "academy", "learn", "leren", "cursus", "courses", "webmail", "chat", "play", "music", "news", "nieuws", "online", "bankieren", "internetbankieren", "mijnzaken"];
+  const PORTAL = ["m", "web", "app", "mobile", "mijn", "my", "login", "inloggen", "shop", "webshop", "store", "portal", "academy", "learn", "leren", "cursus", "courses", "webmail", "chat", "play", "music", "news", "nieuws", "online", "bankieren", "internetbankieren", "mijnzaken", "betaalverzoek"]; // betaalverzoek.knab.nl: een betaalverzoek (link uit WhatsApp) geopend
   return LANG.has(rest) || PORTAL.includes(rest);
 }
 
@@ -391,6 +393,7 @@ const BRAND_CANON: Record<string, string> = {
   "rabobank.com": "rabobank.nl",
   "decathlon.net": "decathlon.nl", "decathlon.com": "decathlon.nl",
   "s-bol.com": "bol.com", "bol.nl": "bol.com",
+  "amzn.eu": "amazon.com", "amzn.to": "amazon.com", "pin.it": "pinterest.com", "mediawiki.org": "wikipedia.org", "wikimedia.org": "wikipedia.org", // korte links van het merk en Wikipedia-inlog (alle-domeinen-controle 28 okt)
   "eufylife.com": "eufy.com", // zelfde eufy-camera-app (security-app-eu., care-app-eu.): 89 van 108 keer samen met eufy.com (28 okt)
 };
 const niceName = (site: string) => NICE_NAME[site] ?? site;
@@ -438,6 +441,7 @@ export function payKind(host: string): { kind: string; level: "checkout" | "stor
   if (host === "pay.ideal.nl" || host.endsWith(".ideal.nl") || host.endsWith("idealapi.nl")) return { kind: "iDEAL", level: "checkout" };
   if (host === "www.paypal.com" || host === "paypal.com") return { kind: "PayPal", level: "checkout" };
   if (/^checkout\./.test(host)) return { kind: "Afrekenpagina", level: "checkout" };
+  if (/^betaalverzoek\./.test(host)) return { kind: "Betaalverzoek", level: "checkout" };
   if (/^(p\d+-)?buy\.itunes\.apple\.com$/.test(host)) return { kind: "App Store", level: "store" };
   return null;
 }
