@@ -48,3 +48,22 @@ test("periode buiten het thuisnetwerk onthoudt het adres dat toen het meest gebr
   assert.equal(a.runs.length, 1);
   assert.equal(a.runs[0].ip, "203.0.113.5");
 });
+
+test("telefoon thuis die een deel via mobiel internet stuurt is thuis; alleen mobiel (geen wifi in 5 min) is weg; wisselen splitst", () => {
+  const m = 60_000;
+  const rows: { dev: string; t: number; ip: string }[] = [];
+  // thuis: wifi (IPv6) en tussendoor mobiel (IPv4 van de provider), een uur lang
+  for (let i = 0; i < 60; i++) rows.push({ dev: "iPhone", t: i * m, ip: "2001:db8:1:2::" + (i + 1) }, { dev: "iPhone", t: i * m + 2_000, ip: "198.51.100.7" });
+  for (let i = 0; i < 120; i++) rows.push({ dev: "Apple TV", t: i * m, ip: "2001:db8:1:2::99" }, { dev: "Apple TV", t: i * m + 500, ip: "192.0.2.1" });
+  for (let i = 0; i < 60; i++) rows.push({ dev: "iPhone", t: i * m + 1_000, ip: "192.0.2.1" }); // thuis-IPv4 (ook van de tv)
+  // daarna 20 min alleen mobiel, dan 20 min een andere wifi
+  for (let i = 70; i < 90; i++) rows.push({ dev: "iPhone", t: i * m, ip: "198.51.100.7" });
+  for (let i = 90; i < 110; i++) rows.push({ dev: "iPhone", t: i * m, ip: "203.0.113.5" });
+  const a = analyzeNetwork(rows).get("iPhone")!;
+  assert.equal(a.runs.length, 2, JSON.stringify(a.runs));
+  const [wifi, mob] = a.runs; // nieuwste eerst
+  assert.equal(mob.ip, "198.51.100.7");
+  assert.ok(mob.s >= 70 * m && mob.e < 90 * m, "het uur thuis telt niet als weg");
+  assert.equal(wifi.ip, "203.0.113.5");
+  assert.equal(analyzeNetwork(rows).get("Apple TV")!.runs.length, 0);
+});

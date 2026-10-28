@@ -55,17 +55,26 @@ export function analyzeNetwork(rows: NetRow[]): Map<string, AwayInfo> {
   for (const r of rows) if (r.ip.includes(":") && homeV6.has(netKey(r.ip))) (homeTimes.get(r.dev) ?? homeTimes.set(r.dev, []).get(r.dev)!).push(r.t);
   for (const a of homeTimes.values()) a.sort((x, y) => x - y);
 
-  const homeV4 = new Set<string>();
+  // IPv4 thuis (voor apparaten zonder IPv6-verkeer thuis): een adres dat meerdere apparaten vooral vlak naast het IPv6-thuisnetwerk
+  // gebruiken. Niet het mobiele adres van een telefoon: een iPhone stuurt ook thuis een deel van zijn verkeer via mobiel internet
+  // (28 okt: Vodafone-adres een week lang, ook om 00:52 binnen 2 s naast de Ziggo-wifi), en dan zou echt onderweg ook "thuis" lijken.
+  const v4 = new Map<string, { n: number; near: number; devs: Set<string> }>();
   for (const r of rows) {
-    if (r.ip.includes(":") || homeV4.has(r.ip)) continue;
+    if (!r.ip || r.ip.includes(":")) continue;
+    const x = v4.get(r.ip) ?? v4.set(r.ip, { n: 0, near: 0, devs: new Set() }).get(r.ip)!;
+    x.n++;
     const a = homeTimes.get(r.dev);
-    if (a && nearest(a, r.t) <= 120_000) homeV4.add(r.ip);
+    if (a && nearest(a, r.t) <= 120_000) { x.near++; x.devs.add(r.dev); }
   }
+  const homeV4 = new Set([...v4].filter(([, x]) => x.devs.size >= 2).map(([ip]) => ip));
 
+  // Per moment: thuis als het apparaat via het thuisnetwerk ging, of (IPv4) als het binnen 5 minuten ook via het IPv6-thuisnetwerk
+  // verkeer had; dan zit het thuis op de wifi, ook als een deel even via mobiel internet ging.
   const byDev = new Map<string, [number, boolean, string][]>();
   for (const r of rows) {
     if (!r.ip) continue;
-    const away = r.ip.includes(":") ? !homeV6.has(netKey(r.ip)) : !homeV4.has(r.ip);
+    const a = homeTimes.get(r.dev);
+    const away = r.ip.includes(":") ? !homeV6.has(netKey(r.ip)) : a ? nearest(a, r.t) > 300_000 && !homeV4.has(r.ip) : !homeV4.has(r.ip);
     (byDev.get(r.dev) ?? byDev.set(r.dev, []).get(r.dev)!).push([r.t, away, r.ip]);
   }
 
@@ -76,9 +85,15 @@ export function analyzeNetwork(rows: NetRow[]): Map<string, AwayInfo> {
     const runs: AwayRun[] = [];
     let cur: { s: number; e: number; n: number; ips: Map<string, number> } | null = null;
     const done = (c: NonNullable<typeof cur>) => { if (c.n >= 3) runs.push({ s: c.s, e: c.e, ip: [...c.ips].sort((a, b) => b[1] - a[1])[0]?.[0] }); };
-    for (const [t, away, ip] of list) {
-      if (!away) continue;
-      if (cur && t - cur.e <= RUN_GAP) {
+    // Een nieuwe periode als het netwerk echt wisselt (mobiel onderweg, dan wifi op een andere plek): de volgende 3 opvragingen
+    // komen allemaal van het nieuwe netwerk. Eén los afwijkend adres tussendoor splitst niet.
+    const aw = list.filter(([, a]) => a);
+    const k = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
+    for (let i = 0; i < aw.length; i++) {
+      const [t, , ip] = aw[i];
+      const top = cur ? [...cur.ips].sort((a, b) => b[1] - a[1])[0]?.[0] : undefined;
+      const switched = !!cur && cur.n >= 3 && top !== undefined && k(top) !== k(ip) && aw.slice(i, i + 3).length === 3 && aw.slice(i, i + 3).every(([, , x]) => k(x) === k(ip));
+      if (cur && t - cur.e <= RUN_GAP && !switched) {
         cur.e = t;
         cur.n++;
       } else {

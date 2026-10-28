@@ -228,6 +228,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Uit het internetadres van die periode (lib/network.ts, runs[].ip) en het RIPE-register (api/netinfo.php, 30 dagen bewaard;
    IPv6 alleen het netwerkdeel). Gemeten: thuis Ziggo; alleen-iPhone-adressen Vodafone "Mobile Office Service" (mobiel); een
    Odido "Pool for fixed WBA users" (vast = andere wifi). 4G of 5G is niet te zien; geen trefwoord = "niet thuis" (nooit raden).
+   Geleerd (28 okt): de iPhone stuurt ook thuis een deel via mobiel internet (Vodafone-adres een week hetzelfde, binnen seconden
+   naast de Ziggo-wifi). Daardoor gold dat mobiele adres als "thuis" en ontbraken echte mobiele periodes. Nu per moment: thuis als
+   het apparaat binnen 5 min ook via de thuis-wifi (IPv6) ging, of een IPv4-adres dat 2+ apparaten thuis gebruiken. Een periode
+   splitst als het netwerk echt wisselt (3 opvragingen op rij). Gemeten: iPad en Apple TV nooit weg; MacBook alleen 27 okt
+   (Odido); iPhone mobiel op veel dagen, 27 okt 18:48 mobiel, 19:11-21:47 Odido-wifi, daarna weer mobiel. Filter "buiten de
+   deur" (speldje) toont alleen die regels.
    Nog uitzoeken (25 okt): een los moment met alleen www.paypal.com (geen paypalobjects/c.paypal, niets anders geladen) vlak nadat Mail
    ophaalt is waarschijnlijk een geopende PayPal-mail (echte PayPal-pagina laadt altijd 20+ adressen). Maar zulke "lege" momenten
    komen over alle dagen niet vaker voor bij mail (5 van 31) dan toeval (35%), en een kleine site na zoeken ziet er net zo uit. Nog geen
