@@ -236,7 +236,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
      phoenixsite (websitebouwer), myqrcode.mobi (QR-doorstuur), neoseum-widget.
    - Nagelopen en goed: alle "nooit getoond"-sites met een eigen pagina laden midden in mail-reeksen (nieuwsbrief- en spamplaatjes,
      ook casino-links); ftmo/starlink in X staan al als onzeker (reclame); yahoo = Aandelen-widget; streamgate = beeld van Pathé.
-   Nog uitzoeken: fnlcontent.nl (23 okt, één los adres, niets erna); dinohero.com op de iPad (11 okt); een site die een dag
+   Opgelost met de websitecontrole (scripts/sitecheck.ts): fnlcontent.nl stuurt door naar uitgever FNL Media = achtergrond;
+   dinohero.com geeft 404 (spelserver, terecht verborgen). Nog uitzoeken: een site die een dag
    vaker dan 4 keer los opduikt verdwijnt helemaal, ook het eerste (gezochte) bezoek (12 okt vacaturesite) - "vlak na zoeken"
    als uitzondering geprobeerd, maar www.google zit ook als meetcode in sites: te onbetrouwbaar.
    Geleerd (28 okt, middag): de ChatGPT-teller (bzr./bzrcdn.openai.com) zit in webwinkels (bever.nl) en in de ChatGPT-app zelf
