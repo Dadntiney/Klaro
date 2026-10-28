@@ -565,16 +565,8 @@ h2 .livedot { margin:0 2px 0 12px; }
 /* Staat de regel erboven open (details), dan geen verbindingslijntje: het zou in de details steken. */
 .list > div:has(> .detail) + div.together > .item::before { display:none; }
 /* Totaal van vandaag: tik voor de minuten per apparaat. */
-.dh-tot { all:unset; cursor:pointer; color:inherit; }
-.dh-tot-chev { display:inline-block; margin-left:4px; transition:transform .15s; }
-.dh-tot-chev.up { transform:rotate(90deg); }
-.devtot { background:var(--card); border:1px solid var(--line); border-radius:12px; margin:0 0 12px; overflow:hidden; }
-.devtot-row { all:unset; box-sizing:border-box; cursor:pointer; display:flex; justify-content:space-between; align-items:center; width:100%; padding:9px 14px; font-size:14px; }
-.devtot-row + .devtot-row { border-top:1px solid var(--line); }
-.devtot-m { font-weight:600; font-variant-numeric:tabular-nums; }
 /* De dagkop blijft tijdens het scrollen bovenaan staan, onder de apparaatknoppen. */
 section > h2 { position:sticky; top:var(--barh, 52px); z-index:2; background:var(--bg); box-shadow:0 -14px 0 var(--bg); padding:6px 0; margin-top:22px; margin-bottom:2px; }
-.devtot-row .mdev { display:inline-flex; align-items:center; gap:8px; }
 /* Het dagdeel waar je doorheen scrolt: midden onder de vaste dagkop, op de bovenrand van de lijst (zoals het label bovenaan). */
 section > h2 .dh-part { position:absolute; left:50%; bottom:-8px; transform:translate(-50%, 50%); display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border:1px solid var(--line); border-radius:99px; background:var(--card); color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; white-space:nowrap; }
 h2 .dpair { order:2; } h2 .fold-chev { order:3; }
@@ -629,8 +621,6 @@ section > .partcap span { visibility:hidden; }
 .netname .muted { display:inline-flex; align-items:center; gap:5px; min-width:0; }
 .netname-btn { font:inherit; font-size:14px; padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--fg); cursor:pointer; flex:none; }
 /* Per apparaat: van wanneer tot wanneer echt gebruikt; laat op de avond of 's nachts in oranje. */
-.devtot-t { margin-left:auto; margin-right:12px; color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
-.devtot-t.late { color:#d97706; font-weight:600; }
 /* Uitleg bij "onzeker" in de details (op de regel zelf staat alleen het woord). */
 .unsure-why { margin:10px 0 0; font-size:14px; color:var(--muted); }
 .item .meta { flex-wrap:wrap; row-gap:1px; }

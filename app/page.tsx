@@ -1217,9 +1217,7 @@ export default function Home() {
         const byDev = new Map<string, Session[]>();
         for (const { g, ss } of per) (byDev.get(g.dev) ?? byDev.set(g.dev, []).get(g.dev)!).push(...ss);
         let mins = 0;
-        const devMins: { dev: string; mins: number; s?: number; e?: number }[] = [];
-        // Ook wanneer het apparaat die dag voor het eerst en het laatst echt gebruikt werd (niet de altijd-getoonde regels zoals Hue).
-        for (const [dev, ss] of byDev) { const m = activeMinutes(ss); mins += m; const real = ss.filter((x) => isHuman(x)); devMins.push({ dev, mins: Math.round(m), s: real.length ? Math.min(...real.map((x) => x.s)) : undefined, e: real.length ? Math.max(...real.map((x) => x.e)) : undefined }); }
+        for (const ss of byDev.values()) mins += activeMinutes(ss);
         return {
           d,
           list: per.map((x) => x.g),
@@ -1234,7 +1232,6 @@ export default function Home() {
             .sort((a, b) => b.t - a.t)
             .slice(0, 60),
           mins: Math.round(mins),
-          devMins: devMins.filter((x) => x.mins > 0).sort((a, b) => b.mins - a.mins),
           // Elk bezoek (sessie) is een eigen regel, nieuwste bovenaan: zo bouwt de dag zich op in de volgorde van wat er gebeurde.
           rows: mergeRows(
             per
@@ -1255,7 +1252,6 @@ export default function Home() {
 
   // Apparaatknoppen die niet allemaal passen: zacht vervagen aan de kant waar er nog meer staat (dan zie je dat je kunt schuiven).
   const chipsRef = useRef<HTMLDivElement>(null);
-  const [devOpen, setDevOpen] = useState<string | null>(null); // totaal per apparaat onder een dag (welke dag)
   // Het dagdeel (Ochtend, Middag, ...) waar je doorheen scrolt: in de vaste dagkop, zodra het eigen label onder de kop verdwenen is.
   // p: null = de lijst schuift al onder de kop, maar er is (nog) geen dagdeel voorbij; dan alleen de afgeronde bovenrand.
   const [stuckPart, setStuckPart] = useState<{ d: string; p: number | null } | null>(null);
@@ -1370,7 +1366,7 @@ export default function Home() {
 
           {rawView && <RawLog rows={rawLog} devName={devName} devIds={device ? Object.entries(deviceMap.current).filter(([, l]) => l === device).map(([id]) => id) : null} device={device} onClose={toggleRaw} status={liveStatus} outside={outside} onOutside={() => setOutside((v) => !v)} awayAt={awayRaw} lastAway={(() => { const ends = devices.filter((d) => !device || d.name === device).flatMap((d) => (d.away?.runs ?? []).map((r) => r.e)); return ends.length ? Math.max(...ends) : null; })()} />}
           {!rawView && days.length === 0 && full && <p className="muted pad">Niets gevonden.</p>}
-          {days.map(({ d, list, mins: dm, devMins, rows: trows, hidden }, di) => {
+          {days.map(({ d, list, rows: trows, hidden }, di) => {
             if (rawView) return null;
             // Per apparaat de echte-gebruik-sessies: een app waarna een andere app begon die ook doorliep, is niet meer "nu" (superseded).
             const humanSes = new Map<string, { s: number; e: number; r: unknown }[]>();
@@ -1409,11 +1405,8 @@ export default function Home() {
             const topPart = isDayOpen && rows[0]?.t ? partOf(rows[0].t) : null;
             const shownPart = stuckPart?.d === d && stuckPart.p !== null ? stuckPart.p : topPart;
             // Tik op de minuten: per apparaat de minuten, en van wanneer tot wanneer het echt gebruikt werd.
-            const canTot = recent && !device && devMins.length > 1 && dm > 0; // alleen vandaag (zie totBtn)
-            // Totaaltijd met uitklap per apparaat alleen bij vandaag; eerdere dagen tonen alleen het aantal sites (wens eigenaar 28 okt).
-            const totBtn = canTot ? <button className="dh-tot" onClick={(e) => { e.stopPropagation(); setDevOpen((v) => (v === d ? null : d)); }} aria-expanded={devOpen === d} title="Per apparaat">{dur(dm)}<span className={"dh-tot-chev" + (devOpen === d ? " up" : "")} aria-hidden>›</span></button> : dur(dm);
             return (
-            <section key={d} data-day={d} className={(di === 0 && goOpen) || (devOpen === d && canTot) ? "goopen" : undefined}>
+            <section key={d} data-day={d} className={di === 0 && goOpen ? "goopen" : undefined}>
               <h2
                 className={(recent ? "" : "fold") + (isDayOpen ? " open" : "") + (stuckPart?.d === d ? " stuck" : "")}
                 onClick={recent ? undefined : () => setOpenDays((prev) => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })}
@@ -1421,7 +1414,7 @@ export default function Home() {
                 aria-expanded={recent ? undefined : isDayOpen}
               >
                 {/* Eén tekstblok: de dag blijft op één regel; past de samenvatting er niet achter, dan staat die als geheel op de regel eronder. */}
-                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{(!recent || dm > 0) && <> <span className="muted dh-m"><span className="dh-dot">· </span>{recent ? totBtn : (outside ? <>{rows.length}× niet via thuis-wifi</> : <>{list.length} {list.length === 1 ? "site" : "sites"}</>)}</span></>}</span>
+                <span className="dh-t"><span className="dh-d">{dayLabel(d)}</span>{list.length > 0 && <> <span className="muted dh-m"><span className="dh-dot">· </span>{outside ? <>{rows.length}× niet via thuis-wifi</> : <>{list.length} {list.length === 1 ? "site" : "sites"}</>}</span></>}</span>
                 {di === 0 && (
                   <span className="dpair">
                   <button className="dview icon" onClick={(e) => { e.stopPropagation(); toggleRaw(); }} aria-label="Alle DNS-regels" title="Alle DNS-regels"><LogIcon /></button>
@@ -1438,25 +1431,10 @@ export default function Home() {
                   <span className="dstat">{liveStatus}</span>
                   </span>
                 )}
-                {/* Met het tijdpaneel of de totaaltijd per apparaat open hoort het dagdeel bij de lijst eronder, niet half over het paneel (zie .goopen). */}
-                {shownPart !== null && !((di === 0 && goOpen) || (devOpen === d && canTot)) && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
+                {/* Met het tijdpaneel open hoort het dagdeel bij de lijst eronder, niet half over het paneel (zie .goopen). */}
+                {shownPart !== null && !(di === 0 && goOpen) && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
-          {devOpen === d && canTot && (
-            <div className="devtot">
-              {devMins.map((x) => {
-                // Laat op de avond of 's nachts nog gebruikt (na 23:00 of voor 06:00): opvallend gemaakt.
-                const late = x.e !== undefined && isNight(x.e);
-                return (
-                  <button key={x.dev} className="devtot-row" onClick={() => { setDevice(x.dev); setDevOpen(null); }} title={`Alleen ${x.dev}`}>
-                    <span className="mdev"><DevIcon name={x.dev} />{x.dev}</span>
-                    {x.s !== undefined && x.e !== undefined && <span className={"devtot-t" + (late ? " late" : "")}>{timeFmt.format(x.s)}–{timeFmt.format(x.e)}</span>}
-                    <span className="devtot-m">{dur(x.mins)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
           {di === 0 && goOpen && (
             <form
               className="goto"
