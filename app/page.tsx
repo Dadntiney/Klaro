@@ -1291,7 +1291,11 @@ export default function Home() {
         const lb = list?.getBoundingClientRect();
         if (!lb || lb.top >= hb.bottom - 2 || lb.bottom <= hb.bottom + 30) continue; // de lijst zit (nog) niet of niet meer onder de kop
         let p: number | null = null;
-        for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) if (m.getBoundingClientRect().bottom <= hb.bottom + 4) p = Number(m.dataset.part);
+        let next = Infinity; // het volgende dagdeel dat nog onder de kop staat
+        for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) { const r = m.getBoundingClientRect(); if (r.bottom <= hb.bottom + 4) p = Number(m.dataset.part); else next = Math.min(next, r.top); }
+        // Staat het volgende dagdeel al vlak onder de kop, dan niet twee dagdelen boven elkaar tonen (29 okt: "Middag" met direct
+        // daaronder "Ochtend"): alleen de afgeronde bovenrand.
+        if (p !== null && next - hb.bottom < 64) p = null;
         found = { d: sec.dataset.day!, p };
       }
       setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p ? v : found));

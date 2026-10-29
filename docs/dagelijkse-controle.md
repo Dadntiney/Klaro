@@ -318,6 +318,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
+   Nog uitzoeken (29 okt, 16:13): Google-minuten te lang door advertentiecode van websites (www.google.nl/.com in dezelfde seconde
+   als tellers van 3+ andere bedrijven, geen zoekpagina binnen 10 s; 29 okt 11:01 etsy, 27 okt 11:28-11:53 bever/beslist: 24 min
+   Google terwijl er rond 11:49 gezocht werd). Die regel (alleen uit de Google-tijd, niet uit "net gezocht") verbetert ~40
+   Google-rijen, maar de mail-klik-regel leunt op zulke nep-Google-sessies: kliks uit een nieuwsbrief (3 okt happinez via
+   www.email.<merk>.nl, 18 okt getdrezzed, 26 okt inspirerendleven) vielen dan weg. Eerst de mail-klik herkenning eerlijk maken
+   (www.email.<merk> als klik-adres; Outlook-synchronisatie blokkeert de "pagina laadt meteen helemaal"-regel), dan deze regel.
    Geleerd (29 okt, 15:08): klik vanuit Google op een website; die laadt 3 s later www.google.nl als advertentiecode mee, en
    Google bleef daardoor "nu" naast de website. Nu: een bezoek waarvan het laatste stuk hooguit 5 s na het begin van een nieuwe
    pagina komt, is niet meer "nu" (lib/livestatus.ts superseded). Chip en rij over 24 uur nagespeeld: steeds gelijk. De minuten
