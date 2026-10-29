@@ -44,6 +44,10 @@ test("niet meer 'nu' als er daarna een andere app begon die ook doorliep; wel no
   assert.equal(superseded(disney, [{ s: m(1), e: m(3) }, { s: m(2), e: m(3) }]), false); // Netflix/Max 1-2 min, Disney+ liep door
   assert.equal(superseded({ s: m(0), e: m(10) }, [{ s: m(9), e: m(25) }]), true); // gewoon overgestapt naar een andere app
   assert.equal(superseded({ s: m(5), e: m(10) }, [{ s: m(0), e: m(20) }]), false); // de andere begon eerder
+  // klik vanuit Google naar een website: de website laadt 3 s later nog Google-advertentiecode; Google is niet meer "nu"
+  assert.equal(superseded({ s: m(0), e: m(14) + 3_000 }, [{ s: m(14), e: m(14) }]), true);
+  // maar wel nog "nu" als er daarna nog echt op Google gezocht werd
+  assert.equal(superseded({ s: m(0), e: m(16) }, [{ s: m(14), e: m(14) }]), false);
 });
 
 test("app met een vaste melding (NPO op de iPad): de chip voegt de stukjes samen zoals de rij, anders zei hij te vroeg 'uit'", () => {

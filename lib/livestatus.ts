@@ -167,5 +167,7 @@ export function activeWhat<G extends LiveGroup & { name?: string }>(use: DeviceU
  * sessies van de andere regels van dat apparaat.
  */
 export function superseded(x: { s: number; e: number }, others: { s: number; e: number }[]): boolean {
-  return others.some((o) => o.s > x.s && o.e >= x.e);
+  // Ook als het laatste van dit bezoek hooguit 5 s ná het begin van de nieuwe pagina kwam: dat is code die die pagina meelaadt
+  // (29 okt 15:08: klik vanuit Google op een website, die laadt www.google.nl als advertentiecode; Google bleef "nu").
+  return others.some((o) => o.s > x.s && (o.e >= x.e || x.e - o.s <= 5_000));
 }
