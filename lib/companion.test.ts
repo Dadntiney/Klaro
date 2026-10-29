@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anchorOf, assignGameSdk, chainTimes, companionFor } from "./companion.ts";
+import { anchorOf, assignGameSdk, chainTimes, companionFor, liveInstagramShared } from "./companion.ts";
 
 const m = (x: number) => 1_800_000_000_000 + x * 60_000;
 
@@ -86,4 +86,14 @@ test("spel-motor in hetzelfde moment vlak vóór de start van een spel hoort bij
   assert.equal(got.get(m(5)), "spel.net");
   // Ruim vóór de start (10 s): hoort er niet bij.
   assert.equal(assignGameSdk([{ t: m(0) - 10_000, sdk: true }, { t: m(0), game: "spel.net" }], 600_000).size, 0);
+});
+
+test("live: gedeeld Facebook-adres vlak na eigen Instagram-adres hoort bij Instagram, niet als de Facebook-app dichterbij was", () => {
+  const s = 1000;
+  assert.equal(liveInstagramShared("graph.facebook.com", 300 * s, 10 * s, 0), true);
+  assert.equal(liveInstagramShared("x1-netseer-ipaddr-assoc.xz.fbcdn.net", 200 * s, 10 * s, 0), true);
+  assert.equal(liveInstagramShared("graph.facebook.com", 400 * s, 10 * s, 0), false, "meer dan 5 min na Instagram");
+  assert.equal(liveInstagramShared("graph.facebook.com", 100 * s, 10 * s, 90 * s), false, "Facebook-app was dichterbij");
+  assert.equal(liveInstagramShared("lookaside.facebook.com", 20 * s, 10 * s, 0), false, "eigen Facebook-adres");
+  assert.equal(liveInstagramShared("www.nu.nl", 20 * s, 10 * s, 0), false);
 });

@@ -81,3 +81,12 @@ test("live en herberekening samen: de herberekende (echte) sessie blijft, live v
   // herberekening even nieuw of nieuwer: die geldt helemaal
   assert.equal(mergeLiveGroup(full, { last: 5 * m, ss: [] }), full);
 });
+
+test("live en herberekening: wat live vóór de horizon bij deze site kwam en de herberekening niet heeft, valt weg (29 okt Instagram/Facebook)", () => {
+  const m = 60_000;
+  const full = { last: 5 * m, ss: [{ s: 4 * m, e: 5 * m, n: 2 }] }; // Facebook eerder op de ochtend
+  const live = { last: 30 * m, ss: [{ s: 4 * m, e: 5 * m }, { s: 20 * m, e: 30 * m, n: 9 }] }; // live: Instagram-verkeer op Facebook-adressen
+  assert.equal(mergeLiveGroup(full, live, 40 * m), full);
+  // na de horizon: nog niet herberekend, live mag het tonen
+  assert.equal(mergeLiveGroup(full, live, 25 * m).ss!.at(-1)!.e, 30 * m);
+});

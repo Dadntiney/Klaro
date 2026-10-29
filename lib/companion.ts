@@ -184,6 +184,14 @@ export const FB_OWN = /^(lookaside|rupload|web|mobile|mbasic|touch|chat-e2ee|ep2
 const META_SHARED = /\.facebook\.com$|-netseer-ipaddr-assoc\.[a-z]+\.fbcdn\.net$|^(scontent|static)[^.]*\.(fallback\.)?xx\.fbcdn\.net$/;
 export const META_WINDOW = 300_000;
 
+/** Live (één opvraging tegelijk): hoort dit gedeelde Meta-adres bij Instagram? Zelfde regel als instagramShared, maar alleen met
+ *  wat er al was: het laatste eigen Instagram-adres op dit apparaat is dichterbij (binnen 5 min) dan het laatste eigen Facebook-adres. */
+export function liveInstagramShared(host: string, t: number, igLast: number, fbLast: number): boolean {
+  if (IG_OWN.test(host) || FB_OWN.test(host) || !META_SHARED.test(host)) return false;
+  const di = t - igLast;
+  return di >= 0 && di <= META_WINDOW && di < t - fbLast;
+}
+
 /** Sleutels `apparaat|tijd|adres` van gedeelde Meta-adressen die bij Instagram horen. `ev` per apparaat, gesorteerd of niet. */
 export function instagramShared(ev: { t: number; dev: string; host: string }[]): Set<string> {
   const out = new Set<string>();

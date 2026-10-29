@@ -6,7 +6,7 @@ import { activeMinutes, usage } from "@/lib/usage";
 import { HEARTBEAT_GAP, runsAlongside, setLearnedFg } from "@/lib/sites";
 import { isPlainSite } from "@/lib/system";
 import { isSilent } from "@/lib/devstats";
-import { companionFor } from "@/lib/companion";
+import { FB_OWN, IG_OWN, companionFor, liveInstagramShared } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
 import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, superseded } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
@@ -678,6 +678,7 @@ export default function Home() {
     try { const v = JSON.parse(localStorage.getItem(HEARTBEAT_KEY) ?? "null"); if (Array.isArray(v)) heartbeat.current = v; } catch {}
   }
   const lastSeen = useRef(0);
+  const metaLast = useRef(new Map<string, { ig: number; fb: number }>()); // per apparaat: laatste eigen Instagram-/Facebook-adres (live)
   const deviceMap = useRef<Record<string, string>>({});
   const devName = useCallback((id: string) => deviceMap.current[id] ?? id, []);
 
@@ -880,6 +881,15 @@ export default function Home() {
         const fsite = e.host ? followOf.current[e.dev + "|" + e.host] : undefined;
         const app = fsite && next.find((g) => g.d === d && g.dev === e.dev && g.site === fsite);
         if (app && e.t - app.last <= HEARTBEAT_GAP && e.t >= app.last - 1_500) e = { ...e, site: app.site, name: app.name, icon: app.icon, bg: false, main: true, fg: undefined, res: undefined, cat: app.cat ?? e.cat };
+        // Instagram gebruikt ook Facebook-adressen (graph, gateway, netwerkmeting): bij Instagram, net als op de server.
+        if (e.host) {
+          const ml = metaLast.current.get(e.dev) ?? { ig: 0, fb: 0 };
+          if (IG_OWN.test(e.host)) ml.ig = e.t;
+          else if (FB_OWN.test(e.host)) ml.fb = e.t;
+          metaLast.current.set(e.dev, ml);
+          const ig = next.find((g) => g.d === d && g.dev === e.dev && g.site === "instagram.com");
+          if (ig && liveInstagramShared(e.host, e.t, ml.ig, ml.fb)) e = { ...e, site: ig.site, name: ig.name, icon: ig.icon, bg: false, main: true, fg: undefined, res: undefined, cat: ig.cat ?? e.cat };
+        }
         // Afspeelsignalen (Conviva) horen bij de tv-app waarvan de reeks nog loopt, net als op de server (lib/play.ts).
         const tv = e.media && !e.main && isPlainSite(e) ? liveTvApp(next, d, e.dev, e.t) : undefined;
         if (tv) e = { ...e, site: tv.site, name: tv.name, icon: tv.icon, bg: false, main: true, fg: undefined, res: undefined, cat: tv.cat ?? e.cat };
@@ -1015,20 +1025,23 @@ export default function Home() {
       if (!recent) { setHistErr(false); setFull(true); }
       const fresh = new Map<string, Group>();
       for (const g of data.groups as Group[]) fresh.set(g.d + "|" + g.dev + "|" + g.site, g);
+      const horizon: number = data.horizon ?? data.insights?.until ?? 0; // tot hier had de herberekening de regels
+      const todayKey = dayKeyFmt.format(Date.now());
       setGroups((prev) => {
         const seenKeys = new Set<string>();
         const next = prev.map((g) => {
           const k = g.d + "|" + g.dev + "|" + g.site;
           seenKeys.add(k);
           const f = fresh.get(k);
-          if (!f) return g;
+          // Alleen live gezien en de herberekening van vandaag kent het niet: wat vóór de horizon viel, hoort elders.
+          if (!f) return recent && horizon && g.d === todayKey && g.last <= horizon ? null : g;
           // Is de volledige lijst even recent of recenter dan wat we live hebben, dan is die leidend (nieuwe bezoeken, sessies, rode markering).
           // De herberekening is leidend; wat live al nieuwer binnenkwam, komt erachter (lib/recent.ts).
-          return { ...mergeLiveGroup(f, g), isNew: f.isNew || g.isNew, flash: g.flash };
+          return { ...mergeLiveGroup(f, g, horizon), isNew: f.isNew || g.isNew, flash: g.flash };
         });
         // Groepen die live gemist zijn, komen er alsnog bij.
         for (const [k, f] of fresh) if (!seenKeys.has(k)) next.push(f);
-        return next;
+        return next.filter((g): g is Group => g !== null);
       });
     } catch {}
   }, []);

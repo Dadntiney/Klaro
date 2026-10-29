@@ -36,7 +36,7 @@ export function mergeRecent(full: Body, recent: Body, now: number): Body {
   const keep = (full.groups ?? []).filter((g: Body) => g.d !== today);
   const followers = { ...(full.followers ?? {}) };
   for (const [k, site] of Object.entries(recent.followers ?? {})) { const i = k.indexOf("|"); followers[(label.get(k.slice(0, i)) ?? k.slice(0, i)) + k.slice(i)] = site; }
-  return { ...full, groups: [...fresh, ...keep].sort((a: Body, b: Body) => b.last - a.last), followers, recentAt: now };
+  return { ...full, groups: [...fresh, ...keep].sort((a: Body, b: Body) => b.last - a.last), followers, recentAt: now, horizon: recent.insights?.until };
 }
 
 type LiveSession = { s: number; e: number; n?: number };
@@ -45,14 +45,17 @@ type LiveSession = { s: number; e: number; n?: number };
  * bezoek is), maar loopt een paar minuten achter; live voegt alleen de nieuwste stukjes toe. Voorheen won live zolang die nieuwer
  * was: wie op een site bleef klikken, zag de rij pas als hij klaar was (17 okt neoseum.com).
  */
-export function mergeLiveGroup<G extends { last: number; ss?: LiveSession[] }>(full: G, live: G): G {
-  if (full.last >= live.last) return full;
+export function mergeLiveGroup<G extends { last: number; ss?: LiveSession[] }>(full: G, live: G, horizon = 0): G {
+  // `horizon`: tot waar de herberekening de regels al had. Wat live daarvóór bij deze site kwam en de herberekening er niet bij
+  // zet, hoort elders (29 okt: Instagram gebruikt ook Facebook-adressen; live bleef een Facebook-rij van 10 min staan).
+  const cut = Math.max(full.last, horizon);
+  if (cut >= live.last) return full;
   const ss = (full.ss ?? []).map((x) => ({ ...x }));
   for (const x of live.ss ?? []) {
-    if (x.e <= full.last) continue;
+    if (x.e <= cut) continue;
     const y = ss.find((y) => x.s <= y.e && x.e >= y.s); // zelfde sessie: alleen verlengen
     if (y) y.e = Math.max(y.e, x.e);
-    else ss.push({ ...x, s: Math.max(x.s, full.last) });
+    else ss.push({ ...x, s: Math.max(x.s, cut) });
   }
   return { ...full, last: live.last, ss: ss.sort((a, b) => a.s - b.s) };
 }
