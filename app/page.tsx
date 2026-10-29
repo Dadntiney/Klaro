@@ -1294,8 +1294,8 @@ export default function Home() {
         let next = Infinity; // het volgende dagdeel dat nog onder de kop staat
         for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) { const r = m.getBoundingClientRect(); if (r.bottom <= hb.bottom + 4) p = Number(m.dataset.part); else next = Math.min(next, r.top); }
         // Staat het volgende dagdeel al vlak onder de kop, dan niet twee dagdelen boven elkaar tonen (29 okt: "Middag" met direct
-        // daaronder "Ochtend"): alleen de afgeronde bovenrand.
-        if (p !== null && next - hb.bottom < 64) p = null;
+        // daaronder "Ochtend"): dan even geen dagdeel in de kop.
+        if (p !== null && next - hb.bottom < 64) p = -1; // -1: even geen dagdeel tonen
         found = { d: sec.dataset.day!, p };
       }
       setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p ? v : found));
@@ -1429,7 +1429,7 @@ export default function Home() {
             // Het dagdeel bovenaan de lijst staat in de (vaste) dagkop; tijdens het scrollen wisselt het mee (Middag → Ochtend).
             // Ook als alles in één dagdeel valt (iPhone 's ochtends): het label staat er altijd, zodat elke dag er hetzelfde uitziet.
             const topPart = isDayOpen && rows[0]?.t ? partOf(rows[0].t) : null;
-            const shownPart = stuckPart?.d === d && stuckPart.p !== null ? stuckPart.p : topPart;
+            const shownPart = stuckPart?.d === d && stuckPart.p !== null ? (stuckPart.p < 0 ? null : stuckPart.p) : topPart;
             // Tik op de minuten: per apparaat de minuten, en van wanneer tot wanneer het echt gebruikt werd.
             return (
             <section key={d} data-day={d} className={di === 0 && goOpen ? "goopen" : undefined}>
