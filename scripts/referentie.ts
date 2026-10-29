@@ -152,6 +152,7 @@ const CASES: Case[] = [
   { day: "2026-10-06", dev: "MacBook", site: "outlook.live.com", at: "09:31", want: true, why: "mail gelezen in de browser (outlook.live.com)" },
   { day: "2026-10-03", dev: "iPhone", site: "cleansizecharts.com", at: "*", want: false, why: "maattabel-knop in een webwinkel" },
   { day: "2026-10-23", dev: "iPhone", site: "fnlcontent.nl", at: "*", want: false, why: "inhoud-adres van een uitgever (websitecontrole: stuurt door naar fnlmedia.nl)" },
+  { day: "2026-10-29", dev: "iPhone", site: "storifyme.xyz", at: "16:50", want: false, why: "verhalen-widget die 5 s na een andere pagina meelaadt (eigenaar: nakijken)" },
   { day: "2026-10-05", dev: "iPhone", site: "suuskinderfeestjes.nl", at: "08:05", want: true, why: "site geopend; phoenixsite.nl is de websitebouwer eronder" },
   { day: "2026-10-28", dev: "MacBook", site: "jetpack.wordpress.com", at: "*", want: false, why: "onderdeel van een WordPress-site (statistiek/like-knop), geen eigen bezoek" },
   { day: "2026-10-28", dev: "MacBook", site: "pzz.to", at: "*", want: false, why: "widget die met een blog meelaadt (zelfde seconde als de blog)" },
