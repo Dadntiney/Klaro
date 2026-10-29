@@ -48,3 +48,19 @@ test("spel dat echt opstartte: stukjes met hooguit 7 min ertussen (spelmotor mel
   const ps = usage([paused] as never[], { auto: new Set(), followers: {} }).shown(paused as never);
   assert.ok(ps.every((x) => x.e - x.s <= 3 * M), "niet doorgetrokken over het stille gat");
 });
+
+test("doorverwijs-adres zonder vaste melding: twee keer kort openen is geen gebruik ertussen (29 okt Hue 06:17 en 06:24)", () => {
+  const g = { d: "2026-10-29", dev: "iPhone", site: "app.example", name: "App", main: true, bg: false, n: 6, last: 7 * M,
+    ss: [{ s: 7 * M, e: 7 * M, n: 3, f: 3 }, { s: 0, e: 0, n: 3, f: 3 }] };
+  const fol = { "iPhone|cdn.example.net": "app.example" };
+  const ss = usage([g] as never[], { auto: new Set(), followers: fol, heartbeat: [] }).shown(g as never);
+  assert.ok(ss.every((x) => x.e === x.s), "niet aan elkaar geplakt");
+  // wel een echte vaste melding (de server zag het adres vaak los terugkomen): één keer gebruik
+  const hb = usage([g] as never[], { auto: new Set(), followers: fol, heartbeat: ["iPhone|app.example"] }).shown(g as never);
+  assert.equal(hb.length, 1);
+  assert.equal(hb[0].e - hb[0].s, 7 * M);
+  // een kant die al even duurde (doorspelen): wel samenvoegen
+  const long = { ...g, ss: [{ s: 7 * M, e: 7 * M, n: 3, f: 3 }, { s: 0, e: 2 * M, n: 6, f: 3 }] };
+  const ls = usage([long] as never[], { auto: new Set(), followers: fol, heartbeat: [] }).shown(long as never);
+  assert.equal(ls.length, 1);
+});

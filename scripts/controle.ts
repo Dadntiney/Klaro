@@ -275,7 +275,7 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
   // Dezelfde rijen als de pagina (lib/usage.ts): wat als gebruik telt, en op een tv samengevoegd (met beeld-bruggen).
   const rowsT: { g: LiveGroup; x: Session }[] = [];
   const todayGroups = groups.filter((g) => g.d === today(T));
-  const { listed, shown } = usage(todayGroups as never[], { auto: au, followers: (o as { followers?: Record<string, string> }).followers ?? {} });
+  const { listed, shown } = usage(todayGroups as never[], { auto: au, followers: (o as { followers?: Record<string, string> }).followers ?? {}, heartbeat: (o as { heartbeat?: string[] }).heartbeat });
   for (const g of todayGroups) {
     if (!listed(g as never)) continue;
     for (const x of shown(g as never)) rowsT.push({ g, x });

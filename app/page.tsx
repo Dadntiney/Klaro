@@ -671,6 +671,7 @@ export default function Home() {
   const [live, setLive] = useState<"ok" | "fail">("ok");
   const [liveError, setLiveError] = useState("");
   const followOf = useRef<Record<string, string>>({}); // apparaat|adres -> app (doorverwijs-adressen, van de server)
+  const heartbeat = useRef<string[] | undefined>(undefined); // apparaat|app met een echte vaste melding tijdens gebruik (van de server)
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
   const devName = useCallback((id: string) => deviceMap.current[id] ?? id, []);
@@ -713,7 +714,7 @@ export default function Home() {
   }, []);
   useEffect(() => {
     const t0 = Date.now();
-    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string>; fgLearned?: Record<string, string[]> }, isFull: boolean) => {
+    const apply = (data: { groups: Group[]; devices: Device[]; total: number; deviceMap?: Record<string, string>; insights?: Insights; partial?: number; auto?: string[]; followers?: Record<string, string>; heartbeat?: string[]; fgLearned?: Record<string, string[]> }, isFull: boolean) => {
       fullRef.current = true;
       // Bij alleen het laatste stuk: de eerste 15 minuten van dat stuk niet tonen (een bezoek dat eerder begon zou daar te laat lijken te beginnen).
       // Begint dat stuk vóór middernacht (net na 0:00), dan is vandaag al compleet: niets meer te wachten voor vandaag.
@@ -723,6 +724,7 @@ export default function Home() {
       setTotal(data.total);
       deviceMap.current = data.deviceMap ?? {};
       if (data.followers) followOf.current = data.followers;
+      if (data.heartbeat) heartbeat.current = data.heartbeat;
       // Zelf geleerde bewijs-adressen ook live gebruiken (lib/selflearn.ts).
       if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned).map(([k, v]) => [k, new Set(v)])));
       setInsights(data.insights ?? null);
@@ -991,6 +993,7 @@ export default function Home() {
       if (!recent) setWindowFrom(data.windowFrom ?? 0);
       if (!recent) lastFull.current = Date.now();
       if (data.followers) followOf.current = data.followers;
+      if (data.heartbeat) heartbeat.current = data.heartbeat;
       if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned as Record<string, string[]>).map(([k, v]) => [k, new Set(v)])));
       setInsights(data.insights ?? null);
       // Nieuwe apparaten van na het laden ook benoemen; bestaande namen blijven gelijk (anders wisselen regels van apparaat).
@@ -1200,7 +1203,7 @@ export default function Home() {
   }, [open]);
 
   // Los van het apparaat-filter: zo hoeft een tik op een chip dit niet opnieuw uit te rekenen.
-  const use = useMemo(() => usage(groups, { auto, followers: followOf.current, mailT, cut }), [groups, mailT, cut, auto]);
+  const use = useMemo(() => usage(groups, { auto, followers: followOf.current, heartbeat: heartbeat.current, mailT, cut }), [groups, mailT, cut, auto]);
   const days = useMemo(() => {
     const byDay = new Map<string, Group[]>();
     const mainByDay = new Map<string, Group[]>(); // voor "niet getoond": per dag, in plaats van per dag alle groepen door te lopen

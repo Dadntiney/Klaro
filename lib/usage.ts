@@ -11,7 +11,7 @@ import { ALWAYS_SHOW, ALWAYS_SHOW_OPEN, isTv, tvBlipper, type LiveGroup } from "
 export type UseGroup = LiveGroup & { last: number; susp?: string };
 export type MailTimes = Map<string, { esp: number[]; mc: number[] }>;
 
-export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; followers: Record<string, string>; mailT?: MailTimes; cut?: number }) {
+export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; followers: Record<string, string>; heartbeat?: string[]; mailT?: MailTimes; cut?: number }) {
   const mailT = o.mailT ?? new Map();
   // Echt gebruik: geen sessie uit een geopende mail (de server markeert die; live aangevulde sessies controleren we hier).
   const blip = tvBlipper(groups);
@@ -37,6 +37,11 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
   };
   // Apps met een vaste melding via een doorverwijs-adres, als "apparaat|site" (één keer opbouwen, niet per groep doorzoeken).
   const followed = new Set(Object.entries(o.followers).map(([k, site]) => k.slice(0, k.indexOf("|")) + "|" + site));
+  // Echte vaste melding tijdens gebruik (de server ziet het doorverwijs-adres vaak los terugkomen: Toca Boca). Bij de andere
+  // doorverwijs-adressen (een CDN dat ook bij het openen meekomt) niet twee losse momenten aan elkaar plakken: minstens één kant
+  // duurde al even of had beeld/geluid. Twee keer kort de Hue-app openen (29 okt 06:17 en 06:24) is geen 7 minuten gebruik;
+  // Videoland of Spotify die doorspeelt wel.
+  const beat = o.heartbeat ? new Set(o.heartbeat) : followed;
   const cache = new Map<G, Session[]>();
   // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
   const shown = (g: G): Session[] => {
@@ -56,7 +61,8 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     const joinGap = NAV_APPS.has(g.site) ? NAV_GAP : followed.has(g.dev + "|" + g.site) ? HEARTBEAT_GAP : game ? GAME_GAP : 0;
     if (joinGap && all.length > 1) {
       const m: Session[] = [];
-      for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1) }; else m.push({ ...x }); }
+      const needMedia = joinGap === HEARTBEAT_GAP && !beat.has(g.dev + "|" + g.site);
+      for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap && (!needMedia || l.m || x.m || l.e - l.s >= 60_000 || x.e - x.s >= 60_000)) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1), ...(l.m || x.m ? { m: (l.m ?? 0) + (x.m ?? 0) } : {}) }; else m.push({ ...x }); }
       all = m.reverse();
     }
     // Gemarkeerde en verdachte regels blijven altijd staan.

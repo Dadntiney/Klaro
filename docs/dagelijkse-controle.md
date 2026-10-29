@@ -318,6 +318,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
+   Geleerd (29 okt, ochtendcontrole): Philips Hue stond op 7 min terwijl de app alleen om 06:17 en 06:24 even openging. Oorzaak:
+   de weergave (lib/usage.ts) plakte stukjes van elke app met een doorverwijs-adres aan elkaar (tot 10 min), de server alleen
+   bij een echte vaste melding (heartbeat: Toca Boca, NPO, Buienradar, Spotify). Nu: echte vaste melding = samenvoegen; ander
+   doorverwijs-adres = alleen als één kant al even duurde of beeld/geluid had. Doorgerekend: 11 keer Hue-minuten weg (samen
+   ~88 min), 3 randgevallen van twee losse tikjes (Videoland, Spotify) ook; doorspelen van Videoland/Spotify blijft gelijk.
 
 4b. Websitecontrole (sinds 28 okt): de server haalt de voorpagina op (scripts/sitecheck.ts adres1 adres2; api/sitecheck.php).
    Uitkomst: website / doorsturen / leeg / techniek / geen pagina / afgeschermd (weert robots: onbekend) / onbereikbaar.
