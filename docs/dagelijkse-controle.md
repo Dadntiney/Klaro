@@ -318,6 +318,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
+   Geleerd (29 okt, 10:11): Facebook 10 min naast Instagram 10 min, maar het was alleen Instagram (Instagram gebruikt ook
+   graph/gateway/www.facebook.com en de netwerkmeting). De server deed het goed (over alle dagen 1 keer overlap); het live bijwerken
+   niet, en de herberekening liet die live-stukjes staan. Nu live dezelfde regel, en live-stukjes van vóór de horizon vallen weg.
    Geleerd (29 okt, ochtendcontrole): Philips Hue stond op 7 min terwijl de app alleen om 06:17 en 06:24 even openging. Oorzaak:
    de weergave (lib/usage.ts) plakte stukjes van elke app met een doorverwijs-adres aan elkaar (tot 10 min), de server alleen
    bij een echte vaste melding (heartbeat: Toca Boca, NPO, Buienradar, Spotify). Nu: echte vaste melding = samenvoegen; ander
