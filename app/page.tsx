@@ -618,6 +618,7 @@ export default function Home() {
   // "Nieuw"-puntje alleen de eerste keer dat de eigenaar de site in het overzicht ziet (wens eigenaar 28 okt): bij een volgende keer
   // openen is het weg. Onthouden op dit toestel; kan het niet (privévenster), dan gewoon tonen zoals voorheen.
   const SEEN_KEY = "klaro.nieuwGezien";
+  const HEARTBEAT_KEY = "klaro.vasteMelding"; // apps met een echte vaste melding (zie lib/usage.ts), voor de eerste seconden
   const [seenBefore] = useState<Set<string>>(() => {
     try { const m = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<string, number>; return new Set(Object.keys(m)); } catch { return new Set(); }
   });
@@ -671,7 +672,11 @@ export default function Home() {
   const [live, setLive] = useState<"ok" | "fail">("ok");
   const [liveError, setLiveError] = useState("");
   const followOf = useRef<Record<string, string>>({}); // apparaat|adres -> app (doorverwijs-adressen, van de server)
-  const heartbeat = useRef<string[] | undefined>(undefined); // apparaat|app met een echte vaste melding tijdens gebruik (van de server)
+  // apparaat|app met een echte vaste melding tijdens gebruik (van de server); onthouden zodat het ook klopt vóór alles geladen is.
+  const heartbeat = useRef<string[] | undefined>(undefined);
+  if (heartbeat.current === undefined && typeof window !== "undefined") {
+    try { const v = JSON.parse(localStorage.getItem(HEARTBEAT_KEY) ?? "null"); if (Array.isArray(v)) heartbeat.current = v; } catch {}
+  }
   const lastSeen = useRef(0);
   const deviceMap = useRef<Record<string, string>>({});
   const devName = useCallback((id: string) => deviceMap.current[id] ?? id, []);
@@ -724,7 +729,7 @@ export default function Home() {
       setTotal(data.total);
       deviceMap.current = data.deviceMap ?? {};
       if (data.followers) followOf.current = data.followers;
-      if (data.heartbeat) heartbeat.current = data.heartbeat;
+      if (data.heartbeat) { heartbeat.current = data.heartbeat; try { localStorage.setItem(HEARTBEAT_KEY, JSON.stringify(data.heartbeat)); } catch {} }
       // Zelf geleerde bewijs-adressen ook live gebruiken (lib/selflearn.ts).
       if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned).map(([k, v]) => [k, new Set(v)])));
       setInsights(data.insights ?? null);
@@ -993,7 +998,7 @@ export default function Home() {
       if (!recent) setWindowFrom(data.windowFrom ?? 0);
       if (!recent) lastFull.current = Date.now();
       if (data.followers) followOf.current = data.followers;
-      if (data.heartbeat) heartbeat.current = data.heartbeat;
+      if (data.heartbeat) { heartbeat.current = data.heartbeat; try { localStorage.setItem(HEARTBEAT_KEY, JSON.stringify(data.heartbeat)); } catch {} }
       if (data.fgLearned) setLearnedFg(new Map(Object.entries(data.fgLearned as Record<string, string[]>).map(([k, v]) => [k, new Set(v)])));
       setInsights(data.insights ?? null);
       // Nieuwe apparaten van na het laden ook benoemen; bestaande namen blijven gelijk (anders wisselen regels van apparaat).

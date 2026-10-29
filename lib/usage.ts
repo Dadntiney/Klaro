@@ -41,7 +41,8 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
   // doorverwijs-adressen (een CDN dat ook bij het openen meekomt) niet twee losse momenten aan elkaar plakken: minstens één kant
   // duurde al even of had beeld/geluid. Twee keer kort de Hue-app openen (29 okt 06:17 en 06:24) is geen 7 minuten gebruik;
   // Videoland of Spotify die doorspeelt wel.
-  const beat = o.heartbeat ? new Set(o.heartbeat) : followed;
+  // Nog onbekend (alleen vandaag geladen): voorzichtig, geen losse momenten aan elkaar plakken.
+  const beat = new Set(o.heartbeat ?? []);
   const cache = new Map<G, Session[]>();
   // Welke sessies van een site tellen als echt gebruik: één plek, zodat de lijst en het dagtotaal precies hetzelfde laten zien.
   const shown = (g: G): Session[] => {
