@@ -318,27 +318,15 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eufy (iPhone): de app-adressen van eufylife.com komen ~3x per dag (alleen overdag) zonder eufy.com-rij. Openen van de app
    of een camerameldingsplaatje? Nagaan of het samenvalt met camera-gebeurtenissen voordat er iets verandert.
    Instagram gestart zonder foto's (onzeker): blijven meten of www.instagram.com echt nooit 's nachts komt; dan eventueel zeker.
-   Nog uitzoeken (29 okt, 16:13): Google-minuten te lang door advertentiecode van websites (www.google.nl/.com in dezelfde seconde
-   als tellers van 3+ andere bedrijven, geen zoekpagina binnen 10 s; 29 okt 11:01 etsy, 27 okt 11:28-11:53 bever/beslist: 24 min
-   Google terwijl er rond 11:49 gezocht werd). Die regel (alleen uit de Google-tijd, niet uit "net gezocht") verbetert ~40
-   Google-rijen, maar de mail-klik-regel leunt op zulke nep-Google-sessies: kliks uit een nieuwsbrief (3 okt happinez via
-   www.email.<merk>.nl, 18 okt getdrezzed, 26 okt inspirerendleven) vielen dan weg. Eerst de mail-klik herkenning eerlijk maken
-   (www.email.<merk> als klik-adres; Outlook-synchronisatie blokkeert de "pagina laadt meteen helemaal"-regel), dan deze regel.
-   Geprobeerd (30 okt): www.email.<merk> alleen bij de nieuwsbrief-adressen zetten maakt het erger: 6 echte klikken (happinez,
-   yogaonline, nespresso) vielen weg, want dan telt het als mail zonder dat het als klik herkend wordt. Het moet als klik-adres
-   (isClickHost) én de "pagina laadt meteen helemaal"-regel mag niet op Outlook-synchronisatie stuklopen. Niet live gezet.
-   Geleerd (30 okt, 08:35): het stuk "onderweg" (mobiel/andere wifi) kwam alleen mee bij het volledige laden (elk uur); rabobank,
-   Waze en Google van 08:15-08:34 stonden zonder "Mobiel". Nu werkt het elke-minuut herberekenen het ook bij, maar alleen voor
-   wat ná het volledige overzicht kwam (met minder regels zag de verse berekening losse seconden onderweg die er niet waren).
-   Geleerd (30 okt, volledige audit): rekenen over een maand kostte 19-20 s; hulpfuncties (extractHost, baseDomain, isEspHost,
-   netKey, dag/uur-opmaak) liepen per regel opnieuw (276k regels, 8k adressen) en tijdvensters liepen alle regels van een apparaat
-   door. Onthouden + gesorteerd zoeken: 9,6 s, uitkomst byte voor byte gelijk op vier momentopnames. Nieuwe rekenregels altijd
-   zo meten (zelfde uitkomst + tijd). Kopie vs NextDNS (29 okt): 7.227 vs 7.115 regels (gewone weergave), 1 ontbrekend (samengenomen
-   binnen 1,5 s); raw=1 geeft 17.138 (elke opzoeking 2-3x). NextDNS gebruikt alleen de aanbevolen lijst, verborgen trackers en
-   gevaarlijke sites; geen eigen lijsten of ouderlijk toezicht: het vangnet zit volledig in Klaro.
-   Geleerd (30 okt 08:43/08:52): terug naar Google ná het openen van een site liet de site "nu" staan (twee rijen "nu"). Nu: op
-   telefoon/tablet/computer is een rij niet meer "nu" als er bij een andere app meer dan 10 s later nog iets kwam (overtaken(),
-   muziek en navigatie tellen niet mee); niet op de tv. scripts/controle.ts meldt nu ook "2 rijen tegelijk nu".
+   Geleerd (30 okt, middag): Google-minuten door advertentiecode van websites opgelost, in deze volgorde: (1) Outlook-telemetrie
+   (*.svc.cloud.microsoft, de hele dag) blokkeert de "pagina laadt meteen helemaal"-regel niet meer, echte mail ophalen (eas.) wel;
+   (2) een zoekmachine hooguit 3 s vóór de pagina = klik vanuit Google (ook een advertentie), los van een lange zoeksessie; (3) bij
+   één losse mail-klik telt een zoekmachine erna niet als tweede geopende site; (4) na zo'n klik moet er iets laden (kaal
+   doorstuur-adres uit spam telt niet); (5) www.google.* in dezelfde seconde als tellers van 3+ andere bedrijven, nadat de pagina al
+   begon en zonder zoekresultaten binnen 10 s, telt niet als Google-tijd of -inhoud. Over 34 dagen: Google 981 -> 744 min, 9 rijen
+   erbij (o.a. klikken vanuit Google die eerst wegvielen), 2 eraf (een herladen tabblad en een tweede magazine-pagina, beide
+   onzeker). Geprobeerd en teruggedraaid: "twee pagina's tegelijk" (te breed) en "klik op Google telt als inhoud" (Google +87 min).
+   Nog uitzoeken: 19 okt 10:31 een herladen tabblad tegelijk met een mail-klik naar een andere site telt als bezoek.
    Geleerd (29 okt, 15:08): klik vanuit Google op een website; die laadt 3 s later www.google.nl als advertentiecode mee, en
    Google bleef daardoor "nu" naast de website. Nu: een bezoek waarvan het laatste stuk hooguit 5 s na het begin van een nieuwe
    pagina komt, is niet meer "nu" (lib/livestatus.ts superseded). Chip en rij over 24 uur nagespeeld: steeds gelijk. De minuten

@@ -699,3 +699,26 @@ test("website tijdens een social-app: teller van de pagina of niet aan het scrol
   assert.equal(one("winkel-b.nl")?.uz, undefined);
   assert.equal(one("winkel-c.nl")?.uz, undefined);
 });
+
+test("advertentiecode van een website (www.google.nl tussen tellers van andere bedrijven) rekt Google niet op", async () => {
+  const min = 60_000;
+  const shop = (t: number): R[] => [[t, "www.winkel-voorbeeld.nl"], [t + 300, "connect.facebook.net"], [t + 400, "bat.bing.com"], [t + 500, "s.pinimg.com"], [t + 600, "analytics.tiktok.com"], [t + 700, "www.google.nl"]];
+  const o = await overview([
+    [1000, "www.google.nl"], [1500, "ogads-pa.clients6.google.com"], [3000, "encrypted-tbn0.gstatic.com"], // echt gezocht
+    [20_000, "www.google.com"], ...shop(20_300), // klik op een resultaat, daarna laadt de winkel
+    ...shop(4 * min), ...shop(8 * min), ...shop(12 * min), // de winkel ververst zijn tellers
+  ]);
+  const g = shown(o, "google.com");
+  assert.ok(g.every((x) => x.e - x.s < 2 * min), "Google niet tot de tellers van de winkel: " + g.map((x) => (x.e - x.s) / 1000).join(","));
+  assert.ok(shown(o, "winkel-voorbeeld.nl").length > 0, "de winkel zelf blijft een bezoek");
+});
+
+test("klik vanuit Google (zoekmachine vlak vóór de pagina) is een bezoek; Outlook-telemetrie houdt dat niet tegen", async () => {
+  const page = (t: number, site: string): R[] => [[t, "www." + site], ...["cookiebot.com", "googletagmanager.com", "fbcdn.net", "cdn-a.net", "cdn-b.net", "cdn-c.net", "cdn-d.net", "cdn-e.net", "cdn-f.net", "cdn-g.net"].map((h, i): R => [t + 100 + i * 50, "x." + h])];
+  const o = await overview([
+    [-20_000, "email.nieuwsbrief-voorbeeld.nl"], // mail open (nieuwsbrief, 20 s eerder)
+    [2_000, "atm.outlook.mira.tm.svc.cloud.microsoft"], // telemetrie van Outlook, de hele dag
+    [3_000, "www.google.com"], ...page(3_300, "voorbeeldwinkel.nl"),
+  ]);
+  assert.ok(shown(o, "voorbeeldwinkel.nl").length > 0);
+});

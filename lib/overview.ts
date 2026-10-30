@@ -182,6 +182,8 @@ const PAGE_BEACON = /^(region1\.google-analytics\.com|region1\.analytics\.google
 const GOOGLE_APP_BG = /^((notifications|photosdata|people|photos)-pa\.googleapis\.com|oauthaccountmanager\.googleapis\.com)$/;
 /** Adressen van een echte zoekpagina: Google-balk, Play-knop en plaatjes van resultaten. */
 const SEARCH_PAGE = /^(ogads-pa\.clients6\.google\.com|play\.google\.com|encrypted-tbn\d\.gstatic\.com)$/;
+// Geen tellers van een website: Google zelf, en wat de telefoon ondertussen doet (Apple, mail, WhatsApp, netwerk).
+const NOT_PAGE_TAG = /(^|\.)(google\.[a-z.]+|gstatic\.com|googleapis\.com|googleusercontent\.com|googletagmanager\.com|googleadservices\.com|googlesyndication\.com|doubleclick\.net|withgoogle\.com|adtrafficquality\.google|apple\.com|apple-dns\.net|aaplimg\.com|icloud\.com|mzstatic\.com|apple|cloud\.microsoft|outlook\.com|microsoft\.com|live\.com|whatsapp\.net|whatsapp\.com|akamai\.net|akamaiedge\.net|akadns\.net|fastly-edge\.com|fastly\.net)$/;
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
 /** `known`: wat een eerdere berekening over alle dagen leerde (widgets, hulpjes, doorverwijs-adressen), voor het snelle herberekenen van alleen de laatste uren. */
@@ -263,6 +265,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const clickVisits: { g: Group; x: Session; click: number }[] = []; // bezoeken vanuit een tik op een mail-link
   const pageLoaded = new Set<Session>(); // vanuit een mail naar de site, waar meteen een hele pagina laadde (zie hieronder)
   const devMailClient = new Map<string, number[]>(); // mailprogramma haalt mail op
+  const devMailFetch = new Map<string, number[]>(); // idem, zonder de doorlopende telemetrie van Outlook (*.svc.cloud.microsoft)
   const devMedia = new Map<string, number[]>(); // alle beeld/geluid-verkeer per apparaat (voor tv-apps)
   // Onderdelen van een webwinkel-platform (Shopify) per apparaat: een Shopify-winkel vraagt zelf maar één eigen adres op en haalt
   // de rest van cdn.shopify.com. Komen die in dezelfde seconden, dan is de winkel echt geladen (geen aangeklopte advertentie).
@@ -522,7 +525,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       if (PAGE_BEACON.test(host)) (devBeacon.get(dev) ?? devBeacon.set(dev, []).get(dev)!).push(t);
       if (GOOGLE_APP_BG.test(host)) (devGapi.get(dev) ?? devGapi.set(dev, []).get(dev)!).push(t);
       if (!blocked && /^(www\.google\.[a-z.]+|www\.bing\.com|duckduckgo\.com|www\.ecosia\.org)$/.test(host)) (devSearch.get(dev) ?? devSearch.set(dev, []).get(dev)!).push(t);
-      else if (isMailClientHost(host)) (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
+      else if (isMailClientHost(host)) {
+        (devMailClient.get(dev) ?? devMailClient.set(dev, []).get(dev)!).push(t);
+        if (!/\.svc\.cloud\.microsoft$/.test(host)) (devMailFetch.get(dev) ?? devMailFetch.set(dev, []).get(dev)!).push(t);
+      }
     }
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
     if (SHOP_ASSET.test(host)) (devShop.get(dev) ?? devShop.set(dev, []).get(dev)!).push(t);
@@ -621,6 +627,22 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const drop = new Set(hs.filter((h) => /^www\.google\.[a-z.]+$/.test(h.host) && gapi.some((t) => Math.abs(t - h.t) <= 2_000) && !sig.some((t) => Math.abs(t - h.t) <= 10_000)).map((h) => h.t));
         if (drop.size) all = all.filter((t) => !drop.has(t));
       }
+    }
+    // www.google.* als advertentiecode van een website: in dezelfde seconde laden tellers van minstens 3 andere bedrijven (de
+    // pagina die opstart) en er is geen zoekpagina (plaatjes, zoekbalk) binnen 10 s. Telt niet als Google-tijd (29 okt 11:01: na
+    // een klik op een advertentie liep "Google" 4 min door op de tellers van een webwinkel; 27 okt 24 min bij één zoekopdracht).
+    if (g.site === "google.com") {
+      const hs = siteHosts.get(gkey) ?? [];
+      const sig = hs.filter((h) => SEARCH_PAGE.test(h.host)).map((h) => h.t);
+      const drop = new Set(hs.filter((h) => /^www\.google\.[a-z.]+$/.test(h.host) && !sig.some((t) => Math.abs(t - h.t) <= 10_000) &&
+        new Set(baseWindow(g.dev, h.t - 1_000, h.t + 1_000).filter((r) => !NOT_PAGE_TAG.test(r.b)).map((r) => r.b)).size >= 3 &&
+        // de pagina was al begonnen: een klik op een (advertentie-)resultaat komt juist vóór de pagina (18 okt 07:21)
+        baseWindow(g.dev, h.t - 1_000, h.t - 1).some((r) => !NOT_PAGE_TAG.test(r.b))).map((h) => h.t));
+      if (drop.size) all = all.filter((t) => !drop.has(t));
+      if (drop.size && !all.length) g.bg = true; // die dag alleen advertentiecode van websites: geen Google-rij
+      // Ook niet als "inhoud" (zie FG_RULES): de duur liep anders door tot de advertentiecode van de geopende site (22 okt 19:52:55).
+      const fg = fgTimes.get(gkey);
+      if (drop.size && fg) fgTimes.set(gkey, fg.filter((t) => !drop.has(t)));
     }
     let sessions = allSessions(all);
     // Navigatie (Waze): stukjes met hooguit NAV_GAP ertussen zijn één rit (zie NAV_APPS).
@@ -810,7 +832,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // 4kmedia-market.com met list-manage, klaviyomail en indeed). Een winkelpagina laadt wel code van een mailbedrijf (Klaviyo,
         // Copernica), maar nooit de mail-adressen van andere merken.
         const batch = (devMailBrand.get(g.dev) ?? []).some((r) => r.t >= x.s - 5_000 && r.t <= x.s + 3_000 && r.b !== baseDomain(g.site));
-        if (q.length && !batch && (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000))) { delete x.ml; x.ck = 1; }
+        // Een zoekmachine hooguit 3 s vóór de pagina is de klik zelf (doorsturen vanaf een (advertentie-)resultaat, 18 okt 07:21), ook
+        // als er daarvoor niet lang gezocht werd.
+        const direct = !SEARCH.has(g.site) && q.some((t) => t <= x.s && x.s - t <= 3_000);
+        if (q.length && !batch && (direct || (searchSes.get(g.dev) ?? []).some((y) => q.some((t) => t >= y.s - 60_000 && t <= y.e + 60_000)))) { delete x.ml; x.ck = 1; }
       }
     }
     // Vanuit een mail naar de site zelf (www.) en daar laadt meteen een hele pagina (onderdelen van 9+ andere domeinen binnen 3 s):
@@ -824,8 +849,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const t0 = mt.filter((t) => t >= x.s && t <= x.e).sort((a, b) => a - b)[0];
         if (t0 === undefined) continue;
         const loaded = new Set(baseWindow(g.dev, t0, t0 + 3_000).filter((r) => !r.bl && r.b !== g.site).map((r) => r.b)).size;
-        // Niet als de Mail-app op dat moment nieuwsbrieven ophaalt (veel mail-adressen tegelijk lijkt ook op veel domeinen).
-        const espNear = (devEsp.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000) || (devMailClient.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000);
+        // Niet als de Mail-app op dat moment mail ophaalt (veel mail-adressen tegelijk lijkt ook op veel domeinen). De telemetrie die
+        // Outlook de hele dag stuurt (atm./shed.*.svc.cloud.microsoft) telt niet: die blokkeerde echte kliks (22 okt scapino.nl).
+        const espNear = (devEsp.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000) || (devMailFetch.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000);
         if (loaded >= 9 && !espNear) { delete x.ml; x.ck = 1; pageLoaded.add(x); }
       }
     }
@@ -843,9 +869,16 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // Alleen bij één losse klik: opent de Mail-app veel nieuwsbrieven tegelijk, dan staan er tientallen klik-adressen in dezelfde
       // seconden (Lidl, Kruidvat, ...) en is niets geklikt. Xenos 19 okt: één klik-adres, 2 nieuwsbrief-adressen.
       const alone = (v: (typeof vs)[number]) => (devClick.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 3_000).length === 1 && (devEsp.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 3_000).length <= 3;
-      const own = new Set(vs.filter((v) => v.x.s === v.click && alone(v)).map((v) => v.g.site));
-      const single = new Set(vs.map((v) => v.g.site)).size === 1;
-      for (const { g, x } of vs) if (single || pageLoaded.has(x) || (own.size === 1 && own.has(g.site))) x.ck = 1; else { x.ml = 1; delete x.pv; }
+      // Bij één losse klik is een zoekmachine erna geen tweede geopende site: de site laadt zelf Google-code mee (26 okt 09:11). Bij
+      // een reeks nieuwsbrieven tegelijk (veel klik- en mail-adressen) blijft het gewoon een geopende mail (10 okt 19:51).
+      const sites = vs.filter((v) => !SEARCH.has(v.g.site));
+      const vsx = sites.length && sites.length < vs.length && sites.every(alone) ? sites : vs;
+      const own = new Set(vsx.filter((v) => v.x.s === v.click && alone(v)).map((v) => v.g.site));
+      const single = new Set(vsx.map((v) => v.g.site)).size === 1;
+      // Na de klik moet er ook iets laden: een kaal adres zonder onderdelen is een doorstuur-hop uit een (spam)mail, geen bezoek
+      // (28 okt 10:14: 4kmedia-market.com na een sendgrid-klik, verder niets).
+      const loads = (v: (typeof vs)[number]) => baseWindow(v.g.dev, v.x.s, v.x.s + 3_000).some((r) => !r.bl && r.b !== baseDomain(v.g.site) && !NOT_PAGE_TAG.test(r.b) && !isEspDomain(r.b));
+      for (const { g, x } of vsx) if (((single && loads({ g, x, click: 0 })) || pageLoaded.has(x) || (own.size === 1 && own.has(g.site)))) x.ck = 1; else { x.ml = 1; delete x.pv; }
     }
   }
 
