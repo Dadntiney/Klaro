@@ -1294,7 +1294,7 @@ export default function Home() {
         const lb = list?.getBoundingClientRect();
         if (!lb || lb.top >= hb.bottom - 2) continue; // de lijst zit (nog) niet onder de kop
         let p: number | null = null;
-        let next = lb.bottom - 16; // het volgende dagdeel dat nog onder de kop staat; het einde van de lijst duwt ook
+        let next = lb.bottom - 64; // het volgende dagdeel dat nog onder de kop staat; het einde van de lijst duwt ook
         for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) { const r = m.getBoundingClientRect(); if (r.top <= hb.bottom + 2) p = Number(m.dataset.part); else next = Math.min(next, r.top); } // wisselen zodra het de kop raakt
         // Het volgende dagdeel duwt het label in de kop weg (zoals kopjes in een iOS-lijst): omhoog en vervagen naarmate het nadert,
         // daarna neemt het nieuwe het over. Zonder knipperen (wens eigenaar 30 okt) en zonder twee labels vlak boven elkaar.
