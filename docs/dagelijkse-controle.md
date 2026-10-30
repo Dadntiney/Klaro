@@ -324,6 +324,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Google-rijen, maar de mail-klik-regel leunt op zulke nep-Google-sessies: kliks uit een nieuwsbrief (3 okt happinez via
    www.email.<merk>.nl, 18 okt getdrezzed, 26 okt inspirerendleven) vielen dan weg. Eerst de mail-klik herkenning eerlijk maken
    (www.email.<merk> als klik-adres; Outlook-synchronisatie blokkeert de "pagina laadt meteen helemaal"-regel), dan deze regel.
+   Geprobeerd (30 okt): www.email.<merk> alleen bij de nieuwsbrief-adressen zetten maakt het erger: 6 echte klikken (happinez,
+   yogaonline, nespresso) vielen weg, want dan telt het als mail zonder dat het als klik herkend wordt. Het moet als klik-adres
+   (isClickHost) én de "pagina laadt meteen helemaal"-regel mag niet op Outlook-synchronisatie stuklopen. Niet live gezet.
    Geleerd (29 okt, 15:08): klik vanuit Google op een website; die laadt 3 s later www.google.nl als advertentiecode mee, en
    Google bleef daardoor "nu" naast de website. Nu: een bezoek waarvan het laatste stuk hooguit 5 s na het begin van een nieuwe
    pagina komt, is niet meer "nu" (lib/livestatus.ts superseded). Chip en rij over 24 uur nagespeeld: steeds gelijk. De minuten
