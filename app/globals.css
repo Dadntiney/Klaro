@@ -646,3 +646,6 @@ section.goopen > .partcap { margin-top:22px; }
 .livedot.ok.blink svg { animation:spin .6s linear 2, spin 1.6s linear .12s infinite; }
 .livedot.slow .live-arc, .livedot.fail .live-arc { opacity:.9; }
 @media (prefers-reduced-motion: reduce) { .livedot.ok svg { animation-duration:4s; } }
+
+/* Het dagdeel in de kop wordt door het volgende dagdeel weggeduwd (--push/--fade, zie page.tsx): vloeiend, zonder knipperen. */
+section > h2 .dh-part { transform:translate(-50%, calc(50% - var(--push, 0px))); opacity:var(--fade, 1); }
