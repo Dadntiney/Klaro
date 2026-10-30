@@ -1292,15 +1292,16 @@ export default function Home() {
         if (sb.top > hb.top - 1 || sb.bottom < hb.bottom) continue; // deze kop staat niet vast bovenaan
         const list = sec.querySelector(".list.day");
         const lb = list?.getBoundingClientRect();
-        if (!lb || lb.top >= hb.bottom - 2 || lb.bottom <= hb.bottom + 30) continue; // de lijst zit (nog) niet of niet meer onder de kop
+        if (!lb || lb.top >= hb.bottom - 2) continue; // de lijst zit (nog) niet onder de kop
         let p: number | null = null;
-        let next = Infinity; // het volgende dagdeel dat nog onder de kop staat
+        let next = lb.bottom - 16; // het volgende dagdeel dat nog onder de kop staat; het einde van de lijst duwt ook
         for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) { const r = m.getBoundingClientRect(); if (r.top <= hb.bottom + 2) p = Number(m.dataset.part); else next = Math.min(next, r.top); } // wisselen zodra het de kop raakt
         // Het volgende dagdeel duwt het label in de kop weg (zoals kopjes in een iOS-lijst): omhoog en vervagen naarmate het nadert,
         // daarna neemt het nieuwe het over. Zonder knipperen (wens eigenaar 30 okt) en zonder twee labels vlak boven elkaar.
         const near = Math.max(0, Math.min(1, (PUSH - (next - hb.bottom)) / PUSH));
         h.style.setProperty("--push", (near * 20).toFixed(1) + "px");
         h.style.setProperty("--fade", (1 - near).toFixed(2));
+        if (lb.bottom <= hb.bottom + 30) continue; // de lijst is bijna voorbij: label is weggeduwd, niet meer vast
         found = { d: sec.dataset.day!, p };
       }
       setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p ? v : found));
