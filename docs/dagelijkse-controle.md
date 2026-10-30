@@ -330,6 +330,12 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (30 okt, 08:35): het stuk "onderweg" (mobiel/andere wifi) kwam alleen mee bij het volledige laden (elk uur); rabobank,
    Waze en Google van 08:15-08:34 stonden zonder "Mobiel". Nu werkt het elke-minuut herberekenen het ook bij, maar alleen voor
    wat ná het volledige overzicht kwam (met minder regels zag de verse berekening losse seconden onderweg die er niet waren).
+   Geleerd (30 okt, volledige audit): rekenen over een maand kostte 19-20 s; hulpfuncties (extractHost, baseDomain, isEspHost,
+   netKey, dag/uur-opmaak) liepen per regel opnieuw (276k regels, 8k adressen) en tijdvensters liepen alle regels van een apparaat
+   door. Onthouden + gesorteerd zoeken: 9,6 s, uitkomst byte voor byte gelijk op vier momentopnames. Nieuwe rekenregels altijd
+   zo meten (zelfde uitkomst + tijd). Kopie vs NextDNS (29 okt): 7.227 vs 7.115 regels (gewone weergave), 1 ontbrekend (samengenomen
+   binnen 1,5 s); raw=1 geeft 17.138 (elke opzoeking 2-3x). NextDNS gebruikt alleen de aanbevolen lijst, verborgen trackers en
+   gevaarlijke sites; geen eigen lijsten of ouderlijk toezicht: het vangnet zit volledig in Klaro.
    Geleerd (30 okt 08:43/08:52): terug naar Google ná het openen van een site liet de site "nu" staan (twee rijen "nu"). Nu: op
    telefoon/tablet/computer is een rij niet meer "nu" als er bij een andere app meer dan 10 s later nog iets kwam (overtaken(),
    muziek en navigatie tellen niet mee); niet op de tv. scripts/controle.ts meldt nu ook "2 rijen tegelijk nu".
