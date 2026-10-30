@@ -223,7 +223,12 @@ const APP_TRACKERS = ["ads-twitter.com", "ads-api.twitter.com", "analytics.twitt
   // bestanden van cursusplatform Thinkific in de eigen cursus-site (academy.merk.nl): die site is het bezoek, niet Thinkific
   "cdn.thinkific.com", "assets.thinkific.com", "cdn-internal.thinkific.com", "cdn-themes.thinkific.com"];
 /** Teller van een app die in andere sites en apps zit (zie APP_TRACKERS). */
-export function isAppTracker(host: string): boolean { return APP_TRACKERS.some((t) => host === t || host.endsWith("." + t)); }
+const trackerMemo = new Map<string, boolean>();
+export function isAppTracker(host: string): boolean {
+  let v = trackerMemo.get(host);
+  if (v === undefined) { v = APP_TRACKERS.some((t) => host === t || host.endsWith("." + t)); if (trackerMemo.size > 50_000) trackerMemo.clear(); trackerMemo.set(host, v); }
+  return v;
+}
 const BACKGROUND_SUFFIX = ["csva.vercel.app", "pichya.nl", "bat.bing.com", "c.bing.com", "th.bing.com", // Klaro zelf (oud en nieuw adres); advertentietellers/plaatjes van Microsoft in andere sites
   "neoseum-widget.pages.dev", "dl.google.com", "push.apple.com", "ls.apple.com", "gateway.icloud.com", "play.googleapis.com", "mtalk.google.com", "connectivitycheck.gstatic.com",
   // onderdelen van WordPress-sites (plaatjes, statistiek, inlog, like-knop) en van blog-widgets (pzz.*: laden in dezelfde seconde als de blog, 28 okt); een blog zelf (naam.wordpress.com) blijft gewoon zichtbaar

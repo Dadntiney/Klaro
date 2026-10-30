@@ -221,11 +221,15 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const col = (name: string) => header.findIndex((h) => h.trim().toLowerCase() === name);
   const tCol = col("timestamp");
   // Een afgekapte regel (half overgekomen bij het aanvullen) heeft geen geldige tijd: weglaten, anders "Datum onbekend".
-  const body = tCol >= 0 ? allBody.filter((r) => !!Date.parse(r[tCol] ?? "")) : allBody;
+  const allT = tCol >= 0 ? allBody.map((r) => Date.parse(r[tCol] ?? "")) : [];
+  const body = tCol >= 0 ? allBody.filter((_, i) => !!allT[i]) : allBody;
   const hostCol = col("domain") >= 0 ? col("domain") : (detectColumns(header, body)?.hostCol ?? -1);
   if (hostCol < 0) return ({ status: 502, body: { error: "Geen domeinkolom in de NextDNS-logs gevonden." } });
   // In de browser: eerst bij de eigen server navragen welke adressen op de 18+/dating-lijst staan.
-  await prepareLists(body.map((r) => extractHost(r[hostCol] ?? "")).filter((h): h is string => !!h));
+  // Adres en tijd één keer per regel uitlezen: hieronder lopen een stuk of tien rondes over alle regels (een maand = 276k regels).
+  const hostAt = body.map((r) => extractHost(r[hostCol] ?? ""));
+  const tAt = tCol >= 0 ? allT.filter((t) => !!t) : body.map(() => 0);
+  await prepareLists(hostAt.filter((h): h is string => !!h));
   const nameCol = col("device_name");
   const idCol = col("device_id");
   const modelCol = col("device_model");
@@ -237,8 +241,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   // Eerst alle apparaten bepalen, zodat gelijke soorten consistent worden genummerd.
   const found = new Map<string, string>();
   const idOf = (r: string[]) => (idCol >= 0 && r[idCol]?.trim()) || (nameCol >= 0 && r[nameCol]?.trim() && anonId(r[nameCol].trim())) || "onbekend";
-  for (const r of body) {
-    const id = idOf(r);
+  const idAt = body.map(idOf); // apparaat-id per regel, één keer
+  for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+    const id = idAt[ri];
     if (!found.has(id)) found.set(id, deviceType((nameCol >= 0 && r[nameCol]) || "", (modelCol >= 0 && r[modelCol]) || ""));
   }
   const deviceMap = labelDevices([...found].map(([id, type]) => ({ id, type })));
@@ -290,13 +295,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const lastHit = new Map<string, number>();
   // Algemene adressen die alleen in een keten bij een spel horen (Minecraft: meetgegevens van Microsoft), zie lib/companion.ts.
   const compRaw = new Map<string, { a: number[]; h: number[] }>();
-  for (const r of body) {
-    const host = extractHost(r[hostCol] ?? "");
-    const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+  for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+    const host = hostAt[ri];
+    const t = host && tCol >= 0 ? tAt[ri] : 0;
     if (!t) continue;
     const c = anchorOf(host!) ?? companionFor(host!);
     if (!c) continue;
-    const k = deviceMap[idOf(r)] + "|" + c.app;
+    const k = deviceMap[idAt[ri]] + "|" + c.app;
     const e = compRaw.get(k) ?? compRaw.set(k, { a: [], h: [] }).get(k)!;
     (c.anchor.test(host!) ? e.a : e.h).push(t);
   }
@@ -306,21 +311,21 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (e.a.length) compIn.set(k, chainTimes(e.a, e.h, c.keep, c.lead));
   }
   // Gedeelde Meta-adressen (graph.facebook.com, netwerkmeting) die bij de Instagram-app horen, zie lib/companion.ts.
-  const igShared = instagramShared(body.flatMap((r) => {
-    const host = extractHost(r[hostCol] ?? "");
-    const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
-    return t && /facebook|fbcdn|instagram/.test(host!) ? [{ t, dev: deviceMap[idOf(r)], host: host! }] : [];
+  const igShared = instagramShared(body.flatMap((r, ri) => {
+    const host = hostAt[ri];
+    const t = host && tCol >= 0 ? tAt[ri] : 0;
+    return t && /facebook|fbcdn|instagram/.test(host!) ? [{ t, dev: deviceMap[idAt[ri]], host: host! }] : [];
   }));
   // Facebook-pixel op een website: hoort bij die website, geen Facebook-gebruik (lib/companion.ts).
-  const fbPixel = facebookPixel(body.flatMap((r) => {
-    const host = extractHost(r[hostCol] ?? "");
-    const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+  const fbPixel = facebookPixel(body.flatMap((r, ri) => {
+    const host = hostAt[ri];
+    const t = host && tCol >= 0 ? tAt[ri] : 0;
     if (!t) return [];
-    if (/facebook|fbcdn/.test(host!)) return [{ t, dev: deviceMap[idOf(r)], host: host! }];
+    if (/facebook|fbcdn/.test(host!)) return [{ t, dev: deviceMap[idAt[ri]], host: host! }];
     // Een Shopify-winkel laadt de rest van de pagina van cdn.shopify.com: telt ook als "website geopend" (3 okt breyerhorses.com).
-    if (SHOP_ASSET.test(host!)) return [{ t, dev: deviceMap[idOf(r)], host: host!, page: true }];
+    if (SHOP_ASSET.test(host!)) return [{ t, dev: deviceMap[idAt[ri]], host: host!, page: true }];
     const c = classify(host!);
-    return c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site) ? [{ t, dev: deviceMap[idOf(r)], host: host!, page: true }] : [];
+    return c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site) ? [{ t, dev: deviceMap[idAt[ri]], host: host!, page: true }] : [];
   }));
   // Teller van een app (bzr.openai.com, ads-twitter.com) in dezelfde seconden als een webpagina: hoort bij die pagina, geen gebruik
   // van de app (27 okt: "ChatGPT 12:05" door de teller op bever.nl; de app ging pas om 12:07 open). In de app zelf (winkelkaartjes in
@@ -328,11 +333,11 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const appPixel = new Set<string>();
   {
     const pagesBy = new Map<string, number[]>(), hits: { t: number; dev: string; host: string }[] = [];
-    for (const r of body) {
-      const host = extractHost(r[hostCol] ?? "");
-      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+      const host = hostAt[ri];
+      const t = host && tCol >= 0 ? tAt[ri] : 0;
       if (!t) continue;
-      const dev = deviceMap[idOf(r)];
+      const dev = deviceMap[idAt[ri]];
       if (isAppTracker(host!)) { hits.push({ t, dev, host: host! }); continue; }
       const c = classify(host!);
       if (c.main && !c.bg && !c.flag && isPlainSite(c) && !isSystemSite(c.site)) (pagesBy.get(dev) ?? pagesBy.set(dev, []).get(dev)!).push(t);
@@ -343,15 +348,15 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const playOf = new Map<string, string>(); // apparaat|tijdstip -> site van de tv-app
   {
     const byDev = new Map<string, { t: number; host: string; site?: string }[]>();
-    for (const r of body) {
-      const host = extractHost(r[hostCol] ?? "");
-      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+      const host = hostAt[ri];
+      const t = host && tCol >= 0 ? tAt[ri] : 0;
       if (!t) continue;
       const info = classify(host!);
       const blocked = (statusCol >= 0 ? r[statusCol] ?? "" : "").trim().toLowerCase() === "blocked";
       const app = TV_APPS.has(info.site) && !info.bg;
       if (!app && !(isPlaying(host!, blocked) && isPlainSite(info))) continue;
-      const dev = deviceMap[idOf(r)];
+      const dev = deviceMap[idAt[ri]];
       (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, host: host!, site: app ? info.site : undefined });
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignPlayback(ev)) playOf.set(dev + "|" + t, site);
@@ -364,9 +369,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const learned = new Map<string, Set<string>>();
     if (!opts.known) {
       const ev: Parameters<typeof learnFg>[0] = [];
-      for (const r of body) {
-        const host = extractHost(r[hostCol] ?? "");
-        const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+      for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+        const host = hostAt[ri];
+        const t = host && tCol >= 0 ? tAt[ri] : 0;
         if (!t) continue;
         const blocked = (statusCol >= 0 ? r[statusCol] ?? "" : "").trim().toLowerCase() === "blocked";
         if (blocked) continue;
@@ -374,7 +379,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         const app = !!FG_RULES[info.site];
         const page = !app && info.main && !info.bg && !info.flag && isPlainSite(info) && !SEARCH.has(info.site);
         if (!app && !page) continue;
-        ev.push({ t, dev: deviceMap[idOf(r)], host: host!, site: info.site, app, known: app && FG_RULES[info.site].test(host!), page });
+        ev.push({ t, dev: deviceMap[idAt[ri]], host: host!, site: info.site, app, known: app && FG_RULES[info.site].test(host!), page });
       }
       for (const [site, hs] of learnFg(ev)) learned.set(site, hs);
       learnedFgList = [...learned].flatMap(([site, hs]) => [...hs].map((h) => site + "|" + h));
@@ -387,9 +392,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const gameOf = new Map<string, string>(); // apparaat|tijdstip -> site van het spel
   {
     const byDev = new Map<string, { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean }[]>();
-    for (const r of body) {
-      const host = extractHost(r[hostCol] ?? "");
-      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+      const host = hostAt[ri];
+      const t = host && tCol >= 0 ? tAt[ri] : 0;
       if (!t) continue;
       const info = classify(host!);
       const sdk = GAME_SDK.test(host!);
@@ -399,7 +404,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const game = !sdk && !navSdk && info.main && !info.bg && (/ \(spel\)$/.test(info.name) || nav) && info.site !== "unity3d.com" ? info.site : undefined;
       const other = !sdk && !navSdk && !game && info.main && !info.bg && !info.flag && !isPlainSite(info);
       if (!sdk && !navSdk && !game && !other) continue;
-      const dev = deviceMap[idOf(r)];
+      const dev = deviceMap[idAt[ri]];
       (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, game, nav: !!game && nav, sdk, navSdk, other });
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignGameSdk(ev, HEARTBEAT_GAP)) gameOf.set(dev + "|" + t, site);
@@ -408,13 +413,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   let learnedHelpers: string[] = [];
   const helperSites = (() => {
     const ev: Parameters<typeof loadedWith>[0] = [];
-    for (const r of body) {
-      const host = extractHost(r[hostCol] ?? "");
-      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+      const host = hostAt[ri];
+      const t = host && tCol >= 0 ? tAt[ri] : 0;
       if (!t) continue;
       const info = classify(host!);
       if (info.bg || info.flag) continue;
-      ev.push({ t, dev: idOf(r), host: host!, site: info.site, page: info.main && isPlainSite(info), helper: !info.main });
+      ev.push({ t, dev: idAt[ri], host: host!, site: info.site, page: info.main && isPlainSite(info), helper: !info.main });
     }
     // Leren over meerdere dagen alleen bij de volledige berekening; bij het snelle herberekenen komt het uit `known`.
     learnedHelpers = opts.known ? [] : [...loadedWith(ev)];
@@ -429,13 +434,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const followIn = new Set<string>(); // apparaat|adres|tijdstip dat bij de app hoort
   {
     const ev: Parameters<typeof followers>[0] = [];
-    for (const r of body) {
-      const host = extractHost(r[hostCol] ?? "");
-      const t = host && tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
+    for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+      const host = hostAt[ri];
+      const t = host && tCol >= 0 ? tAt[ri] : 0;
       if (!t) continue;
       const info = classify(host!);
       if (info.flag) continue;
-      ev.push({ t, dev: deviceMap[idOf(r)], host: host!, site: info.site, app: info.main && !info.bg && !isPlainSite(info), cloud: info.bg || !info.main });
+      ev.push({ t, dev: deviceMap[idAt[ri]], host: host!, site: info.site, app: info.main && !info.bg && !isPlainSite(info), cloud: info.bg || !info.main });
     }
     if (!opts.known) for (const [k, site] of followers(ev)) followOf.set(k, site);
     learnedFollowers = [...followOf].map(([k, site]) => k + "|" + site);
@@ -461,11 +466,11 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       }
     }
   }
-  for (const r of body) {
-    const host = extractHost(r[hostCol] ?? "");
+  for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
+    const host = hostAt[ri];
     if (!host) continue;
-    const t = tCol >= 0 ? Date.parse(r[tCol]) || 0 : 0;
-    const dev = deviceMap[idOf(r)];
+    const t = tCol >= 0 ? tAt[ri] : 0;
+    const dev = deviceMap[idAt[ri]];
     // Hetzelfde adres binnen 1,5 seconde is één opvraging (het logboek bevat A, AAAA en HTTPS apart; de bron voor vandaag niet).
     // Zo tellen beide bronnen precies gelijk.
     const dk = dev + "|" + host;
@@ -481,7 +486,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (gsite && (GAME_SDK.test(host) || NAV_SDK.test(host))) info = classify(gsite);
     const fol = t ? followOf.get(dev + "|" + host) : undefined;
     if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
-    if (t && igShared.has(dev + "|" + t + "|" + host)) info = classify("instagram.com");
+    const meta = /facebook|fbcdn|instagram/.test(host); // alleen dan kan een regel hieronder in igShared/fbPixel staan
+    if (t && meta && igShared.has(dev + "|" + t + "|" + host)) info = classify("instagram.com");
     // Op een tv is Amazon-verkeer (api.amazon.com, a2z.com, plaatjes) altijd de Prime Video-app: een tv heeft geen Amazon-winkel
     // (19 okt: "Amazon 2 u 8 min" naast losse Prime Video-stukjes).
     if (info.site === "amazon.com" && /^(Apple TV|TV)( \d+)?$/.test(dev)) info = { ...classify("primevideo.com"), bg: info.bg };
@@ -533,8 +539,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     if (blockedAdult && d === today) devBlockedToday.set(dev, (devBlockedToday.get(dev) ?? 0) + 1);
     if (SHOP_ASSET.test(host)) (devShop.get(dev) ?? devShop.set(dev, []).get(dev)!).push(t);
     if (isQuietHost(host)) continue; // verbinding openhouden: geen bezoek, geen sessie
-    if (t && appPixel.has(dev + "|" + t + "|" + host)) continue; // teller van een app op een webpagina: geen gebruik van die app
-    if (t && fbPixel.has(dev + "|" + t + "|" + host)) continue; // Facebook-pixel van de website ervoor: geen Facebook-gebruik
+    if (t && appPixel.size && isAppTracker(host) && appPixel.has(dev + "|" + t + "|" + host)) continue; // teller van een app op een webpagina: geen gebruik van die app
+    if (t && meta && fbPixel.has(dev + "|" + t + "|" + host)) continue; // Facebook-pixel van de website ervoor: geen Facebook-gebruik
 
     const gkey = `${d}|${dev}|${info.site}`;
     const g = groups.get(gkey);
@@ -1068,9 +1074,14 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // cottonclub.nl via de nieuwsbrief, 20 s later mailplaatjes van andere afzenders).
         for (const b of win) if ((b.x.n ?? 0) <= 2 && b.x.e - b.x.s <= 5_000 && !(viaMail && (b.x.mh ?? 0) >= 2)) b.x.rl = 1;
       }
-      for (const b of l) {
-        if (b.x.e - b.x.s > 60_000) continue;
-        const a = l.find((y) => y.g.site !== b.g.site && brand(y.g.site) === brand(b.g.site) && brand(b.g.site).length >= 4 && y.x.s <= b.x.s && b.x.s - y.x.s <= 30_000);
+      // Zelfde als l.find(y => andere site, zelfde merk, y.s binnen 30 s vóór b.s): alleen dat venster van de gesorteerde lijst.
+      const brands = l.map((y) => brand(y.g.site));
+      for (let bi = 0, lo = 0; bi < l.length; bi++) {
+        const b = l[bi];
+        while (l[lo].x.s < b.x.s - 30_000) lo++;
+        if (b.x.e - b.x.s > 60_000 || brands[bi].length < 4) continue;
+        let a = false;
+        for (let j = lo; j < l.length && l[j].x.s <= b.x.s; j++) if (l[j].g.site !== b.g.site && brands[j] === brands[bi]) { a = true; break; }
         if (a) { delete b.x.pv; delete b.x.ck; delete b.x.uz; b.x.emb = 1; }
       }
     }
@@ -1109,12 +1120,25 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   // gebruikt werden: of die app ook echt geopend is, ziet DNS niet. Tonen als onzeker, niet als feit (17 okt 07:24 WhatsApp).
   {
     const named = [...groups.values()].filter((g) => g.main && !g.bg && !g.flag && !isPlainSite(g));
+    // Per apparaat alle eigen adressen van die apps (zonder meetmodules), gesorteerd: zo is "welke apps vroegen binnen 3 s iets op"
+    // een venster in plaats van alle apps en al hun adressen per sessie.
+    const wakeHits = new Map<string, { t: number; h: (typeof named)[number] }[]>();
+    for (const h of named) for (const y of siteHosts.get(h.d + "|" + h.dev + "|" + h.site) ?? []) if (!GAME_SDK.test(y.host) && !SDK_IN_APP.test(y.host)) (wakeHits.get(h.dev) ?? wakeHits.set(h.dev, []).get(h.dev)!).push({ t: y.t, h });
+    for (const l of wakeHits.values()) l.sort((a, b) => a.t - b.t);
+    const wakersAt = (dev: string, t: number, self: (typeof named)[number]) => {
+      const l = wakeHits.get(dev) ?? [];
+      let lo = 0, hi = l.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (l[mid].t < t - 3_000) lo = mid + 1; else hi = mid; }
+      const out = new Set<(typeof named)[number]>();
+      for (let i = lo; i < l.length && l[i].t <= t + 3_000; i++) if (l[i].h !== self) out.add(l[i].h);
+      return [...out];
+    };
     for (const g of named) {
       for (const x of g.ss) {
         if (!isHuman(x) || (x.n ?? 0) > 3 || x.e - x.s >= 60_000 || x.lg) continue;
         // Andere apps die in dezelfde 3 s zelf iets opvragen. Meetmodules die ín een app zitten (de Facebook-module, reclame- en
         // spelnetwerken) tellen niet: Vinted die opstart vraagt ook star.c10r.facebook.com en applovin op.
-        const wake = named.filter((h) => h !== g && h.dev === g.dev && (siteHosts.get(h.d + "|" + h.dev + "|" + h.site) ?? []).some((y) => Math.abs(y.t - x.s) <= 3_000 && !GAME_SDK.test(y.host) && !SDK_IN_APP.test(y.host)));
+        const wake = wakersAt(g.dev, x.s, g);
         if (wake.length < 2) continue;
         const used = wake.some((h) => h.ss.some((y) => isHuman(y) && y.s <= x.s + 60_000 && y.e >= x.s - 60_000));
         if (!used) { x.uz = 1; x.uw = "ontgrendel"; }
