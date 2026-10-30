@@ -327,6 +327,11 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geprobeerd (30 okt): www.email.<merk> alleen bij de nieuwsbrief-adressen zetten maakt het erger: 6 echte klikken (happinez,
    yogaonline, nespresso) vielen weg, want dan telt het als mail zonder dat het als klik herkend wordt. Het moet als klik-adres
    (isClickHost) én de "pagina laadt meteen helemaal"-regel mag niet op Outlook-synchronisatie stuklopen. Niet live gezet.
+   Geleerd (30 okt, 08:35): het stuk "onderweg" (mobiel/andere wifi) kwam alleen mee bij het volledige laden (elk uur); rabobank,
+   Waze en Google van 08:15-08:34 stonden zonder "Mobiel". Nu werkt het elke-minuut herberekenen het ook bij, maar alleen voor
+   wat ná het volledige overzicht kwam (met minder regels zag de verse berekening losse seconden onderweg die er niet waren).
+   Nog uitzoeken (30 okt 08:43): terug naar Google ná het openen van een site (zoekresultaten-plaatjes 17 s later) laat de site
+   "nu" staan, want superseded() kijkt alleen naar een app die ná het bezoek begint. Let op de tv (Disney+ met Netflix-blips).
    Geleerd (29 okt, 15:08): klik vanuit Google op een website; die laadt 3 s later www.google.nl als advertentiecode mee, en
    Google bleef daardoor "nu" naast de website. Nu: een bezoek waarvan het laatste stuk hooguit 5 s na het begin van een nieuwe
    pagina komt, is niet meer "nu" (lib/livestatus.ts superseded). Chip en rij over 24 uur nagespeeld: steeds gelijk. De minuten
