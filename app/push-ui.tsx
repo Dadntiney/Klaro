@@ -10,15 +10,19 @@ import { dayKeyFmt, dayLabel, timeFmt } from "./ui";
  */
 export function WatchStuck() {
   const [laatst, setLaatst] = useState<number | null>(null);
+  const [mislukt, setMislukt] = useState<number | null>(null); // versturen naar Apple mislukt en sindsdien niets goed aangekomen
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     // Steeds opnieuw vragen: één keer bij het openen gaf een vals "niet gedraaid" als de app lang open bleef (20 okt).
-    const health = () => { if (document.visibilityState === "visible") pushHealth().then((h) => { setLaatst(h.laatst); setNow(Date.now()); }, () => {}); };
+    const health = () => { if (document.visibilityState === "visible") pushHealth().then((h) => { setLaatst(h.laatst); setMislukt(h.mislukt); setNow(Date.now()); }, () => {}); };
     health();
     const t = setInterval(health, 60_000);
     document.addEventListener("visibilitychange", health);
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", health); };
   }, []);
+  const when = (t: number) => `${dayLabel(dayKeyFmt.format(t)).toLowerCase()} ${timeFmt.format(t)}`;
+  if (mislukt !== null && now - mislukt < 24 * 3_600_000)
+    return <p className="pushwarn top" role="alert">Let op: een melding kon {when(mislukt)} niet naar je toestel worden verstuurd. Hij wordt een uur lang elke 5 minuten opnieuw geprobeerd. Staan meldingen op elk toestel nog aan?</p>;
   if (laatst === null || now - laatst <= 20 * 60_000) return null;
   return <p className="pushwarn top" role="alert">Let op: waarschuwen heeft sinds {dayLabel(dayKeyFmt.format(laatst)).toLowerCase()} {timeFmt.format(laatst)} niet gedraaid. Meldingen bij 18+, dating of VPN komen nu niet.</p>;
 }

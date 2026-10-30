@@ -31,6 +31,13 @@ check('wegtikken met verkeerde titel laat alles staan', count(push_hist_without(
 // Het PHP-sluitteken (vraagteken + groter-dan) in een opmerking beëindigt PHP: de rest wordt dan als tekst getoond (20 okt, push.php). Alleen setup.php mag het (HTML).
 foreach (glob(__DIR__ . '/../php/api/*.php') as $f) if (basename($f) !== 'setup.php') check(basename($f) . ' bevat geen "?>"', strpos((string)file_get_contents($f), '?' . '>') === false);
 
+$q = push_pending_add([], [['tag' => 'a|x.nl', 'title' => 'T', 'body' => 'B'], ['tag' => 'proef']], $now);
+check('mislukte melding komt in de wachtrij, proefmelding niet', array_column($q, 'tag') === ['a|x.nl']);
+check('opnieuw mislukt: zelfde melding één keer, eerste tijd blijft', count(push_pending_add($q, [['tag' => 'a|x.nl']], $now + 300_000)) === 1 && push_pending_add($q, [['tag' => 'a|x.nl']], $now + 300_000)[0]['t'] === $now);
+check('wachtrij: na een uur niet meer opnieuw', push_pending_take($q, $now + 3600_000) === [] && count(push_pending_take($q, $now + 300_000)) === 1);
+check('status: mislukt en daarna niets goed aangekomen', push_fail_open((string)$now, (string)($now - 1)) === $now);
+check('status: daarna weer goed aangekomen = geen probleem meer', push_fail_open((string)$now, (string)($now + 1)) === null && push_fail_open(null, null) === null);
+
 array_map('unlink', glob(PRIV . '/*') ?: []);
 @rmdir(PRIV);
 echo "\n$ok goed, $bad fout\n";

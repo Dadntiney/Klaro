@@ -14,14 +14,15 @@ require_login();
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $e = (string)($_GET['endpoint'] ?? '');
   // Wanneer de waarschuw-taak laatst goed draaide (de pagina meldt het als dat te lang geleden is).
-  $ok = null; $hist = [];
+  $ok = null; $hist = []; $mislukt = null;
   try {
     require_once __DIR__ . '/store.php';
     $db = store_db();
     $ok = (int)(store_meta($db, 'alert_ok') ?? 0) ?: null;
+    $mislukt = push_fail_open(store_meta($db, 'push_fail'), store_meta($db, 'push_ok'));
     $hist = push_hist_visible(json_decode(store_meta($db, 'alerts_hist') ?? '[]', true) ?: [], (int)(microtime(true) * 1000));
   } catch (Throwable $x) { $ok = null; }
-  json_out(200, ['publicKey' => push_public_key(), 'aan' => $e !== '' && push_has($e), 'laatst' => $ok, 'meldingen' => $hist, 'aantal' => count(push_subs())]);
+  json_out(200, ['publicKey' => push_public_key(), 'aan' => $e !== '' && push_has($e), 'laatst' => $ok, 'mislukt' => $mislukt, 'meldingen' => $hist, 'aantal' => count(push_subs())]);
 }
 $in = json_decode((string)file_get_contents('php://input'), true);
 if (!is_array($in)) json_out(400, ['error' => 'Ongeldige aanvraag.']);

@@ -26,7 +26,9 @@ for (const x of open) console.log(`${x.id}  ${x.dev}  ${x.site} (${x.name})  ${h
 // Zelfbewaking (ook elk uur): draaide de waarschuw-taak (elke 5 min) de laatste 20 minuten niet goed, dan dat zeggen, zodat het
 // opgelost wordt voordat de eigenaar het ziet. Uitzoeken: Actions → Waarschuwen (draait de keten nog?) en api/alert.php.
 const h = await fetch(`${site}/api/push.php`, { headers });
-const laatst = h.ok ? ((await h.json()) as { laatst?: number | null }).laatst : null;
+const hs = h.ok ? ((await h.json()) as { laatst?: number | null; mislukt?: number | null }) : {};
+const laatst = hs.laatst;
+if (hs.mislukt) console.log(`LET OP: waarschuwen kon een melding niet versturen (${hm(hs.mislukt)}); daarna nog niets goed aangekomen.`);
 if (!h.ok) console.log(`LET OP: waarschuw-status niet op te vragen (server ${h.status}).`);
 else if (!laatst || Date.now() - laatst > 20 * 60_000) console.log(`LET OP: waarschuwen draaide niet sinds ${laatst ? hm(laatst) : "onbekend"}.`);
 

@@ -6,6 +6,7 @@
 //  POST {until, alerts}      wat de taak vond: al gemeld (zelfde apparaat + site, laatste 3 uur) valt weg; geeft wat verstuurd moet
 //                            worden en naar welke abonnementen
 //  POST {gone: [endpoint]}   abonnementen die niet meer bestaan (Apple antwoordt 404/410) weghalen
+//  POST {report: {failed, ok, fail}}  uitslag van het versturen: wat nergens aankwam de volgende ronde opnieuw (hooguit een uur)
 // Ook: per apparaat laatst gezien / langste pauze (melding "ongewoon lang stil"), aantal meldingen deze week (weekbericht op
 // zondag), en "laatst goed gedraaid" (alert_ok; de pagina waarschuwt als dat te lang geleden is).
 require __DIR__ . '/common.php';
@@ -53,6 +54,16 @@ if (isset($in['gone'])) {
   push_remove(array_filter(is_array($in['gone']) ? $in['gone'] : [], 'is_string'));
   json_out(200, ['ok' => true]);
 }
+// Uitslag van het versturen: wat bij geen enkel toestel aankwam gaat in de wachtrij (volgende ronde opnieuw), en de pagina en de
+// uurcontrole zien dat het versturen misging (alert_ok zegt alleen dat de taak draaide, niet dat de melding aankwam).
+if (isset($in['report']) && is_array($in['report'])) {
+  $r = $in['report'];
+  $failed = is_array($r['failed'] ?? null) ? $r['failed'] : [];
+  if ($failed) store_meta($db, 'alert_pending', json_encode(push_pending_add(json_decode(store_meta($db, 'alert_pending') ?? '[]', true) ?: [], $failed, $now), JSON_UNESCAPED_UNICODE));
+  if ((int)($r['fail'] ?? 0) > 0) store_meta($db, 'push_fail', (string)$now);
+  if ((int)($r['ok'] ?? 0) > 0 && !$failed && (int)($r['fail'] ?? 0) === 0) store_meta($db, 'push_ok', (string)$now);
+  json_out(200, ['ok' => true]);
+}
 
 $sent = json_decode(store_meta($db, 'alerted') ?? '{}', true) ?: [];
 foreach ($sent as $key => $t) if ($now - (int)$t > 24 * 3600_000) unset($sent[$key]);
@@ -66,13 +77,19 @@ foreach (is_array($in['alerts'] ?? null) ? $in['alerts'] : [] as $a) {
   $send[] = ['title' => (string)($a['title'] ?? 'Dobber'), 'body' => (string)($a['body'] ?? ''), 'tag' => $key];
 }
 store_meta($db, 'alerted', json_encode($sent));
+// Eerder mislukte meldingen opnieuw (niet nog eens in de geschiedenis of de weektelling: die staan er al).
+$retry = push_pending_take(json_decode(store_meta($db, 'alert_pending') ?? '[]', true) ?: [], $now);
+store_meta($db, 'alert_pending', '[]');
+$fresh = $send;
+$tags = array_column($send, 'tag');
+foreach ($retry as $m) if (!in_array($m['tag'], $tags, true)) $send[] = ['title' => $m['title'], 'body' => $m['body'], 'tag' => $m['tag']];
 // De echte tekst alleen in Klaro (na inloggen, api/push.php); op de iPhone komt een neutrale melding zonder details.
 $hist = array_values(array_filter(json_decode(store_meta($db, 'alerts_hist') ?? '[]', true) ?: [], fn($m) => $now - (int)($m['t'] ?? 0) < 30 * 86_400_000));
-foreach ($send as $m) $hist[] = ['t' => $now, 'title' => $m['title'], 'body' => $m['body']];
+foreach ($fresh as $m) $hist[] = ['t' => $now, 'title' => $m['title'], 'body' => $m['body']];
 store_meta($db, 'alerts_hist', json_encode(array_slice($hist, -50), JSON_UNESCAPED_UNICODE));
 // Meldingen over sites bijhouden voor het weekbericht (niet de stil-, week- of proefmeldingen).
 $log = array_values(array_filter(json_decode(store_meta($db, 'alerts_log') ?? '[]', true) ?: [], fn($t) => $now - (int)$t < 8 * 86_400_000));
-foreach ($send as $m) if (!preg_match('/^(stil|week)\|/', $m['tag'])) $log[] = $now;
+foreach ($fresh as $m) if (!preg_match('/^(stil|week)\|/', $m['tag'])) $log[] = $now;
 store_meta($db, 'alerts_log', json_encode($log));
 store_meta($db, 'alert_ok', (string)$now);
 if (isset($in['until'])) store_meta($db, 'alert_until', (string)(int)$in['until']);

@@ -56,9 +56,9 @@ export async function pushTest(): Promise<boolean> {
 }
 
 /** Wanneer de waarschuw-taak laatst goed draaide (ms, of null) en op hoeveel toestellen meldingen aan staan. */
-export async function pushHealth(): Promise<{ laatst: number | null; aantal: number | null }> {
-  const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { laatst?: number | null; aantal?: number };
-  return { laatst: r.laatst ?? null, aantal: typeof r.aantal === "number" ? r.aantal : null };
+export async function pushHealth(): Promise<{ laatst: number | null; aantal: number | null; mislukt: number | null }> {
+  const r = (await (await fetch("/api/push.php", { credentials: "same-origin" })).json()) as { laatst?: number | null; aantal?: number; mislukt?: number | null };
+  return { laatst: r.laatst ?? null, aantal: typeof r.aantal === "number" ? r.aantal : null, mislukt: r.mislukt ?? null };
 }
 
 export type SentAlert = { t: number; title: string; body: string };

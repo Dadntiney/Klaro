@@ -101,6 +101,17 @@ export function pushText(key: string): { title: string; body: string; tag: strin
   return { title: "Er is iets om te bekijken", body: "Tik om het te bekijken.", tag: "melding" };
 }
 
+/**
+ * Welke meldingen bij geen enkel toestel aankwamen (die gaan de volgende ronde opnieuw). Kwam hij op één toestel wel aan, dan is
+ * de eigenaar gewaarschuwd; het mislukte toestel telt dan wel mee als "mislukt" (zichtbaar in Klaro), maar niet nog eens versturen.
+ */
+export function failedMessages<M extends { tag: string }>(results: { m: M; st: number }[]): M[] {
+  const ok = new Set(results.filter((r) => r.st >= 200 && r.st < 300).map((r) => r.m.tag));
+  const out = new Map<string, M>();
+  for (const r of results) if (!(r.st >= 200 && r.st < 300) && r.st !== 404 && r.st !== 410 && !ok.has(r.m.tag)) out.set(r.m.tag, r.m);
+  return [...out.values()];
+}
+
 async function api(url: string, k: Keys, body?: unknown): Promise<Record<string, unknown>> {
   const res = await fetch(url, {
     method: body === undefined ? "GET" : "POST",
@@ -131,17 +142,21 @@ async function main() {
   const send = res.send as { title: string; body: string; tag: string }[];
   const tests = new Set(res.test as string[]);
   const gone: string[] = [];
+  const results: { m: { title: string; body: string; tag: string }; st: number }[] = [];
   let ok = 0, fail = 0;
   for (const s of subs) {
     const msgs = [...send];
     if (tests.has(s.endpoint)) msgs.push({ title: "", body: "", tag: "proef" });
     for (const m of msgs) {
       const st = await sendPush(s, pushText(m.tag), k).catch(() => 0);
+      results.push({ m, st });
       if (st === 404 || st === 410) { gone.push(s.endpoint); break; }
       if (st >= 200 && st < 300) ok++; else fail++;
     }
   }
   if (gone.length) await api(url, k, { gone });
+  // Uitslag terugmelden: wat nergens aankwam komt de volgende ronde opnieuw, en Klaro laat zien dat het versturen misging.
+  if (ok || fail) await api(url, k, { report: { failed: failedMessages(results), ok, fail } });
   console.log(`${send.length} melding(en) nieuw, ${ok} verstuurd, ${fail} mislukt, ${gone.length} abonnement(en) vervallen, websitecontrole: ${check.length} aangeboden, ${Number(res.known) || 0} al bekend, ${Number(res.checked) || 0} nagekeken`);
   if (fail) process.exitCode = 1;
 }

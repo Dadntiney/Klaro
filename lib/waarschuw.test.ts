@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findAlerts, flagOf, newDeviceAlerts, pushText, siteCandidates, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
+import { failedMessages, findAlerts, flagOf, newDeviceAlerts, pushText, siteCandidates, silentAlerts, type DevStat } from "../scripts/waarschuw.ts";
 
 test("waarschuwen: 18+, dating, VPN en door NextDNS geblokkeerde porno worden gemeld", () => {
   assert.equal(flagOf("www.pornhub.com", "", ""), "18+");
@@ -71,4 +71,12 @@ test("websitecontrole bij binnenkomst: alleen de eigen pagina van gewone sites, 
   const row = (h: string) => ["2026-10-28T10:00:00Z", h, "", "", "", "", "A", "x", ""].join("\t");
   const c = siteCandidates(cols, ["www.kleurplaten-site.nl", "cdn.kleurplaten-site.nl", "www.pornhub.com", "www.googletagmanager.com", "graph.instagram.com", "nieuwe-winkel.nl"].map(row));
   assert.deepEqual(c.sort(), ["nieuwe-winkel.nl", "www.kleurplaten-site.nl"]);
+});
+
+test("versturen mislukt: alleen wat op geen enkel toestel aankwam gaat opnieuw; vervallen abonnementen niet", () => {
+  const a = { title: "", body: "", tag: "x|site-a.nl" }, b = { title: "", body: "", tag: "x|site-b.nl" }, c = { title: "", body: "", tag: "stil|x" };
+  // a: Apple gaf een fout (500) en geen ander toestel kreeg hem; b: op het tweede toestel wel aangekomen; c: abonnement vervallen (410)
+  const r = failedMessages([{ m: a, st: 500 }, { m: b, st: 0 }, { m: b, st: 201 }, { m: c, st: 410 }]);
+  assert.deepEqual(r.map((m) => m.tag), ["x|site-a.nl"]);
+  assert.deepEqual(failedMessages([{ m: a, st: 201 }]), []); // alles goed: niets opnieuw
 });

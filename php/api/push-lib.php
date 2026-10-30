@@ -81,3 +81,26 @@ function push_hist_without(array $hist, int $t, string $title): array {
   return array_values(array_filter($hist, fn($m) => !(is_array($m) && (int)($m['t'] ?? 0) === $t && (string)($m['title'] ?? '') === $title)));
 }
 
+// Wachtrij voor meldingen die niet bij Apple aankwamen (geen enkel toestel kreeg hem): de volgende ronde (5 min later) opnieuw,
+// hooguit een uur lang. Zonder dit gold een mislukte melding als verstuurd en kwam hij 3 uur niet meer (gat gevonden 30 okt).
+const PUSH_RETRY_FOR = 3600_000;
+function push_pending_add(array $pending, array $failed, int $now): array {
+  $by = [];
+  foreach ($pending as $m) if (is_array($m) && isset($m['tag'])) $by[(string)$m['tag']] = $m;
+  foreach ($failed as $m) {
+    if (!is_array($m) || !isset($m['tag']) || $m['tag'] === 'proef') continue; // proefmelding: wordt opnieuw aangevraagd
+    $tag = (string)$m['tag'];
+    $by[$tag] = ['tag' => $tag, 'title' => (string)($m['title'] ?? ''), 'body' => (string)($m['body'] ?? ''), 't' => (int)($by[$tag]['t'] ?? $now)];
+  }
+  return array_values(array_filter($by, fn($m) => $now - (int)$m['t'] < PUSH_RETRY_FOR));
+}
+/** Wat nu opnieuw verstuurd moet worden (nog geen uur oud); de wachtrij is daarna leeg (mislukt het weer, dan komt het terug). */
+function push_pending_take(array $pending, int $now): array {
+  return array_values(array_filter($pending, fn($m) => is_array($m) && isset($m['tag']) && $now - (int)($m['t'] ?? 0) < PUSH_RETRY_FOR));
+}
+/** Versturen mislukt en sindsdien niets meer goed aangekomen: dat tijdstip, anders null. */
+function push_fail_open(?string $fail, ?string $ok): ?int {
+  $f = (int)($fail ?? 0);
+  return $f && $f > (int)($ok ?? 0) ? $f : null;
+}
+

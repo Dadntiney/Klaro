@@ -352,6 +352,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (30 okt): de chip moet dezelfde regels volgen als de rij. Een app met een volg-adres zonder bewezen vaste melding
    voegt korte stukjes alleen samen met beeld/geluid of een stuk van een minuut (anders: twee losse Hue-tikjes = 10 min groen);
    losse opvragingen uit nieuwsbrieven en doorstuur-links tellen niet mee voor "bezig met meerdere sites".
+   Geleerd (30 okt): "waarschuwen draaide" zegt niet dat de melding aankwam. Wat bij geen enkel toestel aankomt, gaat nu een uur
+   lang elke ronde opnieuw (api/alert.php, wachtrij), en Klaro en scripts/nakijken.ts tonen "LET OP" tot er weer iets aankomt.
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.
 6. Geleerde kennis vastleggen (blijft ook als het NextDNS-logboek wordt leeggemaakt):
