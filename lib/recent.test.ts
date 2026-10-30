@@ -90,3 +90,19 @@ test("live en herberekening: wat live vóór de horizon bij deze site kwam en de
   // na de horizon: nog niet herberekend, live mag het tonen
   assert.equal(mergeLiveGroup(full, live, 25 * m).ss!.at(-1)!.e, 30 * m);
 });
+
+test("snel herberekenen: onderweg (ander netwerk) komt ook vers mee, oudere stukjes uit het volledige overzicht", () => {
+  const now = Date.parse("2026-10-30T07:35:00Z");
+  const old = { s: Date.parse("2026-10-28T10:00:00Z"), e: Date.parse("2026-10-28T10:30:00Z") };
+  const full = { deviceMap: { id1: "iPhone" }, insights: { until: Date.parse("2026-10-30T07:00:00Z") }, groups: [], devices: [{ name: "iPhone", away: { now: false, since: 0, runs: [old] } }] };
+  const fresh = { s: Date.parse("2026-10-30T07:15:00Z"), e: Date.parse("2026-10-30T07:34:00Z"), ip: "x" };
+  const recent = { deviceMap: { id1: "iPhone" }, groups: [], devices: [{ name: "iPhone", away: { now: true, since: fresh.s, runs: [fresh] } }] };
+  const m = mergeRecent(full, recent, now);
+  const a = m.devices[0].away;
+  assert.equal(a.now, true);
+  assert.deepEqual(a.runs.map((r: { s: number }) => r.s), [fresh.s, old.s]);
+  // vóór het volledige overzicht: niet uit de verse berekening (die ziet met minder regels soms losse seconden onderweg)
+  const blip = { s: Date.parse("2026-10-29T23:30:00Z"), e: Date.parse("2026-10-29T23:30:02Z") };
+  const m2 = mergeRecent(full, { ...recent, devices: [{ name: "iPhone", away: { now: true, since: fresh.s, runs: [fresh, blip] } }] }, now);
+  assert.deepEqual(m2.devices[0].away.runs.map((r: { s: number }) => r.s), [fresh.s, old.s]);
+});

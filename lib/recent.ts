@@ -36,7 +36,19 @@ export function mergeRecent(full: Body, recent: Body, now: number): Body {
   const keep = (full.groups ?? []).filter((g: Body) => g.d !== today);
   const followers = { ...(full.followers ?? {}) };
   for (const [k, site] of Object.entries(recent.followers ?? {})) { const i = k.indexOf("|"); followers[(label.get(k.slice(0, i)) ?? k.slice(0, i)) + k.slice(i)] = site; }
-  return { ...full, groups: [...fresh, ...keep].sort((a: Body, b: Body) => b.last - a.last), followers, recentAt: now, horizon: recent.insights?.until };
+  // Thuis of onderweg ook vers (30 okt 08:15-08:34: rabobank, Waze en Google via een ander netwerk, maar zonder "Mobiel" tot
+  // het volgende volledige laden). Alleen wat ná het volledige overzicht kwam: met minder regels ziet de verse berekening soms een
+  // paar extra losse seconden "onderweg" (thuisadressen tellen dan minder vaak), daarvóór blijft het volledige overzicht leidend.
+  const from = full.insights?.until ?? recentFrom(now);
+  const awayBy = new Map<string, Body>();
+  for (const d of recent.devices ?? []) if (d.away) awayBy.set(label.get(d.name) ?? d.name, d.away);
+  const devices = (full.devices ?? []).map((d: Body) => {
+    const a = awayBy.get(d.name);
+    if (!a) return d;
+    const runs = [...(a.runs ?? []).filter((r: Body) => r.e >= from), ...(d.away?.runs ?? []).filter((r: Body) => r.e < from)];
+    return { ...d, away: { ...(d.away ?? {}), now: a.now, since: a.since, runs } };
+  });
+  return { ...full, devices, groups: [...fresh, ...keep].sort((a: Body, b: Body) => b.last - a.last), followers, recentAt: now, horizon: recent.insights?.until };
 }
 
 type LiveSession = { s: number; e: number; n?: number };
