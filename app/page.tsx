@@ -10,6 +10,7 @@ import { FB_OWN, IG_OWN, companionFor, liveInstagramShared } from "@/lib/compani
 import { isNow, liveTvApp } from "@/lib/play";
 import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, overtaken, superseded } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
+import { flushSync } from "react-dom";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
 import { askReview, listReviews, type NakijkItem } from "@/lib/nakijken-client";
@@ -1276,35 +1277,56 @@ export default function Home() {
   const chipsRef = useRef<HTMLDivElement>(null);
   // Het dagdeel (Ochtend, Middag, ...) waar je doorheen scrolt: in de vaste dagkop, zodra het eigen label onder de kop verdwenen is.
   // p: null = de lijst schuift al onder de kop, maar er is (nog) geen dagdeel voorbij; dan alleen de afgeronde bovenrand.
-  const [stuckPart, setStuckPart] = useState<{ d: string; p: number | null } | null>(null);
+  // n: het volgende dagdeel dat over het label heen schuift (zie hieronder), anders null.
+  const [stuckPart, setStuckPart] = useState<{ d: string; p: number | null; n: number | null } | null>(null);
   useEffect(() => {
     let raf = 0;
-    const PUSH = 48; // vanaf zoveel px onder de kop begint het volgende dagdeel het label weg te duwen
+    const OVER = 44; // vanaf zoveel px onder het label schuift het volgende dagdeel eroverheen
+    const PUSH = 48; // het einde van de lijst duwt het label weg
     const check = () => {
       raf = 0;
-      let found: { d: string; p: number | null } | null = null;
+      let found: { d: string; p: number | null; n: number | null } | null = null;
       for (const sec of document.querySelectorAll<HTMLElement>("section[data-day]")) {
         const h = sec.querySelector("h2");
         if (!h) continue;
         h.style.setProperty("--push", "0px");
         h.style.setProperty("--fade", "1");
+        h.style.setProperty("--in-op", "0");
+        const marks = sec.querySelectorAll<HTMLElement>("[data-part]");
+        for (const m of marks) m.style.removeProperty("--mark-op");
         const hb = h.getBoundingClientRect(), sb = sec.getBoundingClientRect();
         if (sb.top > hb.top - 1 || sb.bottom < hb.bottom) continue; // deze kop staat niet vast bovenaan
         const list = sec.querySelector(".list.day");
         const lb = list?.getBoundingClientRect();
         if (!lb || lb.top >= hb.bottom - 2) continue; // de lijst zit (nog) niet onder de kop
-        let p: number | null = null;
-        let next = lb.bottom - 64; // het volgende dagdeel dat nog onder de kop staat; het einde van de lijst duwt ook
-        for (const m of sec.querySelectorAll<HTMLElement>("[data-part]")) { const r = m.getBoundingClientRect(); if (r.top <= hb.bottom + 2) p = Number(m.dataset.part); else next = Math.min(next, r.top); } // wisselen zodra het de kop raakt
-        // Het volgende dagdeel duwt het label in de kop weg (zoals kopjes in een iOS-lijst): omhoog en vervagen naarmate het nadert,
-        // daarna neemt het nieuwe het over. Zonder knipperen (wens eigenaar 30 okt) en zonder twee labels vlak boven elkaar.
-        const near = Math.max(0, Math.min(1, (PUSH - (next - hb.bottom)) / PUSH));
-        h.style.setProperty("--push", (near * 20).toFixed(1) + "px");
-        h.style.setProperty("--fade", (1 - near).toFixed(2));
+        const lab = h.querySelector(".dh-part:not(.dh-in)")?.getBoundingClientRect();
+        const cy = lab ? lab.top + lab.height / 2 : hb.bottom; // midden van het label in de kop
+        let p: number | null = null, n: number | null = null, d = Infinity, nm: HTMLElement | undefined;
+        for (const m of marks) {
+          const r = (m.querySelector("span") ?? m).getBoundingClientRect(), mc = r.top + r.height / 2;
+          if (mc <= cy) p = Number(m.dataset.part); // wisselen zodra het midden van het nieuwe label het oude bereikt
+          else if (mc - cy < d) { d = mc - cy; n = Number(m.dataset.part); nm = m; }
+        }
+        // Het volgende dagdeel schuift als label over het huidige heen en neemt het daarna over (wens eigenaar 30 okt):
+        // het nieuwe label (.dh-in) volgt precies de plek van het dagdeel in de lijst, het oude vervaagt eronder.
+        if (d < OVER && nm) {
+          const t = 1 - d / OVER;
+          h.style.setProperty("--in-y", d.toFixed(1) + "px");
+          h.style.setProperty("--in-op", Math.min(1, t * 2).toFixed(2));
+          h.style.setProperty("--fade", (1 - t).toFixed(2));
+          nm.style.setProperty("--mark-op", "0"); // het label in de lijst zelf niet dubbel tonen
+        } else n = null;
+        // Het einde van de lijst duwt het label omhoog weg (zoals kopjes in een iOS-lijst).
+        const near = Math.max(0, Math.min(1, (PUSH - (lb.bottom - 64 - hb.bottom)) / PUSH));
+        if (near > 0) {
+          h.style.setProperty("--push", (near * 20).toFixed(1) + "px");
+          h.style.setProperty("--fade", (1 - near).toFixed(2));
+        }
         if (lb.bottom <= hb.bottom + 30) continue; // de lijst is bijna voorbij: label is weggeduwd, niet meer vast
-        found = { d: sec.dataset.day!, p };
+        found = { d: sec.dataset.day!, p, n };
       }
-      setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p ? v : found));
+      // Direct tekenen (niet een beeld later): anders staat bij het overnemen heel even het oude label weer vol in beeld.
+      flushSync(() => setStuckPart((v) => (v?.d === found?.d && v?.p === found?.p && v?.n === found?.n ? v : found)));
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -1465,6 +1487,7 @@ export default function Home() {
                 )}
                 {/* Met het tijdpaneel open hoort het dagdeel bij de lijst eronder, niet half over het paneel (zie .goopen). */}
                 {shownPart !== null && !(di === 0 && goOpen) && <span className="dh-part" aria-hidden><PartIcon p={shownPart} />{PARTS[shownPart]}</span>}
+                {stuckPart?.d === d && stuckPart.n !== null && !(di === 0 && goOpen) && <span className="dh-part dh-in" aria-hidden><PartIcon p={stuckPart.n} />{PARTS[stuckPart.n]}</span>}
                 {!recent && <span className={"fold-chev" + (isDayOpen ? " up" : "")} aria-hidden>›</span>}
               </h2>
           {di === 0 && goOpen && (

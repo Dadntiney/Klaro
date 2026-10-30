@@ -649,3 +649,6 @@ section.goopen > .partcap { margin-top:22px; }
 
 /* Het dagdeel in de kop wordt door het volgende dagdeel weggeduwd (--push/--fade, zie page.tsx): vloeiend, zonder knipperen. */
 section > h2 .dh-part { transform:translate(-50%, calc(50% - var(--push, 0px))); opacity:var(--fade, 1); }
+/* Het volgende dagdeel schuift erover en neemt het over (--in-y/--in-op, zie page.tsx); in de lijst dan niet dubbel. */
+section > h2 .dh-part.dh-in { transform:translate(-50%, calc(50% + var(--in-y, 0px))); opacity:var(--in-op, 0); z-index:3; }
+[data-part] > span { opacity:var(--mark-op, 1); }
