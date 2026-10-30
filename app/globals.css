@@ -528,6 +528,7 @@ h2 .livedot { margin:0 2px 0 12px; }
 .setrow .dot.on { background:#22c55e; }
 .pushnote { color:var(--muted); }
 .pushwarn { margin:20px 0 0; color:#dc2626; font-weight:600; font-size:14px; }
+.pushwarn.top { margin:8px 0; padding:10px 12px; border:1px solid color-mix(in srgb, #dc2626 35%, transparent); border-radius:12px; background:color-mix(in srgb, #dc2626 8%, transparent); }
 /* Uitzetten alleen na het overtypen van UITZETTEN. */
 .offask { display:flex; flex-direction:column; gap:10px; }
 .offask label { display:flex; flex-direction:column; gap:8px; line-height:1.45; }

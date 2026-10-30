@@ -23,4 +23,11 @@ const open = items.filter((x) => !x.done);
 console.log(open.length ? `Open verzoeken (${open.length}):` : "Geen open verzoeken.");
 for (const x of open) console.log(`${x.id}  ${x.dev}  ${x.site} (${x.name})  ${hm(x.s)} – ${hm(x.e)}  [gevraagd ${hm(x.at)}]  UTC ${new Date(x.s).toISOString()}`);
 
+// Zelfbewaking (ook elk uur): draaide de waarschuw-taak (elke 5 min) de laatste 20 minuten niet goed, dan dat zeggen, zodat het
+// opgelost wordt voordat de eigenaar het ziet. Uitzoeken: Actions → Waarschuwen (draait de keten nog?) en api/alert.php.
+const h = await fetch(`${site}/api/push.php`, { headers });
+const laatst = h.ok ? ((await h.json()) as { laatst?: number | null }).laatst : null;
+if (!h.ok) console.log(`LET OP: waarschuw-status niet op te vragen (server ${h.status}).`);
+else if (!laatst || Date.now() - laatst > 20 * 60_000) console.log(`LET OP: waarschuwen draaide niet sinds ${laatst ? hm(laatst) : "onbekend"}.`);
+
 export {};
