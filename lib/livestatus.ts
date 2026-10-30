@@ -54,7 +54,7 @@ export function tvBlipper<G extends LiveGroup>(groups: G[]) {
 export type DeviceUse<G extends LiveGroup> = ReturnType<typeof deviceUse<G>>;
 
 /** Bewijs van gebruik per apparaat: de laatst begonnen echte sessie (zoals de lijst), beeld/geluid zonder eigen regel, losse opvragingen. */
-export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>, followers: Record<string, string> = {}) {
+export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>, followers: Record<string, string> = {}, heartbeat?: string[]) {
   const hits = new Map<string, { t: number; site: string; fgApp: boolean }[]>();
   const media = new Map<string, number>(); // beeld/geluid van adressen die zelf geen regel worden (bijv. Conviva zonder app)
   const latest = new Map<string, { g: G; x: Session }>(); // de echte sessie die nu het laatst bezig was, per apparaat (zoals de lijst)
@@ -85,7 +85,10 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>, f
     // verversen op de achtergrond vaak samen; hun echte gebruik telt hierboven al.
     if (!g.main || fgApp || (isSystemSite(g.site) && isPlainSite(g)) || auto.has(g.dev + "|" + g.site)) continue; // ook geen widget die zichzelf ververst
     const a = hits.get(g.dev) ?? [];
-    for (const t of g.ts ?? []) a.push({ t, site: g.site, fgApp });
+    // Niet uit een nieuwsbrief, doorstuur-link of losse onderdelen: die sessies laat de lijst ook weg (29 okt 16:26: plaatjes van
+    // twee nieuwsbrieven en een Hue-tikje hielden de chip 1,5 min groen zonder rij "nu").
+    const notVisit = (g.ss ?? []).filter((x) => x.emb || x.res || x.rf || x.rl || (x.ml && !isHuman(x)));
+    for (const t of g.ts ?? []) if (!notVisit.some((x) => t >= x.s && t <= x.e)) a.push({ t, site: g.site, fgApp });
     hits.set(g.dev, a);
   }
   // Welke sessie telt: niet een die voorbij is doordat daarna een andere app begon die ook doorliep (superseded, zoals de rij "nu");
@@ -118,17 +121,22 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>, f
   // Stukjes samenvoegen precies zoals de lijst (lib/usage.ts): navigatie (NAV_GAP), apps met een vaste melding via een
   // doorverwijs-adres (HEARTBEAT_GAP, zoals NPO en Toca Boca) en een spel dat echt opstartte (gs, GAME_GAP). Anders zei de chip na
   // 3 min "uit" terwijl de rij van het geheel nog "nu" zei (26 okt 16:21-16:41: NPO op de iPad).
+  // Zelfde als lib/usage.ts: alleen bij een echte vaste melding (heartbeat) altijd; bij een ander doorverwijs-adres alleen als één
+  // kant al even duurde of beeld/geluid had (29 okt 17:45: twee keer kort de Hue-app openen hield het bolletje groen).
   const followed = new Set(Object.entries(followers).map(([k, site]) => k.slice(0, k.indexOf("|")) + "|" + site));
+  const beat = new Set(heartbeat ?? []);
   for (const [dev, l] of latest) {
     if (isTv(dev)) continue;
     const gap = NAV_APPS.has(l.g.site) ? NAV_GAP : followed.has(dev + "|" + l.g.site) ? HEARTBEAT_GAP : (l.g.ss ?? []).some((x) => x.gs) ? GAME_GAP : 0;
     if (!gap) continue;
+    const needMedia = gap === HEARTBEAT_GAP && !beat.has(dev + "|" + l.g.site);
+    const joins = (p: Session, q: Session) => q.s - p.e <= gap && (!needMedia || !!p.m || !!q.m || p.e - p.s >= 60_000 || q.e - q.s >= 60_000);
     const all = [...(l.g.ss ?? [])].sort((a, b) => a.s - b.s);
     const i = all.findIndex((x) => x.s === l.x.s);
     if (i < 0) continue;
     let a = i, b = i;
-    while (a > 0 && all[a].s - all[a - 1].e <= gap) a--;
-    while (b < all.length - 1 && all[b + 1].s - all[b].e <= gap) b++;
+    while (a > 0 && joins(all[a - 1], all[a])) a--;
+    while (b < all.length - 1 && joins(all[b], all[b + 1])) b++;
     const span = all.slice(a, b + 1);
     latest.set(dev, { g: l.g, x: { ...l.x, s: span[0].s, e: Math.max(...span.map((x) => x.e)), n: span.reduce((n, x) => n + (x.n ?? 1), 0) } });
   }

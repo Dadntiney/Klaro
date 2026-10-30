@@ -271,7 +271,7 @@ let checks = 0;
 for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
   const o = await overview(lines.slice(1).filter((l) => { const t = Date.parse(l.slice(0, 24)); return t <= T && t >= T - 30 * 3_600_000; }), T);
   const groups = o.groups, au = new Set(o.auto ?? []);
-  const use = deviceUse(groups, au, (o as { followers?: Record<string, string> }).followers ?? {});
+  const use = deviceUse(groups, au, (o as { followers?: Record<string, string> }).followers ?? {}, (o as { heartbeat?: string[] }).heartbeat);
   // Dezelfde rijen als de pagina (lib/usage.ts): wat als gebruik telt, en op een tv samengevoegd (met beeld-bruggen).
   const rowsT: { g: LiveGroup; x: Session }[] = [];
   const todayGroups = groups.filter((g) => g.d === today(T));

@@ -53,9 +53,26 @@ test("niet meer 'nu' als er daarna een andere app begon die ook doorliep; wel no
 test("app met een vaste melding (NPO op de iPad): de chip voegt de stukjes samen zoals de rij, anders zei hij te vroeg 'uit'", () => {
   // Echt voorbeeld 26 okt 16:12-16:37: NPO opent, daarna alleen de vaste melding via het doorverwijs-adres (stukjes zonder eigen gebruik).
   const npo = g({ dev: "iPad", site: "npo.nl", name: "NPO", ss: [{ s: m(14), e: m(14), n: 1 }, { s: m(6), e: m(6), n: 1 }, { s: m(0), e: m(0.3), n: 4 }], ts: [m(14)] });
-  assert.equal(isActiveNow(deviceUse([npo], new Set(), { "iPad|npo-volger.nl": "npo.nl" }), "iPad", m(16)), true);
+  assert.equal(isActiveNow(deviceUse([npo], new Set(), { "iPad|npo-volger.nl": "npo.nl" }, ["iPad|npo.nl"]), "iPad", m(16)), true);
   // zonder vaste melding: alleen het eerste stukje telt, en dat is na 16 min voorbij
   assert.equal(isActiveNow(deviceUse([npo], new Set()), "iPad", m(16)), false);
+});
+
+test("volger zonder vaste melding (Hue op de telefoon): korte stukjes zonder beeld/geluid worden niet samengevoegd, net als in de rij", () => {
+  // Echt voorbeeld 29 okt 17:35 en 17:44: twee losse Hue-tikjes; de rij zegt bij de tweede "geen gebruik", dus de chip mag niet groen worden.
+  const hue = g({ site: "meethue.com", name: "Philips Hue", ss: [{ s: m(9.6), e: m(9.6), n: 1 }, { s: m(0), e: m(0.1), n: 3 }], ts: [m(9.6)] });
+  assert.equal(isActiveNow(deviceUse([hue], new Set(), { "iPhone|hue-volger.com": "meethue.com" }), "iPhone", m(10.5)), false);
+  // wel samengevoegd als dit apparaat voor deze app bewezen een vaste melding heeft
+  assert.equal(isActiveNow(deviceUse([hue], new Set(), { "iPhone|hue-volger.com": "meethue.com" }, ["iPhone|meethue.com"]), "iPhone", m(10.5)), true);
+});
+
+test("losse opvragingen uit nieuwsbrieven maken de chip niet groen; echte losse opvragingen van meerdere sites wel", () => {
+  // Echt voorbeeld 29 okt 16:25: plaatjes van twee nieuwsbrieven binnen een minuut; de rij toont niets, dus de chip ook niet.
+  const mail = (site: string, t: number) => g({ site, name: site, ss: [{ s: m(t), e: m(t), n: 1, ml: 1, mh: 0, res: 1 }], ts: [m(t), m(t), m(t)] });
+  assert.equal(isActiveNow(deviceUse([mail("nieuwsbrief-a.nl", 0), mail("nieuwsbrief-b.nl", 1)], new Set()), "iPhone", m(1.5)), false);
+  // zelfde tijdstippen, maar gewoon losse opvragingen van twee sites (geen nieuwsbrief): wel groen
+  const los = (site: string, t: number) => g({ site, name: site, ss: [{ s: m(t), e: m(t), n: 1 }], ts: [m(t), m(t), m(t)] });
+  assert.equal(isActiveNow(deviceUse([los("site-a.nl", 0), los("site-b.nl", 1)], new Set()), "iPhone", m(1.5)), true);
 });
 
 test("telefoon: na een site weer verder op Google (17 s later) is de site niet meer 'nu'", () => {

@@ -1132,7 +1132,7 @@ export default function Home() {
       .filter((x) => x.r.silent && x.d.last)
       .map((x) => ({ name: x.d.name, last: x.d.last!, since: x.r.since, gap: x.d.gap ?? 0 }));
   }, [devices, full, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  const lastUse = useMemo(() => deviceUse(groups, auto, followOf.current), [groups, auto]);
+  const lastUse = useMemo(() => deviceUse(groups, auto, followOf.current, heartbeat.current), [groups, auto]);
   // Adressen van de periodes buiten het thuisnetwerk: één keer opvragen welk soort netwerk het was.
   useEffect(() => {
     const ips = [...new Set(devices.flatMap((d) => (d.away?.runs ?? []).map((r) => r.ip).filter((ip): ip is string => !!ip)))].filter((ip) => !(ip in nets));
