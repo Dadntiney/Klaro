@@ -97,9 +97,13 @@ export interface PayMoment {
   level: "checkout" | "store";
 }
 
-const dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
+const dayFmtIntl = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Amsterdam" });
 const hourFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Amsterdam" });
-const hourOf = (t: number) => parseInt(hourFmt.format(t), 10) % 24;
+// Dag en uur per heel UTC-uur onthouden: Amsterdam wijkt altijd een heel aantal uren af, dus binnen één UTC-uur zijn dag en uur
+// gelijk. Intl opmaken voor elk van de honderdduizenden regels kostte seconden.
+const dayMemo = new Map<number, string>(), hourMemo = new Map<number, number>();
+const dayFmt = { format: (t: number) => { const k = Math.floor(t / 3_600_000); let v = dayMemo.get(k); if (v === undefined) { v = dayFmtIntl.format(t); dayMemo.set(k, v); } return v; } };
+const hourOf = (t: number) => { const k = Math.floor(t / 3_600_000); let v = hourMemo.get(k); if (v === undefined) { v = parseInt(hourFmt.format(t), 10) % 24; hourMemo.set(k, v); } return v; };
 
 
 /** Dichtstbijzijnde index in een gesorteerde lijst tijdstippen. */
@@ -585,6 +589,18 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   }
     return fgByDev.get(dev) ?? [];
   };
+  // Hoofddomeinen van een apparaat tussen twee tijdstippen (grenzen inbegrepen), via een gesorteerde lijst: het doorlopen van alle
+  // regels van een apparaat per sessie kostte bij een maand gegevens seconden.
+  const baseSorted = new Map<string, { t: number; b: string; bl?: 1 }[]>();
+  const baseWindow = (dev: string, from: number, to: number) => {
+    let ev = baseSorted.get(dev);
+    if (!ev) baseSorted.set(dev, (ev = [...(devBase.get(dev) ?? [])].sort((a, b) => a.t - b.t)));
+    let lo = 0, hi = ev.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (ev[mid].t < from) lo = mid + 1; else hi = mid; }
+    const out: { t: number; b: string; bl?: 1 }[] = [];
+    for (let i = lo; i < ev.length && ev[i].t <= to; i++) out.push(ev[i]);
+    return out;
+  };
   for (const [gkey, g] of groups) {
     let all = times.get(gkey) ?? [];
     // Google Analytics (region1.analytics.google.com) valt onder google.com, maar elke webwinkel laadt het mee en het meldt zich
@@ -720,9 +736,8 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // ftmo.com, jobescape.me in X).
       const own = baseDomain(g.site);
       const nothingLoaded = (x: Session) => {
-        const near = devBase.get(g.dev) ?? [];
-        const before = new Set(near.filter((r) => r.t >= x.s - 60_000 && r.t < x.s - 500).map((r) => r.b));
-        return !near.some((r) => r.t >= x.s - 500 && r.t <= x.s + 8_000 && r.b !== own && !before.has(r.b));
+        const before = new Set(baseWindow(g.dev, x.s - 60_000, x.s - 501).map((r) => r.b));
+        return !baseWindow(g.dev, x.s - 500, x.s + 8_000).some((r) => r.b !== own && !before.has(r.b));
       };
       // Draaide er binnen 15 s een teller van de pagina (PAGE_BEACON), dan stond de pagina echt open: geen aangeklopte advertentie.
       // Over 32 dagen: 58 van de 101 "misschien reclame"-regels hadden zo'n teller. Zonder teller blijft het onzeker (de telefoon
@@ -787,7 +802,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       for (const x of g.ss) {
         if (!x.ml || !(x.mh ?? 0)) continue;
         const others = (bySite.get(g.dev + "|" + g.site) ?? []).filter((y) => y !== x);
-        const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => !r.bl && r.t >= x.s && r.t <= x.s + 3_000).map((r) => r.b)).size;
+        const loaded = new Set(baseWindow(g.dev, x.s, x.s + 3_000).filter((r) => !r.bl).map((r) => r.b)).size;
         if (loaded < 6 && others.filter(mailish).length >= 3 && !others.some((y) => !mailish(y) && isHuman(y))) continue;
         const q = (devSearch.get(g.dev) ?? []).filter((t) => t >= x.s - 60_000 && t <= x.s + 1_000);
         // Niet als in dezelfde seconden een mail-adres van een ánder merk binnenkomt (subscriptions.indeed.com, email.mail.merk.nl):
@@ -808,7 +823,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         if (!mailish(x) || !(x.mh ?? 0)) continue;
         const t0 = mt.filter((t) => t >= x.s && t <= x.e).sort((a, b) => a - b)[0];
         if (t0 === undefined) continue;
-        const loaded = new Set((devBase.get(g.dev) ?? []).filter((r) => !r.bl && r.t >= t0 && r.t <= t0 + 3_000 && r.b !== g.site).map((r) => r.b)).size;
+        const loaded = new Set(baseWindow(g.dev, t0, t0 + 3_000).filter((r) => !r.bl && r.b !== g.site).map((r) => r.b)).size;
         // Niet als de Mail-app op dat moment nieuwsbrieven ophaalt (veel mail-adressen tegelijk lijkt ook op veel domeinen).
         const espNear = (devEsp.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000) || (devMailClient.get(g.dev) ?? []).some((t) => t >= t0 - 5_000 && t <= t0 + 3_000);
         if (loaded >= 9 && !espNear) { delete x.ml; x.ck = 1; pageLoaded.add(x); }
@@ -1004,8 +1019,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const brand = (site: string) => site.split(".")[0];
     for (const [, l] of byDev) {
       l.sort((a, b) => a.x.s - b.x.s);
-      for (const a of l) {
-        const win = l.filter((b) => b.x.s >= a.x.s && b.x.s - a.x.s <= 20_000);
+      for (let ai = 0, lo = 0, hi = 0; ai < l.length; ai++) {
+        const a = l[ai];
+        // Zelfde als l.filter(b => b.s >= a.s && b.s - a.s <= 20 s), maar zonder steeds de hele lijst door te lopen (l is gesorteerd).
+        while (l[lo].x.s < a.x.s) lo++;
+        if (hi < lo) hi = lo;
+        while (hi < l.length && l[hi].x.s - a.x.s <= 20_000) hi++;
+        const win = l.slice(lo, hi);
         if (new Set(win.map((b) => b.g.site)).size < 4) continue;
         // Komen de vier pas vol met mail-pagina's erbij, dan telt de zoekmachine niet mee: zoeken en dan twee sites openen terwijl er
         // net een mail binnenkomt is gewoon zoeken (7 okt 14:21: Google, ggdhvb.nl en ncj.nl, met een LinkedIn-mail).

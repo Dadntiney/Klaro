@@ -35,9 +35,14 @@ export function isEspDomain(host: string): boolean {
   return !ESP_SITE.test(host) && ESP_SUFFIX.some((s) => host === s || host.endsWith("." + s));
 }
 
+const espMemo = new Map<string, boolean>();
 export function isEspHost(host: string): boolean {
-  if (isEspDomain(host)) return true;
-  return ESP_LABEL.test(host) || ESP_LABEL2.test(host);
+  const hit = espMemo.get(host);
+  if (hit !== undefined) return hit;
+  const r = isEspDomain(host) || ESP_LABEL.test(host) || ESP_LABEL2.test(host);
+  if (espMemo.size > 50_000) espMemo.clear();
+  espMemo.set(host, r);
+  return r;
 }
 
 /**

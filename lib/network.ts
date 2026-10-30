@@ -16,7 +16,16 @@ export interface AwayInfo {
 export type AwayRun = Session & { ip?: string; hotspot?: string }; // hotspot: telefoon waarvan het apparaat toen het internet deelde
 
 /** IPv6: het netwerkdeel (eerste 64 bits, dat wisselt niet mee met de privacy-adressen); IPv4: het hele adres. */
+const netMemo = new Map<string, string>();
 export function netKey(ip: string): string {
+  const hit = netMemo.get(ip);
+  if (hit !== undefined) return hit;
+  const r = netKeyUncached(ip);
+  if (netMemo.size > 50_000) netMemo.clear();
+  netMemo.set(ip, r);
+  return r;
+}
+function netKeyUncached(ip: string): string {
   if (!ip.includes(":") || ip.includes(".")) return ip; // IPv4 (ook ::ffff:1.2.3.4): het hele adres
   // Verkorte schrijfwijze (::) eerst uitschrijven, anders valt een stuk van het apparaatdeel in de sleutel.
   const [head, tail] = ip.split("::");

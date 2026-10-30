@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost, isNeverFlag, runsAlongside } from "./sites.ts";
+import { classify, isLoginHost, fgHit, isEmbedHost, payKind, isMedia, isMainHost, isNeverFlag, runsAlongside, APP_DOMAIN_CLASH } from "./sites.ts";
 
 test("apps worden samengevoegd", () => {
   assert.equal(classify("i.ytimg.com").name, "YouTube");
@@ -487,4 +487,10 @@ test("korte links van een merk horen bij dat merk; websitebouwer, maattabel en Q
 test("tegelijk gebruikt: alleen met een app die doorloopt (muziek, navigatie)", () => {
   for (const s of ["spotify.com", "waze.com", "meditopia.com"]) assert.equal(runsAlongside(s), true, s);
   for (const s of ["instagram.com", "facebook.com", "google.com", "youtube.com", "netflix.com", "whatsapp.com"]) assert.equal(runsAlongside(s), false, s);
+});
+
+test("geen domein bij twee apps tegelijk (anders wint stilzwijgend de laatste)", () => {
+  assert.deepEqual(APP_DOMAIN_CLASH, []);
+  assert.equal(classify("www.fortnite.com").name, "Fortnite (spel)");
+  assert.equal(classify("ctest.cdn.nintendo.net").name, "Nintendo");
 });

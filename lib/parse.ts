@@ -46,7 +46,18 @@ export function parseCsv(text: string): string[][] {
 const HOST_RE = /^(?:[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?\.)+[a-z]{2,}$/i;
 
 /** Haal een hostnaam uit een URL, DNS-naam (met afsluitende punt) of kaal domein. */
+// Onthouden per ruwe waarde: dezelfde adressen komen honderdduizenden keren langs (276k regels, ~8k adressen). Begrensd,
+// zodat het bij urenlang live bijwerken niet blijft groeien.
+const hostMemo = new Map<string, string | null>();
 export function extractHost(value: string): string | null {
+  const hit = hostMemo.get(value);
+  if (hit !== undefined) return hit;
+  const r = extractHostUncached(value);
+  if (hostMemo.size > 50_000) hostMemo.clear();
+  hostMemo.set(value, r);
+  return r;
+}
+function extractHostUncached(value: string): string | null {
   let v = value.trim().toLowerCase();
   if (!v) return null;
   v = v.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");
@@ -61,7 +72,16 @@ const SECOND_LEVEL = new Set(["co", "com", "org", "net", "gov", "ac", "edu"]);
 /** Platforms waar elke subsite een eigen site is (iemands-app.vercel.app is niet "vercel.app"). */
 const HOSTED = /\.(vercel\.app|netlify\.app|github\.io|pages\.dev|web\.app|firebaseapp\.com|herokuapp\.com|onrender\.com|glitch\.me|wixsite\.com|blogspot\.com|wordpress\.com|framer\.website|webflow\.io|carrd\.co|ouderportaal\.nl)$/; // ouderportaal.nl: elke kinderopvang heeft een eigen portaal (naam.ouderportaal.nl)
 
+const baseMemo = new Map<string, string>();
 export function baseDomain(host: string): string {
+  const hit = baseMemo.get(host);
+  if (hit !== undefined) return hit;
+  const r = baseDomainUncached(host);
+  if (baseMemo.size > 50_000) baseMemo.clear();
+  baseMemo.set(host, r);
+  return r;
+}
+function baseDomainUncached(host: string): string {
   const h = host.replace(/^www\./, "");
   const hosted = h.match(HOSTED);
   if (hosted) {

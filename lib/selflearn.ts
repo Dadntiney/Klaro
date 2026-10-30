@@ -16,8 +16,9 @@ const WEB_EMBED = /^connect\.facebook\.net$|^(scontent|static)\.(fallback\.)?xx\
 
 export type LearnEvent = { t: number; dev: string; host: string; site: string; app?: boolean; known?: boolean; page?: boolean };
 
+const hmFmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit", hour12: false });
 const hourIn = (t: number) => {
-  const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(t);
+  const p = hmFmt.formatToParts(t);
   return Number(p.find((x) => x.type === "hour")!.value) % 24 + Number(p.find((x) => x.type === "minute")!.value) / 60;
 };
 

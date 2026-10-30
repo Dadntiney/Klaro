@@ -22,7 +22,6 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Minecraft", icon: "minecraft.net", domains: ["minecraft.net", "mojang.com", "minecraftservices.com", "minecraft-services.net",
     // servers in de lijst van het spel (worden bij openen allemaal even aangeklopt)
     "hivebedrock.eu", "hivebedrock.network", "lbsg.net", "lifeboat.games", "cubecraft.net", "galaxite.net", "enchanted.gg", "megasmp.gg", "inpvp.net", "donutsmp.org", "mineville.org"] },
-  { name: "Epic Games / Fortnite", icon: "epicgames.com", domains: ["epicgames.com", "fortnite.com", "unrealengine.com", "epicgames.dev"] },
   { name: "Budge Studios (spel)", icon: "budgestudios.ca", domains: ["budgestudios.ca", "budgenetwork.com"] },
   { name: "GoFiev.nl", icon: "gofiev.nl", domains: ["gofiev.vercel.app", "gofiev.nl"] },
   // spellen: eigen servers van bekende games, zodat ze als app zichtbaar zijn
@@ -37,7 +36,6 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "Talking Tom (spel)", icon: "outfit7.com", domains: ["outfit7.com", "talkingtomandfriends.com"] },
   { name: "Free Fire (spel)", icon: "garena.com", domains: ["garena.com", "freefiremobile.com", "freefireth.com"] },
   { name: "Genshin Impact (spel)", icon: "hoyoverse.com", domains: ["hoyoverse.com", "mihoyo.com", "yuanshen.com"] },
-  { name: "Nintendo (spel)", icon: "nintendo.com", domains: ["nintendo.com", "nintendo.net"] },
   { name: "Angry Birds (spel)", icon: "rovio.com", domains: ["rovio.com"] },
   { name: "Playrix (spel)", icon: "playrix.com", domains: ["playrix.com"] },
   { name: "Mobile Legends (spel)", icon: "mobilelegends.com", domains: ["mobilelegends.com", "moonton.com"] },
@@ -171,6 +169,8 @@ export const TV_APPS = new Set(["disneyplus.com", "ziggogo.tv", "npo.nl", "kijk.
 
 const APP_BY_DOMAIN = new Map<string, (typeof APPS)[number]>();
 for (const a of APPS) for (const d of a.domains) APP_BY_DOMAIN.set(d, a);
+/** Domeinen die bij twee apps staan (de laatste wint stilzwijgend): moet leeg zijn, zie de test. */
+export const APP_DOMAIN_CLASH = APPS.flatMap((a) => a.domains.filter((d) => APP_BY_DOMAIN.get(d) !== a).map((d) => d + ": " + a.name));
 
 /** Infrastructuur, advertenties, telemetrie: verkeer van het apparaat zelf, geen bewust bezoek. */
 const BACKGROUND = new Set([
