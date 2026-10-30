@@ -162,6 +162,8 @@ export default function Home() {
   const [seenBefore] = useState<Set<string>>(() => {
     try { const m = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}") as Record<string, number>; return new Set(Object.keys(m)); } catch { return new Set(); }
   });
+  // Eerste tik op een regel met het puntje haalt alleen het puntje weg ("gezien"); de volgende tik klapt open (wens eigenaar 30 okt).
+  const [dotOff, setDotOff] = useState<Set<string>>(() => new Set());
   const [netNamen, setNetNamen] = useState<Record<string, string>>({}); // eigen namen voor netwerken ("werk")
   useEffect(() => { netNames().then(setNetNamen); }, []);
   const netOf = (ip: string) => (ip.includes(":") ? netKey(ip) : ip);
@@ -1107,19 +1109,20 @@ export default function Home() {
                   const prev = ri > 0 && !hourStart && !partStart ? rows[ri - 1] : undefined;
                   const together = !!prev && prev.g.dev === g.dev && (runsAlongside(g.site) || runsAlongside(prev.g.site)) && mins > 0 && prev.ss.reduce((n, x) => n + minutes(x), 0) > 0 &&
                     Math.min(Math.max(...prev.ss.map((x) => x.e)), Math.max(...rss.map((x) => x.e))) - Math.max(Math.min(...prev.ss.map((x) => x.s)), Math.min(...rss.map((x) => x.s))) >= 60_000;
+                  const dot = !!g.isNew && first && firstNew.get(g.site) === t && !seenBefore.has(g.site) && !dotOff.has(g.site);
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
                       {partStart ? <div className="partmark" data-part={partOf(t)}><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
                       <div
                         className={"item clickable" + (brief ? " brief" : "") + (nowRow ? " nowrow" : "") + (g.flag || ctx.has(key) ? " adult" : soft.has(key) ? " near-flag" : "") + (newest && g.flash && Date.now() - g.flash < 4000 ? " fresh" : "") + (gotoKey === rowKey ? " goto-hit" : "")}
-                        onClick={() => setExpanded(isOpen ? null : rowKey)}
+                        onClick={() => (dot ? setDotOff((v) => new Set(v).add(g.site)) : setExpanded(isOpen ? null : rowKey))}
                         role="button"
                         aria-expanded={isOpen}
                       >
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
-                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{g.isNew && first && firstNew.get(g.site) === t && !seenBefore.has(g.site) && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
+                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{dot && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
