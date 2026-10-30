@@ -330,8 +330,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (30 okt, 08:35): het stuk "onderweg" (mobiel/andere wifi) kwam alleen mee bij het volledige laden (elk uur); rabobank,
    Waze en Google van 08:15-08:34 stonden zonder "Mobiel". Nu werkt het elke-minuut herberekenen het ook bij, maar alleen voor
    wat ná het volledige overzicht kwam (met minder regels zag de verse berekening losse seconden onderweg die er niet waren).
-   Nog uitzoeken (30 okt 08:43): terug naar Google ná het openen van een site (zoekresultaten-plaatjes 17 s later) laat de site
-   "nu" staan, want superseded() kijkt alleen naar een app die ná het bezoek begint. Let op de tv (Disney+ met Netflix-blips).
+   Geleerd (30 okt 08:43/08:52): terug naar Google ná het openen van een site liet de site "nu" staan (twee rijen "nu"). Nu: op
+   telefoon/tablet/computer is een rij niet meer "nu" als er bij een andere app meer dan 10 s later nog iets kwam (overtaken(),
+   muziek en navigatie tellen niet mee); niet op de tv. scripts/controle.ts meldt nu ook "2 rijen tegelijk nu".
    Geleerd (29 okt, 15:08): klik vanuit Google op een website; die laadt 3 s later www.google.nl als advertentiecode mee, en
    Google bleef daardoor "nu" naast de website. Nu: een bezoek waarvan het laatste stuk hooguit 5 s na het begin van een nieuwe
    pagina komt, is niet meer "nu" (lib/livestatus.ts superseded). Chip en rij over 24 uur nagespeeld: steeds gelijk. De minuten

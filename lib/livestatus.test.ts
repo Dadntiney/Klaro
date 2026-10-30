@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deviceUse, isActiveNow, superseded } from "./livestatus.ts";
+import { deviceUse, isActiveNow, overtaken, superseded } from "./livestatus.ts";
 
 const m = (x: number) => 1_800_000_000_000 + x * 60_000;
 const g = (o: Record<string, unknown>) => ({ d: "2026-10-16", dev: "iPhone", n: 5, bg: false, main: true, ...o }) as never;
@@ -56,4 +56,11 @@ test("app met een vaste melding (NPO op de iPad): de chip voegt de stukjes samen
   assert.equal(isActiveNow(deviceUse([npo], new Set(), { "iPad|npo-volger.nl": "npo.nl" }), "iPad", m(16)), true);
   // zonder vaste melding: alleen het eerste stukje telt, en dat is na 16 min voorbij
   assert.equal(isActiveNow(deviceUse([npo], new Set()), "iPad", m(16)), false);
+});
+
+test("telefoon: na een site weer verder op Google (17 s later) is de site niet meer 'nu'", () => {
+  const site = { s: m(10), e: m(10) };
+  assert.equal(overtaken(site, [{ e: m(10) + 17_000 }]), true);
+  assert.equal(overtaken(site, [{ e: m(10) + 5_000 }]), false); // code die de pagina zelf meelaadt telt niet
+  assert.equal(overtaken(site, [{ e: m(9) }]), false);
 });

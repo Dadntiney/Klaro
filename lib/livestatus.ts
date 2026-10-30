@@ -166,6 +166,15 @@ export function activeWhat<G extends LiveGroup & { name?: string }>(use: DeviceU
  * terwijl Disney+ nog 2 uur doorliep, maakt Disney+ niet "niet meer nu" (de chip zei terecht groen). `others`: de echte-gebruik-
  * sessies van de andere regels van dat apparaat.
  */
+/**
+ * Op een telefoon, tablet of computer staat maar één app of site tegelijk voor (muziek en navigatie lopen ernaast en tellen hier
+ * niet mee). Kwam er bij een andere duidelijk later nog iets binnen, dan is dit bezoek niet meer "nu" (30 okt 08:43: site geopend
+ * vanuit Google, 17 s later weer zoekresultaten; beide stonden op "nu"). Niet op een tv: daar flitsen andere apps even langs.
+ */
+export function overtaken(x: { e: number }, others: { e: number }[]): boolean {
+  return others.some((o) => o.e > x.e + 10_000);
+}
+
 export function superseded(x: { s: number; e: number }, others: { s: number; e: number }[]): boolean {
   // Ook als het laatste van dit bezoek hooguit 5 s ná het begin van de nieuwe pagina kwam: dat is code die die pagina meelaadt
   // (29 okt 15:08: klik vanuit Google op een website, die laadt www.google.nl als advertentiecode; Google bleef "nu").

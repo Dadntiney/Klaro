@@ -8,7 +8,7 @@ import { isPlainSite } from "@/lib/system";
 import { isSilent } from "@/lib/devstats";
 import { FB_OWN, IG_OWN, companionFor, liveInstagramShared } from "@/lib/companion";
 import { isNow, liveTvApp } from "@/lib/play";
-import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, superseded } from "@/lib/livestatus";
+import { ALWAYS_SHOW, activeWhat, deviceUse, isActiveNow, isTv, overtaken, superseded } from "@/lib/livestatus";
 import { apiFetch } from "@/lib/browser-api";
 import { mergeLiveGroup } from "@/lib/recent";
 import { wipeLocal } from "@/lib/wipe";
@@ -1527,7 +1527,9 @@ export default function Home() {
                   // Duur is het belangrijkste (waar ging de tijd heen): rechts groot. Daaronder klein wanneer het was.
                   const mins = rss.reduce((n, x) => n + minutes(x), 0);
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
-                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !superseded(lastS, (humanSes.get(g.dev) ?? []).filter((o) => o.r !== rows[ri]));
+                  const othersNow = (humanSes.get(g.dev) ?? []).filter((o) => o.r !== rows[ri]);
+                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !superseded(lastS, othersNow) &&
+                    (isTv(g.dev) || runsAlongside(g.site) || !overtaken(lastS, othersNow.filter((o) => !runsAlongside((o.r as { g: { site: string } }).g.site))));
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);
                   // Tegelijk gebruikt op hetzelfde apparaat (Spotify tijdens een rit met Waze): met een lijntje aan de regel erboven

@@ -20,7 +20,7 @@
  */
 import fs from "node:fs";
 import { buildOverview } from "../lib/overview.ts";
-import { FG_RULES, classify, isMainHost, isNeverFlag } from "../lib/sites.ts";
+import { FG_RULES, classify, isMainHost, isNeverFlag, runsAlongside } from "../lib/sites.ts";
 import { LEARN, learnStats, type LearnEvent } from "../lib/selflearn.ts";
 import { FB_OWN } from "../lib/companion.ts";
 import { baseDomain } from "../lib/parse.ts";
@@ -29,7 +29,7 @@ import { isPlainSite, isSystemSite } from "../lib/system.ts";
 import { isHuman, type Session } from "../lib/sessions.ts";
 import { usage } from "../lib/usage.ts";
 import { isNow } from "../lib/play.ts";
-import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, superseded, type LiveGroup } from "../lib/livestatus.ts";
+import { ALWAYS_SHOW, deviceUse, isActiveNow, isTv, overtaken, superseded, type LiveGroup } from "../lib/livestatus.ts";
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : undefined; };
 let text: string;
@@ -283,9 +283,17 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
   const human = rowsT.filter((r) => r.g.flag || isHuman(r.x));
   for (const dev of new Set(groups.filter((g) => g.d === today(T)).map((g) => g.dev))) {
     checks++;
-    const nu = rowsT.filter((r) => r.g.dev === dev && (r.g.flag || isHuman(r.x)) && isNow(T, r.x, r.g) && !superseded(r.x, human.filter((o) => o.g.dev === dev && o !== r).map((o) => o.x)));
+    const nu = rowsT.filter((r) => {
+      if (r.g.dev !== dev || !(r.g.flag || isHuman(r.x)) || !isNow(T, r.x, r.g)) return false;
+      const others = human.filter((o) => o.g.dev === dev && o !== r);
+      if (superseded(r.x, others.map((o) => o.x))) return false;
+      return isTv(dev) || runsAlongside(r.g.site) || !overtaken(r.x, others.filter((o) => !runsAlongside(o.g.site)).map((o) => o.x)); // zelfde als de pagina
+    });
     const chip = isActiveNow(use, dev, T);
     if (chip !== nu.length > 0) mism.push(`${hm(T)} ${dev}: chip ${chip ? "groen" : "uit"}, rij "nu": ${nu.map((r) => r.g.name).join(", ") || "geen"}`);
+    // Op een telefoon/tablet/computer hooguit één app tegelijk "nu" (muziek en navigatie lopen ernaast).
+    const fg = nu.filter((r) => !runsAlongside(r.g.site));
+    if (!isTv(dev) && fg.length > 1) mism.push(`${hm(T)} ${dev}: ${fg.length} rijen tegelijk "nu": ${fg.map((r) => r.g.name).join(", ")}`);
   }
 }
 section(`Chip en rij nagespeeld (${checks} momenten, laatste ${hours} uur)`, mism, "Chip en rij zeggen steeds hetzelfde.");
