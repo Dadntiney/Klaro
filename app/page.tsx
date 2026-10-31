@@ -1110,6 +1110,10 @@ export default function Home() {
                   const together = !!prev && prev.g.dev === g.dev && (runsAlongside(g.site) || runsAlongside(prev.g.site)) && mins > 0 && prev.ss.reduce((n, x) => n + minutes(x), 0) > 0 &&
                     Math.min(Math.max(...prev.ss.map((x) => x.e)), Math.max(...rss.map((x) => x.e))) - Math.max(Math.min(...prev.ss.map((x) => x.s)), Math.min(...rss.map((x) => x.s))) >= 60_000;
                   const dot = !!g.isNew && first && firstNew.get(g.site) === t && !seenBefore.has(g.site) && !dotOff.has(g.site);
+                  // Klein labeltje bij een regel die bij "Nakijken" gemeld is (ook als de regel dicht is; wens eigenaar 31 okt).
+                  const rs0 = Math.min(...rss.map((x) => x.s));
+                  const rev = reviews.filter((r) => r.dev === g.dev && r.site === g.site && r.s === rs0);
+                  const revTag = rev.some((r) => !r.done) ? "gemeld" : rev.length ? "nagekeken" : null;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
                       {partStart ? <div className="partmark" data-part={partOf(t)}><span><PartIcon p={partOf(t)} />{PARTS[partOf(t)]}</span></div> : hourStart && <div className="hourmark"><span>{String(boundary).padStart(2, "0")}:00</span></div>}
@@ -1122,7 +1126,7 @@ export default function Home() {
                         <span className="tstart">{t ? timeFmt.format(t) : ""}</span>
                         <Favicon domain={g.icon} name={g.name} app={!isPlainSite(g)} />
                         <div className="main">
-                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{dot && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
+                          <div className="name">{shortName(g.name)}{g.flag && <span className="flagtag">{g.flag === "VPN/proxy" ? "VPN" : g.flag}</span>}{revTag && <span className={"revtag" + (revTag === "nagekeken" ? " done" : "")}>{revTag}</span>}{dot && <span className="newdot" title="Nieuw: de eerste keer" aria-label="Nieuw" />}</div>
                           {(() => {
                             // Tweede regel: apparaat en duur, rustig en grijs; waarschuwingen erachter.
                             const parts: React.ReactNode[] = [];
