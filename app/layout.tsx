@@ -20,8 +20,12 @@ export const viewport = {
 
 // Vangnet: start de app niet op (een onderdeel laadt niet, of een fout in de browser), dan na 10 s een melding met de fout en
 // een knop om opnieuw te laden, in plaats van eindeloos het laadscherm op 0%. De app zet window.__klaroUp zodra hij draait.
+// Laadt een onderdeel niet (korte haper bij ontgrendelen of wisselen wifi/mobiel, 31 okt 09:38), dan eerst zelf één keer
+// opnieuw laden; de melding komt pas als het binnen een minuut nog eens misgaat.
 const BOOT_GUARD = `(function(){var e=[];function add(m){if(e.length<5)e.push(String(m).slice(0,200));}
-addEventListener("error",function(ev){var t=ev.target;if(t&&t!==window&&(t.src||t.href))add("Niet geladen: "+(t.src||t.href).replace(location.origin,""));else add(ev.message||"Fout");},true);
+function retry(){try{var k="klaro.herstart",t=+sessionStorage.getItem(k)||0;if(Date.now()-t<60000)return;sessionStorage.setItem(k,String(Date.now()));}catch(x){return;}
+setTimeout(function(){if(!window.__klaroUp)location.replace(location.pathname+"?r="+Date.now());},1500);}
+addEventListener("error",function(ev){var t=ev.target;if(t&&t!==window&&(t.src||t.href)){add("Niet geladen: "+(t.src||t.href).replace(location.origin,""));if(t.tagName==="SCRIPT")retry();}else add(ev.message||"Fout");},true);
 addEventListener("unhandledrejection",function(ev){add((ev.reason&&ev.reason.message)||ev.reason||"Fout");});
 setTimeout(function(){if(window.__klaroUp||document.getElementById("boot-fail"))return;var d=document.createElement("div");d.id="boot-fail";
 d.innerHTML='<b>Dobber start niet op</b><p>Het laden lukt niet. Probeer opnieuw; blijft dit zo, stuur dan een schermafbeelding van deze melding.</p>'+(e.length?'<pre></pre>':'')+'<button type="button">Opnieuw laden</button>';
