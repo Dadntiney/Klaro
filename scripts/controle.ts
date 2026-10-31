@@ -286,7 +286,7 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
     const nu = rowsT.filter((r) => {
       if (r.g.dev !== dev || !(r.g.flag || isHuman(r.x)) || !isNow(T, r.x, r.g)) return false;
       const others = human.filter((o) => o.g.dev === dev && o !== r);
-      if (superseded(r.x, others.map((o) => o.x))) return false;
+      if (superseded(r.x, others.map((o) => o.x), isTv(dev))) return false;
       return isTv(dev) || runsAlongside(r.g.site) || !overtaken(r.x, others.filter((o) => !runsAlongside(o.g.site)).map((o) => o.x)); // zelfde als de pagina
     });
     const chip = isActiveNow(use, dev, T);

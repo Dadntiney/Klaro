@@ -354,6 +354,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    losse opvragingen uit nieuwsbrieven en doorstuur-links tellen niet mee voor "bezig met meerdere sites".
    Geleerd (30 okt): "waarschuwen draaide" zegt niet dat de melding aankwam. Wat bij geen enkel toestel aankomt, gaat nu een uur
    lang elke ronde opnieuw (api/alert.php, wachtrij), en Klaro en scripts/nakijken.ts tonen "LET OP" tot er weer iets aankomt.
+   Geleerd (31 okt): na een klik vanuit een app naar een website laadt die pagina tot ~10 s later nog code van de app (Google-tags,
+   Facebook-pixel, een YouTube-filmpje). Op telefoon/tablet/computer is de app dan niet meer "nu" (venster 5 -> 10 s; over alle
+   dagen 23 gevallen, alle 23 zo'n klik). Op de tv bleef het 5 s: met 10 s ging de chip daar mis (00:01).
 5. Echte gaten algemeen oplossen (APPS, BACKGROUND, regels), altijd eerst doorgerekend over de hele CSV (vóór/na vergelijken,
    elk verschil nalopen), met tests (herkend én geen vals alarm) en een referentiegeval.
 6. Geleerde kennis vastleggen (blijft ook als het NextDNS-logboek wordt leeggemaakt):

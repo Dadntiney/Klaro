@@ -1099,7 +1099,7 @@ export default function Home() {
                   const mins = rss.reduce((n, x) => n + minutes(x), 0);
                   const lastS = rss.reduce((a, x) => (x.e > a.e ? x : a), rss[0]);
                   const othersNow = (humanSes.get(g.dev) ?? []).filter((o) => o.r !== rows[ri]);
-                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !superseded(lastS, othersNow) &&
+                  const nowRow = !!t && (g.flag || isHuman(lastS)) && isNow(clock, lastS, g) && !superseded(lastS, othersNow, isTv(g.dev)) &&
                     (isTv(g.dev) || runsAlongside(g.site) || !overtaken(lastS, othersNow.filter((o) => !runsAlongside((o.r as { g: { site: string } }).g.site))));
                   // Kort even geopend (geen duur), of altijd-getoond achtergrondverkeer zoals Philips Hue: lichter en lager.
                   const brief = !g.flag && !ctx.has(key) && !soft.has(key) && !nowRow && mins === 0 && !rss.every((x) => x.uz) && !(g.isNew && first);

@@ -46,6 +46,12 @@ test("niet meer 'nu' als er daarna een andere app begon die ook doorliep; wel no
   assert.equal(superseded({ s: m(5), e: m(10) }, [{ s: m(0), e: m(20) }]), false); // de andere begon eerder
   // klik vanuit Google naar een website: de website laadt 3 s later nog Google-advertentiecode; Google is niet meer "nu"
   assert.equal(superseded({ s: m(0), e: m(14) + 3_000 }, [{ s: m(14), e: m(14) }]), true);
+  // 30 okt 08:47: action.com laadt 5,3 s na het begin nog een YouTube-filmpje mee; YouTube is dan niet meer "nu"
+  assert.equal(superseded({ s: m(0), e: m(14) + 7_300 }, [{ s: m(14) + 2_000, e: m(14) + 4_000 }]), true);
+  // maar ruim 10 s later nog YouTube: dan is er echt teruggegaan
+  assert.equal(superseded({ s: m(0), e: m(14) + 14_000 }, [{ s: m(14) + 2_000, e: m(14) + 4_000 }]), false);
+  // op een tv blijft het 5 s: een kort ander app-moment maakt de lopende app daar niet voorbij
+  assert.equal(superseded({ s: m(0), e: m(14) + 7_300 }, [{ s: m(14) + 2_000, e: m(14) + 4_000 }], true), false);
   // maar wel nog "nu" als er daarna nog echt op Google gezocht werd
   assert.equal(superseded({ s: m(0), e: m(16) }, [{ s: m(14), e: m(14) }]), false);
 });

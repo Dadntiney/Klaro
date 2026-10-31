@@ -96,7 +96,7 @@ export function deviceUse<G extends LiveGroup>(groups: G[], auto: Set<string>, f
   for (const [dev, list] of cands) {
     let best: { g: G; x: Session } | undefined;
     for (const c of list) {
-      if (superseded(c.x, list.filter((o) => o !== c).map((o) => o.x))) continue;
+      if (superseded(c.x, list.filter((o) => o !== c).map((o) => o.x), isTv(dev))) continue;
       if (!best || c.x.e > best.x.e || (c.x.e === best.x.e && c.x.s > best.x.s)) best = c;
     }
     if (best) latest.set(dev, best);
@@ -183,8 +183,12 @@ export function overtaken(x: { e: number }, others: { e: number }[]): boolean {
   return others.some((o) => o.e > x.e + 10_000);
 }
 
-export function superseded(x: { s: number; e: number }, others: { s: number; e: number }[]): boolean {
-  // Ook als het laatste van dit bezoek hooguit 5 s ná het begin van de nieuwe pagina kwam: dat is code die die pagina meelaadt
-  // (29 okt 15:08: klik vanuit Google op een website, die laadt www.google.nl als advertentiecode; Google bleef "nu").
-  return others.some((o) => o.s > x.s && (o.e >= x.e || x.e - o.s <= 5_000));
+export function superseded(x: { s: number; e: number }, others: { s: number; e: number }[], tv = false): boolean {
+  // Ook als het laatste van dit bezoek hooguit 10 s ná het begin van de nieuwe pagina kwam: dat is code die die pagina meelaadt
+  // (29 okt 15:08: klik vanuit Google op een website, die laadt www.google.nl als advertentiecode; Google bleef "nu"; 30 okt 08:47:
+  // action.com laadt 5,3 s na het begin een YouTube-filmpje mee). Over alle dagen 23 keer tussen 5 en 10 s, steeds een klik vanuit
+  // Google/Instagram/Facebook/YouTube naar een site die nog code van die app meelaadt. Op een tv (geen websites) blijft het 5 s:
+  // met 10 s maakte een kort ander app-moment daar de lopende app te vroeg "voorbij" (31 okt 00:01).
+  const win = tv ? 5_000 : 10_000;
+  return others.some((o) => o.s > x.s && (o.e >= x.e || x.e - o.s <= win));
 }
