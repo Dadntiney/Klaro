@@ -1081,6 +1081,16 @@ export default function Home() {
               {cap !== null && <div className="partcap" data-part={cap}><span><PartIcon p={cap} />{PARTS[cap]}</span></div>}
               <div className={"list day" + (cap !== null ? " capped" : "")}>
                 {(() => {
+                  // Antwoord bij een regel die er na het nakijken niet meer is (bijv. nu achtergrond, 31 okt commslayer.com): bij de regel
+                  // van hetzelfde apparaat die het dichtst in de buurt begon (hooguit 5 min), met erbij om welke site het ging.
+                  const startOf = (r: (typeof rows)[number]) => Math.min(...r.ss.map((x) => x.s));
+                  const orphanAt = new Map<number, NakijkItem[]>();
+                  for (const rv of reviews) {
+                    if (rv.d !== d || rows.some((r) => r.g.dev === rv.dev && r.g.site === rv.site && startOf(r) === rv.s)) continue;
+                    let best = -1, bd = 5 * 60_000;
+                    rows.forEach((r, i) => { const dd = r.g.dev === rv.dev ? Math.abs(startOf(r) - rv.s) : Infinity; if (dd < bd) { bd = dd; best = i; } });
+                    if (best >= 0) (orphanAt.get(best) ?? orphanAt.set(best, []).get(best)!).push(rv);
+                  }
                   return rows.map(({ g, t, first, newest, compact, ss: rss }, ri) => {
                   // Elke regel toont rechts een klein apparaat-icoon (op alle tabs); een dun lijntje staat waar het apparaat wisselt.
                   const devChange = !device && ri > 0 && rows[ri - 1].g.dev !== g.dev;
@@ -1112,7 +1122,8 @@ export default function Home() {
                   const dot = !!g.isNew && first && firstNew.get(g.site) === t && !seenBefore.has(g.site) && !dotOff.has(g.site);
                   // Klein labeltje bij een regel die bij "Nakijken" gemeld is (ook als de regel dicht is; wens eigenaar 31 okt).
                   const rs0 = Math.min(...rss.map((x) => x.s));
-                  const rev = reviews.filter((r) => r.dev === g.dev && r.site === g.site && r.s === rs0);
+                  const orphans = orphanAt.get(ri) ?? [];
+                  const rev = [...reviews.filter((r) => r.dev === g.dev && r.site === g.site && r.s === rs0), ...orphans];
                   const revTag = rev.some((r) => !r.done) ? "gemeld" : rev.length ? "nagekeken" : null;
                   return (
                     <div key={rowKey} data-rk={rowKey} className={(devChange ? "devchange" : "") + (hourStart || partStart ? " hourstart" : "") + (together ? " together" : "")}>
@@ -1165,6 +1176,9 @@ export default function Home() {
                             {(rss.every((x) => x.uz) || (!!g.isNew && !g.flag && isPlainSite(g) && noRealSite(siteChk[g.site]))) && (() => { const w = !!g.isNew && !g.flag && isPlainSite(g) && noRealSite(siteChk[g.site]) ? "geensite" : rss.find((x) => x.uw)?.uw; return <p className="unsure-why">Onzeker{w ? `: ${UNSURE_KORT[w]}` : ""}. {w ? UNSURE[w] : "DNS kan niet zien of dit echt gebruikt is."}</p>; })()}
                             {reviewDone && <p className="review-ans"><b>Nagekeken:</b> {reviewDone.antwoord}</p>}
                             {reviewOpen && <p className="review-wait">Gemeld, wordt nagekeken. Het antwoord komt hier te staan.</p>}
+                            {orphans.map((rv) => rv.done
+                              ? <p key={rv.id} className="review-ans"><b>Nagekeken ({rv.name}):</b> {rv.antwoord}</p>
+                              : <p key={rv.id} className="review-wait">Gemeld ({rv.name}), wordt nagekeken. Het antwoord komt hier te staan.</p>)}
                             <a
                               className="open-btn"
                               href={`https://${g.site}`}
