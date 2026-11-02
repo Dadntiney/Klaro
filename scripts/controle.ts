@@ -273,19 +273,23 @@ for (let T = now - hours * 3_600_000; T <= now; T += 600_000) {
   const groups = o.groups, au = new Set(o.auto ?? []);
   const use = deviceUse(groups, au, (o as { followers?: Record<string, string> }).followers ?? {}, (o as { heartbeat?: string[] }).heartbeat);
   // Dezelfde rijen als de pagina (lib/usage.ts): wat als gebruik telt, en op een tv samengevoegd (met beeld-bruggen).
+  // Ook gisteren: na middernacht staat gisteren op de pagina nog open (tot 06:00) en kan een rij daar nog "nu" zijn
+  // (2 nov 00:04: YouTube op de tv tot 23:59:44; de chip was terecht groen, de controle zag alleen vandaag).
   const rowsT: { g: LiveGroup; x: Session }[] = [];
-  const todayGroups = groups.filter((g) => g.d === today(T));
-  const { listed, shown } = usage(todayGroups as never[], { auto: au, followers: (o as { followers?: Record<string, string> }).followers ?? {}, heartbeat: (o as { heartbeat?: string[] }).heartbeat });
-  for (const g of todayGroups) {
-    if (!listed(g as never)) continue;
-    for (const x of shown(g as never)) rowsT.push({ g, x });
+  for (const day of [today(T), today(T - 86_400_000)]) {
+    const dayGroups = groups.filter((g) => g.d === day);
+    const { listed, shown } = usage(dayGroups as never[], { auto: au, followers: (o as { followers?: Record<string, string> }).followers ?? {}, heartbeat: (o as { heartbeat?: string[] }).heartbeat });
+    for (const g of dayGroups) {
+      if (!listed(g as never)) continue;
+      for (const x of shown(g as never)) rowsT.push({ g, x });
+    }
   }
   const human = rowsT.filter((r) => r.g.flag || isHuman(r.x));
   for (const dev of new Set(groups.filter((g) => g.d === today(T)).map((g) => g.dev))) {
     checks++;
     const nu = rowsT.filter((r) => {
       if (r.g.dev !== dev || !(r.g.flag || isHuman(r.x)) || !isNow(T, r.x, r.g)) return false;
-      const others = human.filter((o) => o.g.dev === dev && o !== r);
+      const others = human.filter((o) => o.g.dev === dev && o.g.d === r.g.d && o !== r); // per dag, net als de pagina
       if (superseded(r.x, others.map((o) => o.x), isTv(dev))) return false;
       return isTv(dev) || runsAlongside(r.g.site) || !overtaken(r.x, others.filter((o) => !runsAlongside(o.g.site)).map((o) => o.x)); // zelfde als de pagina
     });
