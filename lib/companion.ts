@@ -74,10 +74,15 @@ export function loadedWith(ev: { t: number; dev: string; host: string; site: str
       const brand = (site: string) => site.split(".")[0];
       const opened = new Set<string>();
       for (let j = i - 1; j >= 0 && list[j].t >= e.t - 10_000; j--) if (list[j].page) opened.add(brand(list[j].site));
-      for (let j = i - 1; j >= 0 && list[j].t >= e.t - 10_000; j--) {
-        const b = brand(list[j].site);
-        if (list[j].helper && list[j].site !== e.site && !(b === brand(e.site) && b.length >= 3) && !(opened.has(b) && b.length >= 3)) before.add(list[j].host);
-      }
+      const counts = (x: (typeof list)[number]) => { const b = brand(x.site); return !!x.helper && x.site !== e.site && !(b === brand(e.site) && b.length >= 3) && !(opened.has(b) && b.length >= 3); };
+      for (let j = i - 1; j >= 0 && list[j].t >= e.t - 10_000; j--) if (counts(list[j])) before.add(list[j].host);
+      // Kwamen de hulpadressen in dezelfde paar tiendes van een seconde voor én na (uit het geheugen van het toestel, alles tegelijk),
+      // dan is niet te zien wat eerst kwam (2 nov: gjdvos.github.io 70 ms na code. en 7 ms
+      // vóór publish. van de websitebouwer; daardoor viel het geleerde hulpje weg en stond het script als bezoek).
+      // Dan tellen de hulpadressen van dat moment (tot 0,3 s erna) mee, zodat het gemeenschappelijke hulpje blijft staan.
+      let near = false;
+      for (let j = i - 1; j >= 0 && list[j].t >= e.t - 300; j--) if (counts(list[j])) near = true;
+      if (near) for (let j = i + 1; j < list.length && list[j].t <= e.t + 300; j++) if (counts(list[j])) before.add(list[j].host);
       const s = st.get(e.site) ?? st.set(e.site, { m: 0, days: new Set(), with: null }).get(e.site)!;
       s.m++;
       s.days.add(new Date(e.t).toISOString().slice(0, 10));

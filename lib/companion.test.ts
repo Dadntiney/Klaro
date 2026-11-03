@@ -97,3 +97,24 @@ test("live: gedeeld Facebook-adres vlak na eigen Instagram-adres hoort bij Insta
   assert.equal(liveInstagramShared("lookaside.facebook.com", 20 * s, 10 * s, 0), false, "eigen Facebook-adres");
   assert.equal(liveInstagramShared("www.nu.nl", 20 * s, 10 * s, 0), false);
 });
+
+test("loadedWith: alles tegelijk uit het geheugen (hulpadressen vlak voor én na) laat een geleerd hulpje niet wegvallen", async () => {
+  const { loadedWith } = await import("./companion.ts");
+  const day = 86_400_000;
+  // Drie keer: eerst de bouwer-adressen, dan het script (zoals 14 en 15 okt).
+  const ev = [0, 1, 2].flatMap((d) => [
+    { t: d * day, dev: "A", host: "publish.bouwer.io", site: "bouwer.io", helper: true },
+    { t: d * day + 200, dev: "A", host: "script.github.io", site: "script.github.io", page: true },
+  ]);
+  // 2 nov: alles in dezelfde tiende seconde, een ander bouwer-adres 70 ms ervoor en publish. 7 ms erna.
+  ev.push({ t: 5 * day, dev: "A", host: "code.bouwer2.nl", site: "bouwer2.nl", helper: true });
+  ev.push({ t: 5 * day + 70, dev: "A", host: "script.github.io", site: "script.github.io", page: true });
+  ev.push({ t: 5 * day + 77, dev: "A", host: "publish.bouwer.io", site: "bouwer.io", helper: true });
+  assert.deepEqual([...loadedWith(ev)], ["script.github.io"]);
+  // Maar een echte site die de bouwer-adressen pas daarna laadt (niets ervoor), wordt geen hulpje.
+  const eigen = [0, 1, 2].flatMap((d) => [
+    { t: d * day, dev: "A", host: "www.eigen.nl", site: "eigen.nl", page: true },
+    { t: d * day + 50, dev: "A", host: "publish.bouwer.io", site: "bouwer.io", helper: true },
+  ]);
+  assert.equal(loadedWith(eigen).size, 0);
+});

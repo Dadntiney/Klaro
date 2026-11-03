@@ -354,6 +354,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    losse opvragingen uit nieuwsbrieven en doorstuur-links tellen niet mee voor "bezig met meerdere sites".
    Geleerd (30 okt): "waarschuwen draaide" zegt niet dat de melding aankwam. Wat bij geen enkel toestel aankomt, gaat nu een uur
    lang elke ronde opnieuw (api/alert.php, wachtrij), en Klaro en scripts/nakijken.ts tonen "LET OP" tot er weer iets aankomt.
+   Geleerd (3 nov): laadt een toestel een site en de scripts van de websitebouwer uit het geheugen (alles binnen 0,3 s), dan
+   is de volgorde toeval. Zo'n moment telt nu met de hulpadressen van vóór en ná, anders viel een geleerd hulpje (script van een
+   websitebouwer) door één nieuwe keer weg en stond het weer als bezoek. Over alle dagen: alleen dat script verdwijnt (3 rijen).
    Geleerd (31 okt): na een klik vanuit een app naar een website laadt die pagina tot ~10 s later nog code van de app (Google-tags,
    Facebook-pixel, een YouTube-filmpje). Op telefoon/tablet/computer is de app dan niet meer "nu" (venster 5 -> 10 s; over alle
    dagen 23 gevallen, alle 23 zo'n klik). Op de tv bleef het 5 s: met 10 s ging de chip daar mis (00:01).
