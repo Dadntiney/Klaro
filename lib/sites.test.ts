@@ -479,6 +479,7 @@ test("Outlook in de browser en de Picnic-app zijn zichtbaar; synchroniseren en n
 test("korte links van een merk horen bij dat merk; websitebouwer, maattabel en QR-doorstuur zijn achtergrond", () => {
   assert.equal(classify("amzn.eu").site, "amazon.com");
   assert.equal(classify("pin.it").site, "pinterest.com");
+  assert.equal(classify("wa.me").site, "whatsapp.com"); // "chat via WhatsApp"-link op een website opent de app (4 nov, eigenaar: nakijken)
   assert.equal(classify("www.mediawiki.org").site, "wikipedia.org");
   for (const h of ["app.cleansizecharts.com", "app.phoenixsite.nl", "myqrcode.mobi", "neoseum-widget.pages.dev"]) assert.equal(classify(h).bg, true, h);
   for (const h of ["storifyme.xyz", "cdn.storifyme.xyz", "c77.cdn.storifyme.com"]) assert.equal(classify(h).bg, true, h);

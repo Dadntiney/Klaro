@@ -14,7 +14,7 @@ const APPS: { name: string; icon: string; domains: string[] }[] = [
   { name: "TikTok", icon: "tiktok.com", domains: ["tiktok.com", "tiktokcdn.com", "tiktokv.com", "tiktokcdn-eu.com", "musical.ly", "byteoversea.com", "ibytedtos.com", "ibyteimg.com"] },
   { name: "Instagram", icon: "instagram.com", domains: ["instagram.com", "cdninstagram.com"] },
   { name: "Facebook", icon: "facebook.com", domains: ["facebook.com", "fbcdn.net", "facebook.net", "fb.com"] },
-  { name: "WhatsApp", icon: "whatsapp.com", domains: ["whatsapp.com", "whatsapp.net"] },
+  { name: "WhatsApp", icon: "whatsapp.com", domains: ["whatsapp.com", "whatsapp.net", "wa.me"] },
   { name: "Pinterest", icon: "pinterest.com", domains: ["pinterest.com", "pinimg.com", "pinterest.nl"] },
   { name: "Snapchat", icon: "snapchat.com", domains: ["snapchat.com", "sc-cdn.net", "snap-dev.net"] },
   { name: "Discord", icon: "discord.com", domains: ["discord.com", "discordapp.com", "discordapp.net", "discord.gg", "discord.media"] },
