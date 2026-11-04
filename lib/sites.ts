@@ -138,8 +138,9 @@ export function isResourceHost(host: string): boolean {
   return RESOURCE.test(host);
 }
 
-/** Ingesloten spelers en onderdelen (óp een andere site): Vimeo-speler, YouTube zonder cookies, Wistia, Twitch-speler, embed.*. */
-const EMBED = /^player\.vimeo\.com$|^(www\.)?youtube-nocookie\.com$|^fast\.wistia\.(com|net)$|^player\.twitch\.tv$|^embed\./; // embed.: een ingebouwd onderdeel (tool, formulier) in een andere site
+/** Ingesloten spelers en onderdelen (óp een andere site): Vimeo-speler, YouTube zonder cookies, Wistia, Twitch-speler, embed.*,
+ *  Rovid (videospeler van de Rijksoverheid in campagnesites, 4 nov: 1,3 s na denkvooruit.nl, eigenaar "nakijken"). */
+const EMBED = /^(www\.)?rovid\.nl$|^player\.vimeo\.com$|^(www\.)?youtube-nocookie\.com$|^fast\.wistia\.(com|net)$|^player\.twitch\.tv$|^embed\./; // embed.: een ingebouwd onderdeel (tool, formulier) in een andere site
 export function isEmbedHost(host: string): boolean {
   return EMBED.test(host);
 }

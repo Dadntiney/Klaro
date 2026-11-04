@@ -158,6 +158,8 @@ const CASES: Case[] = [
   { day: "2026-10-28", dev: "iPhone", site: "4kmedia-market.com", at: "10:14", want: false, why: "kaal doorstuur-adres na een klik in een spam-mail, er laadt niets" },
   { day: "2026-10-27", dev: "iPhone", site: "google.com", at: "11:48", want: true, why: "echt gezocht om 11:48 (zoekresultaten); de 24 min ervoor was advertentiecode van winkelsites" },
   { day: "2026-10-29", dev: "iPhone", site: "storifyme.xyz", at: "16:50", want: false, why: "verhalen-widget die 5 s na een andere pagina meelaadt (eigenaar: nakijken)" },
+  { day: "2026-11-04", dev: "iPhone", site: "rovid.nl", at: "18:31", want: false, why: "videospeler die een campagnesite van de overheid meelaadt (eigenaar: nakijken)" },
+  { day: "2026-11-04", dev: "iPhone", site: "denkvooruit.nl", at: "18:26", want: true, why: "de campagnesite zelf" },
   { day: "2026-11-04", dev: "iPhone", site: "wa.me", at: "*", want: false, why: "WhatsApp-chatlink op een website: hoort bij WhatsApp, geen eigen site (eigenaar: nakijken)" },
   { day: "2026-10-31", dev: "iPhone", site: "commslayer.com", at: "13:21", want: false, why: "klantenservice-knop die een Shopify-winkel meelaadt (eigenaar: nakijken)" },
   { day: "2026-10-31", dev: "iPhone", site: "shopatlot.com", at: "13:21", want: true, why: "de webwinkel zelf, die de knop meelaadde" },
