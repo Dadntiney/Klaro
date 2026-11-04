@@ -112,6 +112,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    eigen Facebook-adressen zijn alleen die Instagram nooit gebruikt (lookaside, chat-e2ee, web., video-/static-/external-*).
    Geleerd (18 okt, bevestigd door de eigenaar terwijl hij WhatsApp gebruikte): de kale naam whatsapp.com = de app gaat open
    (ook chat.cdn → whatsapp.com → mmx-ds zonder foto's). Zonder de kale naam is het een binnenkomend bericht.
+   Nog uitzoeken (4 nov): klik vanuit een vacature-nieuwsbrief naar een site zonder www. (hele pagina, daarna sollicitatiepagina,
+   ~1,5 min) bleef "uit mail": maar 7 andere domeinen in 3 s (grens 9). Grens 7 gaf over alle dagen 10 extra rijen (o.a.
+   pakket-volglinks, één Google-rij): niet zeker genoeg; meer voorbeelden afwachten.
    Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
    van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
    Geleerd (19 okt, 2e ronde): een spel of leer-app die volledig opstart vraagt in één moment 3+ eigen adressen op (TutoTOONS:
