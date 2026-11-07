@@ -277,7 +277,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devShop = new Map<string, number[]>();
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
-  const devBase = new Map<string, { t: number; b: string; bl?: 1 }[]>(); // per apparaat: welk hoofddomein wanneer (bl: geblokkeerd)
+  const devBase = new Map<string, { t: number; b: string; bl?: 1; pg?: 1 }[]>(); // per apparaat: welk hoofddomein wanneer (bl: geblokkeerd)
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
   const visSites = new Map<string, { t: number; site: string }[]>(); // zichtbaar verkeer met site, om trackers aan een app te koppelen
   const blockedRows: { dev: string; t: number }[] = []; // geblokkeerde verzoeken (trackers e.d.)
@@ -524,7 +524,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const pay = payKind(host);
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
-      (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push(blocked ? { t, b: baseDomain(host), bl: 1 } : { t, b: baseDomain(host) });
+      { const b = baseDomain(host); const e: { t: number; b: string; bl?: 1; pg?: 1 } = { t, b }; if (blocked) e.bl = 1; if (!blocked && (host === b || host === "www." + b)) e.pg = 1; (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push(e); }
       if (isEspHost(host)) { (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t); if (!isEspDomain(host)) (devMailBrand.get(dev) ?? devMailBrand.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) }); }
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
@@ -603,13 +603,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   };
   // Hoofddomeinen van een apparaat tussen twee tijdstippen (grenzen inbegrepen), via een gesorteerde lijst: het doorlopen van alle
   // regels van een apparaat per sessie kostte bij een maand gegevens seconden.
-  const baseSorted = new Map<string, { t: number; b: string; bl?: 1 }[]>();
+  const baseSorted = new Map<string, { t: number; b: string; bl?: 1; pg?: 1 }[]>();
   const baseWindow = (dev: string, from: number, to: number) => {
     let ev = baseSorted.get(dev);
     if (!ev) baseSorted.set(dev, (ev = [...(devBase.get(dev) ?? [])].sort((a, b) => a.t - b.t)));
     let lo = 0, hi = ev.length;
     while (lo < hi) { const mid = (lo + hi) >> 1; if (ev[mid].t < from) lo = mid + 1; else hi = mid; }
-    const out: { t: number; b: string; bl?: 1 }[] = [];
+    const out: { t: number; b: string; bl?: 1; pg?: 1 }[] = [];
     for (let i = lo; i < ev.length && ev[i].t <= to; i++) out.push(ev[i]);
     return out;
   };
@@ -765,7 +765,16 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const own = baseDomain(g.site);
       const nothingLoaded = (x: Session) => {
         const before = new Set(baseWindow(g.dev, x.s - 60_000, x.s - 501).map((r) => r.b));
-        return !baseWindow(g.dev, x.s - 500, x.s + 8_000).some((r) => r.b !== own && !before.has(r.b));
+        // Telt niet als onderdeel: de kale naam of www. van een ándere site (de app klopt vaak meerdere advertenties kort na elkaar
+        // aan: 5 en 7 nov in X, telkens één adres per site) en alleen googleads.g.doubleclick.net (de advertentie-code van de app
+        // zelf; een echte pagina met Google-advertenties haalt ook googlesyndication, lettertypes of scripts op).
+        // Die andere site moet ná dit moment komen, niet geblokkeerd zijn (www.googleadservices.com is een teller, geen site) en zelf
+        // ook niets laden (3 s); een pagina die wél laadt (een klik vanuit Google
+        // naar een andere site, 2 nov) blijft bewijs dat er iets gebeurde.
+        const app = (b: string) => b === "doubleclick.net";
+        const lone = (r: { t: number; b: string }) => r.t > x.s && baseWindow(g.dev, r.t + 1, r.t + 3_000).every((q) => q.b === r.b || q.b === own || before.has(q.b) || app(q.b) || q.pg);
+        const extra = baseWindow(g.dev, x.s - 500, x.s + 8_000).filter((r) => r.b !== own && !before.has(r.b) && !(r.pg && lone(r)));
+        return extra.every((r) => app(r.b));
       };
       // Draaide er binnen 15 s een teller van de pagina (PAGE_BEACON), dan stond de pagina echt open: geen aangeklopte advertentie.
       // Over 32 dagen: 58 van de 101 "misschien reclame"-regels hadden zo'n teller. Zonder teller blijft het onzeker (de telefoon

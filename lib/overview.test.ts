@@ -700,6 +700,20 @@ test("website tijdens een social-app: teller van de pagina of niet aan het scrol
   assert.equal(one("winkel-c.nl")?.uz, undefined);
 });
 
+test("reeks advertenties in een social-app (telkens alleen het adres) is geen bezoek; een echte klik naar een andere site blijft", async () => {
+  const feed = (t: number): R[] => [[t, "scontent-ams2-1.cdninstagram.com"], [t + 200, "instagram.c10r.instagram.com"]];
+  const o = await overview([
+    ...feed(0), ...feed(20_000), ...feed(40_000), // scrollen in Instagram
+    [42_000, "www.reclame-a.nl"], [44_000, "www.reclame-b.nl"], [46_000, "reclame-c.com"], // de app klopt drie advertenties aan
+    [46_500, "googleads.g.doubleclick.net", "P1", "blocked"], // advertentiecode van de app zelf
+    ...feed(5 * 60_000), [5 * 60_000 + 1000, "www.los-voorbeeld.nl"], // één los adres...
+    [5 * 60_000 + 5000, "www.echte-site.nl"], [5 * 60_000 + 5300, "fonts.echte-site-cdn.nl"], [5 * 60_000 + 5400, "cdn.echte-site-cdn.net"], // ...daarna een site die echt laadt
+  ]);
+  for (const s of ["reclame-a.nl", "reclame-b.nl", "reclame-c.com"]) assert.equal(shown(o, s).length, 0, s);
+  assert.ok(shown(o, "los-voorbeeld.nl").length > 0, "gevolgd door een pagina die echt laadt: blijft staan");
+  assert.ok(shown(o, "echte-site.nl").length > 0);
+});
+
 test("advertentiecode van een website (www.google.nl tussen tellers van andere bedrijven) rekt Google niet op", async () => {
   const min = 60_000;
   const shop = (t: number): R[] => [[t, "www.winkel-voorbeeld.nl"], [t + 300, "connect.facebook.net"], [t + 400, "bat.bing.com"], [t + 500, "s.pinimg.com"], [t + 600, "analytics.tiktok.com"], [t + 700, "www.google.nl"]];
