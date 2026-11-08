@@ -486,7 +486,7 @@ test("korte links van een merk horen bij dat merk; websitebouwer, maattabel en Q
   for (const h of ["app.cleansizecharts.com", "app.phoenixsite.nl", "myqrcode.mobi", "neoseum-widget.pages.dev"]) assert.equal(classify(h).bg, true, h);
   for (const h of ["storifyme.xyz", "cdn.storifyme.xyz", "c77.cdn.storifyme.com"]) assert.equal(classify(h).bg, true, h);
   // klantenservice-knop in Shopify-winkels (31 okt); de winkel zelf blijft een bezoek
-  for (const h of ["app.commslayer.com", "assets.app.commslayer.com", "app.framed.dev", "collect.framed.dev"]) assert.equal(classify(h).bg, true, h);
+  for (const h of ["app.commslayer.com", "assets.app.commslayer.com", "app.framed.dev", "collect.framed.dev", "purecatamphetamine.github.io"]) assert.equal(classify(h).bg, true, h);
   assert.equal(classify("www.shopatlot.com").bg, false);
 });
 
