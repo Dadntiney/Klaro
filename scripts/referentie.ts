@@ -164,6 +164,7 @@ const CASES: Case[] = [
   { day: "2026-11-07", dev: "iPhone", site: "aikido.dev", at: "16:18", want: false, why: "advertentie in X, alleen het adres (eigenaar: nakijken)" },
   { day: "2026-11-02", dev: "iPhone", site: "druppies.nl", at: "16:13", want: true, why: "klik vanuit Google, daarna een site die echt laadt" },
   { day: "2026-11-08", dev: "iPhone", site: "purecatamphetamine.github.io", at: "08:20", want: false, why: "vlaggetjes van een telefoonnummer-veld op een aanmeldpagina (eigenaar: nakijken)" },
+  { day: "2026-11-08", dev: "iPhone", site: "etender-connect.com", at: "16:21", want: false, why: "kassa achter een reserveer-widget (eigenaar: nakijken)" },
   { day: "2026-11-04", dev: "iPhone", site: "rovid.nl", at: "18:31", want: false, why: "videospeler die een campagnesite van de overheid meelaadt (eigenaar: nakijken)" },
   { day: "2026-11-04", dev: "iPhone", site: "denkvooruit.nl", at: "18:26", want: true, why: "de campagnesite zelf" },
   { day: "2026-11-04", dev: "iPhone", site: "wa.me", at: "*", want: false, why: "WhatsApp-chatlink op een website: hoort bij WhatsApp, geen eigen site (eigenaar: nakijken)" },
