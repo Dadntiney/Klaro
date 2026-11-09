@@ -165,6 +165,7 @@ const CASES: Case[] = [
   { day: "2026-11-02", dev: "iPhone", site: "druppies.nl", at: "16:13", want: true, why: "klik vanuit Google, daarna een site die echt laadt" },
   { day: "2026-11-08", dev: "iPhone", site: "purecatamphetamine.github.io", at: "08:20", want: false, why: "vlaggetjes van een telefoonnummer-veld op een aanmeldpagina (eigenaar: nakijken)" },
   { day: "2026-11-08", dev: "iPhone", site: "etender-connect.com", at: "16:21", want: false, why: "kassa achter een reserveer-widget (eigenaar: nakijken)" },
+  { day: "2026-11-08", dev: "iPad", site: "ipinfo.io", at: "16:06", want: false, why: "IP-opzoekdienst die een spel bij het opstarten aanroept" },
   { day: "2026-11-08", dev: "iPad", site: "kobo.com", at: "20:57", want: true, why: "lezen in Kobo tot ~21:24 (app meldt zich elke ~80 s; eigenaar: nakijken)" },
   { day: "2026-11-04", dev: "iPhone", site: "rovid.nl", at: "18:31", want: false, why: "videospeler die een campagnesite van de overheid meelaadt (eigenaar: nakijken)" },
   { day: "2026-11-04", dev: "iPhone", site: "denkvooruit.nl", at: "18:26", want: true, why: "de campagnesite zelf" },

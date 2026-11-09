@@ -193,7 +193,7 @@ const BACKGROUND = new Set([
   "gstatic.com", "googleapis.com", "googleusercontent.com", "google-analytics.com", "googletagmanager.com",
   "googletagservices.com", "doubleclick.net", "googlesyndication.com", "googleadservices.com", "gvt1.com", "gvt2.com",
   "app-measurement.com", "crashlytics.com", "firebaseio.com", "firebaseinstallations.googleapis.com",
-  "ipapi.co", "ipify.org", // "wat is mijn IP/land"-diensten die apps bij het opstarten aanroepen (een kinder-app op de iPad: ipapi.co), geen bezoek
+  "ipapi.co", "ipify.org", "ipinfo.io", "ip-api.com", // "wat is mijn IP/land"-diensten die apps bij het opstarten aanroepen (een kinder-app op de iPad: ipapi.co; 8 nov een spel: ipinfo.io in dezelfde seconden), geen bezoek
   "akamaihd.net", "akamaiedge.net", "akamai.net", "edgekey.net", "edgesuite.net", "cloudfront.net", "fastly.net",
   "fastlylb.net", "azureedge.net", "trafficmanager.net", "amazonaws.com", "windowsupdate.com", "msftconnecttest.com",
   "msftncsi.com", "apple-dns.net", "mzstatic.com", "icloud-content.com", "sentry.io", "appsflyer.com", "adjust.com",
