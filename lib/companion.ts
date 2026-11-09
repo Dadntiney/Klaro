@@ -1,3 +1,4 @@
+import { APP_BEACON, BEACON_GAP } from "./sites.ts";
 /**
  * Apps die tijdens gebruik vooral algemene adressen opvragen (geen eigen naam): bij Minecraft op een iPad/iPhone stuurt het spel
  * elke ~20 seconden meetgegevens naar Microsoft (onedscolprd*.cloudapp.azure.com, self.events.data.microsoft.com), en verder
@@ -161,13 +162,14 @@ export const GAME_SDK = /(^|\.)(unity3d\.com|unity\.com|amplitude\.com|singular\
 export const NAV_SDK = /^firebaselogging-pa\.googleapis\.com$/;
 
 /** `ev`: alles van één apparaat: `game` = adres van een bekend spel (site), `sdk` = adres van een spel-motor, `other` = een andere app. */
-export function assignGameSdk(ev: { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean }[], keep: number): Map<number, string> {
+export function assignGameSdk(ev: { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean; bk?: string }[], keep: number): Map<number, string> {
   const out = new Map<number, string>();
   let cur: { site: string; last: number; nav?: boolean } | null = null;
   for (const e of [...ev].sort((a, b) => a.t - b.t)) {
     if (e.game) { cur = { site: e.game, last: e.t, nav: e.nav }; continue; }
     if (e.other) { if (cur && e.t - cur.last > 1_500) cur = null; continue; }
-    if ((e.sdk || (e.navSdk && cur?.nav)) && cur && e.t - cur.last <= keep) { out.set(e.t, cur.site); cur.last = e.t; }
+    if (e.bk) { if (cur && APP_BEACON[cur.site]?.test(e.bk) && e.t - cur.last <= BEACON_GAP) { out.set(e.t, cur.site); cur.last = e.t; } continue; }
+    if ((e.sdk || (e.navSdk && cur?.nav)) && cur && !APP_BEACON[cur.site] && e.t - cur.last <= keep) { out.set(e.t, cur.site); cur.last = e.t; }
   }
   // De spel-motor die in hetzelfde moment (1,5 s) vlak vóór het eigen adres van een spel opstart, hoort bij dat spel: bij het
   // opstarten komt de motor soms een fractie eerder (25 okt My Little Princess: config.uca.cloud.unity3d.com tegelijk met r2.).

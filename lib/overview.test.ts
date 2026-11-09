@@ -700,6 +700,19 @@ test("website tijdens een social-app: teller van de pagina of niet aan het scrol
   assert.equal(one("winkel-c.nl")?.uz, undefined);
 });
 
+test("e-reader (Kobo) die tijdens het lezen alleen een vaste meting stuurt: leestijd telt; dezelfde meting zonder Kobo niet", async () => {
+  const min = 60_000;
+  const ga = (t: number): R => [t, "ssl.google-analytics.com", "P1", "blocked"];
+  const rows: R[] = [[0, "kobo.com"], [1000, "storeapi.kobo.com"], [2000, "readingservices.kobo.com"]];
+  for (let t = 80_000; t <= 20 * min; t += 80_000) rows.push(ga(t)); // ~20 min lezen
+  rows.push(ga(30 * min), ga(31 * min)); // 10 min later, zonder Kobo: hoort er niet bij
+  const o = await overview(rows);
+  const k = shown(o, "kobo.com");
+  assert.equal(k.length, 1);
+  assert.ok(k[0].e - k[0].s >= 19 * min, "leestijd: " + (k[0].e - k[0].s) / min);
+  assert.ok(k[0].e < T0 + 25 * min, "losse meting later telt niet mee");
+});
+
 test("reeks advertenties in een social-app (telkens alleen het adres) is geen bezoek; een echte klik naar een andere site blijft", async () => {
   const feed = (t: number): R[] => [[t, "scontent-ams2-1.cdninstagram.com"], [t + 200, "instagram.c10r.instagram.com"]];
   const o = await overview([

@@ -120,6 +120,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    advertentie-code als onderdeel van de pagina. Nu telt de kale naam/www. van een andere site niet als onderdeel als die ná dit
    moment komt, niet geblokkeerd is en zelf ook niets laadt; alleen doubleclick erbij ook niet. Over alle dagen: 3 gemelde + 1
    Grok-advertentie in X verborgen, verder niets (een klik vanuit Google naar een site die laadt blijft staan).
+   Geleerd (9 nov, eigenaar: nakijken bij Kobo): tijdens het lezen vraagt de Kobo-app vrijwel niets op, maar meldt zich elke ~80 s
+   bij ssl.google-analytics.com (geblokkeerd). Op de iPad: 12 van 12 reeksen begonnen bij Kobo, nooit zonder. Nieuw: APP_BEACON in
+   lib/sites.ts (app + meld-adres, binnen 3 min na het vorige teken). Over alle dagen: alleen Kobo-rijen op de iPad langer (bijv.
+   26 okt 54 min i.p.v. losse stukjes van 0-5 min), verder niets veranderd.
    Nog uitzoeken (5 nov): dezelfde soort reeks buiten een social-app (geen X/Instagram in 3 min) blijft staan zonder minuten.
    Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
    van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.

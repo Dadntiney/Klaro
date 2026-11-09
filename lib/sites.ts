@@ -114,6 +114,13 @@ export const FG_RULES: Record<string, RegExp> = {
  * telt alleen als hij aansluit op echte inhoud (hooguit 5 minuten na de vorige); een losse melding start nooit gebruik.
  */
 // WhatsApp: de kale naam (whatsapp.com) vlak na een zeker geopende sessie = nog (of weer) in de app; maakt zelf geen nieuwe rij.
+// Apps die tijdens gebruik een vaste meting sturen naar een algemeen adres (geen eigen adres van de app). Zo'n melding telt
+// alleen voor die app als hij binnen BEACON_GAP na het vorige teken van de app komt (eigen adres of vorige melding), zoals de
+// spel-motor bij spellen. Kobo (e-books): tijdens het lezen zoekt de app vrijwel niets op, maar meldt zich elke ~80 s bij
+// ssl.google-analytics.com (9 nov, over alle dagen: 12 van 12 reeksen op de iPad begonnen bij Kobo, nooit zonder Kobo).
+export const APP_BEACON: Record<string, RegExp> = { "kobo.com": /^ssl\.google-analytics\.com$/ };
+export const BEACON_GAP = 3 * 60_000;
+export function beaconHost(host: string): boolean { return Object.values(APP_BEACON).some((r) => r.test(host)); }
 export const KEEP_ALIVE: Record<string, RegExp> = { "youtube.com": /^(www\.)?youtube\.com$/, "whatsapp.com": /^whatsapp\.com$/ };
 export function isKeepAlive(site: string, host: string): boolean { return !!KEEP_ALIVE[site]?.test(host); }
 /** Laadt dit adres inhoud van een app met achtergrondverkeer? `undefined` = geen achtergrond-app. */

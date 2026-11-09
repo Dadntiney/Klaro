@@ -2,7 +2,7 @@ import { baseDomain, detectColumns, extractHost, parseCsv } from "./parse.ts";
 import { isPlainSite, isSystemSite } from "./system.ts";
 import { ALWAYS_SHOW_OPEN } from "./livestatus.ts";
 import { clickBefore, isClickHost, isEspDomain, isEspHost, isMailClientHost, isMailSession } from "./mail.ts";
-import { FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind, isAppTracker } from "./sites.ts";
+import { APP_BEACON, beaconHost, FG_RULES, HEARTBEAT_GAP, NAV_APPS, NAV_GAP, TV_APPS, classify, setLearnedFg, isKeepAlive, isStreamArt, isLoginHost, fgHit, isEmbedHost, isPlaying, isResourceHost, isMedia, isQuietHost, payKind, isAppTracker } from "./sites.ts";
 import { anonId, deviceType, labelDevices } from "./names.ts";
 import { GAP, MOMENT, OPEN_BURST, OPEN_START, allSessions, isHuman, moments, clusterSessions, minutes, totalMinutes, type Session } from "./sessions.ts";
 import { categoryOf } from "./categories.ts";
@@ -391,7 +391,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   // Spel-motor/reclame-adressen in spellen (Unity, Amplitude, ...) horen bij het spel dat speelt, zie assignGameSdk in lib/companion.ts.
   const gameOf = new Map<string, string>(); // apparaat|tijdstip -> site van het spel
   {
-    const byDev = new Map<string, { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean }[]>();
+    const byDev = new Map<string, { t: number; game?: string; nav?: boolean; sdk?: boolean; navSdk?: boolean; other?: boolean; bk?: string }[]>();
     for (let ri = 0; ri < body.length; ri++) { const r = body[ri];
       const host = hostAt[ri];
       const t = host && tCol >= 0 ? tAt[ri] : 0;
@@ -401,11 +401,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const navSdk = NAV_SDK.test(host!);
       // Spellen en navigatie (Waze): tijdens gebruik vooral meetmeldingen, zie lib/companion.ts.
       const nav = NAV_APPS.has(info.site);
-      const game = !sdk && !navSdk && info.main && !info.bg && (/ \(spel\)$/.test(info.name) || nav) && info.site !== "unity3d.com" ? info.site : undefined;
-      const other = !sdk && !navSdk && !game && info.main && !info.bg && !info.flag && !isPlainSite(info);
-      if (!sdk && !navSdk && !game && !other) continue;
+      // Een app met een vaste meting (APP_BEACON, Kobo) start een reeks zoals een spel; de meting zelf telt dan voor die app.
+      const bk = beaconHost(host!) ? host! : undefined;
+      const game = !bk && !sdk && !navSdk && info.main && !info.bg && (/ \(spel\)$/.test(info.name) || nav || !!APP_BEACON[info.site]) && info.site !== "unity3d.com" ? info.site : undefined;
+      const other = !bk && !sdk && !navSdk && !game && info.main && !info.bg && !info.flag && !isPlainSite(info);
+      if (!bk && !sdk && !navSdk && !game && !other) continue;
       const dev = deviceMap[idAt[ri]];
-      (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, game, nav: !!game && nav, sdk, navSdk, other });
+      (byDev.get(dev) ?? byDev.set(dev, []).get(dev)!).push({ t, game, nav: !!game && nav, sdk, navSdk, other, bk });
     }
     for (const [dev, ev] of byDev) for (const [t, site] of assignGameSdk(ev, HEARTBEAT_GAP)) gameOf.set(dev + "|" + t, site);
   }
@@ -483,7 +485,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     const play = t ? playOf.get(dev + "|" + t) : undefined;
     if (play) info = classify(play);
     const gsite = t ? gameOf.get(dev + "|" + t) : undefined;
-    if (gsite && (GAME_SDK.test(host) || NAV_SDK.test(host))) info = classify(gsite);
+    if (gsite && (GAME_SDK.test(host) || NAV_SDK.test(host) || APP_BEACON[gsite]?.test(host))) info = classify(gsite);
     const fol = t ? followOf.get(dev + "|" + host) : undefined;
     if (fol && followIn.has(dev + "|" + host + "|" + t)) info = classify(fol);
     const meta = /facebook|fbcdn|instagram/.test(host); // alleen dan kan een regel hieronder in igShared/fbPixel staan
