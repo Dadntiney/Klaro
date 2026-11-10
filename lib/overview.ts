@@ -183,6 +183,9 @@ const GOOGLE_APP_BG = /^((notifications|photosdata|people|photos)-pa\.googleapis
 /** Adressen van een echte zoekpagina: Google-balk, Play-knop en plaatjes van resultaten. */
 const SEARCH_PAGE = /^(ogads-pa\.clients6\.google\.com|play\.google\.com|encrypted-tbn\d\.gstatic\.com)$/;
 // Geen tellers van een website: Google zelf, en wat de telefoon ondertussen doet (Apple, mail, WhatsApp, netwerk).
+// Doorverwijzing (CNAME) naar het netwerk van een host: het adres van de pagina zelf, nog een keer opgezocht bij Akamai of
+// Cloudflare (10 nov: www.rockstargames.com → e8290.e2.akamaiedge.net 60 ms later). Geen onderdeel van de pagina.
+const CDN_ALIAS = /\.(akamaiedge|edgekey|edgesuite)\.net$|\.cdn\.cloudflare\.net$/;
 const NOT_PAGE_TAG = /(^|\.)(google\.[a-z.]+|gstatic\.com|googleapis\.com|googleusercontent\.com|googletagmanager\.com|googleadservices\.com|googlesyndication\.com|doubleclick\.net|withgoogle\.com|adtrafficquality\.google|apple\.com|apple-dns\.net|aaplimg\.com|icloud\.com|mzstatic\.com|apple|cloud\.microsoft|outlook\.com|microsoft\.com|live\.com|whatsapp\.net|whatsapp\.com|akamai\.net|akamaiedge\.net|akadns\.net|fastly-edge\.com|fastly\.net)$/;
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
@@ -277,7 +280,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   const devShop = new Map<string, number[]>();
   const siteFirst = new Map<string, number>(); // eerste keer dat een site in de logs staat
   const devAll = new Map<string, number[]>(); // alle verzoeken per apparaat
-  const devBase = new Map<string, { t: number; b: string; bl?: 1; pg?: 1 }[]>(); // per apparaat: welk hoofddomein wanneer (bl: geblokkeerd)
+  const devBase = new Map<string, { t: number; b: string; bl?: 1; pg?: 1; cn?: 1 }[]>(); // per apparaat: welk hoofddomein wanneer (bl: geblokkeerd)
   const devVis = new Map<string, Map<string, number[]>>(); // zichtbaar verkeer per apparaat per dag
   const visSites = new Map<string, { t: number; site: string }[]>(); // zichtbaar verkeer met site, om trackers aan een app te koppelen
   const blockedRows: { dev: string; t: number }[] = []; // geblokkeerde verzoeken (trackers e.d.)
@@ -526,7 +529,7 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const pay = payKind(host);
       if (pay && !blocked) payRaw.push({ t, dev, kind: pay.kind, level: pay.level });
       if (ipCol >= 0 && r[ipCol]) netRows.push({ dev, t, ip: r[ipCol].trim() });
-      { const b = baseDomain(host); const e: { t: number; b: string; bl?: 1; pg?: 1 } = { t, b }; if (blocked) e.bl = 1; if (!blocked && (host === b || host === "www." + b)) e.pg = 1; (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push(e); }
+      { const b = baseDomain(host); const e: { t: number; b: string; bl?: 1; pg?: 1; cn?: 1 } = { t, b }; if (blocked) e.bl = 1; if (!blocked && (host === b || host === "www." + b)) e.pg = 1; if (CDN_ALIAS.test(host)) e.cn = 1; (devBase.get(dev) ?? devBase.set(dev, []).get(dev)!).push(e); }
       if (isEspHost(host)) { (devEsp.get(dev) ?? devEsp.set(dev, []).get(dev)!).push(t); if (!isEspDomain(host)) (devMailBrand.get(dev) ?? devMailBrand.set(dev, []).get(dev)!).push({ t, b: baseDomain(host) }); }
       if (!blocked && isClickHost(host)) (devClick.get(dev) ?? devClick.set(dev, []).get(dev)!).push(t);
       if (isYouTubeAppHost(host)) (devYtApp.get(dev) ?? devYtApp.set(dev, []).get(dev)!).push(t);
@@ -605,13 +608,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
   };
   // Hoofddomeinen van een apparaat tussen twee tijdstippen (grenzen inbegrepen), via een gesorteerde lijst: het doorlopen van alle
   // regels van een apparaat per sessie kostte bij een maand gegevens seconden.
-  const baseSorted = new Map<string, { t: number; b: string; bl?: 1; pg?: 1 }[]>();
+  const baseSorted = new Map<string, { t: number; b: string; bl?: 1; pg?: 1; cn?: 1 }[]>();
   const baseWindow = (dev: string, from: number, to: number) => {
     let ev = baseSorted.get(dev);
     if (!ev) baseSorted.set(dev, (ev = [...(devBase.get(dev) ?? [])].sort((a, b) => a.t - b.t)));
     let lo = 0, hi = ev.length;
     while (lo < hi) { const mid = (lo + hi) >> 1; if (ev[mid].t < from) lo = mid + 1; else hi = mid; }
-    const out: { t: number; b: string; bl?: 1; pg?: 1 }[] = [];
+    const out: { t: number; b: string; bl?: 1; pg?: 1; cn?: 1 }[] = [];
     for (let i = lo; i < ev.length && ev[i].t <= to; i++) out.push(ev[i]);
     return out;
   };
@@ -774,8 +777,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // ook niets laden (3 s); een pagina die wél laadt (een klik vanuit Google
         // naar een andere site, 2 nov) blijft bewijs dat er iets gebeurde.
         const app = (b: string) => b === "doubleclick.net";
-        const lone = (r: { t: number; b: string }) => r.t > x.s && baseWindow(g.dev, r.t + 1, r.t + 3_000).every((q) => q.b === r.b || q.b === own || before.has(q.b) || app(q.b) || q.pg);
-        const extra = baseWindow(g.dev, x.s - 500, x.s + 8_000).filter((r) => r.b !== own && !before.has(r.b) && !(r.pg && lone(r)));
+        const lone = (r: { t: number; b: string }) => r.t > x.s && baseWindow(g.dev, r.t + 1, r.t + 3_000).every((q) => q.b === r.b || q.b === own || before.has(q.b) || app(q.b) || q.pg || q.cn);
+        // De doorverwijzing van het adres zelf (CNAME, binnen 1 s) is ook geen onderdeel.
+        const extra = baseWindow(g.dev, x.s - 500, x.s + 8_000).filter((r) => r.b !== own && !before.has(r.b) && !(r.pg && lone(r)) && !(r.cn && r.t >= x.s && r.t <= x.s + 1_000));
         return extra.every((r) => app(r.b));
       };
       // Draaide er binnen 15 s een teller van de pagina (PAGE_BEACON), dan stond de pagina echt open: geen aangeklopte advertentie.

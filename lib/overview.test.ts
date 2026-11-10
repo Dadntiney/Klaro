@@ -713,6 +713,17 @@ test("e-reader (Kobo) die tijdens het lezen alleen een vaste meting stuurt: lees
   assert.ok(k[0].e < T0 + 25 * min, "losse meting later telt niet mee");
 });
 
+test("advertentie in een social-app met alleen het adres en de doorverwijzing (CNAME) ervan is geen bezoek", async () => {
+  const feed = (t: number): R[] => [[t, "scontent-ams2-1.cdninstagram.com"], [t + 200, "instagram.c10r.instagram.com"]];
+  const o = await overview([
+    ...feed(0), ...feed(20_000), ...feed(40_000),
+    [42_000, "www.spel-reclame.com"], [42_060, "e8290.e2.akamaiedge.net"], // alleen adres + CNAME
+    ...feed(5 * 60_000), [5 * 60_000 + 1000, "www.echte-winkel.nl"], [5 * 60_000 + 1060, "e1.b.akamaiedge.net"], [5 * 60_000 + 1500, "fonts.winkel-cdn.nl"], [5 * 60_000 + 1600, "cdn.winkel-plaatjes.net"],
+  ]);
+  assert.equal(shown(o, "spel-reclame.com").length, 0);
+  assert.ok(shown(o, "echte-winkel.nl").length > 0, "pagina met onderdelen blijft");
+});
+
 test("reeks advertenties in een social-app (telkens alleen het adres) is geen bezoek; een echte klik naar een andere site blijft", async () => {
   const feed = (t: number): R[] => [[t, "scontent-ams2-1.cdninstagram.com"], [t + 200, "instagram.c10r.instagram.com"]];
   const o = await overview([

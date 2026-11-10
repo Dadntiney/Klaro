@@ -124,6 +124,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    bij ssl.google-analytics.com (geblokkeerd). Op de iPad: 12 van 12 reeksen begonnen bij Kobo, nooit zonder. Nieuw: APP_BEACON in
    lib/sites.ts (app + meld-adres, binnen 3 min na het vorige teken). Over alle dagen: alleen Kobo-rijen op de iPad langer (bijv.
    26 okt 54 min i.p.v. losse stukjes van 0-5 min), verder niets veranderd.
+   Geleerd (10 nov, eigenaar: nakijken): de doorverwijzing (CNAME) van een adres naar Akamai/Cloudflare (e8290.e2.akamaiedge.net,
+   *.cdn.cloudflare.net, binnen 1 s) is geen onderdeel van de pagina; anders telde een advertentie in X als "pagina laadde". Over alle
+   dagen: 4 rijen weg, alle vier alleen adres + doorverwijzing (2x advertentie in X, IKEA-link in ChatGPT, Nespresso-link in een nieuwsbrief).
    Nog uitzoeken (5 nov): dezelfde soort reeks buiten een social-app (geen X/Instagram in 3 min) blijft staan zonder minuten.
    Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
    van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
