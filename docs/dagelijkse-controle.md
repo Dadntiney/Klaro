@@ -127,6 +127,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (10 nov, eigenaar: nakijken): de doorverwijzing (CNAME) van een adres naar Akamai/Cloudflare (e8290.e2.akamaiedge.net,
    *.cdn.cloudflare.net, binnen 1 s) is geen onderdeel van de pagina; anders telde een advertentie in X als "pagina laadde". Over alle
    dagen: 4 rijen weg, alle vier alleen adres + doorverwijzing (2x advertentie in X, IKEA-link in ChatGPT, Nespresso-link in een nieuwsbrief).
+   Ook (10 nov, ftmo.com): verkeer van het toestel/andere apps in dezelfde seconden (Apple, iCloud-mail, Outlook-telemetrie,
+   app-analytics-services.com) telt niet als onderdeel. Over alle dagen: 5 rijen weg, allemaal advertenties in een X-reeks (ook x.ai 24 okt).
    Nog uitzoeken (5 nov): dezelfde soort reeks buiten een social-app (geen X/Instagram in 3 min) blijft staan zonder minuten.
    Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
    van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.

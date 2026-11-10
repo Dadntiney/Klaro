@@ -776,7 +776,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // Die andere site moet ná dit moment komen, niet geblokkeerd zijn (www.googleadservices.com is een teller, geen site) en zelf
         // ook niets laden (3 s); een pagina die wél laadt (een klik vanuit Google
         // naar een andere site, 2 nov) blijft bewijs dat er iets gebeurde.
-        const app = (b: string) => b === "doubleclick.net";
+        // Ook geen onderdeel: verkeer van het toestel en andere apps dat toevallig in dezelfde seconden valt (Apple, iCloud-mail,
+        // Outlook-telemetrie, de app-meting app-analytics-services.com): 10 nov ftmo.com in X, alleen zulke adressen erna.
+        const app = (b: string) => /^(doubleclick\.net|apple\.com|apple-dns\.net|aaplimg\.com|icloud\.com|mzstatic\.com|akadns\.net|cloud\.microsoft|outlook\.com|app-analytics-services\.com)$/.test(b);
         const lone = (r: { t: number; b: string }) => r.t > x.s && baseWindow(g.dev, r.t + 1, r.t + 3_000).every((q) => q.b === r.b || q.b === own || before.has(q.b) || app(q.b) || q.pg || q.cn);
         // De doorverwijzing van het adres zelf (CNAME, binnen 1 s) is ook geen onderdeel.
         const extra = baseWindow(g.dev, x.s - 500, x.s + 8_000).filter((r) => r.b !== own && !before.has(r.b) && !(r.pg && lone(r)) && !(r.cn && r.t >= x.s && r.t <= x.s + 1_000));
