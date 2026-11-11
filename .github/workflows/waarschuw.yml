@@ -41,5 +41,15 @@ jobs:
         if: always()   # ook na vastlopen of de tijdslimiet: de keten mag nooit breken
         env:
           GH_TOKEN: ${{ github.token }}
-        timeout-minutes: 2
-        run: gh workflow run waarschuw.yml --ref main
+        timeout-minutes: 5
+        # GitHub liet de opvolger soms meteen mislukken bij het opstarten (startup_failure, 9 en 11 nov: keten ~45 min stil).
+        # Daarom na het starten even kijken en zo nodig opnieuw starten (hooguit 3 keer).
+        run: |
+          for i in 1 2 3; do
+            t=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            gh workflow run waarschuw.yml --ref main || { sleep 20; continue; }
+            sleep 45
+            c=$(gh run list --workflow waarschuw.yml --limit 5 --json createdAt,conclusion -q "[.[] | select(.createdAt >= \"$t\")][0].conclusion" || true)
+            [ "$c" = "startup_failure" ] || exit 0
+            echo "opvolger startte niet ($c), opnieuw"
+          done
