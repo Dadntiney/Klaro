@@ -718,10 +718,14 @@ test("advertentie in een social-app met alleen het adres en de doorverwijzing (C
   const o = await overview([
     ...feed(0), ...feed(20_000), ...feed(40_000),
     [42_000, "www.spel-reclame.com"], [42_060, "e8290.e2.akamaiedge.net"], // alleen adres + CNAME
+    [40_000, "dualstack.twimg.twitter.map.fastly.net"], [41_000, "www.nieuws-reclame.nl"], // CNAME van de app vlak ervoor, dan alleen het adres
+    [52_000, "www.stem-reclame.io"], [53_500, "firebaselogging-pa.googleapis.com", "P1", "blocked"], // alleen de app-meting erna
     [43_000, "region1.app-analytics-services.com"], [44_000, "imap.mail.me.com.akadns.net"], [45_000, "shed.outlook.acdc.tm.svc.cloud.microsoft"], // toestel en andere apps
     ...feed(5 * 60_000), [5 * 60_000 + 1000, "www.echte-winkel.nl"], [5 * 60_000 + 1060, "e1.b.akamaiedge.net"], [5 * 60_000 + 1500, "fonts.winkel-cdn.nl"], [5 * 60_000 + 1600, "cdn.winkel-plaatjes.net"],
   ]);
   assert.equal(shown(o, "spel-reclame.com").length, 0);
+  assert.equal(shown(o, "nieuws-reclame.nl").length, 0);
+  assert.equal(shown(o, "stem-reclame.io").length, 0);
   assert.ok(shown(o, "echte-winkel.nl").length > 0, "pagina met onderdelen blijft");
 });
 

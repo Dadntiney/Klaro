@@ -185,7 +185,7 @@ const SEARCH_PAGE = /^(ogads-pa\.clients6\.google\.com|play\.google\.com|encrypt
 // Geen tellers van een website: Google zelf, en wat de telefoon ondertussen doet (Apple, mail, WhatsApp, netwerk).
 // Doorverwijzing (CNAME) naar het netwerk van een host: het adres van de pagina zelf, nog een keer opgezocht bij Akamai of
 // Cloudflare (10 nov: www.rockstargames.com → e8290.e2.akamaiedge.net 60 ms later). Geen onderdeel van de pagina.
-const CDN_ALIAS = /\.(akamaiedge|edgekey|edgesuite)\.net$|\.cdn\.cloudflare\.net$/;
+const CDN_ALIAS = /\.(akamaiedge|edgekey|edgesuite)\.net$|\.cdn\.cloudflare\.net$|\.map\.fastly\.net$/;
 const NOT_PAGE_TAG = /(^|\.)(google\.[a-z.]+|gstatic\.com|googleapis\.com|googleusercontent\.com|googletagmanager\.com|googleadservices\.com|googlesyndication\.com|doubleclick\.net|withgoogle\.com|adtrafficquality\.google|apple\.com|apple-dns\.net|aaplimg\.com|icloud\.com|mzstatic\.com|apple|cloud\.microsoft|outlook\.com|microsoft\.com|live\.com|whatsapp\.net|whatsapp\.com|akamai\.net|akamaiedge\.net|akadns\.net|fastly-edge\.com|fastly\.net)$/;
 const METER = /^(telemetry|ct|log|logs|track|tracking|analytics|stats|metrics|beacon|rum|collect)\./;
 
@@ -780,8 +780,9 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
         // Outlook-telemetrie, de app-meting app-analytics-services.com): 10 nov ftmo.com in X, alleen zulke adressen erna.
         const app = (b: string) => /^(doubleclick\.net|apple\.com|apple-dns\.net|aaplimg\.com|icloud\.com|mzstatic\.com|akadns\.net|cloud\.microsoft|outlook\.com|app-analytics-services\.com)$/.test(b);
         const lone = (r: { t: number; b: string }) => r.t > x.s && baseWindow(g.dev, r.t + 1, r.t + 3_000).every((q) => q.b === r.b || q.b === own || before.has(q.b) || app(q.b) || q.pg || q.cn);
-        // De doorverwijzing van het adres zelf (CNAME, binnen 1 s) is ook geen onderdeel.
-        const extra = baseWindow(g.dev, x.s - 500, x.s + 8_000).filter((r) => r.b !== own && !before.has(r.b) && !(r.pg && lone(r)) && !(r.cn && r.t >= x.s && r.t <= x.s + 1_000));
+        // Een doorverwijzing (CNAME) is nooit zelf een onderdeel: hoort bij dit adres of bij een ander (10 nov ad.nl na twimg-CNAMEs); dat is ook geen
+        // onderdeel, net als de geblokkeerde app-meting firebaselogging-pa.googleapis.com (lettertypes van googleapis blijven wel tellen).
+        const extra = baseWindow(g.dev, x.s - 500, x.s + 8_000).filter((r) => r.b !== own && !before.has(r.b) && !(r.pg && lone(r)) && !r.cn && !(r.bl && r.b === "googleapis.com"));
         return extra.every((r) => app(r.b));
       };
       // Draaide er binnen 15 s een teller van de pagina (PAGE_BEACON), dan stond de pagina echt open: geen aangeklopte advertentie.
