@@ -33,7 +33,9 @@ export interface NextDNSClient {
   download(timeoutMs: number): Promise<NDResponse>;
 }
 
-const MAX_GROUPS = 15000;
+// Veiligheidsgrens voor de grootte van het antwoord. Bij meer groepen vallen eerst de oudste achtergrond-groepen weg (die worden
+// niet getoond), pas daarna oudere echte rijen. 12 nov: na 6 weken was 15000 bereikt en viel de eerste dag half weg (ook getoonde rijen).
+const MAX_GROUPS = 30000;
 const DAY = 86_400_000;
 /** Onderdelen van een Shopify-winkel: de winkel zelf vraagt maar één eigen adres op, de rest komt van hier. */
 /** Apps zonder achtergrondverkeer: een volledige opstart (3+ eigen adressen in één moment) is altijd echt geopend. */
@@ -1287,7 +1289,13 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
     }
     for (const { key, x } of refreshLike) if (set.has(key)) x.rf = 1;
   }
-  const list = [...groups.values()].sort((a, b) => b.last - a.last).slice(0, MAX_GROUPS);
+  const sorted = [...groups.values()].sort((a, b) => b.last - a.last);
+  let list = sorted;
+  if (sorted.length > MAX_GROUPS) {
+    const fg = sorted.filter((g) => !g.bg);
+    const keep = new Set(fg.length >= MAX_GROUPS ? fg.slice(0, MAX_GROUPS) : [...fg, ...sorted.filter((g) => g.bg).slice(0, MAX_GROUPS - fg.length)]);
+    list = sorted.filter((g) => keep.has(g));
+  }
   const result = {
     groups: list,
     devices,

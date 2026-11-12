@@ -131,6 +131,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    app-analytics-services.com) telt niet als onderdeel. Over alle dagen: 5 rijen weg, allemaal advertenties in een X-reeks (ook x.ai 24 okt).
    Ook (11 nov): CNAME-adressen van de app vlak vóór het adres (*.map.fastly.net, twimg via cloudflare) en de geblokkeerde
    firebaselogging-pa.googleapis.com tellen niet als onderdeel. Over alle dagen: 7 rijen weg, allemaal advertenties in een X-reeks.
+   Geleerd (12 nov, referentiegeval faalde): het overzicht had een grens van 15000 groepen (dag+apparaat+site); na 6 weken bereikt,
+   dus vielen de oudste dagen (ook getoonde rijen) stil weg. Nu 30000, en bij overschrijden eerst oude achtergrond-groepen weg.
    Nog uitzoeken (5 nov): dezelfde soort reeks buiten een social-app (geen X/Instagram in 3 min) blijft staan zonder minuten.
    Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
    van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
