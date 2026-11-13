@@ -133,6 +133,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    firebaselogging-pa.googleapis.com tellen niet als onderdeel. Over alle dagen: 7 rijen weg, allemaal advertenties in een X-reeks.
    Geleerd (12 nov, referentiegeval faalde): het overzicht had een grens van 15000 groepen (dag+apparaat+site); na 6 weken bereikt,
    dus vielen de oudste dagen (ook getoonde rijen) stil weg. Nu 30000, en bij overschrijden eerst oude achtergrond-groepen weg.
+   Geleerd (13 nov, eigenaar: nakijken): haalt de Mail-app een hele reeks nieuwsbrieven tegelijk op (6+ mailbedrijf-adressen binnen
+   1 s rond het klik-adres), dan is een site daarin geen klik. Over alle dagen 12 rijen weg (Lidl, Kruidvat, HEMA e.d., steekproef:
+   tientallen merken in 2 s); echte kliks uit één nieuwsbrief blijven (referentiegevallen kloppen).
    Nog uitzoeken (12 nov): spammail in Outlook laadt plaatjes van 3-4 onbekende adressen in dezelfde milliseconde (officialofferrew.com,
    mail.f4n.biz, *.nistries.com), zonder mailbedrijf; nu één rij zonder minuten. Bij meer voorbeelden: regel "zelfde ms + mail-app open".
    Nog uitzoeken (5 nov): dezelfde soort reeks buiten een social-app (geen X/Instagram in 3 min) blijft staan zonder minuten.

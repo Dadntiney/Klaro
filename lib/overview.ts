@@ -904,7 +904,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       // Na de klik moet er ook iets laden: een kaal adres zonder onderdelen is een doorstuur-hop uit een (spam)mail, geen bezoek
       // (28 okt 10:14: 4kmedia-market.com na een sendgrid-klik, verder niets).
       const loads = (v: (typeof vs)[number]) => baseWindow(v.g.dev, v.x.s, v.x.s + 3_000).some((r) => !r.bl && r.b !== baseDomain(v.g.site) && !NOT_PAGE_TAG.test(r.b) && !isEspDomain(r.b));
-      for (const { g, x } of vsx) if (((single && loads({ g, x, click: 0 })) || pageLoaded.has(x) || (own.size === 1 && own.has(g.site)))) x.ck = 1; else { x.ml = 1; delete x.pv; }
+      // Eén site na een klik telt alleen als het ook één losse klik was: haalt de Mail-app een hele reeks nieuwsbrieven tegelijk op
+      // (13 nov: klaviyo, mlflow, acemlna, indeed, mailplus, spotler in dezelfde 0,2 s), dan laadde die site gewoon in een mail mee.
+      const burst = (v: (typeof vs)[number]) => (devEsp.get(v.g.dev) ?? []).filter((t) => Math.abs(t - v.click) <= 1_000).length >= 6;
+      for (const v of vsx) { const { g, x } = v; if (((single && !burst(v) && loads({ g, x, click: 0 })) || pageLoaded.has(x) || (own.size === 1 && own.has(g.site)))) x.ck = 1; else { x.ml = 1; delete x.pv; } }
     }
   }
 

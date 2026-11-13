@@ -729,6 +729,17 @@ test("advertentie in een social-app met alleen het adres en de doorverwijzing (C
   assert.ok(shown(o, "echte-winkel.nl").length > 0, "pagina met onderdelen blijft");
 });
 
+test("Mail-app haalt een hele reeks nieuwsbrieven tegelijk op: een site daarin is geen klik", async () => {
+  const t = 10_000;
+  const o = await overview([
+    [t, "email.mail.winkel-a.nl"], [t + 15, "images.winkel-a.nl"], [t + 20, "cdn.klaviyomail.com"], [t + 26, "ctrk.klclick.com"],
+    [t + 35, "click.mlflow.com"], [t + 41, "nieuwsbrief-site.info"], [t + 41, "iemand.systeme.io"], [t + 47, "d3k81ch9hvuctc.cloudfront.net"],
+    [t + 56, "content.app-us1.com"], [t + 69, "x.acemlna.com"], [t + 77, "subscriptions.indeed.com"], [t + 100, "content.mailplus.nl"],
+    [t + 109, "m6.mailplus.nl"], [t + 158, "ssl01.spotler.net"],
+  ]);
+  assert.equal(shown(o, "nieuwsbrief-site.info").length, 0);
+});
+
 test("reeks advertenties in een social-app (telkens alleen het adres) is geen bezoek; een echte klik naar een andere site blijft", async () => {
   const feed = (t: number): R[] => [[t, "scontent-ams2-1.cdninstagram.com"], [t + 200, "instagram.c10r.instagram.com"]];
   const o = await overview([
