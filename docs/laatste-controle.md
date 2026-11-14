@@ -1,6 +1,4 @@
 # Laatste dagelijkse controle
 
-Datum: 2026-11-13
-Resultaat: niets nieuws fout. Chip en rij 525 van 525 momenten gelijk. Mogelijk gemist: alleen nieuwsbrieven, tv-apps die even opengingen en app-achtergrond. Gisteren twee meldingen van de eigenaar nagekeken (een spammail met plaatjes, staat bij "Nog uitzoeken"; een echt kort bezoek). Vangnet: niets nieuws. Waarschuwen draait. Referentiegevallen geslaagd.
-
-Middag-controle (2026-10-26): vijf netwerk-, meet- en doorstuuradressen stonden als rij (14 rijen); nu achtergrond, over alle dagen verder niets veranderd. Open: een winkel die vaker dan 4 keer per dag los opduikt telt als open tabblad, ook als de hele pagina laadt (staat bij "Nog uitzoeken"); Google-tijd te lang door meetcode van websites (staat er al).
+Datum: 2026-11-14
+Resultaat: niets nieuws fout. Chip en rij 406 van 406 momenten gelijk. Mogelijk gemist: alleen nieuwsbrieven, tv-apps die even opengingen en app-onderdelen. Gisteravond was de site een paar uur onbereikbaar (storing bij de webhosting, niet onze code); daarna liep alles weer en ging er geen data verloren. Vangnet: niets nieuws. Waarschuwen draait. Referentiegevallen geslaagd.

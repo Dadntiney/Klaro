@@ -137,7 +137,8 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    1 s rond het klik-adres), dan is een site daarin geen klik. Over alle dagen 12 rijen weg (Lidl, Kruidvat, HEMA e.d., steekproef:
    tientallen merken in 2 s); echte kliks uit één nieuwsbrief blijven (referentiegevallen kloppen).
    Nog uitzoeken (12 nov): spammail in Outlook laadt plaatjes van 3-4 onbekende adressen in dezelfde milliseconde (officialofferrew.com,
-   mail.f4n.biz, *.nistries.com), zonder mailbedrijf; nu één rij zonder minuten. Bij meer voorbeelden: regel "zelfde ms + mail-app open".
+   mail.f4n.biz, *.nistries.com), zonder mailbedrijf; nu één rij zonder minuten. Bij meer voorbeelden: regel "zelfde ms + mail-app open". (14 nov: over alle 49 dagen
+   nog steeds maar 1 zo'n geval met een getoonde rij; de andere reeksen in dezelfde ms zijn al nieuwsbrief, of tonen niets.)
    Nog uitzoeken (5 nov): dezelfde soort reeks buiten een social-app (geen X/Instagram in 3 min) blijft staan zonder minuten.
    Nog uitzoeken: x.ai vlak na het openen van de X-app (Grok in X, 2 keer in 4 weken, nu onzeker); Netflix op de tv met pauzes
    van net meer dan 15 min (16 min) blijft gesplitst. fnlcontent.nl (23 okt 07:27, één keer los, uitgever van gardenersworldmagazine.nl: doorstuur-link?); kiwi-app.nl (boekingssysteem dat streetjump.nl meelaadt, 3,4 s na de pagina, nu onzeker). braze "phillateemis" (geblokkeerd) hoort bij de Philips Hue-app; Hue-openen zonder meethue-adres wordt gemist.
