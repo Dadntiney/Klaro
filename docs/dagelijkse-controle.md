@@ -136,6 +136,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (13 nov, eigenaar: nakijken): haalt de Mail-app een hele reeks nieuwsbrieven tegelijk op (6+ mailbedrijf-adressen binnen
    1 s rond het klik-adres), dan is een site daarin geen klik. Over alle dagen 12 rijen weg (Lidl, Kruidvat, HEMA e.d., steekproef:
    tientallen merken in 2 s); echte kliks uit één nieuwsbrief blijven (referentiegevallen kloppen).
+   Geleerd (15 nov): op een tv worden kijkstukjes binnen 15 min samengevoegd; daarbij telde alleen de inhoud van het eerste stukje
+   mee, zodat de rij onzeker leek terwijl de chip terecht groen was (14 nov 14:28, YouTube). Nu tellen alle stukjes mee; over alle
+   dagen verandert geen rij, chip en rij 48 uur nagespeeld: steeds gelijk.
    Nog uitzoeken (12 nov): spammail in Outlook laadt plaatjes van 3-4 onbekende adressen in dezelfde milliseconde (officialofferrew.com,
    mail.f4n.biz, *.nistries.com), zonder mailbedrijf; nu één rij zonder minuten. Bij meer voorbeelden: regel "zelfde ms + mail-app open". (14 nov: over alle 49 dagen
    nog steeds maar 1 zo'n geval met een getoonde rij; de andere reeksen in dezelfde ms zijn al nieuwsbrief, of tonen niets.)

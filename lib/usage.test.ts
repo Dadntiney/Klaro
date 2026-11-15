@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { activeMinutes } from "./usage.ts";
+import { isHuman } from "./sessions.ts";
 
 test("actieve minuten: twee apps tegelijk op één apparaat tellen niet dubbel, losse stukken wel", () => {
   const M = 60_000;
@@ -63,4 +64,16 @@ test("doorverwijs-adres zonder vaste melding: twee keer kort openen is geen gebr
   const long = { ...g, ss: [{ s: 7 * M, e: 7 * M, n: 3, f: 3 }, { s: 0, e: 2 * M, n: 6, f: 3 }] };
   const ls = usage([long] as never[], { auto: new Set(), followers: fol, heartbeat: [] }).shown(long as never);
   assert.equal(ls.length, 1);
+});
+
+test("tv: samengevoegde kijkstukken tellen ook de inhoud van het latere stuk (14 nov 14:28: chip groen, rij leek onzeker)", () => {
+  // Kort YouTube (1 inhoud, 1 beeld), 5,5 min later echt kijken (3 inhoud): samen één echte rij, net als de chip zegt.
+  const g = { d: "2026-11-14", dev: "Apple TV", site: "youtube.com", main: true, bg: false, n: 6, ts: [0], ss: [{ s: 6.5 * M, e: 11.5 * M, n: 4, f: 3, m: 0 }, { s: 1 * M, e: 1 * M, n: 2, f: 1, m: 1 }] };
+  const ss = usage([g] as never[], { auto: new Set(), followers: {} }).shown(g as never);
+  assert.equal(ss.length, 1);
+  assert.equal(ss[0].f, 4);
+  assert.equal(isHuman(ss[0]), true);
+  // Geen vals kijken: twee losse stukjes zonder echte inhoud worden samen geen rij.
+  const z = { ...g, ss: [{ s: 6.5 * M, e: 6.5 * M, n: 1, f: 1, m: 0 }, { s: 1 * M, e: 1 * M, n: 1, f: 0, m: 0 }] };
+  assert.equal(usage([z] as never[], { auto: new Set(), followers: {} }).shown(z as never).length, 0);
 });

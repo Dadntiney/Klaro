@@ -63,7 +63,7 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     if (joinGap && all.length > 1) {
       const m: Session[] = [];
       const needMedia = joinGap === HEARTBEAT_GAP && !beat.has(g.dev + "|" + g.site);
-      for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap && (!needMedia || l.m || x.m || l.e - l.s >= 60_000 || x.e - x.s >= 60_000)) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1), ...(l.m || x.m ? { m: (l.m ?? 0) + (x.m ?? 0) } : {}) }; else m.push({ ...x }); }
+      for (const x of [...all].sort((a, b) => a.s - b.s)) { const l = m[m.length - 1]; if (l && x.s - l.e <= joinGap && (!needMedia || l.m || x.m || l.e - l.s >= 60_000 || x.e - x.s >= 60_000)) m[m.length - 1] = { ...l, e: Math.max(l.e, x.e), n: (l.n ?? 1) + (x.n ?? 1), ...(l.m || x.m ? { m: (l.m ?? 0) + (x.m ?? 0) } : {}), ...(l.f !== undefined || x.f !== undefined ? { f: (l.f ?? 0) + (x.f ?? 0) } : {}) }; else m.push({ ...x }); }
       all = m.reverse();
     }
     // Gemarkeerde en verdachte regels blijven altijd staan.
@@ -78,9 +78,11 @@ export function usage<G extends UseGroup>(groups: G[], o: { auto: Set<string>; f
     const out: (Session & { real?: boolean })[] = [];
     for (const x of [...ss, ...bridges].sort((a, b) => a.s - b.s)) {
       const last = out[out.length - 1];
+      // Ook de inhoud-tellers (f) optellen, net als n en m: anders telde een samengevoegd stuk alleen de inhoud van het eerste
+      // stukje en leek het onzeker terwijl de chip terecht groen was (14 nov 14:28: YouTube op de tv, 2 stukjes binnen 6 min).
       // Niet samenvoegen als er tussendoor een andere app op deze tv gebruikt is (F1 TV, dan YouTube: YouTube is een nieuw bezoek).
       const other = last && (visBy.get(g.dev) ?? []).some((v) => v.site !== g.site && v.s > last.e && v.s < x.s);
-      if (last && !other && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0), real: last.real || real.has(x) };
+      if (last && !other && x.s - last.e <= 15 * 60_000) out[out.length - 1] = { ...last, e: Math.max(last.e, x.e), n: (last.n ?? 1) + (x.n ?? 1), m: (last.m ?? 0) + (x.m ?? 0), ...(last.f !== undefined || x.f !== undefined ? { f: (last.f ?? 0) + (x.f ?? 0) } : {}), real: last.real || real.has(x) };
       else out.push({ ...x, real: real.has(x) });
     }
     return out.filter((x) => x.real).map(({ real: _r, ...x }) => x).reverse();
