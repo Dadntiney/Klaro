@@ -139,6 +139,9 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (15 nov): op een tv worden kijkstukjes binnen 15 min samengevoegd; daarbij telde alleen de inhoud van het eerste stukje
    mee, zodat de rij onzeker leek terwijl de chip terecht groen was (14 nov 14:28, YouTube). Nu tellen alle stukjes mee; over alle
    dagen verandert geen rij, chip en rij 48 uur nagespeeld: steeds gelijk.
+   Geleerd (15 nov, eigenaar: nakijken): tijdens lang scrollen in X vraagt de app soms meer dan 3 min niets nieuws op; een los
+   adres zonder pagina-onderdelen dat midden in zo'n stuk valt (social-app binnen 10 min ervoor én erna) is een aangeklopte
+   advertentie. Over alle dagen alleen de 3 gemelde rijen weg. Ook wiqhit.com (meting) en myalice.ai (chatknop) zijn onderdelen.
    Nog uitzoeken (12 nov): spammail in Outlook laadt plaatjes van 3-4 onbekende adressen in dezelfde milliseconde (officialofferrew.com,
    mail.f4n.biz, *.nistries.com), zonder mailbedrijf; nu één rij zonder minuten. Bij meer voorbeelden: regel "zelfde ms + mail-app open". (14 nov: over alle 49 dagen
    nog steeds maar 1 zo'n geval met een getoonde rij; de andere reeksen in dezelfde ms zijn al nieuwsbrief, of tonen niets.)

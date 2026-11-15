@@ -776,3 +776,18 @@ test("klik vanuit Google (zoekmachine vlak vóór de pagina) is een bezoek; Outl
   ]);
   assert.ok(shown(o, "voorbeeldwinkel.nl").length > 0);
 });
+
+test("advertentie midden in lang scrollen in X (meer dan 3 min geen nieuw X-adres) is geen bezoek; na het scrollen blijft een los adres staan", async () => {
+  // Echt voorbeeld 15 nov: X van 13:35 tot 13:46; advertenties 3-4 min na het laatste X-adres, telkens alleen het adres.
+  const x = (t: number): R[] => [[t, "api.x.com"], [t + 100, "pbs.twimg.com"], [t + 200, "video.twimg.com"]];
+  const M = 60_000;
+  const o = await overview([
+    ...x(0), ...x(90_000),
+    [90_000 + 3.5 * M, "www.reclame-midden.nl"], [90_000 + 3.5 * M + 10_000, "firebaselogging-pa.googleapis.com", "P1", "blocked"], [90_000 + 3.5 * M + 11_000, "googleads.g.doubleclick.net", "P1", "blocked"],
+    ...x(90_000 + 8 * M), // weer verder gescrold in X
+    // Geen vals verbergen: 5 min ná het laatste X-adres, en daarna geen X meer: gewoon een los bezoek.
+    [90_000 + 8 * M + 5 * M, "www.los-na-x.nl"],
+  ]);
+  assert.equal(shown(o, "reclame-midden.nl").length, 0, "midden in het scrollen, niets geladen");
+  assert.ok(shown(o, "los-na-x.nl").length > 0, "na het scrollen blijft het staan");
+});

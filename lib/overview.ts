@@ -759,7 +759,10 @@ export async function buildOverview(client: NextDNSClient, opts: { todayOnly: bo
       const hostsIn = (x: Session) => new Set(sh.filter((h) => h.t >= x.s - 3_000 && h.t <= x.e + 3_000).map((h) => h.host)).size;
       const fgDev = devFg(g.dev);
       // Ruim venster: ook social-apps onthouden adressen, dus tijdens scrollen komen er soms minuten lang geen nieuwe (3 min).
-      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 180_000 && t <= x.e + 180_000);
+      // Ook als het moment midden in een stuk scrollen ligt (social-app 10 min ervoor én 10 min erna): de app vraagt dan soms meer
+      // dan 3 min niets nieuws op (15 nov: X van 13:35 tot 13:46, advertenties 3-4 min na het laatste adres, eigenaar "nakijken").
+      // Dit telt alleen voor "niets geladen" hieronder (verbergen); de "misschien reclame"-regel vraagt nog steeds scrollen binnen 15 s.
+      const inSocial = (x: Session) => fgDev.some((t) => t >= x.s - 180_000 && t <= x.e + 180_000) || (fgDev.some((t) => t >= x.s - 600_000 && t <= x.s) && fgDev.some((t) => t >= x.e && t <= x.e + 600_000));
       const cand = sessions.filter((x) => x.n === 1 && (x.mh ?? 0) >= 1 && !x.ml && !x.res && !x.m);
       // Eén los adres tijdens scrollen in een social-app: kan een aangeklopte advertentie zijn, maar ook een echt geopende
       // link (vanuit Facebook/X openen sites in de app zelf). DNS kan dat niet onderscheiden: tonen, maar als onzeker.
