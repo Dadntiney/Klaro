@@ -170,6 +170,8 @@ const CASES: Case[] = [
   { day: "2026-11-15", dev: "iPhone", site: "meervoordeel.nl", at: "13:40", want: false, why: "advertentie midden in scrollen in X, alleen het adres (eigenaar: nakijken)" },
   { day: "2026-11-15", dev: "iPhone", site: "bridgefund.nl", at: "13:42", want: false, why: "advertentie midden in scrollen in X, alleen het adres (eigenaar: nakijken)" },
   { day: "2026-11-15", dev: "iPhone", site: "smile2impress.com", at: "13:42", want: false, why: "advertentie midden in scrollen in X, alleen het adres (eigenaar: nakijken)" },
+  { day: "2026-11-15", dev: "iPhone", site: "adsensecustomsearchads.com", at: "14:40", want: false, why: "advertenties in de zoekbalk van een site (onderdeel)" },
+  { day: "2026-11-15", dev: "iPhone", site: "natuurdietisten.nl", at: "09:17", want: true, why: "site echt geopend vanuit Google (laadt de zoekbalk-advertenties mee)" },
   { day: "2026-11-15", dev: "iPhone", site: "wiqhit.com", at: "15:59", want: false, why: "meting die een hotelsite meelaadt (eigenaar: nakijken)" },
   { day: "2026-11-15", dev: "iPhone", site: "hofvansalland.com", at: "15:59", want: true, why: "hotelsite echt geopend vanuit Facebook (met video)" },
   { day: "2026-11-14", dev: "iPhone", site: "chatwidget-prod.web.app", at: "07:13", want: false, why: "chatknop van een website, laadt los na (eigenaar: nakijken)" },

@@ -142,6 +142,10 @@ Doel: de eigenaar hoeft niets zelf na te checken. Elke ochtend draait een contro
    Geleerd (15 nov, eigenaar: nakijken): tijdens lang scrollen in X vraagt de app soms meer dan 3 min niets nieuws op; een los
    adres zonder pagina-onderdelen dat midden in zo'n stuk valt (social-app binnen 10 min ervoor én erna) is een aangeklopte
    advertentie. Over alle dagen alleen de 3 gemelde rijen weg. Ook wiqhit.com (meting) en myalice.ai (chatknop) zijn onderdelen.
+   Nog uitzoeken (16 nov): live even 2 rijen "nu" op een telefoon (15 nov 16:09): een winkelpagina vanuit Google laadt 13 s later
+   de Facebook-pixel (fbcdn/facebook.com) samen met andere tellers; live rekt dat Facebook even op, in de eindstand niet. Alleen een
+   kort live-moment (1 keer in 24 uur). Bij meer voorbeelden: tellers-salvo van de nieuwe pagina telt niet als Facebook-gebruik.
+   Ook: bwebmedia.eu op een tablet (via Google geopend, daarna elke ~7 min app.bwebmedia.eu, open tabblad?) blijft nu staan.
    Nog uitzoeken (12 nov): spammail in Outlook laadt plaatjes van 3-4 onbekende adressen in dezelfde milliseconde (officialofferrew.com,
    mail.f4n.biz, *.nistries.com), zonder mailbedrijf; nu één rij zonder minuten. Bij meer voorbeelden: regel "zelfde ms + mail-app open". (14 nov: over alle 49 dagen
    nog steeds maar 1 zo'n geval met een getoonde rij; de andere reeksen in dezelfde ms zijn al nieuwsbrief, of tonen niets.)
