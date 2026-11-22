@@ -2,6 +2,10 @@
 
 Automatisch bijgehouden door scripts/update-lists.ts (nieuwste bovenaan). Terugdraaien: git revert van die commit.
 
+## 2026-11-22
+- adult: 1004293 → 1004520 (+227). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 87403; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 1130xxx.asia, 17suinushengaishang37sux3.cn, 38xxxbluefilm.co.uk, 39xxxbluefilm.co.uk, 3dporn.fan, ...
+- dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
+
 ## 2026-11-21
 - adult: 1003526 → 1004293 (+767). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 88002; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 001office.cn, 020t.cn, 031v.cn, 10086100.cn, 100ct.cn, ...
 - dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
