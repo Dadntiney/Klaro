@@ -2,6 +2,10 @@
 
 Automatisch bijgehouden door scripts/update-lists.ts (nieuwste bovenaan). Terugdraaien: git revert van die commit.
 
+## 2026-11-24
+- adult: 1004686 → 1004780 (+95). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 81401; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 1camsex.online, 4kgaysex.cc, adultpersonals.online, altyazilipornosexfilmi.online, andysphotopost.com, ...
+- dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
+
 ## 2026-11-23
 - adult: 1004520 → 1004686 (+166). Bronnen: blocklistproject/Lists: 953197; hagezi/dns-blocklists: 81546; Sinfonietta/hostfiles: 61158; StevenBlack/hosts: 20152. Voorbeelden erbij: 43xxxbluefilm.co.uk, 69phimsex.net, 6maturetube.com, adultchat123.net, adultiptvhd.com, ...
 - dating: 10549 → 10549 (+0). Bronnen: olbat/ut1-blacklists: 10547.
